@@ -30,7 +30,7 @@ class Cancelled(Exception):
 
 CURRENT = threading.local()      # the running job's stop flag lives here, so no function has to pass it along
 CANCEL = {}                      # job id -> threading.Event
-GRAMMAR_OK = [True]              # set to False once the JSON grammar fails; plain generation is used from then on
+GRAMMAR_OFF = {}                # schema name -> why the JSON grammar cannot be built for it; such a card is written without the grammar from then on
 
 
 def stop_requested() -> bool:

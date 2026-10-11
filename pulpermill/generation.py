@@ -89,6 +89,36 @@ def strip_markdown(v):
     return v
 
 
+def grammar_problem(schema):
+    """Why the JSON grammar cannot be built from this schema, or None when it can. Needs no model: only the library's
+    own converter, run on the schema. That tells a broken schema apart from a call that failed for another reason."""
+    from llama_cpp.llama_grammar import LlamaGrammar
+    try:
+        LlamaGrammar.from_json_schema(json.dumps(schema), verbose=False)
+    except Exception as e:
+        return f"{type(e).__name__}: {e}"[:300]
+    return None
+
+
+def grammar_failed(name, schema, error):
+    """A grammar-constrained call raised. The grammar is turned off for this card (and only this card) when the grammar
+    itself cannot be built from its schema; any other cause (out of memory, a hiccup in the library) is only logged, and
+    the grammar stays on for the next call."""
+    try:
+        problem = grammar_problem(schema)
+    except Exception as e:                       # the converter is not available here: the cause cannot be told, so nothing is switched off
+        logger.warning("%s: grammar-constrained generation failed (%s: %s); could not check the schema (%s: %s). Writing this attempt "
+                       "without the grammar; the grammar stays on", name, type(error).__name__, str(error)[:200], type(e).__name__, str(e)[:120])
+        return
+    if problem:
+        runtime.GRAMMAR_OFF[name] = problem
+        logger.warning("%s: the JSON grammar cannot be built from this card's schema (%s). This card is written without the grammar "
+                       "from now on; the other cards keep it", name, problem)
+    else:
+        logger.warning("%s: grammar-constrained generation failed (%s: %s), but the schema converts fine, so the cause is elsewhere. "
+                       "Writing this attempt without the grammar; the grammar stays on", name, type(error).__name__, str(error)[:200])
+
+
 def structured_call(prompt: str, model_cls, max_tokens: int = 2000, temperature: float | None = None, post=None,
                     min_tokens: int = 1000, tweak=None):
     """Ask for JSON matching model_cls. `post` (e.g. an id resolver) runs inside the retry loop, so its errors are retried too."""
@@ -107,7 +137,7 @@ def structured_call(prompt: str, model_cls, max_tokens: int = 2000, temperature:
         runtime.llm.reset()
     ask, last_err, cut_off = prompt, None, False
     for attempt in range(config.MAX_RETRIES + 1):
-        grammar = config.GRAMMAR_MODE != "never" and runtime.GRAMMAR_OK[0] and (config.GRAMMAR_MODE == "always" or attempt > 0)
+        grammar = config.GRAMMAR_MODE != "never" and model_cls.__name__ not in runtime.GRAMMAR_OFF and (config.GRAMMAR_MODE == "always" or attempt > 0)
         # a repeat penalty would punish the quotes, commas and keys that JSON has to repeat, so the free attempt has none
         kw = dict(temperature=temperature, top_p=0.95, top_k=64, repeat_penalty=1.05 if grammar else 1.0, max_tokens=max_tokens,
                   **runtime.seed_kw(attempt))
@@ -121,8 +151,7 @@ def structured_call(prompt: str, model_cls, max_tokens: int = 2000, temperature:
             except runtime.Cancelled:
                 raise
             except Exception as e:
-                log.warning("grammar-constrained generation failed (%s); using plain generation from now on", str(e)[:200])
-                runtime.GRAMMAR_OK[0] = False
+                grammar_failed(model_cls.__name__, schema, e)
         if text is None:
             text, finish = llm_text(msgs, tag, **kw)
         try:
