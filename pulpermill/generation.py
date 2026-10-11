@@ -5,7 +5,7 @@ import time
 
 from . import config, runtime
 from .runtime import log, logger
-from .schema import M
+from .schema import M, Msg
 
 
 def llm_text(messages, label="generation", progress=None, **kw):
@@ -102,6 +102,30 @@ def grammar_problem(schema):
         LlamaGrammar.from_json_schema(json.dumps(schema), verbose=False)
     except Exception as e:
         return f"{type(e).__name__}: {e}"[:300]
+    return None
+
+
+# Messages for failures inside the model or the GPU. The raw error stays in the log (every job failure is logged with its traceback).
+OOM_MSG = M("The backend ran out of memory. Try again. If it keeps happening, send less text (fewer cards, shorter summaries or a shorter previous chapter), "
+            "or restart the notebook session.")
+CUDA_MSG = M("The GPU reported an error, and the model may not work any more. Try again; if it fails again, restart the notebook session.")
+DECODE_MSG = M("The model failed while processing the text. Try again; if it fails again, restart the notebook session.")
+_OOM_WORDS = ("out of memory", "cudamalloc failed", "failed to allocate", "unable to allocate")
+_CUDA_WORDS = ("cuda error", "cublas", "cudnn", "ggml_cuda", "illegal memory access", "cuda driver")
+_DECODE_WORDS = ("llama_decode returned", "llama_eval returned", "failed to decode")
+
+
+def friendly_error(e):
+    """A plain, translatable message for a failure inside the model or on the GPU (out of memory, a CUDA error, a failed decode), or None
+    for any other error, which keeps being shown as it is. An error that already carries a message of ours is left alone too."""
+    if e.args and isinstance(e.args[0], Msg):
+        return None
+    if isinstance(e, MemoryError):
+        return OOM_MSG
+    text = f"{type(e).__name__}: {e}".lower()
+    for words, msg in ((_OOM_WORDS, OOM_MSG), (_CUDA_WORDS, CUDA_MSG), (_DECODE_WORDS, DECODE_MSG)):
+        if any(w in text for w in words):
+            return msg
     return None
 
 

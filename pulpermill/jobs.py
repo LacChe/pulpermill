@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Optional
 from . import config, runtime
 from .runtime import CANCEL, CURRENT, Cancelled, LLM_LOCK, log
 from .chapter import run_chapter
+from .generation import friendly_error
 from .stages import NotBuilt, STAGES
 from .schema import M, Msg, to_json
 
@@ -36,7 +37,7 @@ _LAST_PROGRESS = {}              # job id -> when it last reported anything
 
 def _fail(e):
     """The job record for an exception: the English text, plus the translatable message when the error carries one."""
-    m = e.args[0] if e.args and isinstance(e.args[0], Msg) else None
+    m = e.args[0] if e.args and isinstance(e.args[0], Msg) else friendly_error(e)       # a GPU or model failure gets a plain sentence (the raw error is in the log)
     text = str(m) if m is not None else (str(e) if isinstance(e, (ValueError, NotBuilt)) else f"{type(e).__name__}: {e}")
     return {"status": "error", "error": text, "error_msg": to_json(m) if m is not None else None}
 

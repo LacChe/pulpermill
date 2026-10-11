@@ -23,7 +23,7 @@ def _lang(code):
 
 def _why(e):
     """The message of an exception, keeping it translatable when it carries one."""
-    return e.args[0] if e.args and isinstance(e.args[0], Msg) else str(e)
+    return e.args[0] if e.args and isinstance(e.args[0], Msg) else (generation.friendly_error(e) or str(e))
 
 
 def summarize_chapter(chapter_text, chapter_num, language="en", narrator=""):
