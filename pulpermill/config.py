@@ -17,6 +17,7 @@ N_THREADS = None          # CPU threads (only matters if some layers end up on t
 # ---------------------------------------------------------------- CARD generation settings
 TEMPS = {"style": 0.7, "characters": 0.4, "world": 0.4, "outline": 0.4, "beat": 0.5}   # lower = sticks closer to your notes
 GEN_TEMP = 0.7            # fallback
+CARD_TOP_P, CARD_TOP_K = 0.95, 64   # nucleus and top-k sampling for every card (chapters have their own, in CHAPTER_GEN)
 MAX_TOKENS = {"style": 2000, "characters": 5500, "world": 4000, "outline": 3500, "beat": 2500}   # answer budget per stage
 CHARS_PER_TOKEN = 3.5     # conservative, for the length counters in the page
 INSTRUCTION_TOKENS = 1200 # rough size of each stage's instructions, for the page's limits

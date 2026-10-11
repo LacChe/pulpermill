@@ -170,7 +170,7 @@ def structured_call(prompt: str, model_cls, max_tokens: int = 2000, temperature:
     for attempt in range(config.MAX_RETRIES + 1):
         grammar = config.GRAMMAR_MODE != "never" and model_cls.__name__ not in runtime.GRAMMAR_OFF and (config.GRAMMAR_MODE == "always" or attempt > 0)
         # a repeat penalty would punish the quotes, commas and keys that JSON has to repeat, so the free attempt has none
-        kw = dict(temperature=temperature, top_p=0.95, top_k=64, repeat_penalty=1.05 if grammar else 1.0, max_tokens=max_tokens,
+        kw = dict(temperature=temperature, top_p=config.CARD_TOP_P, top_k=config.CARD_TOP_K, repeat_penalty=1.05 if grammar else 1.0, max_tokens=max_tokens,
                   **runtime.seed_kw(attempt))
         msgs = [{"role": "user", "content": ask}]
         runtime.report(attempt=attempt + 1, tokens=0, max_tokens=max_tokens)
