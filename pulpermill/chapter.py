@@ -139,7 +139,7 @@ def extract_state_update(story, chapter_text, chapter_num, retries=None, languag
             generation.log_bad_reply(f"chapter {chapter_num} state update (try {attempt})", raw, finish, e)
             last_error, cut_off = e, finish == "length"
             # Each retry restates the original prompt plus the specific failure, not stacked corrections.
-            prompt = base_prompt + EXTRACT_STATE_UPDATE_RETRY_SUFFIX.format(error=e)
+            prompt = base_prompt + EXTRACT_STATE_UPDATE_RETRY_SUFFIX.format(error=str(e)[:config.RETRY_ERROR_CHARS])
     if cut_off:                                  # the last reply ran into the token limit: say that, not "did not validate"
         raise ValueError(M("chapter {n}: the state update hit the {limit}-token limit before it was complete, after {tries} attempt(s)",
                            n=chapter_num, limit=config.EXTRACT_GEN.get("max_tokens"), tries=retries + 1)) from last_error

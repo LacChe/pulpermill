@@ -194,7 +194,7 @@ def structured_call(prompt: str, model_cls, max_tokens: int = 2000, temperature:
             last_err, cut_off = e, finish == "length"
             log.warning("attempt %d failed: %s", attempt + 1, str(e)[:300])
             log_bad_reply(tag, text, finish, e)
-            ask = (prompt + "\n\nYour previous reply could not be used:\n" + str(e)[:800]
+            ask = (prompt + "\n\nYour previous reply could not be used:\n" + str(e)[:config.RETRY_ERROR_CHARS]
                    + "\nReply again with one corrected JSON object and nothing else.")
     if cut_off:                                  # the last reply ran into the token limit: say that, not "bad JSON"
         raise ValueError(M("the model's reply hit the {limit}-token limit before the JSON was complete, after {n} tries. "
