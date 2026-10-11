@@ -89,7 +89,7 @@ def health():
     ok = loaded and not (probe and probe["state"] == "failed")
     body = {"ok": ok}
     if not loaded:                                  # the reason comes first: the page shows only the start of an error answer
-        body["why"] = "the model is not loaded yet: run the cell that loads it"
+        body["why"] = NOT_LOADED
     elif not ok:
         body["why"] = "the model failed a one-token test (" + probe["detail"] + "): restart the session"
     body.update(model=config.MODEL_FILE, model_loaded=loaded, busy=job is not None, job=job, uptime_s=int(time.time() - _STARTED),
@@ -153,18 +153,42 @@ def schema_hints():
     return ui_hints()
 
 
+CARD_SCHEMAS = {"style": StyleCard, "characters": CastDraft, "world": WorldDraft, "outline": OutlineDraft}
+NOT_LOADED = "the model is not loaded yet: run the cell that loads it"
+_FIXED_TOKENS = {}                       # card -> tokens of its schema as the model counts them; fixed for the session, so counted once
+
+
+def _fixed_tokens():
+    """The schema token counts, counted on first use, with the model not generating (the lock keeps the tokenizer off the model while
+    a generation runs). None when a generation holds the model for longer than config.LIMITS_LOCK_WAIT_SECONDS."""
+    if not _FIXED_TOKENS:
+        if not runtime.LLM_LOCK.acquire(timeout=config.LIMITS_LOCK_WAIT_SECONDS):
+            return None
+        try:
+            for k, c in CARD_SCHEMAS.items():
+                _FIXED_TOKENS[k] = len(runtime.llm.tokenize(json.dumps(c.model_json_schema()).encode("utf-8")))
+        finally:
+            runtime.LLM_LOCK.release()
+    return _FIXED_TOKENS
+
+
+if runtime.llm is not None:                  # the launcher loads the model first: counted here, once, before any request can arrive
+    _fixed_tokens()
+
+
 @app.get("/limits")
 def limits():
     """Sizes the page needs to show how much text each card can take."""
-    def toks(cls):
-        text = json.dumps(cls.model_json_schema())
-        return len(runtime.llm.tokenize(text.encode("utf-8")))
-    cls = {"style": StyleCard, "characters": CastDraft, "world": WorldDraft, "outline": OutlineDraft}
+    if runtime.llm is None:
+        return JSONResponse({"error": NOT_LOADED}, status_code=503)
+    fixed = _fixed_tokens()
+    if fixed is None:
+        return JSONResponse({"error": "The model is busy with a generation right now. Try again in a moment."}, status_code=503)
     return {"n_ctx": config.N_CTX, "chars_per_token": config.CHARS_PER_TOKEN, "retry_reserve": config.RETRY_RESERVE,
             "max_characters": MAX_CHARACTERS, "max_cast": MAX_CAST, "max_chapters": MAX_CHAPTERS, "recent_n": RECENT_N,
             "default_words": config.DEFAULT_TARGET_WORDS, "languages": list(config.LANGUAGES),
             "max_import_json": config.MAX_REQUEST_JSON, "max_import_files": config.MAX_IMPORT_FILES,
-            "stages": {k: {"out": config.MIN_TOKENS[k], "fixed": toks(c) + config.INSTRUCTION_TOKENS} for k, c in cls.items()}}
+            "stages": {k: {"out": config.MIN_TOKENS[k], "fixed": fixed[k] + config.INSTRUCTION_TOKENS} for k in CARD_SCHEMAS}}
 
 
 class ImportItem(BaseModel):
