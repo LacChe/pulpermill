@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pulpermill</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1>Pulpermill</h1>
+  <label><span data-i18n="Backend URL (ngrok)"></span><input id="base" placeholder="https://xxxx.ngrok-free.app" autocomplete="off"></label>
+  <button id="test" data-i18n="Test connection"></button>
+  <span id="conn" role="status"></span>
+  <label><span data-i18n="Story name (used in file names)"></span><input id="slug" data-i18n-ph="my_story" placeholder="my_story" autocomplete="off"></label>
+  <div class="seg" id="langseg" role="group" data-i18n-aria="Language" aria-label="Language">
+    <button id="lang-en" type="button" aria-pressed="true">English</button><button id="lang-zh" type="button" aria-pressed="false">简体中文</button>
+  </div>
+  <label class="seedl"><span data-i18n="Seed (blank = random)"></span><input id="seed" type="number" step="1" autocomplete="off"></label>
+  <span id="seedinfo" class="ro" hidden><span id="lastseed"></span> <button id="useseed" type="button" class="sm" data-i18n="Use it"></button></span>
+  <span class="grow"></span>
+  <button id="stopbtn" class="danger" hidden></button>
+  <button id="exportstory" data-i18n="Export story (.md)"></button>
+</header>
+<div id="banner" role="alert"></div>
+<div class="app">
+  <nav id="nav" data-i18n-aria="Chapters" aria-label="Chapters"></nav>
+  <main id="mid"></main>
+  <aside id="right" data-i18n-aria="Story" aria-label="Story"></aside>
+</div>
+<input type="file" id="importfile" accept=".json,application/json" multiple hidden>
+<input type="file" id="projfile" accept=".json,application/json" hidden>
+
+<!-- Plain scripts, not modules, so the page works when opened from disk (file://). They share one global scope: the order matters. -->
+<script src="js/i18n_zh.js"></script>
+<script src="js/util.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/state.js"></script>
+<script src="js/api.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/budget.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/export.js"></script>
+<script src="js/project.js"></script>
+<script src="js/generate.js"></script>
+<script src="js/import.js"></script>
+<script src="js/views.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
