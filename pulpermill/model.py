@@ -16,6 +16,24 @@ def gpu_report():
         return []
 
 
+# Errors that more load attempts cannot fix: a missing or unreadable file, a library that is not there, an argument this build does not
+# know. Anything else is retried as before: llama-cpp-python reports even an out-of-memory load only as "Failed to load model", so
+# an error that says nothing is treated as maybe-memory. (Once the loader shows llama.cpp's own output, this can be made exact.)
+_HOPELESS = (FileNotFoundError, PermissionError, ImportError, TypeError)
+
+
+def _hopeless(e):
+    return isinstance(e, _HOPELESS) or (isinstance(e, ValueError) and "does not exist" in str(e))
+
+
+def _check_gguf(path):
+    """Fails at once, with a clear message, when the downloaded file is not a GGUF model at all (a damaged or wrong file)."""
+    with open(path, "rb") as f:
+        head = f.read(4)
+    if head != b"GGUF":
+        raise ValueError(f"{path} is not a GGUF model file (it starts with {head!r}). Delete it and download the model again.")
+
+
 def _build_llama():
     """Downloads (if needed) and loads the GGUF model with the gemma chat template.
     On two GPUs it offloads everything (full model + KV cache can OOM on one card with this model); on one GPU it tries
@@ -31,6 +49,7 @@ def _build_llama():
         hf_token = None
         log.info("no HF_TOKEN available (%s: %s); downloading without a token", type(e).__name__, str(e)[:120])
     model_path = hf_hub_download(repo_id=config.MODEL_REPO, filename=config.MODEL_FILE, local_dir=config.MODEL_DIR, token=hf_token)
+    _check_gguf(model_path)
 
     try:
         gpu_count = int(subprocess.check_output(
@@ -53,6 +72,9 @@ def _build_llama():
             except Exception as e:
                 last = e
                 log.warning("load failed (flash attention %s): %s", "on" if fa else "off", str(e)[:200])
+                if _hopeless(e):                # another setting or fewer layers cannot fix this: stop now
+                    log.error("the model cannot be loaded and no other setting will help (%s: %s)", type(e).__name__, str(e)[:200])
+                    raise
         raise last
 
     if gpu_count >= 2:
@@ -65,6 +87,8 @@ def _build_llama():
         try:
             return attempt(n_gpu_layers=n_layers, main_gpu=0)
         except Exception as e:
+            if _hopeless(e):
+                raise
             last_error = e
     raise RuntimeError("could not load the model at any offload level on a single GPU") from last_error
 
