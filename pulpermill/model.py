@@ -367,6 +367,24 @@ def _build_llama():
     raise RuntimeError(f"could not load the model at any offload level on {where}") from last_error
 
 
+def _warm_up(llm):
+    """One real generation of a single token, the way chapters and cards ask for one (through the chat template). The first generation
+    after a load is where a broken build or a bad CUDA state shows, and where the GPU kernels are first set up: better here, in the
+    load cell, than in the middle of the first job. The model is reset afterwards, so nothing of this stays in its cache."""
+    _LLAMA_LOG.clear()
+    started = time.monotonic()
+    try:
+        out = llm.create_chat_completion(messages=[{"role": "user", "content": "Hi"}], max_tokens=1, temperature=0.0)
+        if not out.get("choices"):
+            raise RuntimeError("the model returned no answer")
+    finally:
+        try:
+            llm.reset()
+        except Exception:
+            pass
+    logger.info("warm-up generation worked (%.1f s)", time.monotonic() - started)
+
+
 def load_model():
     """Loads the model into runtime.llm (the slot every generation reads) and returns it. Run again while a model is loaded, it
     leaves that one alone: a second copy would be loaded while the first still holds the GPU memory, and run out of it."""
@@ -374,6 +392,20 @@ def load_model():
         log.info("the model is already loaded, so it is not loaded a second time (that would run out of GPU memory). "
                  "To load it again with different settings, restart the session first.")
         return runtime.llm
-    runtime.llm = _build_llama()
+    llm = _build_llama()
+    try:
+        _warm_up(llm)
+    except Exception as e:                      # a model that cannot generate is not put in the slot: the next run of this cell tries again
+        logger.error("the model loaded but could not generate (%s: %s)", type(e).__name__, str(e)[:200])
+        _show_llama_output()
+        try:
+            llm.close()                         # give the GPU memory back now, not whenever the traceback is let go
+        except Exception:
+            pass
+        llm = None                              # (so the error raised below does not keep the model alive through this frame)
+        _release(e)
+        raise RuntimeError(f"the model loaded but could not generate a single token ({type(e).__name__}: {str(e)[:200]}). "
+                           "Run this cell again; if it keeps failing, restart the session.") from e
+    runtime.llm = llm
     log.info("model loaded; GPU memory now: %s", gpu_report())
     return runtime.llm
