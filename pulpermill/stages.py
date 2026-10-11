@@ -5,7 +5,7 @@ import re
 from . import config, generation, prompts
 from .prompts import _language, language_head, style_prompt
 from .schema import (
-    CastDraft, M, MAX_CHARACTERS, OutlineDraft, StyleCard, WorldBible, WorldDraft, _CJK, chapter_count_in,
+    CastDraft, M, MAX_CHARACTERS, NextBeatD, OutlineDraft, StateUpdate, StyleCard, WorldBible, WorldDraft, _CJK, chapter_count_in,
     check_characters, check_outline, check_world, finalize_cast, finalize_outline, finalize_world
 )
 
@@ -85,12 +85,17 @@ def cast_post(d, notes):
     return finalize_cast(d, notes)
 
 
+def cast_tweak(schema):
+    """The cast card's schema as the model is asked for it: at most MAX_CHARACTERS people."""
+    schema["properties"]["characters"].update(maxItems=MAX_CHARACTERS)
+
+
 def run_characters(req):
     prompt = prompts.characters_prompt(req)
     notes: list = []
     cards = generation.structured_call(language_head(req) + prompt, CastDraft, max_tokens=config.MAX_TOKENS["characters"], temperature=config.TEMPS["characters"],
                            min_tokens=config.MIN_TOKENS["characters"], post=lang_post(req, lambda d: cast_post(d, notes)),
-                           tweak=lambda sc: sc["properties"]["characters"].update(maxItems=MAX_CHARACTERS))
+                           tweak=cast_tweak)
     return [c.model_dump(mode="json") for c in cards], notes + check_characters(cards, set())
 
 
@@ -123,3 +128,6 @@ def run_outline(req):
 
 
 STAGES = {"style": run_style, "characters": run_characters, "world": run_world, "outline": run_outline}
+
+# Every schema the model is asked to write as JSON, with the tweak structured_call applies to it: the startup grammar check builds a grammar from each.
+GRAMMAR_CHECKS = [(StyleCard, None), (CastDraft, cast_tweak), (WorldDraft, None), (OutlineDraft, None), (NextBeatD, None), (StateUpdate, None)]

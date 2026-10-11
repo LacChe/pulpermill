@@ -100,6 +100,32 @@ def grammar_problem(schema):
     return None
 
 
+def check_grammars(entries):
+    """Startup check: builds the JSON grammar from every schema in `entries` ((model class, tweak or None), the tweak being
+    what structured_call applies to the schema) and logs the result. A schema whose grammar cannot be built is put in
+    GRAMMAR_OFF now, so its first real call does not have to fail to find out. Needs no model and never raises. Returns
+    {class name: problem or None}, empty when the library's converter is not available."""
+    results = {}
+    for cls, tweak in entries:
+        try:
+            schema = cls.model_json_schema()
+            if tweak:
+                tweak(schema)
+            results[cls.__name__] = grammar_problem(schema)
+        except ImportError as e:
+            logger.warning("JSON grammar check skipped: the converter is not available (%s)", str(e)[:120])
+            return {}
+        except Exception as e:                   # a schema that cannot even be produced is as bad as one that does not convert
+            results[cls.__name__] = f"{type(e).__name__}: {e}"[:300]
+    bad = {name: why for name, why in results.items() if why}
+    runtime.GRAMMAR_OFF.update(bad)
+    for name, why in bad.items():
+        logger.warning("JSON grammar check: %s cannot be converted (%s). This card is written without the grammar", name, why)
+    if results and not bad:
+        logger.info("JSON grammar check: all %d schemas convert (%s)", len(results), ", ".join(results))
+    return results
+
+
 def grammar_failed(name, schema, error):
     """A grammar-constrained call raised. The grammar is turned off for this card (and only this card) when the grammar
     itself cannot be built from its schema; any other cause (out of memory, a hiccup in the library) is only logged, and

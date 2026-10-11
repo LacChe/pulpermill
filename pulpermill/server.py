@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 from typing import Annotated, Any, Optional
 
-from . import config, model, runtime
+from . import config, generation, model, runtime, stages
 from .runtime import CANCEL, logger
 from .importer import import_cards
 from .jobs import BUSY_MSG, JOBS, JOBS_LOCK, _start_job, _work, _work_chapter
@@ -36,6 +36,8 @@ AnyJson = Annotated[Any, AfterValidator(_small_json)]
 
 
 app = FastAPI()
+
+generation.check_grammars(stages.GRAMMAR_CHECKS)         # once, when this module loads: which card schemas the JSON grammar can be built from
 
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
