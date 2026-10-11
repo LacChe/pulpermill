@@ -63,8 +63,9 @@ def log_bad_reply(label, text, finish, error):
         shown = f"{text[:half]}\n[... {len(text) - 2 * half} characters left out ...]\n{text[-half:]}"
     else:
         shown = text
-    logger.warning("%s: unusable reply (%d characters, finished: %s): %s\n--- reply ---\n%s\n--- end of reply ---",
-                   label, len(text), finish, str(error)[:300], shown)
+    cause = "reply cut off at the token limit" if finish == "length" else "unusable reply"
+    logger.warning("%s: %s (%d characters, finished: %s): %s\n--- reply ---\n%s\n--- end of reply ---",
+                   label, cause, len(text), finish, str(error)[:300], shown)
 
 
 def extract_json(text: str):
@@ -104,7 +105,7 @@ def structured_call(prompt: str, model_cls, max_tokens: int = 2000, temperature:
         tweak(schema)
     with runtime.LLM_LOCK:             # every generation starts from an empty context, nothing carries over from earlier runs
         runtime.llm.reset()
-    ask, last_err = prompt, None
+    ask, last_err, cut_off = prompt, None, False
     for attempt in range(config.MAX_RETRIES + 1):
         grammar = config.GRAMMAR_MODE != "never" and runtime.GRAMMAR_OK[0] and (config.GRAMMAR_MODE == "always" or attempt > 0)
         # a repeat penalty would punish the quotes, commas and keys that JSON has to repeat, so the free attempt has none
@@ -130,9 +131,12 @@ def structured_call(prompt: str, model_cls, max_tokens: int = 2000, temperature:
         except runtime.Cancelled:
             raise
         except Exception as e:                       # bad JSON or failed validation
-            last_err = e
+            last_err, cut_off = e, finish == "length"
             log.warning("attempt %d failed: %s", attempt + 1, str(e)[:300])
             log_bad_reply(tag, text, finish, e)
             ask = (prompt + "\n\nYour previous reply could not be used:\n" + str(e)[:800]
                    + "\nReply again with one corrected JSON object and nothing else.")
+    if cut_off:                                  # the last reply ran into the token limit: say that, not "bad JSON"
+        raise ValueError(M("the model's reply hit the {limit}-token limit before the JSON was complete, after {n} tries. "
+                           "Try again, or ask for less in one go.", limit=max_tokens, n=config.MAX_RETRIES + 1))
     raise ValueError(M("the model could not produce valid output after {n} tries: {why}", n=config.MAX_RETRIES + 1, why=str(last_err)[:300]))

@@ -31,7 +31,9 @@ def summarize_chapter(chapter_text, chapter_num, language="en", narrator=""):
     since the world card tracks only object owners and locations and who knows each hidden truth."""
     prompt = SUMMARIZE_CHAPTER_PROMPT.format(chapter_num=chapter_num, chapter_text=chapter_text, language=_lang(language)["name"],
                                            narrator=narrator or "the point-of-view character")
-    raw, _ = generation.llm_text([{"role": "user", "content": prompt}], f"chapter {chapter_num} summary", **config.SUMMARY_GEN)
+    raw, finish = generation.llm_text([{"role": "user", "content": prompt}], f"chapter {chapter_num} summary", **config.SUMMARY_GEN)
+    if finish == "length":
+        logger.warning("Chapter %d summary stopped at the %s-token limit, so it may end mid-sentence", chapter_num, config.SUMMARY_GEN.get("max_tokens"))
     # Strip markdown noise; underscores are left alone so snake_case ids in the text survive.
     return re.sub(r"[*#]{1,3}", "", raw.strip()).strip()
 
@@ -127,7 +129,7 @@ def extract_state_update(story, chapter_text, chapter_num, retries=None, languag
         known_locations=known_locations, known_groups=known_groups, chapter_num=chapter_num, chapter_text=chapter_text,
         language=_lang(language)["name"])
 
-    prompt, last_error = base_prompt, None
+    prompt, last_error, cut_off = base_prompt, None, False
     for attempt in range(1, retries + 2):
         raw, finish = generation.llm_text([{"role": "user", "content": prompt}], f"chapter {chapter_num} state update (try {attempt})", **config.EXTRACT_GEN, **runtime.seed_kw(attempt - 1))
         try:
@@ -135,9 +137,12 @@ def extract_state_update(story, chapter_text, chapter_num, retries=None, languag
         except Exception as e:
             logger.warning("State update attempt %d/%d failed to validate: %s", attempt, retries + 1, e)
             generation.log_bad_reply(f"chapter {chapter_num} state update (try {attempt})", raw, finish, e)
-            last_error = e
+            last_error, cut_off = e, finish == "length"
             # Each retry restates the original prompt plus the specific failure, not stacked corrections.
             prompt = base_prompt + EXTRACT_STATE_UPDATE_RETRY_SUFFIX.format(error=e)
+    if cut_off:                                  # the last reply ran into the token limit: say that, not "did not validate"
+        raise ValueError(M("chapter {n}: the state update hit the {limit}-token limit before it was complete, after {tries} attempt(s)",
+                           n=chapter_num, limit=config.EXTRACT_GEN.get("max_tokens"), tries=retries + 1)) from last_error
     raise ValueError(M("chapter {n}: state update did not validate after {tries} attempt(s)", n=chapter_num, tries=retries + 1)) from last_error
 
 
