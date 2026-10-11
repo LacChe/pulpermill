@@ -385,6 +385,65 @@ def _warm_up(llm):
     logger.info("warm-up generation worked (%.1f s)", time.monotonic() - started)
 
 
+_SAMPLE_CHAT = [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi there"}, {"role": "user", "content": "How are you?"}]
+
+
+def _special_text(llm, token_id):
+    return llm.detokenize([token_id], special=True).decode("utf-8", "replace") if token_id is not None and token_id >= 0 else ""
+
+
+def _compare_chat_template(llm):
+    from llama_cpp import llama_chat_format
+
+    # 1. the tokens that end a reply
+    eos, bos = llm.token_eos(), llm.token_bos()
+    marks = {}
+    for text in ("<end_of_turn>", "<start_of_turn>"):
+        ids = llm.tokenize(text.encode(), add_bos=False, special=True)
+        marks[text] = ids[0] if len(ids) == 1 else None
+        if len(ids) != 1:
+            logger.warning("%s does not tokenize as one token here (it gives %s): the chat format's turn markers may not work", text, ids)
+    try:
+        import llama_cpp
+        eog = bool(llama_cpp.llama_vocab_is_eog(llm._model.vocab, marks["<end_of_turn>"])) if marks["<end_of_turn>"] is not None else None
+    except Exception:
+        eog = None                                  # this library version does not say
+    logger.info("tokens: end-of-sequence %s (%r), beginning %s (%r), <end_of_turn> %s, <start_of_turn> %s; generation stops at the end-of-turn "
+                "token: %s", eos, _special_text(llm, eos), bos, _special_text(llm, bos), marks["<end_of_turn>"], marks["<start_of_turn>"],
+                {True: "yes", False: "NO", None: "not known"}[eog])
+    if eog is False:
+        logger.warning("<end_of_turn> is not an end-of-generation token in this model file: replies may run on past the end of the turn")
+
+    # 2. what the chat format the project uses produces, against what the GGUF's own template would produce, as tokens
+    name = llm.chat_format
+    ours = getattr(llama_chat_format, "format_" + str(name).replace("-", "_"), None)
+    template = (llm.metadata or {}).get("tokenizer.chat_template")
+    if ours is None or not template:
+        logger.info("chat template: nothing to compare (chat format %r, the GGUF has %s)", name, "a template" if template else "no template")
+        return
+    mine = ours(messages=_SAMPLE_CHAT)
+    theirs = llama_chat_format.Jinja2ChatFormatter(template=template, eos_token=_special_text(llm, eos), bos_token=_special_text(llm, bos))(messages=_SAMPLE_CHAT)
+    a = llm.tokenize(mine.prompt.encode(), add_bos=not getattr(mine, "added_special", False), special=True)
+    b = llm.tokenize(theirs.prompt.encode(), add_bos=not getattr(theirs, "added_special", False), special=True)
+    logger.info("chat format %r also stops at the text %r", name, mine.stop)
+    if a == b:
+        logger.info("chat template: the %r chat format gives the same tokens as the GGUF's own template (%d tokens for a 3-message sample)", name, len(a))
+        return
+    i = next((k for k, (x, y) in enumerate(zip(a, b)) if x != y), min(len(a), len(b)))
+    window = lambda t: llm.detokenize(t[max(i - 3, 0):i + 6], special=True).decode("utf-8", "replace")
+    logger.warning("chat template: the %r chat format and the GGUF's own template give DIFFERENT tokens (%d against %d; first difference at token %d)\n"
+                   "    chat format: ...%r\n    GGUF's own: ...%r\n    (the project uses the chat format)", name, len(a), len(b), i, window(a), window(b))
+
+
+def _report_chat_template(llm):
+    """Report only, nothing is changed: the end-of-turn setup and whether the chat format matches the GGUF's own template.
+    Never raises: a library version that lacks something just gets a note."""
+    try:
+        _compare_chat_template(llm)
+    except Exception as e:
+        logger.warning("could not check the chat template and end-of-turn setup (%s: %s)", type(e).__name__, str(e)[:200])
+
+
 def load_model():
     """Loads the model into runtime.llm (the slot every generation reads) and returns it. Run again while a model is loaded, it
     leaves that one alone: a second copy would be loaded while the first still holds the GPU memory, and run out of it."""
@@ -406,6 +465,7 @@ def load_model():
         _release(e)
         raise RuntimeError(f"the model loaded but could not generate a single token ({type(e).__name__}: {str(e)[:200]}). "
                            "Run this cell again; if it keeps failing, restart the session.") from e
+    _report_chat_template(llm)
     runtime.llm = llm
     log.info("model loaded; GPU memory now: %s", gpu_report())
     return runtime.llm
