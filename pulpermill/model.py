@@ -435,6 +435,30 @@ def _compare_chat_template(llm):
                    "    chat format: ...%r\n    GGUF's own: ...%r\n    (the project uses the chat format)", name, len(a), len(b), i, window(a), window(b))
 
 
+def probe():
+    """One token from the loaded model, to see that it still works (a CUDA error in the middle of a session leaves a model that
+    loads fine and fails on every request). Never waits for the model: when a generation holds it, nothing is asked.
+    Returns ("ok" | "failed" | "skipped", detail)."""
+    llm = runtime.llm
+    if llm is None:
+        return "skipped", "no model is loaded"
+    if not runtime.LLM_LOCK.acquire(blocking=False):
+        return "skipped", "the model is in use"
+    try:
+        out = llm.create_chat_completion(messages=[{"role": "user", "content": "Hi"}], max_tokens=1, temperature=0.0)
+        if not out.get("choices"):
+            return "failed", "the model returned no answer"
+        return "ok", ""
+    except Exception as e:
+        return "failed", f"{type(e).__name__}: {str(e)[:200]}"
+    finally:
+        try:
+            llm.reset()
+        except Exception:
+            pass
+        runtime.LLM_LOCK.release()
+
+
 def _report_chat_template(llm):
     """Report only, nothing is changed: the end-of-turn setup and whether the chat format matches the GGUF's own template.
     Never raises: a library version that lacks something just gets a note."""

@@ -41,6 +41,15 @@ def _busy() -> bool:
         return any(j.get("status") == "running" for j in JOBS.values())
 
 
+def running_job():
+    """{"kind", "seconds"} of the job that is running now, or None."""
+    with JOBS_LOCK:
+        for j in JOBS.values():
+            if j.get("status") == "running":
+                return {"kind": j.get("kind"), "seconds": int(time.time() - j.get("started", time.time()))}
+    return None
+
+
 def _start_job(kind: str, **fields) -> Optional[str]:
     """Registers a new running job and returns its id, or returns None if one is already running. The check and the
     registration are one step under the lock, so two requests arriving together cannot both start. Room is made by

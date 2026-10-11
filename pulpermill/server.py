@@ -2,7 +2,9 @@
 
 import json
 import threading
+import time
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 from typing import Annotated, Any, Optional
@@ -10,7 +12,7 @@ from typing import Annotated, Any, Optional
 from . import config, generation, model, runtime, stages
 from .runtime import CANCEL, logger
 from .importer import import_cards
-from .jobs import BUSY_MSG, JOBS, JOBS_LOCK, _start_job, _work, _work_chapter
+from .jobs import BUSY_MSG, JOBS, JOBS_LOCK, _start_job, _work, _work_chapter, running_job
 from .schema import (
     CastDraft, M, MAX_CAST, MAX_CHAPTERS, MAX_CHAPTER_NUM, MAX_CHARACTERS, OutlineDraft, RECENT_N, StyleCard,
     WorldDraft, to_json, ui_hints
@@ -68,9 +70,33 @@ class ChapterRequest(BaseModel):
     cast: list[ShortText] = Field(default=[], max_length=50)              # ids of the characters this chapter is written about (the main character is always added); empty: the beat's own cast
 
 
+_STARTED = time.time()
+_LAST_PROBE = {"at": 0.0, "state": "skipped", "detail": "not asked yet"}
+
+
 @app.get("/health")
 def health():
-    return {"ok": True, "model": config.MODEL_FILE, "gpu": model.gpu_report()}
+    """Whether the backend can actually write: is a model loaded, is a job running, does the idle model still answer. 200 when it can,
+    503 when it cannot (no model, or the model fails its probe), so a connection test shows the problem. The probe asks for one
+    token, at most every config.HEALTH_PROBE_EVERY_SECONDS, and only when no job is running."""
+    loaded = runtime.llm is not None
+    job = running_job()
+    if loaded and job is None and time.time() - _LAST_PROBE["at"] >= config.HEALTH_PROBE_EVERY_SECONDS:
+        state, detail = model.probe()
+        if state != "skipped":
+            _LAST_PROBE.update(at=time.time(), state=state, detail=detail)
+    probe = _LAST_PROBE if loaded and _LAST_PROBE["state"] != "skipped" else None
+    ok = loaded and not (probe and probe["state"] == "failed")
+    body = {"ok": ok}
+    if not loaded:                                  # the reason comes first: the page shows only the start of an error answer
+        body["why"] = "the model is not loaded yet: run the cell that loads it"
+    elif not ok:
+        body["why"] = "the model failed a one-token test (" + probe["detail"] + "): restart the session"
+    body.update(model=config.MODEL_FILE, model_loaded=loaded, busy=job is not None, job=job, uptime_s=int(time.time() - _STARTED),
+                gpu=model.gpu_report())
+    if probe:
+        body["probe"] = {"state": probe["state"], "detail": probe["detail"], "seconds_ago": int(time.time() - probe["at"])}
+    return JSONResponse(body, status_code=200 if ok else 503)
 
 
 @app.post("/generate")

@@ -13,6 +13,7 @@ MODEL_DIR = "/kaggle/working/models"      # created when the model is loaded
 N_CTX, N_BATCH, TENSOR_SPLIT = 16384, 256, [0.58, 0.42]
 FLASH_ATTN = True         # faster attention and a smaller memory footprint; the loader retries without it if this build rejects it
 N_THREADS = None          # CPU threads (only matters if some layers end up on the CPU); None = the library's default
+HEALTH_PROBE_EVERY_SECONDS = 20   # /health asks the idle model for one token to see it still works, but not more often than this (it reports the last answer in between)
 LOG_FILE = None             # a path (say "/kaggle/working/pulpermill.log") to also write the log to, 1 MB at most plus one older copy. Off by default:
                             # the log can hold the model's replies, i.e. story text, and /kaggle/working is saved with the notebook. Set it before the model is loaded.
 LLAMA_LOG_TAIL_LINES = 15   # when a model load fails, this many of the last lines llama.cpp printed during it go to the log
