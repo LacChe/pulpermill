@@ -367,6 +367,7 @@ const ZH={
   "none":"无",
   "the card":"这张卡片",
   "Another generation is still running on the backend. Wait for it to finish, then try again.":"后端还有另一个生成任务在运行。请等它结束后再试。",
+  "The model has not responded for {minutes} minutes and cannot be stopped from here. Restart the notebook session, then run its cells again.":"模型已经 {minutes} 分钟没有响应,无法从这里停止。请重启笔记本会话,然后重新运行其中的单元格。",
   "unknown job (did the notebook restart?)":"未知的任务(笔记本是否重启过?)",
   "unknown stage '{stage}'":"未知的阶段“{stage}”",
   "The import failed unexpectedly: {why}":"导入意外失败:{why}",

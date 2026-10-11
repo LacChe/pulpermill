@@ -12,7 +12,7 @@ from typing import Annotated, Any, Optional
 from . import config, generation, model, runtime, stages
 from .runtime import CANCEL, logger
 from .importer import import_cards
-from .jobs import BUSY_MSG, JOBS, JOBS_LOCK, _start_job, _work, _work_chapter, running_job
+from .jobs import JOBS, JOBS_LOCK, _start_job, _work, _work_chapter, busy_message, running_job, start_watchdog, stuck_job
 from .schema import (
     CastDraft, M, MAX_CAST, MAX_CHAPTERS, MAX_CHAPTER_NUM, MAX_CHARACTERS, OutlineDraft, RECENT_N, StyleCard,
     WorldDraft, to_json, ui_hints
@@ -38,6 +38,7 @@ AnyJson = Annotated[Any, AfterValidator(_small_json)]
 
 
 app = FastAPI()
+start_watchdog()                                         # looks for a hung model call every few seconds (see jobs.stuck_check)
 
 generation.check_grammars(stages.GRAMMAR_CHECKS)         # once, when this module loads: which card schemas the JSON grammar can be built from
 
@@ -86,13 +87,16 @@ def health():
         if state != "skipped":
             _LAST_PROBE.update(at=time.time(), state=state, detail=detail)
     probe = _LAST_PROBE if loaded and _LAST_PROBE["state"] != "skipped" else None
-    ok = loaded and not (probe and probe["state"] == "failed")
+    stuck = stuck_job()
+    ok = loaded and stuck is None and not (probe and probe["state"] == "failed")
     body = {"ok": ok}
     if not loaded:                                  # the reason comes first: the page shows only the start of an error answer
         body["why"] = NOT_LOADED
+    elif stuck:
+        body["why"] = f"the model has not responded for {stuck['minutes']} minutes and cannot be stopped from here: restart the session"
     elif not ok:
         body["why"] = "the model failed a one-token test (" + probe["detail"] + "): restart the session"
-    body.update(model=config.MODEL_FILE, model_loaded=loaded, busy=job is not None, job=job, uptime_s=int(time.time() - _STARTED),
+    body.update(model=config.MODEL_FILE, model_loaded=loaded, busy=job is not None, job=job, stuck=stuck, uptime_s=int(time.time() - _STARTED),
                 gpu=model.gpu_report())
     if probe:
         body["probe"] = {"state": probe["state"], "detail": probe["detail"], "seconds_ago": int(time.time() - probe["at"])}
@@ -104,7 +108,8 @@ def generate(req: GenRequest):
     """Starts a background job and returns at once. Long generations never hold a connection open; the page polls /job/<id>."""
     jid = _start_job("card")
     if jid is None:
-        return {"error": str(BUSY_MSG), "error_msg": to_json(BUSY_MSG)}
+        msg = busy_message()
+        return {"error": str(msg), "error_msg": to_json(msg)}
     threading.Thread(target=_work, args=(jid, req), daemon=True).start()
     return {"job": jid}
 
@@ -115,7 +120,8 @@ def chapter(req: ChapterRequest):
     summary, the updated cards and a readable list of what changed. Same job-and-poll pattern as /generate."""
     jid = _start_job("chapter", chapter_num=req.chapter_num, step="starting", words=0, target_words=req.target_words)
     if jid is None:
-        return {"error": str(BUSY_MSG), "error_msg": to_json(BUSY_MSG)}
+        msg = busy_message()
+        return {"error": str(msg), "error_msg": to_json(msg)}
     threading.Thread(target=_work_chapter, args=(jid, req), daemon=True).start()
     return {"job": jid}
 
