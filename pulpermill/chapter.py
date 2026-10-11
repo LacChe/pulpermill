@@ -26,16 +26,40 @@ def _why(e):
     return e.args[0] if e.args and isinstance(e.args[0], Msg) else (generation.friendly_error(e) or str(e))
 
 
+_SENTENCE_END = re.compile(r"[.!?…。！？][\"'”’」』）)\]]*$")    # . ! ? … 。！？ and any closing quote or bracket after it
+
+
+def summary_cut_off(text, finish):
+    """True when a summary ran into the token limit and stops before the end of its last sentence. A summary that hit the limit
+    but ended on a full stop is complete as it stands."""
+    return finish == "length" and not _SENTENCE_END.search(text)
+
+
 def summarize_chapter(chapter_text, chapter_num, language="en", narrator=""):
     """3-5 sentence continuity summary. It is the only record of ordinary story events (and of who learned what),
-    since the world card tracks only object owners and locations and who knows each hidden truth."""
+    since the world card tracks only object owners and locations and who knows each hidden truth. A summary that is cut off in the
+    middle of a sentence is written again, up to config.SUMMARY_RETRIES times, each time with a different seed; if every try is cut
+    off, the longest one is kept, as before."""
     prompt = SUMMARIZE_CHAPTER_PROMPT.format(chapter_num=chapter_num, chapter_text=chapter_text, language=_lang(language)["name"],
                                            narrator=narrator or "the point-of-view character")
-    raw, finish = generation.llm_text([{"role": "user", "content": prompt}], f"chapter {chapter_num} summary", **config.SUMMARY_GEN)
-    if finish == "length":
-        logger.warning("Chapter %d summary stopped at the %s-token limit, so it may end mid-sentence", chapter_num, config.SUMMARY_GEN.get("max_tokens"))
-    # Strip markdown noise; underscores are left alone so snake_case ids in the text survive.
-    return re.sub(r"[*#]{1,3}", "", raw.strip()).strip()
+    tries = max(config.SUMMARY_RETRIES, 0) + 1
+    best = ""
+    for attempt in range(tries):
+        label = f"chapter {chapter_num} summary" + (f" (try {attempt + 1})" if attempt else "")
+        # the first try is exactly what it always was; a retry adds the job's seed shifted by the try number
+        raw, finish = generation.llm_text([{"role": "user", "content": prompt}], label,
+                                          **config.SUMMARY_GEN, **(runtime.seed_kw(attempt) if attempt else {}))
+        # Strip markdown noise; underscores are left alone so snake_case ids in the text survive.
+        text = re.sub(r"[*#]{1,3}", "", raw.strip()).strip()
+        if not summary_cut_off(text, finish):
+            return text
+        best = max(best, text, key=len)
+        again = f"; writing it again with another seed (try {attempt + 2} of {tries})" if attempt + 1 < tries else ""
+        logger.warning("Chapter %d summary stopped at the %s-token limit in the middle of a sentence%s",
+                       chapter_num, config.SUMMARY_GEN.get("max_tokens"), again)
+    if tries > 1:
+        logger.warning("Chapter %d summary: all %d tries were cut off; keeping the longest, which may end mid-sentence", chapter_num, tries)
+    return best
 
 
 def generate_chapter(story, chapter_num, chapter_summaries, last_chapter_text, target_words, progress=None, language="en", note="", feed=None):
