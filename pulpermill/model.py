@@ -129,6 +129,30 @@ def _tensor_split(gpu_count):
     return [1.0 / gpu_count] * gpu_count
 
 
+_NO_GPU = ("No GPU found (nvidia-smi is missing or lists no devices). In the notebook settings, set the accelerator to GPU T4 x2, "
+           "then run the cells again from the top.")
+
+
+def _gpu_count():
+    """How many NVIDIA GPUs nvidia-smi reports. Raises a RuntimeError that says what to do when there are none (the technical
+    detail goes to the log), instead of letting the second nvidia-smi call fail with a raw traceback."""
+    problems = []
+    try:
+        count = int(subprocess.check_output(["nvidia-smi", "--query-gpu=count", "--format=csv,noheader"], timeout=10).decode().splitlines()[0])
+    except (OSError, subprocess.SubprocessError, ValueError, IndexError) as e:     # the count query is not supported: count the listed GPUs instead
+        problems.append(f"{type(e).__name__}: {str(e)[:150]}")
+        try:
+            count = int(subprocess.check_output(["nvidia-smi", "-L"], timeout=10).decode().count("GPU "))
+        except (OSError, subprocess.SubprocessError, ValueError) as e2:
+            problems.append(f"{type(e2).__name__}: {str(e2)[:150]}")
+            count = 0
+    if count < 1:
+        log.error("no GPU: %s", "; then ".join(problems) or "nvidia-smi reports 0 devices")
+        raise RuntimeError(_NO_GPU)
+    log.info("detected %d GPU(s)", count)
+    return count
+
+
 def _build_llama():
     """Downloads (if needed) and loads the GGUF model with the gemma chat template.
     It tries all layers on the GPU(s) first, then progressively fewer until it loads, the rest running on CPU (slower, but it
@@ -136,6 +160,7 @@ def _build_llama():
     from huggingface_hub import hf_hub_download     # imported here so that importing this module (for gpu_report) needs neither library
     from llama_cpp import Llama
 
+    gpu_count = _gpu_count()                # first, so a notebook without a GPU says so at once instead of after a 17 GB download
     os.makedirs(config.MODEL_DIR, exist_ok=True)
     try:                                    # the repo is not gated, so a missing HF_TOKEN secret is fine
         from kaggle_secrets import UserSecretsClient
@@ -145,13 +170,6 @@ def _build_llama():
         log.info("no HF_TOKEN available (%s: %s); downloading without a token", type(e).__name__, str(e)[:120])
     model_path = hf_hub_download(repo_id=config.MODEL_REPO, filename=config.MODEL_FILE, local_dir=config.MODEL_DIR, token=hf_token)
     _check_gguf(model_path)
-
-    try:
-        gpu_count = int(subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=count", "--format=csv,noheader"]).decode().splitlines()[0])
-    except (OSError, subprocess.SubprocessError, ValueError, IndexError):     # the count query is not supported: count the listed GPUs instead
-        gpu_count = int(subprocess.check_output(["nvidia-smi", "-L"]).decode().count("GPU "))
-    log.info("detected %d GPU(s)", gpu_count)
 
     base = dict(model_path=model_path, n_ctx=config.N_CTX, verbose=False, last_n_tokens_size=8192, n_batch=config.N_BATCH,
                 chat_format="gemma")
