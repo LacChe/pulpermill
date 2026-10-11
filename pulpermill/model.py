@@ -1,4 +1,5 @@
 """Loading the model: once, shared by cards and chapters. load_model() fills runtime.llm. Also gpu_report()."""
+import gc
 import subprocess
 import os
 
@@ -24,6 +25,17 @@ _HOPELESS = (FileNotFoundError, PermissionError, ImportError, TypeError)
 
 def _hopeless(e):
     return isinstance(e, _HOPELESS) or (isinstance(e, ValueError) and "does not exist" in str(e))
+
+
+def _release(error):
+    """After a failed load: the exception's traceback holds the half-built model, and so the GPU memory it already took, for as
+    long as the exception is kept. Drop the tracebacks (the message stays) and collect, so the next attempt starts with that memory free."""
+    seen, e = set(), error
+    while e is not None and id(e) not in seen:
+        seen.add(id(e))
+        e.__traceback__ = None
+        e = e.__cause__ or e.__context__
+    gc.collect()
 
 
 def _check_gguf(path):
@@ -67,6 +79,8 @@ def _build_llama():
         """Flash attention first (faster, smaller memory footprint); without it only if nothing else loads at this setting."""
         last = None
         for fa in ([True, False] if config.FLASH_ATTN else [False]):
+            log.info("loading the model (flash attention %s, %s layers on GPU); GPU memory before: %s",
+                     "on" if fa else "off", kw.get("n_gpu_layers"), gpu_report())
             try:
                 return Llama(**base, flash_attn=fa, **kw)
             except Exception as e:
@@ -75,6 +89,7 @@ def _build_llama():
                 if _hopeless(e):                # another setting or fewer layers cannot fix this: stop now
                     log.error("the model cannot be loaded and no other setting will help (%s: %s)", type(e).__name__, str(e)[:200])
                     raise
+                _release(e)                     # about to try again: give back what the failed attempt took
         raise last
 
     if gpu_count >= 2:
