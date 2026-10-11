@@ -48,8 +48,8 @@ def _check_gguf(path):
 
 def _build_llama():
     """Downloads (if needed) and loads the GGUF model with the gemma chat template.
-    On two GPUs it offloads everything (full model + KV cache can OOM on one card with this model); on one GPU it tries
-    all layers first, then progressively fewer until it loads, the rest running on CPU (slower, but it loads)."""
+    It tries all layers on the GPU(s) first, then progressively fewer until it loads, the rest running on CPU (slower, but it
+    loads). On two GPUs the layers it does offload are shared between the cards by config.TENSOR_SPLIT."""
     from huggingface_hub import hf_hub_download     # imported here so that importing this module (for gpu_report) needs neither library
     from llama_cpp import Llama
 
@@ -92,20 +92,19 @@ def _build_llama():
                 _release(e)                     # about to try again: give back what the failed attempt took
         raise last
 
-    if gpu_count >= 2:
-        return attempt(n_gpu_layers=-1, tensor_split=config.TENSOR_SPLIT, main_gpu=0)
-
+    split = dict(tensor_split=config.TENSOR_SPLIT) if gpu_count >= 2 else {}     # two GPUs share the layers by this ratio
+    where = f"{gpu_count} GPUs" if gpu_count >= 2 else "a single GPU"
     last_error = None
     for n_layers in [-1, 50, 40, 30, 20, 10]:       # this model has 62 transformer blocks
         label = "all layers on GPU" if n_layers == -1 else f"{n_layers}/62 layers on GPU, rest on CPU"
         log.info("attempting model load: %s", label)
         try:
-            return attempt(n_gpu_layers=n_layers, main_gpu=0)
+            return attempt(n_gpu_layers=n_layers, main_gpu=0, **split)
         except Exception as e:
             if _hopeless(e):
                 raise
             last_error = e
-    raise RuntimeError("could not load the model at any offload level on a single GPU") from last_error
+    raise RuntimeError(f"could not load the model at any offload level on {where}") from last_error
 
 
 def load_model():
