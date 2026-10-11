@@ -129,11 +129,12 @@ def extract_state_update(story, chapter_text, chapter_num, retries=None, languag
 
     prompt, last_error = base_prompt, None
     for attempt in range(1, retries + 2):
-        raw, _ = generation.llm_text([{"role": "user", "content": prompt}], f"chapter {chapter_num} state update (try {attempt})", **config.EXTRACT_GEN, **runtime.seed_kw(attempt - 1))
+        raw, finish = generation.llm_text([{"role": "user", "content": prompt}], f"chapter {chapter_num} state update (try {attempt})", **config.EXTRACT_GEN, **runtime.seed_kw(attempt - 1))
         try:
             return StateUpdate.model_validate(generation.extract_json(raw))
         except Exception as e:
             logger.warning("State update attempt %d/%d failed to validate: %s", attempt, retries + 1, e)
+            generation.log_bad_reply(f"chapter {chapter_num} state update (try {attempt})", raw, finish, e)
             last_error = e
             # Each retry restates the original prompt plus the specific failure, not stacked corrections.
             prompt = base_prompt + EXTRACT_STATE_UPDATE_RETRY_SUFFIX.format(error=e)

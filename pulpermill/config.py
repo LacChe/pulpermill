@@ -29,6 +29,8 @@ GRAMMAR_MODE = "fallback"  # "fallback": write the card freely and use the JSON 
 MAX_RETRIES = 1           # regenerations after a first attempt that is not usable JSON for the card. Names that do not match are
                           # repaired in code (and reported), so this only fires on genuinely broken output; each retry costs a full generation
 
+BAD_REPLY_LOG_CHARS = 1500   # when a reply cannot be used, this many characters of it go to the log (the start and the end, if it is longer)
+
 # ---------------------------------------------------------------- CHAPTER generation settings (separate from the cards')
 DEFAULT_TARGET_WORDS = 3000
 CHAPTER_GEN = dict(

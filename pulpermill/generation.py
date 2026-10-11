@@ -4,7 +4,7 @@ import re
 import time
 
 from . import config, runtime
-from .runtime import log
+from .runtime import log, logger
 from .schema import M
 
 
@@ -54,6 +54,19 @@ def llm_text(messages, label="generation", progress=None, **kw):
 
 
 
+def log_bad_reply(label, text, finish, error):
+    """Writes what the model actually said to the log when a reply could not be used (a long one is cut in the middle, so
+    both its start and its end, where a cut-off shows, are kept). Logging only: nothing about the generation changes."""
+    limit = max(config.BAD_REPLY_LOG_CHARS, 2)
+    if len(text) > limit:
+        half = limit // 2
+        shown = f"{text[:half]}\n[... {len(text) - 2 * half} characters left out ...]\n{text[-half:]}"
+    else:
+        shown = text
+    logger.warning("%s: unusable reply (%d characters, finished: %s): %s\n--- reply ---\n%s\n--- end of reply ---",
+                   label, len(text), finish, str(error)[:300], shown)
+
+
 def extract_json(text: str):
     """Pull the first JSON object out of a model reply (handles code fences and chatter)."""
     text = re.sub(r"```(?:json)?", "", text)
@@ -100,17 +113,17 @@ def structured_call(prompt: str, model_cls, max_tokens: int = 2000, temperature:
         msgs = [{"role": "user", "content": ask}]
         runtime.report(attempt=attempt + 1, tokens=0, max_tokens=max_tokens)
         tag = f"{model_cls.__name__} (attempt {attempt + 1}, {'with' if grammar else 'no'} grammar)"
-        text = None
+        text, finish = None, None
         if grammar:
             try:                                         # the grammar guarantees valid JSON with every field
-                text, _ = llm_text(msgs, tag, response_format={"type": "json_object", "schema": schema}, **kw)
+                text, finish = llm_text(msgs, tag, response_format={"type": "json_object", "schema": schema}, **kw)
             except runtime.Cancelled:
                 raise
             except Exception as e:
                 log.warning("grammar-constrained generation failed (%s); using plain generation from now on", str(e)[:200])
                 runtime.GRAMMAR_OK[0] = False
         if text is None:
-            text, _ = llm_text(msgs, tag, **kw)
+            text, finish = llm_text(msgs, tag, **kw)
         try:
             result = model_cls.model_validate(strip_markdown(extract_json(text)))
             return post(result) if post else result
@@ -119,6 +132,7 @@ def structured_call(prompt: str, model_cls, max_tokens: int = 2000, temperature:
         except Exception as e:                       # bad JSON or failed validation
             last_err = e
             log.warning("attempt %d failed: %s", attempt + 1, str(e)[:300])
+            log_bad_reply(tag, text, finish, e)
             ask = (prompt + "\n\nYour previous reply could not be used:\n" + str(e)[:800]
                    + "\nReply again with one corrected JSON object and nothing else.")
     raise ValueError(M("the model could not produce valid output after {n} tries: {why}", n=config.MAX_RETRIES + 1, why=str(last_err)[:300]))
