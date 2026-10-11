@@ -294,7 +294,12 @@ def _build_llama():
 
 
 def load_model():
-    """Loads the model into runtime.llm (the slot every generation reads) and returns it."""
+    """Loads the model into runtime.llm (the slot every generation reads) and returns it. Run again while a model is loaded, it
+    leaves that one alone: a second copy would be loaded while the first still holds the GPU memory, and run out of it."""
+    if runtime.llm is not None:
+        log.info("the model is already loaded, so it is not loaded a second time (that would run out of GPU memory). "
+                 "To load it again with different settings, restart the session first.")
+        return runtime.llm
     runtime.llm = _build_llama()
     log.info("model loaded; GPU memory now: %s", gpu_report())
     return runtime.llm
