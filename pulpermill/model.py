@@ -1,8 +1,12 @@
 """Loading the model: once, shared by cards and chapters. load_model() fills runtime.llm. Also gpu_report()."""
+import errno
 import gc
+import glob
+import shutil
 import struct
 import subprocess
 import os
+import time
 
 from . import config, runtime
 from .runtime import log
@@ -37,6 +41,78 @@ def _release(error):
         e.__traceback__ = None
         e = e.__cause__ or e.__context__
     gc.collect()
+
+
+def _gb(n):
+    return f"{n / 1e9:.1f} GB"
+
+
+def _expected_size(token):
+    """The model file's size in bytes according to the model hub, or None when that cannot be learned (hub unreachable, odd answer)."""
+    try:
+        from huggingface_hub import get_hf_file_metadata, hf_hub_url
+        size = get_hf_file_metadata(hf_hub_url(config.MODEL_REPO, config.MODEL_FILE), token=token).size
+        return int(size) if size else None
+    except Exception as e:
+        log.warning("could not ask the model hub for the file's size (%s: %s)", type(e).__name__, str(e)[:120])
+        return None
+
+
+def _check_disk(expected):
+    """Before the download: is there room for the model file? Counts a partly downloaded copy as already there and skips the
+    check when the whole file is already on disk. With the real size known, too little space is an error (with what to do about it);
+    with only the fallback size it is a warning, since a different model file may be smaller."""
+    target = os.path.join(config.MODEL_DIR, config.MODEL_FILE)
+    if os.path.exists(target) and (expected is None or os.path.getsize(target) == expected):
+        return
+    partial = sum(os.path.getsize(p) for p in glob.glob(os.path.join(config.MODEL_DIR, ".cache", "huggingface", "download", "*.incomplete")))
+    free = shutil.disk_usage(config.MODEL_DIR).free
+    size = expected or config.MODEL_SIZE_FALLBACK_BYTES
+    need = max(size - partial, 0) + config.DISK_HEADROOM_BYTES
+    log.info("disk space: %s free in %s, about %s needed for the model%s", _gb(free), config.MODEL_DIR, _gb(need),
+             "" if expected else " (its size is a guess: the hub did not say)")
+    if free >= need:
+        return
+    if expected is None:
+        log.warning("only %s is free in %s and the model is probably about %s: the download may run out of space",
+                    _gb(free), config.MODEL_DIR, _gb(size))
+        return
+    raise RuntimeError(f"Not enough free disk space for the model: it is {_gb(expected)} and only {_gb(free)} is free in {config.MODEL_DIR} "
+                       f"(about {_gb(need)} is needed with some room to spare). Delete files you no longer need there, then run this cell again.")
+
+
+def _worth_retrying(e):
+    """Whether downloading again could help: not for a full disk, a refused request (404, 401, 403...), a missing library or a
+    permission problem. Anything else (a dropped connection, a timeout, a server error, a throttled request) may pass."""
+    if _hopeless(e) or (isinstance(e, OSError) and e.errno == errno.ENOSPC):
+        return False
+    status = getattr(getattr(e, "response", None), "status_code", None)
+    return not (isinstance(status, int) and 400 <= status < 500 and status not in (408, 429))
+
+
+def _download(hf_hub_download, token):
+    """hf_hub_download with a few attempts and growing waits between them; each attempt resumes a partly downloaded file."""
+    tries = max(config.DOWNLOAD_TRIES, 1)
+    for i in range(tries):
+        try:
+            return hf_hub_download(repo_id=config.MODEL_REPO, filename=config.MODEL_FILE, local_dir=config.MODEL_DIR, token=token)
+        except Exception as e:
+            if i == tries - 1 or not _worth_retrying(e):
+                log.error("the model download failed after %d attempt(s) (%s: %s)", i + 1, type(e).__name__, str(e)[:200])
+                raise
+            wait = config.DOWNLOAD_BACKOFF_SECONDS * 2 ** i
+            log.warning("the model download failed (%s: %s); trying again in %d s (attempt %d of %d)",
+                        type(e).__name__, str(e)[:200], wait, i + 2, tries)
+            time.sleep(wait)
+
+
+def _check_size(path, expected):
+    """Fails at once when the downloaded file is not the size the model hub lists for it (a cut-off or wrong file)."""
+    if expected is not None:
+        got = os.path.getsize(path)
+        if got != expected:
+            raise ValueError(f"{path} is {got:,} bytes but the model repository lists {expected:,}. It is probably a partial download: "
+                             "delete it and download the model again.")
 
 
 def _check_gguf(path):
@@ -168,7 +244,10 @@ def _build_llama():
     except Exception as e:                  # not on Kaggle, or no such secret
         hf_token = None
         log.info("no HF_TOKEN available (%s: %s); downloading without a token", type(e).__name__, str(e)[:120])
-    model_path = hf_hub_download(repo_id=config.MODEL_REPO, filename=config.MODEL_FILE, local_dir=config.MODEL_DIR, token=hf_token)
+    expected = _expected_size(hf_token)
+    _check_disk(expected)
+    model_path = _download(hf_hub_download, hf_token)
+    _check_size(model_path, expected)
     _check_gguf(model_path)
 
     base = dict(model_path=model_path, n_ctx=config.N_CTX, verbose=False, last_n_tokens_size=8192, n_batch=config.N_BATCH,

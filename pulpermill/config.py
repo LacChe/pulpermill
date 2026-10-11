@@ -13,6 +13,10 @@ MODEL_DIR = "/kaggle/working/models"      # created when the model is loaded
 N_CTX, N_BATCH, TENSOR_SPLIT = 16384, 256, [0.58, 0.42]
 FLASH_ATTN = True         # faster attention and a smaller memory footprint; the loader retries without it if this build rejects it
 N_THREADS = None          # CPU threads (only matters if some layers end up on the CPU); None = the library's default
+DOWNLOAD_TRIES = 4        # attempts at downloading the model before giving up (a partly downloaded file is resumed, not started over)
+DOWNLOAD_BACKOFF_SECONDS = 10   # wait before the second attempt; it doubles each time (10, 20, 40 seconds)
+DISK_HEADROOM_BYTES = 10**9     # free space to keep beyond the model file itself
+MODEL_SIZE_FALLBACK_BYTES = 17 * 10**9   # the model's size for the disk check when the hub does not say; then a shortfall is only a warning
 
 # ---------------------------------------------------------------- CARD generation settings
 TEMPS = {"style": 0.7, "characters": 0.4, "world": 0.4, "outline": 0.4, "beat": 0.5}   # lower = sticks closer to your notes
