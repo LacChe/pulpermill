@@ -68,13 +68,18 @@ def log_bad_reply(label, text, finish, error):
                    label, cause, len(text), finish, str(error)[:300], shown)
 
 
+_OBJECT_START = re.compile(r'\{\s*["}]')       # where a JSON object can begin: a brace followed by a key's quote (or by the closing brace)
+
+
 def extract_json(text: str):
-    """Pull the first JSON object out of a model reply (handles code fences and chatter)."""
+    """Pull the first JSON object out of a model reply (handles code fences and chatter). A brace that cannot start a JSON object
+    (a "{card}" or "{as requested}" in the chatter before it) is skipped. The first brace that can start one is the object:
+    if that one is broken or cut off, it is reported as such, never replaced by a smaller object found inside it."""
     text = re.sub(r"```(?:json)?", "", text)
-    start = text.find("{")
-    if start < 0:
+    found = _OBJECT_START.search(text)
+    if found is None:
         raise ValueError(M("no JSON object found in the reply"))
-    obj, _ = json.JSONDecoder().raw_decode(text[start:])
+    obj, _ = json.JSONDecoder().raw_decode(text[found.start():])
     return obj
 
 
