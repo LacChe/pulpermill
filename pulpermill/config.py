@@ -13,6 +13,7 @@ MODEL_DIR = "/kaggle/working/models"      # created when the model is loaded
 N_CTX, N_BATCH, TENSOR_SPLIT = 16384, 256, [0.58, 0.42]
 FLASH_ATTN = True         # faster attention and a smaller memory footprint; the loader retries without it if this build rejects it
 N_THREADS = None          # CPU threads (only matters if some layers end up on the CPU); None = the library's default
+LLAMA_LOG_TAIL_LINES = 15   # when a model load fails, this many of the last lines llama.cpp printed during it go to the log
 DOWNLOAD_TRIES = 4        # attempts at downloading the model before giving up (a partly downloaded file is resumed, not started over)
 DOWNLOAD_BACKOFF_SECONDS = 10   # wait before the second attempt; it doubles each time (10, 20, 40 seconds)
 DISK_HEADROOM_BYTES = 10**9     # free space to keep beyond the model file itself

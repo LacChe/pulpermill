@@ -1,15 +1,20 @@
 """Loading the model: once, shared by cards and chapters. load_model() fills runtime.llm. Also gpu_report()."""
+import collections
+import ctypes
 import errno
 import gc
 import glob
+import re
 import shutil
 import struct
 import subprocess
 import os
+import sys
 import time
+from importlib import metadata
 
 from . import config, runtime
-from .runtime import log
+from .runtime import log, logger
 
 
 def gpu_report():
@@ -113,6 +118,71 @@ def _check_size(path, expected):
         if got != expected:
             raise ValueError(f"{path} is {got:,} bytes but the model repository lists {expected:,}. It is probably a partial download: "
                              "delete it and download the model again.")
+
+
+_LLAMA_LOG = collections.deque(maxlen=3000)      # what llama.cpp printed since the current load attempt began (text pieces, newest last)
+_LLAMA_LOG_CALLBACK = None                        # kept here so the callback is not garbage collected while llama.cpp still holds it
+
+
+def _capture_llama_log():
+    """llama-cpp-python is loaded with verbose=False, which throws away llama.cpp's own messages, the ones that say why a load failed
+    ("cudaMalloc failed: out of memory", "unknown model architecture"...). This puts a callback in front of its logging that keeps every
+    message in _LLAMA_LOG and passes it on to the library's own callback, so what the library prints stays exactly as it was. If
+    anything about this fails the load goes on without it. Returns whether the capture is in place."""
+    global _LLAMA_LOG_CALLBACK
+    if _LLAMA_LOG_CALLBACK is not None:
+        return True
+    try:
+        import llama_cpp
+        try:
+            from llama_cpp._logger import llama_log_callback as original
+        except Exception:
+            original = None
+
+        @llama_cpp.llama_log_callback
+        def keep_and_pass_on(level, text, user_data):
+            try:
+                _LLAMA_LOG.append((text or b"").decode("utf-8", "replace"))
+                if original is not None:
+                    original(level, text, user_data)
+            except Exception:                    # a failure inside a C callback must never reach the C code
+                pass
+
+        llama_cpp.llama_log_set(keep_and_pass_on, ctypes.c_void_p(0))
+        _LLAMA_LOG_CALLBACK = keep_and_pass_on
+        return True
+    except Exception as e:
+        log.warning("could not capture llama.cpp's own output (%s: %s); a failed load will only show the library's short error", type(e).__name__, str(e)[:120])
+        return False
+
+
+def _show_llama_output():
+    """After a failed load attempt: the last lines llama.cpp printed during it (the reason is nearly always there)."""
+    lines = "".join(_LLAMA_LOG).strip().splitlines()[-config.LLAMA_LOG_TAIL_LINES:]
+    if lines:
+        logger.warning("llama.cpp said, last %d line(s):\n    %s", len(lines), "\n    ".join(line.rstrip()[-300:] for line in lines))
+
+
+def _version(package):
+    try:
+        return metadata.version(package)
+    except Exception:
+        return "unknown"
+
+
+def _log_environment(model_path):
+    """One look at what this session runs on: libraries, GPUs and driver, and the model file."""
+    logger.info("environment: python %s, llama-cpp-python %s, huggingface-hub %s", sys.version.split()[0],
+                _version("llama-cpp-python"), _version("huggingface-hub"))
+    try:
+        gpus = subprocess.check_output(["nvidia-smi", "--query-gpu=name,driver_version,memory.total", "--format=csv,noheader"],
+                                       timeout=5).decode().strip().splitlines()
+        header = subprocess.check_output(["nvidia-smi"], timeout=5).decode()
+        cuda = re.search(r"CUDA Version:\s*([\d.]+)", header)
+        logger.info("GPUs (name, driver, memory): %s; the driver supports CUDA %s", "; ".join(g.strip() for g in gpus), cuda.group(1) if cuda else "unknown")
+    except (OSError, subprocess.SubprocessError):
+        logger.info("GPUs: nvidia-smi gave no answer")
+    logger.info("model file: %s (%s)", model_path, _gb(os.path.getsize(model_path)))
 
 
 def _check_gguf(path):
@@ -249,6 +319,8 @@ def _build_llama():
     model_path = _download(hf_hub_download, hf_token)
     _check_size(model_path, expected)
     _check_gguf(model_path)
+    _log_environment(model_path)
+    _capture_llama_log()
 
     base = dict(model_path=model_path, n_ctx=config.N_CTX, verbose=False, last_n_tokens_size=8192, n_batch=config.N_BATCH,
                 chat_format="gemma")
@@ -261,11 +333,13 @@ def _build_llama():
         for fa in ([True, False] if config.FLASH_ATTN else [False]):
             log.info("loading the model (flash attention %s, %s layers on GPU); GPU memory before: %s",
                      "on" if fa else "off", kw.get("n_gpu_layers"), gpu_report())
+            _LLAMA_LOG.clear()
             try:
                 return Llama(**base, flash_attn=fa, **kw)
             except Exception as e:
                 last = e
                 log.warning("load failed (flash attention %s): %s", "on" if fa else "off", str(e)[:200])
+                _show_llama_output()
                 if _hopeless(e):                # another setting or fewer layers cannot fix this: stop now
                     log.error("the model cannot be loaded and no other setting will help (%s: %s)", type(e).__name__, str(e)[:200])
                     raise
