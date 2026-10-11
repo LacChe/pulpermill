@@ -5,20 +5,42 @@ time would be None forever. The lock, the loggers, CURRENT, CANCEL and Cancelled
 them by name is fine.
 """
 import logging
+import logging.handlers
 import sys
 import threading
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
-log = logging.getLogger("cardgen")
+from . import config
 
-# schema logs through this logger, so it gets its own stdout handler (Kaggle shows stdout reliably)
-logger = logging.getLogger("pulpmill")
-logger.setLevel(logging.INFO)
-if not logger.handlers:
-    _handler = logging.StreamHandler(sys.stdout)
-    _handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
-    logger.addHandler(_handler)
-    logger.propagate = False
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")      # for the libraries that log to the root logger
+
+
+_FILE_PROBLEM_SHOWN = False
+
+
+def _own_logger(name, fmt):
+    """A logger that writes to stdout (Kaggle shows stdout reliably, stderr from a background thread not always), and also to
+    config.LOG_FILE when that is set. It does not pass its messages on to the root logger, so nothing is printed twice."""
+    lg = logging.getLogger(name)
+    lg.setLevel(logging.INFO)
+    if not lg.handlers:
+        handlers = [logging.StreamHandler(sys.stdout)]
+        if config.LOG_FILE:
+            try:
+                handlers.append(logging.handlers.RotatingFileHandler(config.LOG_FILE, maxBytes=10**6, backupCount=1, encoding="utf-8"))
+            except OSError as e:
+                global _FILE_PROBLEM_SHOWN
+                if not _FILE_PROBLEM_SHOWN:             # both loggers hit the same problem: say it once
+                    _FILE_PROBLEM_SHOWN = True
+                    print(f"could not open the log file {config.LOG_FILE} ({e}); logging to the screen only", file=sys.stdout)
+        for h in handlers:
+            h.setFormatter(logging.Formatter(fmt))
+            lg.addHandler(h)
+        lg.propagate = False
+    return lg
+
+
+log = _own_logger("cardgen", "%(asctime)s %(levelname)s %(message)s")
+logger = _own_logger("pulpmill", "%(levelname)s %(name)s: %(message)s")      # schema logs through this one
 
 llm = None                       # set by model.load_model()
 LLM_LOCK = threading.Lock()      # llama.cpp handles one generation at a time
