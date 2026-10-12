@@ -440,7 +440,11 @@ const ZH={
   "option present":"现在时",
   "Motivation & history":"动机与过往",
   "Presentation":"外在表现",
-  "Relationships":"人物关系"
+  "Relationships":"人物关系",
+  "Export this character":"导出这个角色",
+  "Export this card":"导出这张卡",
+  'Mixing and matching between stories: each character has its own "Export this character" button on the Characters card. Importing one character file only adds or updates that person — the rest of the cast is left alone.':
+    '在故事之间混搭：角色卡上的每个角色都有自己的"导出这个角色"按钮。导入单个角色文件只会新增或更新那一个人，其余角色不受影响。'
 };
 const PYD=[
   ["^Field required$", "缺少必填项"],
