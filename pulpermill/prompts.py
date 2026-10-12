@@ -69,10 +69,13 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
           paraphrase a sentence, clause, or distinctive phrase from them. Follow the prose habits, and
           never do anything on the never-do list.
         - Looks and habits are reference facts: do not re-describe a character's appearance, voice, or
-          mannerisms just because they appear in a scene. Work in a look or habit given for this chapter
-          once, when a moment calls for it (a habit when the character is nervous, lying or avoiding
-          something; a look when it is changing or newly relevant, such as an injury, a prop being used,
-          a reaction), and leave the rest.
+          mannerisms just because they appear in a scene. A look or habit given for this chapter is used
+          AT MOST ONCE, in one sentence, when a moment truly calls for it (a habit when the character is
+          nervous, lying or avoiding something; a look when it is changing or newly relevant, such as an
+          injury, a prop being used, a reaction). Once it has been shown, do not return to it, repeat the
+          gesture, or mention it again anywhere else in the chapter, even in passing: this applies most of
+          all to a vivid signature object or tic (a coin, a pen, a drink) that is easy to reach for again —
+          once it has done its one moment of work, leave it alone for the rest of the chapter.
         - If the style section gives a chapter shape, open and close the chapter as it says. Without one, begin with
           someone doing or saying something and do not open the way the previous chapter opened. Either way, never
           open on a smell, the weather or the light. A catchphrase or gesture from the cards is used at

@@ -12,8 +12,8 @@ from .prompts import (
 )
 from .stages import lang_post
 from .schema import (
-    Location, M, MAX_CAST, Msg, NextBeatD, Resolver, StateUpdate, StoryProject, apply_state_update, count_units,
-    est_words, finalize_next_beat, squash, validate_project
+    Location, M, MAX_CAST, Msg, NextBeatD, Resolver, StateUpdate, StoryProject, _content_words, apply_state_update,
+    count_units, est_words, finalize_next_beat, squash, validate_project
 )
 
 
@@ -134,6 +134,47 @@ def check_copied_lines(story, chapter_text):
                 found.append(M("style exemplar: {line}", line=repr(sent)))
     for f in found:
         logger.warning("Copied from a card, word for word: %s", f)
+    return found
+
+
+_OVERUSE_LABEL = {"habits": M("habit"), "look": M("look")}
+HABIT_OVERUSE_MIN = 3        # a habit or look fed for one use that turns up in this many different sentences gets a warning
+HABIT_OVERUSE_RATIO = 0.4    # a sentence counts as a reuse of the phrase when it shares at least this share of its content words
+
+
+def _overuse_words(text):
+    """A phrase's content words, filtered harder than the general-purpose `_content_words`: this check is about one
+    short phrase recurring, so a stray shared short word ('air', 'even') should not by itself count as a match."""
+    return {w for w in _content_words(text) if len(w) >= 4}
+
+
+def check_habit_overuse(story, chapter_text, feed):
+    """Logs, never rejects: a habit or look handed to this chapter for one use (see POOLS) that instead turns up again
+    and again. The writer is told to use each at most once; nothing stops a vivid one (a coin, a pen) from being reached
+    for every time the character appears. A sentence counts as a reuse when it shares a real share of the phrase's own
+    content words (HABIT_OVERUSE_RATIO), which catches the common case of a weaker model repeating a card's phrase
+    near-verbatim, but will not catch every paraphrase: a habit written as 'warms a coin' that the chapter reworks into
+    an invented prop ('a sovereign') shares no words with the card and is not something this check can see. Phrases of
+    fewer than two sturdy (4+ letter) content words are skipped, since a single shared word is not a reliable signal."""
+    sentences = [s for s in re.split(r"(?<=[.!?。！？])\s+", chapter_text) if s.strip()]
+    sentence_words = [_overuse_words(s) for s in sentences]
+    found = []
+    for cid, fields in (feed or {}).get("characters", {}).items():
+        c = next((x for x in story.characters if x.id == cid), None)
+        if c is None:
+            continue
+        for field in ("habits", "look"):
+            for phrase in fields.get(field, []):
+                words = _overuse_words(phrase)
+                if len(words) < 2:
+                    continue
+                hits = sum(1 for sw in sentence_words if sw and len(sw & words) / len(words) >= HABIT_OVERUSE_RATIO)
+                if hits >= HABIT_OVERUSE_MIN:
+                    found.append(M("{name}'s {field} '{phrase}' shows up in about {n} different sentences in this "
+                                   "chapter; the cards ask for it once", name=c.name, field=_OVERUSE_LABEL[field],
+                                   phrase=phrase, n=hits))
+    for f in found:
+        logger.warning("Habit or look used far more than once: %s", f)
     return found
 
 
@@ -298,6 +339,8 @@ def run_chapter(req, progress=None):
         warnings.append(M("The chapter stopped at the length limit, so its ending may be cut off."))
     for line in check_copied_lines(vw(), text):
         warnings.append(M("Copied from a card, word for word: {what}", what=line))
+    for line in check_habit_overuse(vw(), text, feed):
+        warnings.append(line)
 
     before = cards_dict(story)
     progress(step="extracting", tokens=0, max_tokens=0, attempt=1)
