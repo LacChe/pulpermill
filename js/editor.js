@@ -9,6 +9,12 @@ const HINTS={style:'How should the narration sound? What kind of narrator is tel
 let HIDE=[];
 /* which card is being drawn ('characters','world',...): lets field grouping below apply only on the card it's written for */
 let CURRENT_CARD=null;
+/* How many list-items we're currently inside the fields of (not path depth — a card like World holds several
+   top-level lists (locations/objects/groups) directly on the card object, one path step deeper than a card like
+   Characters that IS a list; both are top-level and neither should read as "nested"). This only goes above 0 once
+   we're drawing the fields that belong to one specific item of a list (e.g. inside one character, drawing `toward`),
+   which is the actual thing "nested" is meant to flag. */
+let LIST_DEPTH=0;
 /* Groups a character's own fields so the eye can chunk the form instead of reading every label in a flat list. Keyed by
    field name; a header is inserted the first time a field from a new group is reached. 'name'/'role' get no header
    (first group, kept compact); 'toward' is a list field and draws its own box, so its header sits just above that box. */
@@ -105,11 +111,29 @@ function track(lab,ctl,old,get){
    labels for the code, so they never become titles. Long titles are cut with an ellipsis (the full text is the tooltip);
    a Han character counts as two letters because it is about twice as wide. */
 const personName=v=>{const m=REFCTX.character;return typeof v!=='string'||v===''?'':(m&&m.has(v)?m.get(v):v)};   // a character id as the person's name
+/* Han characters are cut to a tighter width since each one reads as about twice as wide as a Latin letter. */
+function clipWidth(raw,max){
+  let w=0,out='';
+  for(const c of raw){w+=cjkRe.test(c)?2:1;cjkRe.lastIndex=0;if(w>max)return {text:out.trimEnd()+'…',full:raw};out+=c}
+  return {text:raw,full:raw};
+}
 function itemTitle(it,i){
   const raw=String(it.name||it.fact||(it.chapter_num?t('Chapter {k}',{k:it.chapter_num}):'')||personName(it.character)||personName(it.toward)||t('Item {k}',{k:i+1})).replace(/\s+/g,' ').trim();
-  let w=0,out='';
-  for(const c of raw){w+=cjkRe.test(c)?2:1;cjkRe.lastIndex=0;if(w>64)return {text:out.trimEnd()+'…',full:raw};out+=c}
-  return {text:raw,full:raw};
+  return clipWidth(raw,64);
+}
+/* A collapsed item shows only its title by default — fine for a short list, but with 6+ characters or objects it
+   means every closed row looks the same and you have to open each one to tell them apart. This picks one more
+   field (whichever of these the item actually has, in priority order) and shows a clipped one-line preview of it
+   next to the title, so a closed row still carries the detail you'd open it to find. Schema-agnostic on purpose:
+   it works for a character's `role`, a relationship's `attitude`, an object's `description`, and so on without
+   needing a per-card lookup table. */
+const PREVIEW_KEYS=['attitude','description','role','want','blind_spot','voice','history','condition','summary'];
+function itemPreview(it,titleFull){
+  for(const k of PREVIEW_KEYS){
+    const v=it[k];
+    if(typeof v==='string'&&v.trim()&&v.trim()!==titleFull)return clipWidth(v.replace(/\s+/g,' ').trim(),90);
+  }
+  return null;
 }
 /* Use counts. A list the backend rotates (SCH.pools) shows, beside each item, how many chapters it was handed to the writer in;
    the least-used ones are handed over next. The counts live in the owning card's `uses` ({field: {item text or id: n}}).
@@ -243,10 +267,11 @@ function field_(parent,key,en,bp){
       return lab;
     }
     const here=PATH.slice();
-    /* depth 1 = the card's own top-level list (e.g. the cast itself); deeper = a list nested inside one of those items
-       (e.g. a character's `toward`). Nested lists get their own class so CSS can show, at a glance, that they sit
-       inside something else rather than being read as more top-level cards. */
-    const nested=here.length>1,box=el('div',{class:'f'+(nested?' nested':'')},el('span',{class:'ro'},label(key)));
+    /* nested = this list sits inside the fields of some other list's item (e.g. a character's `toward`), as opposed
+       to being one of a card's own top-level lists (Characters itself; or World's Locations/Objects/Groups, which
+       sit one path step deeper than Characters does but are just as top-level). LIST_DEPTH, not path length, is
+       what actually distinguishes the two. */
+    const nested=LIST_DEPTH>0,box=el('div',{class:'f'+(nested?' nested':'')},el('span',{class:'ro'},label(key)));
     const grouped=CURRENT_CARD==='characters'&&!nested;      // header dividers only inside the cast's own top-level cards
     const hasList=hasBase&&Array.isArray(old),flagsHere=FLAGS;
     const render=()=>{
@@ -258,18 +283,26 @@ function field_(parent,key,en,bp){
         const tag=!hasList?null:!bi?el('span',{class:'tag chgtag'},t('new')):!same(it,bi)?el('span',{class:'tag chgtag'},t('changed')):null;
         const ti=itemTitle(it,i),broken=scanRefs(it,PATH.slice(),[]).length;
         const pooled=isPool(pathStr)&&it&&it.id!=null,n=pooled?(usesOf(parent,key)[it.id]||0):0;
-        const ttl=el('span',{class:'ttl'},ti.text),sum=el('summary',ti.text===ti.full?{}:{title:ti.full},ttl,tag,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
+        const ttl=el('span',{class:'ttl'},ti.text),prev=el('span',{class:'prev'});
+        const sum=el('summary',ti.text===ti.full?{}:{title:ti.full},ttl,prev,tag,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
         const cls='item'+(nested?' sub':'');
         const d=el('details',broken?{class:cls,open:'open'}:{class:cls},sum);
         const inner=el('div',{class:'in'});
-        /* the title follows what is typed (or picked) in the fields it is made from */
-        const retitle=()=>{const x=itemTitle(it,i);ttl.textContent=x.text;if(x.text===x.full)sum.removeAttribute('title');else sum.title=x.full};
+        /* the title, and the one-line preview beside it, follow what is typed (or picked) in the fields they're made from */
+        const retitle=()=>{
+          const x=itemTitle(it,i);ttl.textContent=x.text;if(x.text===x.full)sum.removeAttribute('title');else sum.title=x.full;
+          const p=itemPreview(it,x.full);prev.textContent=p?' — '+p.text:'';prev.title=p&&p.text!==p.full?p.full:'';prev.hidden=!p;
+        };
+        retitle();
         inner.addEventListener('input',retitle);inner.addEventListener('change',retitle);
         let lastGroup=null;
-        for(const kk in it){
-          if(grouped&&CHAR_GROUPS[kk]&&CHAR_GROUPS[kk]!==lastGroup){lastGroup=CHAR_GROUPS[kk];inner.append(el('h3',{class:'grp'},t(lastGroup)))}
-          const f=field(it,kk,en,bi);if(f)inner.append(f);
-        }
+        LIST_DEPTH++;
+        try{
+          for(const kk in it){
+            if(grouped&&CHAR_GROUPS[kk]&&CHAR_GROUPS[kk]!==lastGroup){lastGroup=CHAR_GROUPS[kk];inner.append(el('h3',{class:'grp'},t(lastGroup)))}
+            const f=field(it,kk,en,bi);if(f)inner.append(f);
+          }
+        }finally{LIST_DEPTH--}
         inner.append(el('button',{class:'sm',onclick:()=>{
           if(!confirm(t('Remove “{name}” from this card? This cannot be undone.',{name:itemTitle(it,i).text})))return;       // deleting an item is guarded
           if(pooled)delete usesOf(parent,key)[it.id];v.splice(i,1);render();

@@ -140,6 +140,29 @@ h3.grp{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.0
   margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--line)}
 .item>.in>h3.grp:first-child{margin-top:4px;padding-top:0;border-top:0}   /* no dangling rule above the very first group */
 
+/* ---------- progressive disclosure: a closed item still shows a hint of what's inside ---------- */
+/* Without this, 6 closed character cards are just 6 identical-looking name rows; you'd have to open each one to
+   tell them apart. `.prev` carries one clipped line of whichever field editor.js picked (role, attitude,
+   description...) right next to the title, and only while the item is closed — once it's open the real fields
+   are right there, so showing it twice would be noise rather than help. */
+.item>summary{display:flex;align-items:baseline;gap:0;flex-wrap:nowrap;min-width:0}
+.item>summary .ttl{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item>summary .prev{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+  font-weight:400;color:var(--mute)}
+.item[open]>summary .prev{display:none}
+.item>summary .tag,.item>summary .usedtag{flex:0 0 auto}
+
+/* ---------- typographic hierarchy: each level should look like a different level, not just a different indent ---------- */
+/* Before this, a card's own h2, a top-level item's summary, and a nested sub-item's summary were all around the
+   same size/weight — the indentation in the last round carries the structure, but your eye still has to read
+   every line at face value to tell which kind of thing it's looking at. Stepping size and weight down at each
+   level lets the structure register before you've read a single word. */
+h2{letter-spacing:-.005em}
+.item:not(.sub)>summary{font-size:16px;font-weight:700}
+h3.grp{font-size:10.5px}
+.item.sub>summary{font-size:12.5px}
+.f>span{font-weight:500}                       /* field labels: a touch heavier so they read as labels, not body text, at a glance */
+
 /* ---------- sticky header on an open top-level card ---------- */
 /* While scrolling a long open character/location/chapter, its name stays visible at the top of the panel instead
    of scrolling out of view along with everything else. Nested sub-cards (.sub) are left alone: stacking several
