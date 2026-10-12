@@ -283,15 +283,19 @@ function field_(parent,key,en,bp){
         const tag=!hasList?null:!bi?el('span',{class:'tag chgtag'},t('new')):!same(it,bi)?el('span',{class:'tag chgtag'},t('changed')):null;
         const ti=itemTitle(it,i),broken=scanRefs(it,PATH.slice(),[]).length;
         const pooled=isPool(pathStr)&&it&&it.id!=null,n=pooled?(usesOf(parent,key)[it.id]||0):0;
-        const ttl=el('span',{class:'ttl'},ti.text),prev=el('span',{class:'prev'});
-        const sum=el('summary',ti.text===ti.full?{}:{title:ti.full},ttl,prev,tag,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
+        const ttl=el('span',{class:'ttl'},ti.text);
+        const sum=el('summary',{},ttl,tag,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
         const cls='item'+(nested?' sub':'');
         const d=el('details',broken?{class:cls,open:'open'}:{class:cls},sum);
         const inner=el('div',{class:'in'});
-        /* the title, and the one-line preview beside it, follow what is typed (or picked) in the fields they're made from */
+        /* the title never gets cut short in favor of anything else — it's the one thing a closed row is scanned by.
+           A pulled-field detail (role, attitude, description...), when there is one, only ever shows up as a hover
+           tooltip: available on demand, never competing with the name for the row's width. */
         const retitle=()=>{
-          const x=itemTitle(it,i);ttl.textContent=x.text;if(x.text===x.full)sum.removeAttribute('title');else sum.title=x.full;
-          const p=itemPreview(it,x.full);prev.textContent=p?' — '+p.text:'';prev.title=p&&p.text!==p.full?p.full:'';prev.hidden=!p;
+          const x=itemTitle(it,i);ttl.textContent=x.text;
+          const p=itemPreview(it,x.full);
+          const tip=[x.text!==x.full?x.full:'',p?p.full:''].filter(Boolean).join('\n');
+          if(tip)sum.title=tip;else sum.removeAttribute('title');
         };
         retitle();
         inner.addEventListener('input',retitle);inner.addEventListener('change',retitle);
