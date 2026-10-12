@@ -140,6 +140,20 @@ h3.grp{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.0
   margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--line)}
 .item>.in>h3.grp:first-child{margin-top:4px;padding-top:0;border-top:0}   /* no dangling rule above the very first group */
 
+/* ---------- stage tabs: one card visible at a time, so which one you're looking at is never in question ---------- */
+.stagetabs{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--line);position:sticky;top:0;
+  background:var(--bg);z-index:5;overflow-x:auto}
+.stagetab{background:none;border:none;border-bottom:2px solid transparent;color:var(--mute);font:inherit;
+  font-weight:600;font-size:14px;padding:10px 16px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.stagetab:hover:not(:disabled){color:var(--ink)}
+.stagetab.active{color:var(--ink);border-bottom-color:var(--acc)}
+.stagetab.done:not(.active){color:var(--mute)}
+.stagetab .tabcheck{color:var(--acc);font-weight:700}
+.stagetab.locked,.stagetab:disabled{opacity:.4;cursor:not-allowed}
+/* the active stage's own h2 inside its card becomes redundant with its tab, so it's dropped down a notch rather
+   than repeating, at the same size, what the tab strip already says */
+section.box.stage>.head>h2{font-size:17px}
+
 /* ---------- breadcrumb: which list is this item actually in? ---------- */
 /* Objects, Locations and Groups (and, inside a character, Toward) all render their items as the same plain .item
    card, so once you've scrolled a screen or two into one list, nothing on screen still says which list you're

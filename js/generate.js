@@ -49,6 +49,7 @@ async function generate(i,feedback){
     pg.took=pg.took||{};pg.took[s.k]=Math.round((Date.now()-t0)/1000);
     pg.stale[s.k]=false;
     STAGES.slice(i+1).forEach(x=>{if(pg.cards[x.k])pg.stale[x.k]=true});
+    if(activeStage(pg)===i&&i+1<STAGES.length)ACTIVE_STAGE.set(pg,i+1);   // move on to the next tab now that this one's done
   }catch(e){pg.err[s.k]=e.gaveUp?mk('Lost contact with the backend for too long, so this card was not received. Check the backend, then generate it again.'):emsg(e)}
   st.busy=null;st.busyPg=null;st.jobId=null;st.stopping=false;draw();
 }
@@ -90,8 +91,7 @@ async function writeChapter(choice,note){
   try{
     if(!(SCH.nullable||[]).length)await loadSchema();
     const res=await api('/chapter',{method:'POST',body:JSON.stringify({chapter_num:k,cards:job.start,cast:job.cast,language:LANG,
-      summaries:P.slice(0,j).map(p=>p.result.summary),prev_text:prev?prev.text:'',
-      prev_changes:prev?(prev.changes||[]).map(c=>msg(c.text)):[],note:(note||'').trim()||null,seed:seedParam()})});
+      summaries:P.slice(0,j).map(p=>p.result.summary),prev_text:prev?prev.text:'',note:(note||'').trim()||null,seed:seedParam()})});
     if(res.error)throw Object.assign(new Error(res.error),{m:apiErr(res)});
     job.id=res.job;
     await pollChapter(job);

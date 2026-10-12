@@ -62,9 +62,38 @@ function inputSection(pg){
   sec.append(fs);
   return sec;
 }
+/* Which stage tab a page is showing. A WeakMap, not a field on the page object, because pg gets serialized whole
+   for Save project / Export cards — this is purely a UI choice, not story data, and shouldn't ride along in a
+   file someone else opens. Defaults to the first stage that isn't done yet, i.e. whatever you'd work on next. */
+const ACTIVE_STAGE=new WeakMap();
+function activeStage(pg){
+  if(!ACTIVE_STAGE.has(pg)){
+    const todo=STAGES.findIndex(s=>!pg.cards[s.k]);
+    ACTIVE_STAGE.set(pg,todo===-1?STAGES.length-1:todo);
+  }
+  return ACTIVE_STAGE.get(pg);
+}
+function setActiveStage(pg,i){ACTIVE_STAGE.set(pg,i);draw()}
+/* The tab bar itself: one button per stage. Only one stage's card is ever visible at a time (drawStages hides the
+   rest), so which card you're looking at is a deliberate choice you made, not something you scrolled past without
+   noticing. Locked stages (the previous one isn't done) are disabled rather than hidden, so the sequence and what's
+   still ahead both stay visible. */
+function stageTabs(pg,active){
+  const bar=el('div',{class:'stagetabs',role:'tablist','aria-label':t('Cards')});
+  STAGES.forEach((s,i)=>{
+    const has=!!pg.cards[s.k],prev=i===0||!!pg.cards[STAGES[i-1].k];
+    const cls='stagetab'+(i===active?' active':'')+(has?' done':'')+(!prev?' locked':'');
+    bar.append(el('button',{type:'button',class:cls,role:'tab','aria-selected':String(i===active),
+      disabled:!prev,title:!prev?t('Generate {what} first.',{what:t(STAGES[i-1].t).toLowerCase()}):undefined,
+      onclick:()=>setActiveStage(pg,i)},
+      el('span',{class:'tabname'},t(s.t)),has?el('span',{class:'tabcheck','aria-hidden':'true'},'✓'):null));
+  });
+  return bar;
+}
 function drawStages(root,pg,j){
-  const hide=j===0?(SCH.hidden||[]):[],P=pages();
+  const hide=j===0?(SCH.hidden||[]):[],P=pages(),active=activeStage(pg);
   refContext(pg.cards);    // the live-state fields (wrap) only matter once a story is running
+  root.append(stageTabs(pg,active));
   STAGES.forEach((s,i)=>{
     const has=!!pg.cards[s.k],prev=i===0||!!pg.cards[STAGES[i-1].k],busy=st.busy===s.k&&st.busyPg===pg;
     const sec=el('section',{class:'box stage'+(has?' done':'')+(!prev?' locked':''),'data-card':s.k});
@@ -76,7 +105,13 @@ function drawStages(root,pg,j){
     if(broken.length)tags.append(el('span',{class:'tag bad'},t('broken links: {n}',{n:broken.length})));
     if(has&&base&&!same(pg.cards[s.k],base))tags.append(el('span',{class:'tag chgtag'},t('Changed since the last chapter')));
     const extra=st.limits&&s.k==='characters'?' '+t('A generation writes up to {n} characters. Add as many as you like and choose up to {m} for each chapter.',{n:st.limits.max_characters,m:st.limits.max_cast||6}):st.limits&&s.k==='outline'?' '+t('Up to {n} chapters.',{n:st.limits.max_chapters}):'';
-    sec.append(el('div',{class:'head'},el('h2',{},t(s.t)),tags),el('p',{class:'hint'},t(s.d)+extra));
+    /* Each card (other than Characters, which already exports person-by-person) gets the same file on its own that
+       always lived inside the zip, so one of style/world/setup can be moved to another story without the other
+       three tagging along, same as the other direction already works: importing one of these files back only ever
+       touches the card it names. */
+    const hdRow=el('span',{class:'row',style:'margin:0'},tags);
+    if(has&&s.k!=='characters')hdRow.append(el('button',{class:'sm',onclick:()=>exportCard(s.k)},t('Export this card')));
+    sec.append(el('div',{class:'head'},el('h2',{},t(s.t)),hdRow),el('p',{class:'hint'},t(s.d)+extra));
     const usingEx=j===0&&usesExample(s.k)&&!!pg.chapter.trim();
     if(j===0){
       const cb=el('input',{type:'checkbox',id:'ex-'+s.k,'data-k':s.k});cb.checked=usesExample(s.k);
@@ -107,6 +142,7 @@ function drawStages(root,pg,j){
         el('button',{class:'sm clr','data-k':s.k,disabled:!!st.busy,title:t('Remove this card so it can be generated again from scratch. Your notes stay.'),onclick:()=>clearCard(i)},t('Clear card'))));
     }
     if(busy)sec.append(progBlock(true));
+    sec.hidden=i!==active;      // built regardless (tab state, warnings, etc. all need computing anyway) — just not shown
     root.append(sec);
   });
 }
@@ -157,6 +193,8 @@ function drawMid(){
     ?t('Generate the four cards in order and check each one, or import them. Then write the chapter.')
     :ending?t('The cards as chapter {j} left them. The story has no chapter {k}, so there is nothing more to write. Edit or export them, or raise Total chapters on the Setup card to keep going.',{j,k})
     :t('These are the cards as chapter {j} left them. Edit anything you like before writing chapter {k}; changed fields are marked.',{j,k})));
+  if(have&&(pg.cards.characters||[]).length)head.append(el('p',{class:'hint'},
+    t('Mixing and matching between stories: each character has its own "Export this character" button on the Characters card. Importing one character file only adds or updates that person — the rest of the cast is left alone.')));
   if(j>0&&resStale(j-1))head.append(el('div',{class:'msg warn'},t('Chapter {j} is out of date (an earlier chapter was rewritten), so these cards may not match what came before.',{j})));
   if(pg.result&&cardsEdited(pg))head.append(el('div',{class:'msg warn'},t('These cards changed after chapter {k} was written. Rewrite the chapter to apply the changes.',{k})));
   if(pg.msg)head.append(el('div',{class:'msg err',role:'alert'},msg(pg.msg)));
