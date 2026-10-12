@@ -140,6 +140,16 @@ h3.grp{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.0
   margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--line)}
 .item>.in>h3.grp:first-child{margin-top:4px;padding-top:0;border-top:0}   /* no dangling rule above the very first group */
 
+/* ---------- breadcrumb: which list is this item actually in? ---------- */
+/* Objects, Locations and Groups (and, inside a character, Toward) all render their items as the same plain .item
+   card, so once you've scrolled a screen or two into one list, nothing on screen still says which list you're
+   looking at. Rather than trying to keep a second sticky header perfectly stacked under the first (fragile, and
+   easy to break the next time a heading's height changes), the list's own name just rides along inside every one
+   of its item's headers. */
+.item>summary .crumb{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+.item>summary .crumb::after{content:'  ›  ';opacity:.6;font-weight:400;text-transform:none;letter-spacing:0}
+.item.sub>summary .crumb{font-size:10.5px}
+
 /* ---------- typographic hierarchy: each level should look like a different level, not just a different indent ---------- */
 /* Before this, a card's own h2, a top-level item's summary, and a nested sub-item's summary were all around the
    same size/weight — the indentation in the last round carries the structure, but your eye still has to read
