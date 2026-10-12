@@ -450,13 +450,25 @@ def _gist(text: str) -> set:
     return words | {a + b for a, b in zip(cjk, cjk[1:])}
 
 
+def _scene_closeness(gap: int) -> float:
+    """How much returning to the same place with the same people counts against a beat, based on how many chapters
+    separate the two: back-to-back, it reads as nothing having moved; much later, the same place and people can be a
+    deliberate callback (a climax returning to the opening scene), so it counts for much less."""
+    return 1.0 if gap <= 1 else 0.6 if gap == 2 else 0.35 if gap == 3 else 0.15
+
+
 def beat_similarity(a: "ChapterBeat", b: "ChapterBeat") -> float:
-    """0..1: how much two beats are the same plan. Compares what the chapter is for and what it changes, not its wording
-    of events, so a chapter that merely rephrases an earlier one scores high."""
+    """0..1: how much two beats are the same plan. Combines what the chapter is for and what it changes (gist: words
+    shared by `goal`+`turn`, so a chapter that merely rephrases an earlier one in different words still scores high)
+    with whether it is staged in the same place with the same people, weighted down by how far apart the two chapters
+    are. Two consecutive beats that put the same cast back in the same room read as the same scene even when their
+    goal and turn are worded differently enough that the gist score alone misses it."""
     ga, gb = _gist(a.goal + " " + a.turn), _gist(b.goal + " " + b.turn)
-    if not ga or not gb:
-        return 0.0
-    return len(ga & gb) / len(ga | gb)
+    gist = len(ga & gb) / len(ga | gb) if ga and gb else 0.0
+    pa, pb = set(a.present), set(b.present)
+    cast_overlap = len(pa & pb) / len(pa | pb) if pa and pb else 0.0
+    scene = cast_overlap if a.location == b.location else cast_overlap * 0.3
+    return max(gist, scene * _scene_closeness(abs(a.chapter_num - b.chapter_num)))
 
 
 BEAT_CLASH = 0.4      # at or above this, a new beat is treated as a repeat of an earlier one
