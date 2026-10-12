@@ -465,6 +465,7 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         + (f" Now: {c.wrap.condition}" if c.wrap.condition else "")
         + (f" Lately: {'; '.join(c.wrap.recent_changes)}" if c.wrap.recent_changes else "") for c in story.characters)
     places = "\n".join(f"- {l.name}: {l.description}" for l in w.locations)
+    rules = "\n".join(f"- {r}" for r in w.rules) or "(none)"
     cast_ids = {c.id for c in story.characters}                          # only these people exist for this chapter
     objs = "\n".join(f"- {o.name}" + ((f", held by {name(o.owner)}" if o.owner in cast_ids else ", held by someone outside this cast") if o.owner else "")
                      + (f", at {here.get(o.location, o.location)}" if o.location else "") for o in w.objects) or "(none)"
@@ -487,8 +488,11 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
                        f"{', '.join(name(c) for c in b.present)}." + (f" What changed: {b.turn}" if b.turn else "")
                        + f" Ended on: {b.ends_on}" for b in past) or "(none)"
     places_left, people_left = story.least_used(n - 1)
+    objects_left, groups_left = story.least_used_world(n - 1)
     fresh = ("Places the story has been to least: " + ", ".join(f"{a} ({k}×)" for a, k in places_left) + "\n"
-             + ("People who have been on the page least: " + ", ".join(f"{a} ({k}×)" for a, k in people_left) + "\n" if people_left else ""))
+             + ("People who have been on the page least: " + ", ".join(f"{a} ({k}×)" for a, k in people_left) + "\n" if people_left else "")
+             + ("Objects the story has made the least use of: " + ", ".join(f"{a} ({k}×)" for a, k in objects_left) + "\n" if objects_left else "")
+             + ("Groups the story has made the least use of: " + ", ".join(f"{a} ({k}×)" for a, k in groups_left) + "\n" if groups_left else ""))
     return (
         "You are planning the next chapter of a story that is written one chapter at a time. Only the beat of the next "
         f"chapter is needed now: chapter {n} of {total}. Nothing after it has been planned, so do not plan it.\n\n"
@@ -499,14 +503,15 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         + "Where each person ends up: " + "; ".join(f"{name(a.character)}: {a.end}" for a in plot.arcs) + "\n"
         f"Narration style: {st.label}. {st.voice}\n\n"
         f"THE CARDS NOW (after chapter {n - 1}; this is the truth of the story at this point)\n"
-        f"PEOPLE:\n{chars}\n\nSETTING: {w.setting}\nPLACES (write names exactly like this):\n{places}\n"
+        f"PEOPLE:\n{chars}\n\nSETTING: {w.setting}\nHOW THE WORLD WORKS (permanent facts; reach for one as an obstacle or a "
+        f"stake when it fits this chapter):\n{rules}\n\nPLACES (write names exactly like this):\n{places}\n"
         f"OBJECTS:\n{objs}\n" + (f"GROUPS (background collectives; they appear only inside the events text):\n{groups}\n" if groups else "")
         + f"HIDDEN TRUTHS ALREADY REVEALED (part of what happened):\n{revealed}\n\n"
         f"WHAT HAS HAPPENED\n{stories}\n\nThe last chapter ended like this (the ending only):\n{tail_text}\n"
         + (f"It stopped at: {prev.ends_on}\n" if prev else "") +
         f"\nALREADY USED (the earlier chapters in brief; this chapter must not repeat any of them):\n{ledger}\n\n"
-        f"FRESH MATERIAL (use it when the story allows; a new place or a person who has been away is the easiest way to make a "
-        f"chapter different):\n{fresh}"
+        f"FRESH MATERIAL (use it when the story allows; a new place, an object or group barely touched so far, or a person "
+        f"who has been away is the easiest way to make a chapter different):\n{fresh}"
         f"\nTHIS CHAPTER: chapter {n} of {total}\n{stage_text}\n"
         f"Chapters left, counting this one: {left_n}.\n\n"
         f"CHOOSE FROM WHAT IS STILL AVAILABLE\nHidden truths not yet revealed (put an id in `reveals` only if that truth becomes "
@@ -521,6 +526,10 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         "happened; do not return to any earlier idea of the plot.\n"
         "- Each event happens once. Never repeat an earlier chapter's event, scene, argument or confession, and do not replay "
         "an earlier chapter with different wording. The story must move forward: something is different when this chapter ends.\n"
+        "- Before settling on the obstacle and events, check FRESH MATERIAL and HOW THE WORLD WORKS for something the story "
+        "has barely used: an object, a group or a world rule the cards already give you. Reach for one of these instead of "
+        "returning to the same two or three details the last few chapters leaned on, whenever it genuinely fits the chapter; "
+        "do not force one in where it does not.\n"
         "- `turn` says what changed. A chapter whose `turn` could be written about an earlier chapter is the wrong chapter.\n"
         "- Make this chapter do what its story stage asks, and move the story toward its destination without rushing it.\n"
         "- `goal` is what the main character wants plus, where it applies, what they are holding back. `obstacle` is something "

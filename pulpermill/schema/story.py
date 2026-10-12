@@ -60,6 +60,19 @@ class StoryProject(BaseModel):
         people = sorted((c for c in self.characters if c.id != self.plot.protagonist), key=lambda c: seen_who.count(c.id))[:k]
         return ([(l.name, seen_at.count(l.id)) for l in places], [(c.name, seen_who.count(c.id)) for c in people])
 
+    def least_used_world(self, through: int, k: int = 3):
+        """(objects, groups) the story has made the least use of so far, the same idea as `least_used` but for cards
+        that have no `present`-style field of their own: counted by whether each beat's own text (goal, events, ends_on,
+        etc.) names them. Ties keep card order."""
+        beats = [b for b in self.plot.chapter_beats if b.chapter_num <= through]
+        seqs = [self._beat_seq(b.chapter_num) for b in beats]
+        def tally(items):
+            return sorted(items, key=lambda x: sum(1 for seq in seqs if _mentions(seq, x.name)))[:k]
+        objects = tally(self.world.objects)
+        groups = tally(self.world.groups)
+        return ([(o.name, sum(1 for seq in seqs if _mentions(seq, o.name))) for o in objects],
+                [(g.name, sum(1 for seq in seqs if _mentions(seq, g.name))) for g in groups])
+
     def beat_clash(self, beat: "ChapterBeat"):
         """(chapter number, similarity) of the earlier beat this one repeats most, or None if it is new enough."""
         best = max(((b.chapter_num, beat_similarity(beat, b)) for b in self.plot.chapter_beats if b.chapter_num < beat.chapter_num),
