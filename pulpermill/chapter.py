@@ -8,7 +8,7 @@ from . import config, generation, model, runtime
 from .runtime import Cancelled, LLM_LOCK, logger
 from .prompts import (
     EXTRACT_STATE_UPDATE_PROMPT, EXTRACT_STATE_UPDATE_RETRY_SUFFIX, GENERATE_CHAPTER_PROMPT,
-    SUMMARIZE_CHAPTER_PROMPT, language_head, next_beat_prompt
+    SUMMARIZE_CHAPTER_PROMPT, WRITER_TAIL_CHARS, language_head, next_beat_prompt
 )
 from .stages import lang_post
 from .schema import (
@@ -62,9 +62,15 @@ def summarize_chapter(chapter_text, chapter_num, language="en", narrator=""):
     return best
 
 
-def generate_chapter(story, chapter_num, chapter_summaries, last_chapter_text, target_words, progress=None, language="en", note="", feed=None):
+def generate_chapter(story, chapter_num, chapter_summaries, last_chapter_text, target_words, progress=None, language="en",
+                     note="", feed=None, prev_changes=None):
     """Returns (text, finish_reason, prompt_tokens). Streams, so the page can show how far along the chapter is.
-    Logs the real prompt size so the context budget is checked against n_ctx instead of estimated."""
+    Logs the real prompt size so the context budget is checked against n_ctx instead of estimated.
+
+    `prev_changes` is the plain-fact "what changed" list the state-update step already produced after the previous
+    chapter (empty or None for chapter 1). It carries the facts of what happened in full; the chapter's own prose is
+    given only as a short tail (WRITER_TAIL_CHARS), for voice and to physically pick the scene back up — not reread in
+    full, which only invited the writer to rephrase it instead of moving the story forward."""
     context = story.context_for_chapter(chapter_num, feed)
     beat_block = story.render_beat(chapter_num)
     named_cast = ", ".join(c.name for c in story.characters)
@@ -72,14 +78,18 @@ def generate_chapter(story, chapter_num, chapter_summaries, last_chapter_text, t
         "\n".join(f"Chapter {i + 1}: {s}" for i, s in enumerate(chapter_summaries))
         if chapter_summaries else "(no prior chapters)"
     )
-    last_chapter_tail = last_chapter_text if last_chapter_text else "(chapter 1, no prior text)"
+    last_chapter_tail = (last_chapter_text.strip()[-WRITER_TAIL_CHARS:]
+                         if last_chapter_text and last_chapter_text.strip() else "(chapter 1, no prior text)")
+    changes_block = ("\n".join(f"- {c}" for c in prev_changes) if prev_changes else
+                     "(chapter 1, nothing yet)" if chapter_num == 1 else "(nothing notable changed)")
 
     note_block = (f"\nTHE AUTHOR READ THE LAST VERSION OF THIS CHAPTER AND ASKED FOR THIS CHANGE: {note.strip()}\n"
                   "Write a genuinely different version that applies the change, without breaking the beat above or the "
                   "cards.\n") if note and note.strip() else ""
     prompt = GENERATE_CHAPTER_PROMPT.format(
         chapter_num=chapter_num, target_words=target_words, named_cast=named_cast, beat_block=beat_block,
-        context=context, prior_summary_block=prior_summary_block, last_chapter_tail=last_chapter_tail, note_block=note_block,
+        context=context, prior_summary_block=prior_summary_block, changes_block=changes_block,
+        last_chapter_tail=last_chapter_tail, note_block=note_block,
         language=_lang(language)["name"], unit=_lang(language)["unit"],
     )
 
@@ -279,7 +289,8 @@ def run_chapter(req, progress=None):
         runtime.llm.reset()                               # every chapter starts from an empty context
     progress(step="writing", words=0, target_words=req.target_words, tokens=0, max_tokens=0, attempt=1)
     feed = vw().feed(n)                           # which items of the rotating lists this chapter is handed
-    text, finish, prompt_tokens = generate_chapter(vw(), n, req.summaries, req.prev_text, req.target_words, progress, lang, req.note or "", feed)
+    text, finish, prompt_tokens = generate_chapter(vw(), n, req.summaries, req.prev_text, req.target_words, progress, lang,
+                                                   req.note or "", feed, getattr(req, "prev_changes", None))
     vw().record_feed(feed)                        # counted before the state update, so a failed update keeps the counts
     words = count_units(text)
     logger.info("Chapter %d generated (~%d words); GPU memory: %s", n, words, model.gpu_report())
