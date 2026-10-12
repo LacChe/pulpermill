@@ -9,12 +9,6 @@ const HINTS={style:'How should the narration sound? What kind of narrator is tel
 let HIDE=[];
 /* which card is being drawn ('characters','world',...): lets field grouping below apply only on the card it's written for */
 let CURRENT_CARD=null;
-/* How many list-items we're currently inside the fields of (not path depth — a card like World holds several
-   top-level lists (locations/objects/groups) directly on the card object, one path step deeper than a card like
-   Characters that IS a list; both are top-level and neither should read as "nested"). This only goes above 0 once
-   we're drawing the fields that belong to one specific item of a list (e.g. inside one character, drawing `toward`),
-   which is the actual thing "nested" is meant to flag. */
-let LIST_DEPTH=0;
 /* Groups a character's own fields so the eye can chunk the form instead of reading every label in a flat list. Keyed by
    field name; a header is inserted the first time a field from a new group is reached. 'name'/'role' get no header
    (first group, kept compact); 'toward' is a list field and draws its own box, so its header sits just above that box. */
@@ -267,11 +261,14 @@ function field_(parent,key,en,bp){
       return lab;
     }
     const here=PATH.slice();
-    /* nested = this list sits inside the fields of some other list's item (e.g. a character's `toward`), as opposed
-       to being one of a card's own top-level lists (Characters itself; or World's Locations/Objects/Groups, which
-       sit one path step deeper than Characters does but are just as top-level). LIST_DEPTH, not path length, is
-       what actually distinguishes the two. */
-    const nested=LIST_DEPTH>0,box=el('div',{class:'f'+(nested?' nested':'')},el('span',{class:'ro'},label(key)));
+    /* nested = this list is a labeled sub-list rather than the whole card's body. A card is either entirely one
+       list (Characters: nothing else lives at its root, so its items ARE the card — path length 1) or an object
+       with several fields side by side (World: setting/rules/hidden_truths/locations/objects/groups are all
+       siblings — path length 2+). A field nested inside one specific item (a character's `toward`) is also
+       length 2+. All of these read, visually, as "a sub-list inside whatever's currently open" — so they all get
+       the same treatment, regardless of which of those two data shapes produced them. Only the single bare-array
+       card body is exempt, since that list doesn't sit inside anything else at all. */
+    const nested=here.length>1,box=el('div',{class:'f'+(nested?' nested':'')},el('span',{class:'ro'},label(key)));
     const grouped=CURRENT_CARD==='characters'&&!nested;      // header dividers only inside the cast's own top-level cards
     const hasList=hasBase&&Array.isArray(old),flagsHere=FLAGS;
     const render=()=>{
@@ -305,13 +302,15 @@ function field_(parent,key,en,bp){
         retitle();
         inner.addEventListener('input',retitle);inner.addEventListener('change',retitle);
         let lastGroup=null;
-        LIST_DEPTH++;
-        try{
-          for(const kk in it){
-            if(grouped&&CHAR_GROUPS[kk]&&CHAR_GROUPS[kk]!==lastGroup){lastGroup=CHAR_GROUPS[kk];inner.append(el('h3',{class:'grp'},t(lastGroup)))}
-            const f=field(it,kk,en,bi);if(f)inner.append(f);
-          }
-        }finally{LIST_DEPTH--}
+        for(const kk in it){
+          if(grouped&&CHAR_GROUPS[kk]&&CHAR_GROUPS[kk]!==lastGroup){lastGroup=CHAR_GROUPS[kk];inner.append(el('h3',{class:'grp'},t(lastGroup)))}
+          const f=field(it,kk,en,bi);if(f)inner.append(f);
+        }
+        /* A cast member is the unit people actually want to move between stories — lift one into another project,
+           hand one to someone else, keep a favorite aside — so it gets its own one-click file, not just a share of
+           a whole-project export. Scoped to the cast's own top-level cards: a world location or a relationship
+           entry isn't the kind of thing anyone swaps between stories on its own. */
+        if(CURRENT_CARD==='characters'&&!nested)inner.append(el('button',{class:'sm',onclick:()=>exportCharacter(it)},t('Export this character')));
         inner.append(el('button',{class:'sm',onclick:()=>{
           if(!confirm(t('Remove “{name}” from this card? This cannot be undone.',{name:itemTitle(it,i).text})))return;       // deleting an item is guarded
           if(pooled)delete usesOf(parent,key)[it.id];v.splice(i,1);render();
