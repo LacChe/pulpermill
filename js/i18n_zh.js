@@ -437,7 +437,10 @@ const ZH={
   "option third limited":"第三人称限知",
   "option third omniscient":"第三人称全知",
   "option past":"过去时",
-  "option present":"现在时"
+  "option present":"现在时",
+  "Motivation & history":"动机与过往",
+  "Presentation":"外在表现",
+  "Relationships":"人物关系"
 };
 const PYD=[
   ["^Field required$", "缺少必填项"],

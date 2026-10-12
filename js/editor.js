@@ -7,6 +7,14 @@ const STAGES=[
 ];
 const HINTS={style:'How should the narration sound? What kind of narrator is telling this, and what attitude does it take toward events (humor, if any)? Do they comment or stay quiet? How do they handle feelings? What rhythm, how much dialogue? What would ruin it?',characters:'For each person: what they want, how they see themselves versus what they actually do, how they talk, their habits, and how they feel about each other person. Say exactly who did what to whom.',world:'The place and occasion, how it works as plain fact (one line per mechanic), the places, the objects that matter, and the secrets: what is true, who knows it, who does not.',outline:'Chapter by chapter: where, whose point of view, what each person wants and is hiding, what goes wrong, how it ends. What must be planted early and pay off later. What the ending looks like concretely, and what stays unresolved.'};
 let HIDE=[];
+/* which card is being drawn ('characters','world',...): lets field grouping below apply only on the card it's written for */
+let CURRENT_CARD=null;
+/* Groups a character's own fields so the eye can chunk the form instead of reading every label in a flat list. Keyed by
+   field name; a header is inserted the first time a field from a new group is reached. 'name'/'role' get no header
+   (first group, kept compact); 'toward' is a list field and draws its own box, so its header sits just above that box. */
+const CHAR_GROUPS={want:'Motivation & history',blind_spot:'Motivation & history',history:'Motivation & history',
+  look:'Presentation',habits:'Presentation',voice:'Presentation',sample_lines:'Presentation',
+  toward:'Relationships'};
 /* true while drawing a character's `wrap`: live state that starts empty and that the model fills in chapter by chapter */
 let LIVE=false;
 const LIVE_HINT=()=>t('Starts empty; filled in as the story goes');
@@ -234,8 +242,13 @@ function field_(parent,key,en,bp){
           if(rk)markRef(lab,ta,rk,pathStr,()=>parent[key]||[]);
       return lab;
     }
-    const box=el('div',{class:'f'},el('span',{class:'ro'},label(key)));
-    const hasList=hasBase&&Array.isArray(old),here=PATH.slice(),flagsHere=FLAGS;
+    const here=PATH.slice();
+    /* depth 1 = the card's own top-level list (e.g. the cast itself); deeper = a list nested inside one of those items
+       (e.g. a character's `toward`). Nested lists get their own class so CSS can show, at a glance, that they sit
+       inside something else rather than being read as more top-level cards. */
+    const nested=here.length>1,box=el('div',{class:'f'+(nested?' nested':'')},el('span',{class:'ro'},label(key)));
+    const grouped=CURRENT_CARD==='characters'&&!nested;      // header dividers only inside the cast's own top-level cards
+    const hasList=hasBase&&Array.isArray(old),flagsHere=FLAGS;
     const render=()=>{
       const keep=PATH,keepF=FLAGS;PATH=here.slice();FLAGS=flagsHere;
       try{
@@ -246,12 +259,17 @@ function field_(parent,key,en,bp){
         const ti=itemTitle(it,i),broken=scanRefs(it,PATH.slice(),[]).length;
         const pooled=isPool(pathStr)&&it&&it.id!=null,n=pooled?(usesOf(parent,key)[it.id]||0):0;
         const ttl=el('span',{class:'ttl'},ti.text),sum=el('summary',ti.text===ti.full?{}:{title:ti.full},ttl,tag,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
-        const d=el('details',broken?{class:'item',open:'open'}:{class:'item'},sum);
+        const cls='item'+(nested?' sub':'');
+        const d=el('details',broken?{class:cls,open:'open'}:{class:cls},sum);
         const inner=el('div',{class:'in'});
         /* the title follows what is typed (or picked) in the fields it is made from */
         const retitle=()=>{const x=itemTitle(it,i);ttl.textContent=x.text;if(x.text===x.full)sum.removeAttribute('title');else sum.title=x.full};
         inner.addEventListener('input',retitle);inner.addEventListener('change',retitle);
-        for(const kk in it){const f=field(it,kk,en,bi);if(f)inner.append(f)}
+        let lastGroup=null;
+        for(const kk in it){
+          if(grouped&&CHAR_GROUPS[kk]&&CHAR_GROUPS[kk]!==lastGroup){lastGroup=CHAR_GROUPS[kk];inner.append(el('h3',{class:'grp'},t(lastGroup)))}
+          const f=field(it,kk,en,bi);if(f)inner.append(f);
+        }
         inner.append(el('button',{class:'sm',onclick:()=>{
           if(!confirm(t('Remove “{name}” from this card? This cannot be undone.',{name:itemTitle(it,i).text})))return;       // deleting an item is guarded
           if(pooled)delete usesOf(parent,key)[it.id];v.splice(i,1);render();
@@ -284,7 +302,8 @@ function field_(parent,key,en,bp){
 }
 /* `card` is the card's name (style, characters, world, outline): the start of every field's path */
 function editor(data,en,base,card){
-  const wrap=el('div'),keep=PATH;
+  const wrap=el('div'),keep=PATH,keepCard=CURRENT_CARD;
+  CURRENT_CARD=card;
   try{
     if(Array.isArray(data)&&data.length&&data.every(x=>x&&typeof x==='object')){
       PATH=[];
@@ -295,6 +314,6 @@ function editor(data,en,base,card){
       const b=base&&typeof base==='object'&&!Array.isArray(base)?base:undefined;
       for(const k in data){const f=field(data,k,en,b);if(f)wrap.append(f)}
     }
-  }finally{PATH=keep}
+  }finally{PATH=keep;CURRENT_CARD=keepCard}
   return wrap;
 }

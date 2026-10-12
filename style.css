@@ -120,3 +120,28 @@ html[lang="zh-Hans"] .prose p{text-indent:2em;margin-bottom:.6em}
 .used,.usedtag{font-size:12px;white-space:nowrap;color:var(--mute);padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
 .used{margin-top:6px}
 .used.zero,.usedtag.zero{opacity:.6}
+
+/* ---------- nesting: make "this is inside something else" visible at a glance ---------- */
+/* A field holding a sub-list (e.g. a character's `toward` relationships) is set off from that character's own
+   fields: indented, recessed, with a left accent bar and a small caps label, instead of looking like one more
+   plain field in the same flat list. */
+.f.nested{margin:14px 0 10px 4px;padding:10px 10px 4px;border-left:3px solid var(--acc);background:var(--field);border-radius:0 6px 6px 0}
+.f.nested>.ro{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);margin-bottom:6px}
+/* the entries inside a nested list (e.g. each "toward X" relationship) read as lighter-weight sub-cards, not
+   full peers of the top-level character/location/chapter cards they live inside */
+.item.sub{background:var(--panel);border-color:var(--line);margin:0 0 6px;box-shadow:none}
+.item.sub>summary{font-size:13px;font-weight:500;color:var(--mute);padding:5px 8px}
+.item.sub>summary .ttl{color:var(--ink);font-weight:600}
+.item.sub>.in{padding:2px 8px 4px}
+.item.sub .f.nested{margin-left:2px}        /* a further nesting level still indents, just less, so it never runs off the column */
+
+/* ---------- field grouping: a few small dividers so a long card reads as chunks, not one flat list ---------- */
+h3.grp{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);
+  margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--line)}
+.item>.in>h3.grp:first-child{margin-top:4px;padding-top:0;border-top:0}   /* no dangling rule above the very first group */
+
+/* ---------- sticky header on an open top-level card ---------- */
+/* While scrolling a long open character/location/chapter, its name stays visible at the top of the panel instead
+   of scrolling out of view along with everything else. Nested sub-cards (.sub) are left alone: stacking several
+   stuck headers inside one open card would be more confusing than helpful. */
+.item:not(.sub)>summary{position:sticky;top:0;z-index:2;background:var(--panel);box-shadow:0 1px 0 var(--line)}
