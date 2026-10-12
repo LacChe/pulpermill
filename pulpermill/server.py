@@ -63,7 +63,8 @@ class ChapterRequest(BaseModel):
     chapter_num: int = Field(ge=1, le=MAX_CHAPTER_NUM)   # a number past the story's own length gets a readable message later
     cards: CardsJson                  # {style, characters, world, outline}: the cards as they stand BEFORE this chapter
     summaries: list[Text] = Field(default=[], max_length=MAX_CHAPTER_NUM)   # summaries of chapters 1..n-1, in order
-    prev_text: Text = ""              # full text of chapter n-1 (empty for chapter 1); only a short tail of this reaches the writer
+    prev_text: Text = ""              # full text of chapter n-1 (empty for chapter 1); a short tail of this reaches only the
+                                       # next-beat planner (structured JSON output), never the chapter writer (free prose)
     prev_changes: list[Text] = Field(default=[], max_length=200)   # plain-fact "what changed" lines from chapter n-1's state update
     target_words: int = Field(config.DEFAULT_TARGET_WORDS, ge=50, le=200_000)   # a target too big for the context gets a readable message later
     note: Optional[Text] = None       # what the author wants changed when this is a rewrite with a note

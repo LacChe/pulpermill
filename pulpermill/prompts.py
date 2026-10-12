@@ -94,13 +94,8 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
         re-explain, or have a character rediscover any of them):
         {changes_block}
 
-        THE LAST CHAPTER'S CLOSING LINES (for voice and to physically pick up the scene only — where
-        people were standing, what was just said. Do not continue or replay this scene: the new chapter
-        begins at the place and time given in the beat below, and time may have passed. Never reuse or
-        closely echo this passage's own wording):
-        {last_chapter_tail}
-
-        THIS CHAPTER'S BEAT (open the chapter at the Location and When given here):
+        THIS CHAPTER'S BEAT (open the chapter at the Location and When given here; chapters are not
+        necessarily back to back, so do not assume this one picks up right where the last one left off):
         {beat_block}
         {note_block}
         Write the chapter in {language}."""
@@ -461,10 +456,12 @@ def cast_lines(cast) -> str:
 # ---------------------------------------------------------------- THE NEXT BEAT
 # A beat is written only when the chapter before it is finished, so it can follow what really happened. Nothing past the chapter
 # being written exists: later beats are not planned, stored or shown to the writer.
-BEAT_TAIL_CHARS = 1500            # how much of the chapter just written the planner reads (the ending is what matters)
-WRITER_TAIL_CHARS = 400           # how much of the previous chapter the next chapter's WRITER reads: just enough to pick the
-                                   # scene back up (where people are standing, what was just said), not the whole chapter — the
-                                   # facts of what changed are carried separately, in full, as WHAT THE LAST CHAPTER CHANGED
+BEAT_TAIL_CHARS = 1500            # how much of the chapter just written the planner reads (the ending is what matters). The
+                                   # chapter WRITER is never shown any of the previous chapter's prose at all (only the facts
+                                   # of what changed, in WHAT THE LAST CHAPTER CHANGED): chapters are not guaranteed to be
+                                   # contiguous, and a quoted passage of prose in the prompt was found to get echoed back
+                                   # verbatim as the new chapter's own opening despite being told not to reuse it — a planner
+                                   # reading a tail to produce structured JSON doesn't have that failure mode, so it keeps one.
 
 
 def next_beat_prompt(story, n, summaries, prev_text, language="en"):

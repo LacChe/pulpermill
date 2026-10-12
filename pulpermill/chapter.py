@@ -8,7 +8,7 @@ from . import config, generation, model, runtime
 from .runtime import Cancelled, LLM_LOCK, logger
 from .prompts import (
     EXTRACT_STATE_UPDATE_PROMPT, EXTRACT_STATE_UPDATE_RETRY_SUFFIX, GENERATE_CHAPTER_PROMPT,
-    SUMMARIZE_CHAPTER_PROMPT, WRITER_TAIL_CHARS, language_head, next_beat_prompt
+    SUMMARIZE_CHAPTER_PROMPT, language_head, next_beat_prompt
 )
 from .stages import lang_post
 from .schema import (
@@ -62,15 +62,17 @@ def summarize_chapter(chapter_text, chapter_num, language="en", narrator=""):
     return best
 
 
-def generate_chapter(story, chapter_num, chapter_summaries, last_chapter_text, target_words, progress=None, language="en",
+def generate_chapter(story, chapter_num, chapter_summaries, target_words, progress=None, language="en",
                      note="", feed=None, prev_changes=None):
     """Returns (text, finish_reason, prompt_tokens). Streams, so the page can show how far along the chapter is.
     Logs the real prompt size so the context budget is checked against n_ctx instead of estimated.
 
     `prev_changes` is the plain-fact "what changed" list the state-update step already produced after the previous
-    chapter (empty or None for chapter 1). It carries the facts of what happened in full; the chapter's own prose is
-    given only as a short tail (WRITER_TAIL_CHARS), for voice and to physically pick the scene back up — not reread in
-    full, which only invited the writer to rephrase it instead of moving the story forward."""
+    chapter (empty or None for chapter 1). The writer is never shown any of the previous chapter's own prose: chapters
+    are not guaranteed to be contiguous (the beat may open somewhere else, some time later), and a quoted tail of prose
+    in the prompt was found to get echoed back verbatim as the new chapter's own opening despite being told not to
+    reuse it. Continuity of fact comes from `prev_changes` and the summaries; continuity of voice comes from the style
+    card, which is sent every chapter regardless."""
     context = story.context_for_chapter(chapter_num, feed)
     beat_block = story.render_beat(chapter_num)
     named_cast = ", ".join(c.name for c in story.characters)
@@ -78,8 +80,6 @@ def generate_chapter(story, chapter_num, chapter_summaries, last_chapter_text, t
         "\n".join(f"Chapter {i + 1}: {s}" for i, s in enumerate(chapter_summaries))
         if chapter_summaries else "(no prior chapters)"
     )
-    last_chapter_tail = (last_chapter_text.strip()[-WRITER_TAIL_CHARS:]
-                         if last_chapter_text and last_chapter_text.strip() else "(chapter 1, no prior text)")
     changes_block = ("\n".join(f"- {c}" for c in prev_changes) if prev_changes else
                      "(chapter 1, nothing yet)" if chapter_num == 1 else "(nothing notable changed)")
 
@@ -89,17 +89,16 @@ def generate_chapter(story, chapter_num, chapter_summaries, last_chapter_text, t
     prompt = GENERATE_CHAPTER_PROMPT.format(
         chapter_num=chapter_num, target_words=target_words, named_cast=named_cast, beat_block=beat_block,
         context=context, prior_summary_block=prior_summary_block, changes_block=changes_block,
-        last_chapter_tail=last_chapter_tail, note_block=note_block,
-        language=_lang(language)["name"], unit=_lang(language)["unit"],
+        note_block=note_block, language=_lang(language)["name"], unit=_lang(language)["unit"],
     )
 
     max_tokens = int(target_words * config.CHAPTER_TOKENS_PER_WORD)
     prompt_tokens = len(runtime.llm.tokenize(prompt.encode("utf-8")))
     n_ctx = runtime.llm.n_ctx()
     room = n_ctx - prompt_tokens
-    logger.info("Chapter %d prompt: %d tokens (context %d tokens, cards %d chars, previous chapter %d chars); "
+    logger.info("Chapter %d prompt: %d tokens (context %d tokens, cards %d chars); "
                 "%d tokens left for generation, max_tokens=%d",
-                chapter_num, prompt_tokens, n_ctx, len(context), len(last_chapter_tail), room, max_tokens)
+                chapter_num, prompt_tokens, n_ctx, len(context), room, max_tokens)
     if room < target_words * config.CHAPTER_MIN_ROOM_PER_WORD:
         raise ValueError(M("too much to send: chapter {n}'s prompt is {prompt} tokens, which leaves {room} for writing, "
                            "and a {target}-word chapter needs about {need}. Lower the target word count or shorten the cards.",
@@ -330,7 +329,7 @@ def run_chapter(req, progress=None):
         runtime.llm.reset()                               # every chapter starts from an empty context
     progress(step="writing", words=0, target_words=req.target_words, tokens=0, max_tokens=0, attempt=1)
     feed = vw().feed(n)                           # which items of the rotating lists this chapter is handed
-    text, finish, prompt_tokens = generate_chapter(vw(), n, req.summaries, req.prev_text, req.target_words, progress, lang,
+    text, finish, prompt_tokens = generate_chapter(vw(), n, req.summaries, req.target_words, progress, lang,
                                                    req.note or "", feed, getattr(req, "prev_changes", None))
     vw().record_feed(feed)                        # counted before the state update, so a failed update keeps the counts
     words = count_units(text)
