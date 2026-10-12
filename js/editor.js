@@ -284,7 +284,12 @@ function field_(parent,key,en,bp){
         const ti=itemTitle(it,i),broken=scanRefs(it,PATH.slice(),[]).length;
         const pooled=isPool(pathStr)&&it&&it.id!=null,n=pooled?(usesOf(parent,key)[it.id]||0):0;
         const ttl=el('span',{class:'ttl'},ti.text);
-        const sum=el('summary',{},ttl,tag,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
+        /* which list this item belongs to (Objects / Locations / Groups / a character's Toward...), carried right
+           in the item's own header so it's never lost once you've scrolled past that section's heading. Cheap and
+           robust: no second sticky layer to keep aligned with the first, and it travels with the item wherever it's
+           read, open or closed, scrolled or not. */
+        const crumb=el('span',{class:'crumb'},label(key));
+        const sum=el('summary',{},crumb,ttl,tag,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
         const cls='item'+(nested?' sub':'');
         const d=el('details',broken?{class:cls,open:'open'}:{class:cls},sum);
         const inner=el('div',{class:'in'});
