@@ -142,16 +142,13 @@ EXTRACT_STATE_UPDATE_PROMPT = """Read the chapter below and extract what changed
           most chapters, and a chapter with none is normal.
         - "detail": only a durable fact the chapter newly established about them that is NOT already on their
           card or in their current state.
-        - "want": only if this chapter settled or reversed what they want: they got it, lost it for good, gave it
-          up, or found something bigger to want. Write what they want now, as one sentence in the same form as the
-          want on their card. A setback or a doubt is not enough.
-        - "blind_spot": only if this chapter made them see through their blind spot (they admitted it, or acted
-          against it and meant it) or gave them a new one. Write their blind spot as it now stands, in the same form
-          as the one on their card. A passing moment of doubt that they then fall back from is not enough.
         - "new_habit": a repeated behavior the chapter showed as a pattern (it happens more than once, or is plainly
           how they now act), not a one-off action, and not already among their habits. "dropped_habit": a habit from
           their card, copied exactly, that they have clearly given up or can no longer keep.
-        - Write every text value (condition, change, detail, want, blind spot, habits,
+        - A character's want and blind spot are fixed personality traits and are never rewritten: if this chapter
+          bears on either (they got what they wanted, saw through their blind spot, and so on), that belongs in
+          "change" as a turning point, not as a rewrite of the trait itself.
+        - Write every text value (condition, change, detail, habits,
           descriptions) in {language}. Ids and JSON keys stay exactly as given.
         - Every entry is about that one character only. Never copy or reword another character's entry, or an
           entry already listed in a current state: if it is not new and specific, leave it empty.

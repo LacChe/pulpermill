@@ -185,8 +185,9 @@ class StoryProject(BaseModel):
         return "\n".join(parts)
 
     CHARACTER_GUIDE: ClassVar[str] = (
-        "How to read a character: Role = who they are to the story. Wants = what they actively pursue; it drives "
-        "their choices. Blind spot = how they see themselves versus what they actually do; show the contradiction "
+        "How to read a character: Role = who they are to the story. Wants = a lasting personal drive, not this "
+        "story's particular goal (see the beat and 'Ends the story' for that); let it shape their choices in "
+        "character. Blind spot = how they see themselves versus what they actually do; show the contradiction "
         "in action and never explain it. Looks and Habits = established facts, a selection for this chapter; use one "
         "when a moment calls for it, and never contradict them. Voice = how they speak. Sample lines = their voice only; never reuse them. "
         "History = background; surface it only if the beat calls for it. Toward = how they feel about and act "

@@ -25,7 +25,11 @@ class CharacterDraft(BaseModel):
         description="What this person is to the story, in the source's own words for their job or place. "
         "Never a title that belongs to someone else. Say what they do, not only a one-word title."
     )
-    want: str = Field(description="A concrete, external goal they are actively pursuing.")
+    want: str = Field(
+        description="A lasting personal drive -- the kind of thing they generally chase or need, as a standing "
+        "trait, not a goal belonging to any one story. What they're after in this particular story lives in the "
+        "outline and chapter beats, not here."
+    )
     blind_spot: str = Field(
         description="State how they see themselves and the specific thing they do that contradicts it. "
         "A nervous tic is not a blind spot."

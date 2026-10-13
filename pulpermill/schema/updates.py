@@ -31,16 +31,6 @@ class CharacterUpdate(BaseModel):
         "specific person. One short sentence, a different kind of shift from every line already in their current state and "
         "from every other character's. Leave empty if nothing turned; most characters have none in most chapters.",
     )
-    want: Optional[str] = Field(
-        default=None,
-        description="Only if this chapter settled or reversed what they want (they got it, lost it for good, gave it up, or found "
-        "a bigger want): their want as it now stands, one sentence, written like the want on their card. Otherwise empty.",
-    )
-    blind_spot: Optional[str] = Field(
-        default=None,
-        description="Only if this chapter made them see through their blind spot (they admitted it, or acted against it and "
-        "meant it) or gave them a new one: their blind spot as it now stands, written like the one on their card. Otherwise empty.",
-    )
     new_habit: Optional[str] = Field(
         default=None,
         description="A repeated behavior this chapter showed as a pattern, not a one-off action, that is not on their card. Otherwise empty.",
@@ -91,9 +81,11 @@ class StateUpdate(BaseModel):
 
 def apply_state_update(project: StoryProject, upd: StateUpdate, chapter_num: int) -> tuple[list[str], list[dict]]:
     """
-    Apply a StateUpdate and the chapter's revealed truths to the live state. A character's want, blind spot and habits
-    and the descriptions of places, objects and groups follow the story; nothing else in the core is edited and nothing is
-    added to the World. Returns (warnings, changes):
+    Apply a StateUpdate and the chapter's revealed truths to the live state. A character's habits and the
+    descriptions of places, objects and groups follow the story; want and blind_spot are authored personality
+    traits and are never rewritten here -- a chapter's effect on them is recorded only as a `change` line in the
+    wrap, same as any other turning point. Nothing else in the core is edited and nothing is added to the World.
+    Returns (warnings, changes):
     warnings for anything skipped, and one structured entry for every value that
     ACTUALLY changed (nothing is recorded when the new value equals the old one).
     This is the ONE place the card rules are enforced at runtime: characters hold no
@@ -178,14 +170,6 @@ def apply_state_update(project: StoryProject, upd: StateUpdate, chapter_num: int
         if c is None:
             warn.append(M("character_updates: unknown character '{who}'", who=cu.character))
             continue
-        for field in ("want", "blind_spot"):
-            new = (getattr(cu, field) or "").strip()
-            if really_new(new, getattr(c, field)):
-                text = (M("{name}'s want changed: {text}", name=c.name, text=new) if field == "want" else
-                        M("{name}'s blind spot changed: {text}", name=c.name, text=new))
-                changes.append(dict(kind=f"character_{field}", target=c.id, target_name=c.name, field=field,
-                                    before=getattr(c, field), after=new, text=text))
-                setattr(c, field, new)
         gone = (cu.dropped_habit or "").strip()
         if gone:
             hit = next((h for h in c.habits if squash(h) == squash(gone)), None)
