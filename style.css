@@ -117,10 +117,10 @@ html[lang="zh-Hans"] .prose p{text-indent:2em;margin-bottom:.6em}
 .tabs{display:flex;gap:6px;position:sticky;top:0;z-index:3;background:var(--bg);padding:6px 0 8px;margin:0 0 6px}
 .tab{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;font-weight:600;color:var(--mute);background:var(--panel);border:1px solid var(--line);border-radius:6px}
 .tab:hover{color:var(--ink);border-color:var(--mute)}
-.tab.on,.tab.on:hover{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.tab.on,.tab.on:hover{background:linear-gradient(to top,color-mix(in srgb,var(--acc) 22%,transparent),color-mix(in srgb,var(--acc) 4%,transparent) 70%);border-color:transparent;border-radius:6px 6px 0 0;color:var(--ink);box-shadow:inset 0 -4px 0 var(--acc);cursor:default}
 .tabmark{color:var(--ok);font-weight:700}
 .tabmark:empty{display:none}
-.tab.on .tabmark{color:var(--acc-ink)}
+.tab.on .tabmark{color:var(--acc)}
 .tablabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* sections inside a card: a title and a plain description, with room between one section and the next */
