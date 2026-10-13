@@ -46,11 +46,17 @@ function resetAll(){
 
 function inputSection(pg){
   const sec=el('section',{class:'box',id:'examplebox'});
-  sec.append(el('div',{class:'head'},el('h2',{},t('Example chapter (optional)'))),
+  const has=!!pg.chapter.trim();
+  /* Optional, and often skipped entirely — once a chapter's been pasted in and the "what's it for" choice made,
+     this doesn't need to keep taking up a full screen's worth of room above the cards every time. Closed by
+     default once it's actually holding something; open by default while it's still empty, same as a card's own
+     notes section does. */
+  const det=el('details',{class:'notes',open:has?false:'open'},
+    el('summary',{},t('Example chapter (optional)'),has?el('span',{class:'tag'},t('added')):null),
     el('p',{class:'hint',id:'modehint'},t('Paste a chapter from any story to give the model something to work from. Each card below has its own switch for using it. The limit shown is the tightest of the cards that use it, and the chapter counts against each of their limits.')));
   const ta=el('textarea',{id:'chapter',rows:10,placeholder:t('Paste one chapter here.'),'aria-label':t('Example chapter')});
   ta.value=pg.chapter;ta.addEventListener('input',()=>{pg.chapter=ta.value;updateCounters()});
-  sec.append(ta,el('div',{class:'count',id:'chcount'}));
+  det.append(ta,el('div',{class:'count',id:'chcount'}));
   /* what the example is for: one choice */
   const fs=el('fieldset',{class:'uses',id:'exuses'},el('legend',{},t('What is the example for?')));
   EXAMPLE_USES.forEach(u=>{
@@ -59,7 +65,8 @@ function inputSection(pg){
     rb.addEventListener('change',()=>{if(rb.checked){pg.use=u.k;draw()}});
     fs.append(el('label',{class:'chk'},rb,el('span',{class:'usename'},t(u.t)),el('span',{class:'ro'},' — '+t(u.d))));
   });
-  sec.append(fs);
+  det.append(fs);
+  sec.append(det);
   return sec;
 }
 /* Which stage tab a page is showing. A WeakMap, not a field on the page object, because pg gets serialized whole

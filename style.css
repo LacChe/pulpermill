@@ -74,6 +74,11 @@ fieldset>legend{font-size:13px;color:var(--mute);padding:0 4px}
 .rerun textarea{flex:1 1 240px;min-height:38px;max-height:320px;resize:vertical;overflow:auto}
 .took{font-weight:400;font-size:12px;opacity:.85;margin-left:8px}
 .notes{margin:0 0 12px}.notes>summary{cursor:pointer;color:var(--mute);font-size:13px;margin-bottom:6px}
+/* Example chapter is its own box with no other heading, so its collapsible summary carries the same weight an h2
+   would — same treatment as every other card's title, just also clickable to collapse. */
+#examplebox>details.notes{margin:0}
+#examplebox>details.notes>summary{font-size:19px;font-weight:700;color:var(--ink);font-family:inherit;margin-bottom:4px}
+#examplebox>details.notes>summary .tag{margin-left:8px;vertical-align:middle}
 .count{font-size:12px;color:var(--mute);margin:3px 0 0}.count.warn{color:var(--warn)}.count.over{color:var(--err);font-weight:600}
 .ro{color:var(--mute);font-size:13px}
 h3.sm{font-size:14px;margin:12px 0 4px;color:var(--mute);font-family:inherit}
