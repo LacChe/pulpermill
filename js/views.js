@@ -30,6 +30,7 @@ function drawNav(){
     el('b',{},pageName(j)),el('span',{class:'navsub'},navSub(pg,j))))));
   nav.append(ol);
   const foot=el('div',{class:'navfoot'});
+  foot.append(el('button',{id:'exportstory',disabled:!pages().some(p=>p.result),onclick:exportStory},t('Export story (.md)')));
   foot.append(el('button',{id:'saveproj',onclick:()=>downloadText(storyFile()+'_project.json',projectFile(),'application/json')},t('Save project')),
     el('button',{id:'loadproj',disabled:!!st.busy,onclick:()=>$('#projfile').click()},t('Load project')));
   if(!st.armed)foot.append(el('button',{id:'reset',class:'danger',disabled:!!st.busy,onclick:()=>{st.armed=true;drawNav()}},t('Reset everything…')));
@@ -226,7 +227,6 @@ function drawConn(){
 function drawTop(){
   const b=$('#banner');b.innerHTML='';
   if(st.banner)b.append(el('div',{class:'msg err'},msg(st.banner)+' ',el('button',{class:'sm',onclick:()=>{st.banner='';drawTop()}},t('Dismiss'))));
-  $('#exportstory').disabled=!pages().some(p=>p.result);
   const sb=$('#stopbtn');sb.hidden=!st.busy;sb.disabled=!!st.stopping||!st.jobId;sb.textContent=st.stopping?t('Stopping…'):t('Stop');
   const si=$('#seedinfo');si.hidden=st.lastSeed==null;if(st.lastSeed!=null)$('#lastseed').textContent=t('Last run used seed {n}',{n:st.lastSeed});
   drawConn();syncTabIcon();

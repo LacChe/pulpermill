@@ -23,10 +23,13 @@ select{width:auto;min-width:200px}
 /* top bar: backend connection */
 .top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px}
 .top label{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--mute);flex:1 1 200px;max-width:340px}
+.top .field{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--mute)}
 .top .grow{flex:1 1 0}
 .top label.seedl{flex:0 1 150px}
+.top .brand{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.top .brand h1{margin:0}
 #seedinfo{align-self:center;font-size:13px}
-#conn{font-size:13px;color:var(--mute);align-self:center}
+#conn{font-size:13px;color:var(--mute);align-self:flex-start}
 #banner:empty{display:none}
 #banner{max-width:1500px;margin:10px auto 0;padding:0 16px}
 
@@ -109,7 +112,7 @@ label.useex{margin:6px 0 2px;font-size:13px}
 .tag.chgtag{background:var(--chg-bg);border-color:var(--chg-line);color:var(--ink);margin-left:6px;font-weight:400}
 .pending{border:1px dashed var(--line);border-radius:6px;padding:12px;margin:8px 0;background:var(--field)}
 
-.top .seg{margin:0;align-self:end}
+.top .seg{margin:0;align-self:flex-start}
 html[lang="zh-Hans"] .prose{font-size:17px;line-height:1.9;letter-spacing:.02em}
 html[lang="zh-Hans"] .prose p{text-indent:2em;margin-bottom:.6em}
 

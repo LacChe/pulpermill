@@ -1,5 +1,4 @@
 /* Pulpermill page: Startup: wire the buttons, restore the saved project, check the connection, resume a running job. */
-$('#exportstory').onclick=exportStory;
 $('#stopbtn').onclick=stopGeneration;
 $('#lang-en').onclick=()=>setLang('en');
 $('#lang-zh').onclick=()=>setLang('zh');
