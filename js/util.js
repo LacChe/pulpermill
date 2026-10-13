@@ -1,7 +1,7 @@
 /* Pulpermill page: Small helpers with no knowledge of the page: DOM, storage, ids, time. */
 const $=s=>document.querySelector(s);
 const el=(t,a={},...kids)=>{const e=document.createElement(t);for(const k in a){if(k==='class')e.className=a[k];else if(k.startsWith('on'))e.addEventListener(k.slice(2),a[k]);else if(a[k]!==false&&a[k]!==null)e.setAttribute(k,a[k]);}for(const c of kids.flat())if(c!=null)e.append(c);return e};
-const save=(k,v)=>{try{localStorage.setItem('pmcg_'+k,v)}catch(e){/* small settings (address, seed, language); a full store is reported by the project autosave */}};
+const save=(k,v)=>{try{localStorage.setItem('pmcg_'+k,v)}catch(e){/* small settings (address, language); a full store is reported by the project autosave */}};
 const load=k=>{try{return localStorage.getItem('pmcg_'+k)||''}catch(e){return ''}};
 const slugify=s=>String(s||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,'_').replace(/^_|_$/g,'')||'x';
 const blank=v=>Array.isArray(v)?[]:(v&&typeof v==='object')?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,blank(x)])):typeof v==='number'?0:'';

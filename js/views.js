@@ -257,7 +257,6 @@ function drawTop(){
   const b=$('#banner');b.innerHTML='';
   if(st.banner)b.append(el('div',{class:'msg err'},msg(st.banner)+' ',el('button',{class:'sm',onclick:()=>{st.banner='';drawTop()}},t('Dismiss'))));
   const sb=$('#stopbtn');sb.hidden=!st.busy;sb.disabled=!!st.stopping||!st.jobId;sb.textContent=st.stopping?t('Stopping…'):t('Stop');
-  const si=$('#seedinfo');si.hidden=st.lastSeed==null;if(st.lastSeed!=null)$('#lastseed').textContent=t('Last run used seed {n}',{n:st.lastSeed});
   drawConn();syncTabIcon();
 }
 /* the parts of the page that are plain HTML: text carries data-i18n (or -ph / -aria for placeholders and labels) */

@@ -20,7 +20,7 @@ function saveProject(){
   catch(e){st.banner=mk('Autosave failed (browser storage is full). Use Save project to keep your work.');drawTop();return false}
 }
 function projectFile(){
-  return JSON.stringify({format:'pulpermill-project',version:2,saved:new Date().toISOString(),slug:$('#slug').value,seed:$('#seed').value,lang:LANG,
+  return JSON.stringify({format:'pulpermill-project',version:2,saved:new Date().toISOString(),slug:$('#slug').value,lang:LANG,
     story:{...st.story,job:null}},transient,1);
 }
 /* Accepts the current format and the earlier ones. Older projects stored two copies of the cards between chapters
@@ -79,7 +79,6 @@ function loadProjectFile(text){
   const story=normalizeProject(p);
   st.story=story;st.report=null;st.armed=false;st.banner='';
   $('#slug').value=p.slug||'';save('slug',$('#slug').value);
-  $('#seed').value=p.seed==null?'':p.seed;save('seed',$('#seed').value);
   if(p.lang==='zh'||p.lang==='en'){LANG=p.lang;save('lang',LANG);applyStatic()}
   draw(false);saveProject();
 }

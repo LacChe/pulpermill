@@ -3,8 +3,7 @@ $('#stopbtn').onclick=stopGeneration;
 $('#lang-en').onclick=()=>setLang('en');
 $('#lang-zh').onclick=()=>setLang('zh');
 $('#test').onclick=testConnection;
-$('#useseed').onclick=()=>{$('#seed').value=st.lastSeed;save('seed',$('#seed').value)};
-['base','slug','seed'].forEach(id=>{const e=$('#'+id);e.value=load(id);e.addEventListener('input',()=>save(id,e.value))});
+['base','slug'].forEach(id=>{const e=$('#'+id);e.value=load(id);e.addEventListener('input',()=>save(id,e.value))});
 $('#base').addEventListener('change',testConnection);
 $('#importfile').onchange=async e=>{const f=[...e.target.files];e.target.value='';if(f.length)await importFiles(f)};
 $('#projfile').onchange=async e=>{

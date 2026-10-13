@@ -1,12 +1,4 @@
 /* Pulpermill page: Generating cards and writing chapters: starting jobs, stopping, collecting results. */
-/* the seed box: empty means a random seed (the backend picks one and reports it back) */
-function seedParam(){
-  const v=$('#seed').value.trim();
-  if(v==='')return null;
-  const n=Number(v);
-  if(!Number.isInteger(n))throw fail('The seed must be a whole number.');
-  return n;
-}
 async function generate(i,feedback){
   const pg=cur(),s=STAGES[i],j=st.story.cur;
   if(st.busy)return;
@@ -27,7 +19,7 @@ async function generate(i,feedback){
   try{
     const res=await api('/generate',{method:'POST',body:JSON.stringify({
       stage:s.k,mode:ch?'chapter':'notes',notes:pg.notes[s.k]||'',chapter:ch,chapter_use:ch?(pg.use||''):'',language:LANG,
-      feedback:feedback||null,current:feedback?(pg.cards[s.k]||null):null,cards:earlier,seed:seedParam()})});
+      feedback:feedback||null,current:feedback?(pg.cards[s.k]||null):null,cards:earlier})});
     if(res.error)throw Object.assign(new Error(res.error),{m:apiErr(res)});
     st.jobId=res.job;st.stopping=false;drawTop();
     let r;
@@ -43,7 +35,6 @@ async function generate(i,feedback){
     if(r.world_additions&&r.world_additions.length&&pg.cards.world){
       r.world_additions.forEach(a=>{if(!pg.cards.world.locations.some(l=>l.id===a.id))pg.cards.world.locations.push(a)});
     }
-    if(r.seed!=null)st.lastSeed=r.seed;
     if(pg.draft)pg.draft[s.k]='';
     const firstTime=!pg.cards[s.k];                 // a card made for the first time moves the view on; regenerating one stays put
     pg.cards[s.k]=r.card;pg.warn[s.k]=r.warnings||[];
@@ -92,7 +83,7 @@ async function writeChapter(choice,note){
   try{
     if(!(SCH.nullable||[]).length)await loadSchema();
     const res=await api('/chapter',{method:'POST',body:JSON.stringify({chapter_num:k,cards:job.start,cast:job.cast,language:LANG,
-      summaries:P.slice(0,j).map(p=>p.result.summary),prev_text:prev?prev.text:'',note:(note||'').trim()||null,seed:seedParam()})});
+      summaries:P.slice(0,j).map(p=>p.result.summary),prev_text:prev?prev.text:'',note:(note||'').trim()||null})});
     if(res.error)throw Object.assign(new Error(res.error),{m:apiErr(res)});
     job.id=res.job;
     await pollChapter(job);
@@ -119,7 +110,7 @@ async function pollChapter(job){
       if(r.status==='done'||r.status==='cancelled')break;
     }
     if(r.status==='cancelled')pg.msg=mk('Stopped. Nothing from this attempt was kept.');
-    else{if(r.seed!=null)st.lastSeed=r.seed;commitResult(job,r)}
+    else{commitResult(job,r)}
   }catch(e){
     pg.msg=e.gaveUp?mk('Lost contact with the backend for too long. The chapter may still finish there: reload this page once the connection is back to pick it up.'):emsg(e);
     gaveUp=!!e.gaveUp;
