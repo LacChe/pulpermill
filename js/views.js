@@ -47,11 +47,18 @@ function resetAll(){
 
 function inputSection(pg){
   const sec=el('section',{class:'box',id:'examplebox'});
-  sec.append(el('div',{class:'head'},el('h2',{},t('Example chapter (optional)'))),
-    el('p',{class:'hint',id:'modehint'},t('Paste a chapter from any story to give the model something to work from. Each card below has its own switch for using it. The limit shown is the tightest of the cards that use it, and the chapter counts against each of their limits.')));
+  /* the section folds away; the choice is kept in the browser, so it survives redraws and reloads */
+  const body=el('div',{class:'exbody'});
+  const tog=el('button',{type:'button',class:'exhead','aria-controls':'exbody'},el('span',{class:'chev','aria-hidden':'true'}),el('h2',{},t('Example chapter (optional)')));
+  body.id='exbody';
+  const fold=c=>{body.hidden=c;sec.classList.toggle('closed',c);tog.setAttribute('aria-expanded',String(!c))};
+  fold(load('exfold')==='1');
+  tog.addEventListener('click',()=>{const c=!body.hidden;fold(c);save('exfold',c?'1':'0')});
+  sec.append(el('div',{class:'head'},tog));
+  body.append(el('p',{class:'hint',id:'modehint'},t('Paste a chapter from any story to give the model something to work from. Each card below has its own switch for using it. The limit shown is the tightest of the cards that use it, and the chapter counts against each of their limits.')));
   const ta=el('textarea',{id:'chapter',rows:10,placeholder:t('Paste one chapter here.'),'aria-label':t('Example chapter')});
   ta.value=pg.chapter;ta.addEventListener('input',()=>{pg.chapter=ta.value;updateCounters()});
-  sec.append(ta,el('div',{class:'count',id:'chcount'}));
+  body.append(ta,el('div',{class:'count',id:'chcount'}));
   /* what the example is for: one choice */
   const fs=el('fieldset',{class:'uses',id:'exuses'},el('legend',{},t('What is the example for?')));
   EXAMPLE_USES.forEach(u=>{
@@ -60,7 +67,7 @@ function inputSection(pg){
     rb.addEventListener('change',()=>{if(rb.checked){pg.use=u.k;draw()}});
     fs.append(el('label',{class:'chk'},rb,el('span',{class:'usename'},t(u.t)),el('span',{class:'ro'},' — '+t(u.d))));
   });
-  sec.append(fs);
+  body.append(fs);sec.append(body);
   return sec;
 }
 /* ---------- one tab per card ----------

@@ -137,3 +137,27 @@ html[lang="zh-Hans"] .prose p{text-indent:2em;margin-bottom:.6em}
 .used,.usedtag{font-size:12px;white-space:nowrap;color:var(--mute);padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
 .used{margin-top:6px}
 .used.zero,.usedtag.zero{opacity:.6}
+
+/* example chapter fold */
+.exhead{all:unset;display:flex;align-items:center;gap:8px;cursor:pointer;color:inherit}
+.exhead:focus-visible{outline:2px solid var(--flag,#06c);outline-offset:3px}
+.exhead h2{margin:0}
+.exhead .chev{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid currentColor;transition:transform .15s}
+section.box.closed .exhead .chev{transform:rotate(-90deg)}
+section.box.closed .head{margin-bottom:0}
+.exbody[hidden]{display:none}
+
+/* depth: each open collapsible inside a card is one level deeper than what holds it. The same teal gets stronger
+   (a wash over the whole body, plus a rule down the left edge), so being inside something reads at a glance.
+   Closed ones stay quiet. Levels are counted by nesting; anything deeper than three keeps the level-three look. */
+:root{--dp1:6%;--dp2:12%;--dp3:18%;--rp1:45%;--rp2:68%;--rp3:92%}
+@media (prefers-color-scheme:dark){:root{--dp1:9%;--dp2:17%;--dp3:25%}}
+details[open]{--tint:var(--dp1);--rule:var(--rp1)}
+details[open] details[open]{--tint:var(--dp2);--rule:var(--rp2)}
+details[open] details[open] details[open]{--tint:var(--dp3);--rule:var(--rp3)}
+details[open]:is(.item,.multi,.notes){background:color-mix(in srgb,var(--panel),var(--acc) var(--tint));box-shadow:inset 3px 0 0 color-mix(in srgb,var(--acc) var(--rule),var(--panel))}
+details[open]:is(.item,.multi,.notes)>summary{background:transparent}
+.notes[open]{padding:8px 10px 6px;border-radius:5px}
+details[open]>.in,details[open]>.mbody{border-top-color:color-mix(in srgb,var(--acc) 30%,var(--line))}
+details[open] :is(input,textarea,select){border-color:color-mix(in srgb,var(--line) 65%,var(--acc))}
+details[open] details:not([open]){background:color-mix(in srgb,var(--panel) 55%,transparent)}
