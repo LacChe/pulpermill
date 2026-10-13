@@ -913,16 +913,22 @@ details[open]
 /* ---- Buttons: four tiers, all with hover feedback ----
    .go      big, solid teal: the AI actions (generate, write chapter)
    .alt     big, teal outline with light text: important but not always used (regenerate with note, save, load, cancel)
-   .sm      small, solid slate gray: everything minor
+   .sm      small, dark fill with light border and light text: everything minor
    .danger  red outline (solid when it is the final confirmation): anything that throws work away */
 :root {
-  --alt: #55656f;
-  --alt-ink: #fff;
+  --sm-bg: #2b363c;
+  --sm-line: #b4c0c7;
+  --sm-ink: #eef3f5;
+  --sm-hov: #3a4950;
+  --sm-hline: #e3eaee;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --alt: #8c9ea8;
-    --alt-ink: #0f1a1d;
+    --sm-bg: #182125;
+    --sm-line: #9fb0b9;
+    --sm-ink: #e6eef1;
+    --sm-hov: #26343a;
+    --sm-hline: #d4dfe4;
   }
 }
 button:is(.go, .alt, .sm, .danger) {
@@ -953,14 +959,15 @@ button.alt:not(:disabled):hover {
   box-shadow: 0 2px 6px color-mix(in srgb, var(--acc) 25%, transparent);
 }
 button.sm:not(.go, .alt, .danger) {
-  background: var(--alt);
-  color: var(--alt-ink);
-  border-color: var(--alt);
+  background: var(--sm-bg);
+  color: var(--sm-ink);
+  border: 1.5px solid var(--sm-line);
   font-weight: 600;
 }
 button.sm:not(.go, .alt, .danger):not(:disabled):hover {
-  background: color-mix(in srgb, var(--alt), var(--ink) 20%);
-  border-color: color-mix(in srgb, var(--alt), var(--ink) 20%);
+  background: var(--sm-hov);
+  border-color: var(--sm-hline);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
 }
 button.danger {
   background: transparent;
