@@ -116,6 +116,13 @@ label.useex{margin:6px 0 2px;font-size:13px}
 html[lang="zh-Hans"] .prose{font-size:17px;line-height:1.9;letter-spacing:.02em}
 html[lang="zh-Hans"] .prose p{text-indent:2em;margin-bottom:.6em}
 
+/* sections inside a card: a title and a plain description, with room between one section and the next */
+.fsec{margin:0 0 34px}
+.fsec:last-child{margin-bottom:10px}
+.item .fsec{margin-bottom:24px}
+.sectitle{font-size:15px;font-weight:700;margin:0 0 3px;font-family:inherit}
+.secdesc{color:var(--mute);font-size:13px;line-height:1.45;margin:0 0 12px;max-width:72ch}
+
 /* use counts: beside each item of a rotating list */
 .urows{display:flex;flex-direction:column;gap:6px}
 .urow{display:flex;gap:8px;align-items:flex-start}

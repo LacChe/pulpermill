@@ -253,7 +253,7 @@ function field_(parent,key,en,bp){
         /* the title follows what is typed (or picked) in the fields it is made from */
         const retitle=()=>{const x=itemTitle(it,i);ttl.textContent=x.text;if(x.text===x.full)sum.removeAttribute('title');else sum.title=x.full};
         inner.addEventListener('input',retitle);inner.addEventListener('change',retitle);
-        for(const kk in it){const f=field(it,kk,en,bi);if(f)inner.append(f)}
+        groupFields(inner,it,here.join('.'),kk=>field(it,kk,en,bi));
         inner.append(el('button',{class:'sm',onclick:()=>{
           if(!confirm(t('Remove “{name}” from this card? This cannot be undone.',{name:itemTitle(it,i).text})))return;       // deleting an item is guarded
           if(pooled)delete usesOf(parent,key)[it.id];v.splice(i,1);render();
@@ -284,6 +284,23 @@ function field_(parent,key,en,bp){
   if(rk&&!isNum)markRef(lab,ta,rk,pathStr,()=>[ta.value.trim()]);
   return lab;
 }
+/* Draws the fields of `owner` into `into`. Where SECTIONS (sections.js) has an entry for `pathKey`, the fields are grouped
+   under a title and a plain-language description, with space between the groups; a section none of whose fields are drawn
+   (a hidden field, an empty block) is left out, and fields no section names go last under "Other". The id line stays on top.
+   `draw(key)` makes one field, so the editor's change tracking, link checks and warnings work as before. */
+function groupFields(into,owner,pathKey,draw){
+  const secs=SECTIONS[pathKey],keys=Object.keys(owner);
+  if(!secs){keys.forEach(k=>{const f=draw(k);if(f)into.append(f)});return}
+  const listed=new Set(secs.flatMap(s=>s.keys));
+  keys.filter(k=>k==='id').forEach(k=>{const f=draw(k);if(f)into.append(f)});
+  const block=(title,desc,ks)=>{
+    const nodes=ks.filter(k=>k in owner).map(draw).filter(Boolean);
+    if(!nodes.length)return;
+    into.append(el('div',{class:'fsec'},title?el('h3',{class:'sectitle'},t(title)):null,desc?el('p',{class:'secdesc'},t(desc)):null,nodes));
+  };
+  secs.forEach(s=>block(s.t,s.d,s.keys));
+  block('Other',null,keys.filter(k=>k!=='id'&&!listed.has(k)));
+}
 /* `card` is the card's name (style, characters, world, outline): the start of every field's path */
 function editor(data,en,base,card){
   const wrap=el('div'),keep=PATH;
@@ -295,7 +312,7 @@ function editor(data,en,base,card){
     }else if(data&&typeof data==='object'){
       PATH=[card];
       const b=base&&typeof base==='object'&&!Array.isArray(base)?base:undefined;
-      for(const k in data){const f=field(data,k,en,b);if(f)wrap.append(f)}
+      groupFields(wrap,data,card,k=>field(data,k,en,b));
     }
   }finally{PATH=keep}
   return wrap;
