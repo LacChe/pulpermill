@@ -33,25 +33,14 @@ function makeZip(files){
    files are the wrapper the importer has always read ({format, chapter, <card>: ...}). A character file is just the character:
    the importer merges a single character file into the cast by id (replacing that character, or adding a new one), whereas a
    wrapped list would replace the whole cast, so several character files could not be imported together. */
-const CARD_FILE_NAME={style:'style',outline:'setup',world:'world'};
-/* The wrapper the importer has always read ({format, chapter, <card>: ...}) for one card, standing alone. Shared by
-   the zip export below and by the single-card download button, so a card downloaded on its own is byte-for-byte
-   the same file that was always sitting inside the zip — just reachable without unzipping anything. */
-function cardFileText(key,pg,j){
-  const end=isEnding(j),meta={format:'pulpermill-cards',version:1};
-  if(end)meta.note='cards after chapter '+j;else meta.chapter=j+1;
-  return JSON.stringify(Object.assign({},meta,{[key]:clean(pg.cards[key],key)}),null,2);
-}
-function exportCard(key){
-  const j=st.story.cur,pg=cur();
-  downloadText(CARD_FILE_NAME[key]+'.json',cardFileText(key,pg,j),'application/json');
-}
 function cardFiles(j){
-  const pg=pages()[j];
+  const pg=pages()[j],end=isEnding(j),meta={format:'pulpermill-cards',version:1};
+  if(end)meta.note='cards after chapter '+j;else meta.chapter=j+1;
+  const one=(key,val)=>JSON.stringify(Object.assign({},meta,{[key]:val}),null,2);
   const files=[],used={};
-  if(pg.cards.style)files.push({name:'style.json',text:cardFileText('style',pg,j)});
-  if(pg.cards.outline)files.push({name:'setup.json',text:cardFileText('outline',pg,j)});
-  if(pg.cards.world)files.push({name:'world.json',text:cardFileText('world',pg,j)});
+  if(pg.cards.style)files.push({name:'style.json',text:one('style',clean(pg.cards.style,'style'))});
+  if(pg.cards.outline)files.push({name:'setup.json',text:one('outline',clean(pg.cards.outline,'outline'))});
+  if(pg.cards.world)files.push({name:'world.json',text:one('world',clean(pg.cards.world,'world'))});
   (pg.cards.characters||[]).forEach((c,i)=>{
     let base=slugify(c.id||c.name||('character '+(i+1)))||('character_'+(i+1));
     if(used[base])base+='_'+(i+1);used[base]=1;
@@ -59,12 +48,21 @@ function cardFiles(j){
   });
   return files;
 }
-/* One character, one file, straight to disk — no zip, no picking it back out of a project export afterward. The
-   importer already treats a single character file as "add or update this one person" (matched by id) rather than
-   "replace the whole cast", so this and Import cards together are the mix-and-match path between stories: export
-   a character here, drop the file into Import cards on any other project, done. */
-function exportCharacter(c){
-  downloadText((slugify(c.id||c.name||'character')||'character')+'.json',JSON.stringify(clean(c,'characters'),null,2),'application/json');
+/* Single-file export for one card (style, world or outline/setup), or one character, so each can be kept or shared on its own. */
+function exportSingleCard(j,key){
+  const pg=pages()[j],end=isEnding(j),names={style:'style.json',outline:'setup.json',world:'world.json'};
+  const val=pg.cards[key],name=names[key];
+  if(!val||!name)return;
+  const meta={format:'pulpermill-cards',version:1};
+  if(end)meta.note='cards after chapter '+j;else meta.chapter=j+1;
+  const text=JSON.stringify(Object.assign({},meta,{[key]:clean(val,key)}),null,2);
+  downloadText(storyFile()+'_'+name,text,'application/json');
+}
+function exportCharacter(j,i){
+  const c=(pages()[j].cards.characters||[])[i];
+  if(!c)return;
+  const base=slugify(c.id||c.name||('character_'+(i+1)))||('character_'+(i+1));
+  downloadText(storyFile()+'_'+base+'.json',JSON.stringify(clean([c],'characters')[0],null,2),'application/json');
 }
 function exportPageCards(j){
   j=(typeof j==='number')?j:st.story.cur;

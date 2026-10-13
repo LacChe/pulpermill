@@ -7,14 +7,6 @@ const STAGES=[
 ];
 const HINTS={style:'How should the narration sound? What kind of narrator is telling this, and what attitude does it take toward events (humor, if any)? Do they comment or stay quiet? How do they handle feelings? What rhythm, how much dialogue? What would ruin it?',characters:'For each person: what they want, how they see themselves versus what they actually do, how they talk, their habits, and how they feel about each other person. Say exactly who did what to whom.',world:'The place and occasion, how it works as plain fact (one line per mechanic), the places, the objects that matter, and the secrets: what is true, who knows it, who does not.',outline:'Chapter by chapter: where, whose point of view, what each person wants and is hiding, what goes wrong, how it ends. What must be planted early and pay off later. What the ending looks like concretely, and what stays unresolved.'};
 let HIDE=[];
-/* which card is being drawn ('characters','world',...): lets field grouping below apply only on the card it's written for */
-let CURRENT_CARD=null;
-/* Groups a character's own fields so the eye can chunk the form instead of reading every label in a flat list. Keyed by
-   field name; a header is inserted the first time a field from a new group is reached. 'name'/'role' get no header
-   (first group, kept compact); 'toward' is a list field and draws its own box, so its header sits just above that box. */
-const CHAR_GROUPS={want:'Motivation & history',blind_spot:'Motivation & history',history:'Motivation & history',
-  look:'Presentation',habits:'Presentation',voice:'Presentation',sample_lines:'Presentation',
-  toward:'Relationships'};
 /* true while drawing a character's `wrap`: live state that starts empty and that the model fills in chapter by chapter */
 let LIVE=false;
 const LIVE_HINT=()=>t('Starts empty; filled in as the story goes');
@@ -105,29 +97,11 @@ function track(lab,ctl,old,get){
    labels for the code, so they never become titles. Long titles are cut with an ellipsis (the full text is the tooltip);
    a Han character counts as two letters because it is about twice as wide. */
 const personName=v=>{const m=REFCTX.character;return typeof v!=='string'||v===''?'':(m&&m.has(v)?m.get(v):v)};   // a character id as the person's name
-/* Han characters are cut to a tighter width since each one reads as about twice as wide as a Latin letter. */
-function clipWidth(raw,max){
-  let w=0,out='';
-  for(const c of raw){w+=cjkRe.test(c)?2:1;cjkRe.lastIndex=0;if(w>max)return {text:out.trimEnd()+'…',full:raw};out+=c}
-  return {text:raw,full:raw};
-}
 function itemTitle(it,i){
   const raw=String(it.name||it.fact||(it.chapter_num?t('Chapter {k}',{k:it.chapter_num}):'')||personName(it.character)||personName(it.toward)||t('Item {k}',{k:i+1})).replace(/\s+/g,' ').trim();
-  return clipWidth(raw,64);
-}
-/* A collapsed item shows only its title by default — fine for a short list, but with 6+ characters or objects it
-   means every closed row looks the same and you have to open each one to tell them apart. This picks one more
-   field (whichever of these the item actually has, in priority order) and shows a clipped one-line preview of it
-   next to the title, so a closed row still carries the detail you'd open it to find. Schema-agnostic on purpose:
-   it works for a character's `role`, a relationship's `attitude`, an object's `description`, and so on without
-   needing a per-card lookup table. */
-const PREVIEW_KEYS=['attitude','description','role','want','blind_spot','voice','history','condition','summary'];
-function itemPreview(it,titleFull){
-  for(const k of PREVIEW_KEYS){
-    const v=it[k];
-    if(typeof v==='string'&&v.trim()&&v.trim()!==titleFull)return clipWidth(v.replace(/\s+/g,' ').trim(),90);
-  }
-  return null;
+  let w=0,out='';
+  for(const c of raw){w+=cjkRe.test(c)?2:1;cjkRe.lastIndex=0;if(w>64)return {text:out.trimEnd()+'…',full:raw};out+=c}
+  return {text:raw,full:raw};
 }
 /* Use counts. A list the backend rotates (SCH.pools) shows, beside each item, how many chapters it was handed to the writer in;
    the least-used ones are handed over next. The counts live in the owning card's `uses` ({field: {item text or id: n}}).
@@ -260,17 +234,8 @@ function field_(parent,key,en,bp){
           if(rk)markRef(lab,ta,rk,pathStr,()=>parent[key]||[]);
       return lab;
     }
-    const here=PATH.slice();
-    /* nested = this list is a labeled sub-list rather than the whole card's body. A card is either entirely one
-       list (Characters: nothing else lives at its root, so its items ARE the card — path length 1) or an object
-       with several fields side by side (World: setting/rules/hidden_truths/locations/objects/groups are all
-       siblings — path length 2+). A field nested inside one specific item (a character's `toward`) is also
-       length 2+. All of these read, visually, as "a sub-list inside whatever's currently open" — so they all get
-       the same treatment, regardless of which of those two data shapes produced them. Only the single bare-array
-       card body is exempt, since that list doesn't sit inside anything else at all. */
-    const nested=here.length>1,box=el('div',{class:'f'+(nested?' nested':'')},el('span',{class:'ro'},label(key)));
-    const grouped=CURRENT_CARD==='characters'&&!nested;      // header dividers only inside the cast's own top-level cards
-    const hasList=hasBase&&Array.isArray(old),flagsHere=FLAGS;
+    const box=el('div',{class:'f'},el('span',{class:'ro'},label(key)));
+    const hasList=hasBase&&Array.isArray(old),here=PATH.slice(),flagsHere=FLAGS;
     const render=()=>{
       const keep=PATH,keepF=FLAGS;PATH=here.slice();FLAGS=flagsHere;
       try{
@@ -280,37 +245,15 @@ function field_(parent,key,en,bp){
         const tag=!hasList?null:!bi?el('span',{class:'tag chgtag'},t('new')):!same(it,bi)?el('span',{class:'tag chgtag'},t('changed')):null;
         const ti=itemTitle(it,i),broken=scanRefs(it,PATH.slice(),[]).length;
         const pooled=isPool(pathStr)&&it&&it.id!=null,n=pooled?(usesOf(parent,key)[it.id]||0):0;
-        const ttl=el('span',{class:'ttl'},ti.text);
-        /* which list this item belongs to (Objects / Locations / Groups / a character's Toward...), carried right
-           in the item's own header so it's never lost once you've scrolled past that section's heading. Cheap and
-           robust: no second sticky layer to keep aligned with the first, and it travels with the item wherever it's
-           read, open or closed, scrolled or not. */
-        const crumb=el('span',{class:'crumb'},label(key));
-        const sum=el('summary',{},crumb,ttl,tag,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
-        const cls='item'+(nested?' sub':'');
-        const d=el('details',broken?{class:cls,open:'open'}:{class:cls},sum);
+        const isCast=PATH.join('.')==='characters',ii=i;
+        const expBtn=isCast?el('button',{class:'sm',type:'button',title:t('Export this character'),onclick:(ev)=>{ev.preventDefault();ev.stopPropagation();exportCharacter(st.story.cur,ii)}},t('Export')):null;
+        const ttl=el('span',{class:'ttl'},ti.text),sum=el('summary',ti.text===ti.full?{}:{title:ti.full},ttl,tag,expBtn,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
+        const d=el('details',broken?{class:'item',open:'open'}:{class:'item'},sum);
         const inner=el('div',{class:'in'});
-        /* the title never gets cut short in favor of anything else — it's the one thing a closed row is scanned by.
-           A pulled-field detail (role, attitude, description...), when there is one, only ever shows up as a hover
-           tooltip: available on demand, never competing with the name for the row's width. */
-        const retitle=()=>{
-          const x=itemTitle(it,i);ttl.textContent=x.text;
-          const p=itemPreview(it,x.full);
-          const tip=[x.text!==x.full?x.full:'',p?p.full:''].filter(Boolean).join('\n');
-          if(tip)sum.title=tip;else sum.removeAttribute('title');
-        };
-        retitle();
+        /* the title follows what is typed (or picked) in the fields it is made from */
+        const retitle=()=>{const x=itemTitle(it,i);ttl.textContent=x.text;if(x.text===x.full)sum.removeAttribute('title');else sum.title=x.full};
         inner.addEventListener('input',retitle);inner.addEventListener('change',retitle);
-        let lastGroup=null;
-        for(const kk in it){
-          if(grouped&&CHAR_GROUPS[kk]&&CHAR_GROUPS[kk]!==lastGroup){lastGroup=CHAR_GROUPS[kk];inner.append(el('h3',{class:'grp'},t(lastGroup)))}
-          const f=field(it,kk,en,bi);if(f)inner.append(f);
-        }
-        /* A cast member is the unit people actually want to move between stories — lift one into another project,
-           hand one to someone else, keep a favorite aside — so it gets its own one-click file, not just a share of
-           a whole-project export. Scoped to the cast's own top-level cards: a world location or a relationship
-           entry isn't the kind of thing anyone swaps between stories on its own. */
-        if(CURRENT_CARD==='characters'&&!nested)inner.append(el('button',{class:'sm',onclick:()=>exportCharacter(it)},t('Export this character')));
+        for(const kk in it){const f=field(it,kk,en,bi);if(f)inner.append(f)}
         inner.append(el('button',{class:'sm',onclick:()=>{
           if(!confirm(t('Remove “{name}” from this card? This cannot be undone.',{name:itemTitle(it,i).text})))return;       // deleting an item is guarded
           if(pooled)delete usesOf(parent,key)[it.id];v.splice(i,1);render();
@@ -343,8 +286,7 @@ function field_(parent,key,en,bp){
 }
 /* `card` is the card's name (style, characters, world, outline): the start of every field's path */
 function editor(data,en,base,card){
-  const wrap=el('div'),keep=PATH,keepCard=CURRENT_CARD;
-  CURRENT_CARD=card;
+  const wrap=el('div'),keep=PATH;
   try{
     if(Array.isArray(data)&&data.length&&data.every(x=>x&&typeof x==='object')){
       PATH=[];
@@ -355,6 +297,6 @@ function editor(data,en,base,card){
       const b=base&&typeof base==='object'&&!Array.isArray(base)?base:undefined;
       for(const k in data){const f=field(data,k,en,b);if(f)wrap.append(f)}
     }
-  }finally{PATH=keep;CURRENT_CARD=keepCard}
+  }finally{PATH=keep}
   return wrap;
 }

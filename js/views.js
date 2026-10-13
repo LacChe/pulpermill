@@ -76,7 +76,10 @@ function drawStages(root,pg,j){
     if(broken.length)tags.append(el('span',{class:'tag bad'},t('broken links: {n}',{n:broken.length})));
     if(has&&base&&!same(pg.cards[s.k],base))tags.append(el('span',{class:'tag chgtag'},t('Changed since the last chapter')));
     const extra=st.limits&&s.k==='characters'?' '+t('A generation writes up to {n} characters. Add as many as you like and choose up to {m} for each chapter.',{n:st.limits.max_characters,m:st.limits.max_cast||6}):st.limits&&s.k==='outline'?' '+t('Up to {n} chapters.',{n:st.limits.max_chapters}):'';
-    sec.append(el('div',{class:'head'},el('h2',{},t(s.t)),tags),el('p',{class:'hint'},t(s.d)+extra));
+    const cardBtns=el('span',{class:'row',style:'margin:0'},
+      el('button',{class:'sm',disabled:!!st.busy,title:t('Import this card'),onclick:()=>$('#importfile').click()},t('Import card')),
+      s.k==='characters'?null:el('button',{class:'sm',disabled:!has,title:t('Export this card'),onclick:()=>exportSingleCard(j,s.k)},t('Export card')));
+    sec.append(el('div',{class:'head'},el('h2',{},t(s.t)),tags,cardBtns),el('p',{class:'hint'},t(s.d)+extra));
     const usingEx=j===0&&usesExample(s.k)&&!!pg.chapter.trim();
     if(j===0){
       const cb=el('input',{type:'checkbox',id:'ex-'+s.k,'data-k':s.k});cb.checked=usesExample(s.k);
@@ -152,10 +155,7 @@ function drawMid(){
   const root=$('#mid'),S=st.story,j=S.cur,pg=cur(),k=j+1,P=S.pages,prev=j>0?P[j-1]:null,ending=isEnding(j);
   root.innerHTML='';
   const head=el('section',{class:'box'});
-  const have=Object.keys(pg.cards).length>0;
-  head.append(el('div',{class:'head'},el('h2',{},ending?t('Ending cards'):t('Chapter {k} cards',{k})),el('span',{class:'row',style:'margin:0'},
-    el('button',{class:'sm',id:'importbtn',disabled:!!st.busy,onclick:()=>$('#importfile').click()},t('Import cards')),
-    el('button',{class:'sm',id:'exportbtn',disabled:!have,onclick:()=>exportPageCards()},t('Export cards')))));
+  head.append(el('div',{class:'head'},el('h2',{},ending?t('Ending cards'):t('Chapter {k} cards',{k}))));
   head.append(el('p',{class:'hint'},j===0
     ?t('Generate the four cards in order and check each one, or import them. Then write the chapter.')
     :ending?t('The cards as chapter {j} left them. The story has no chapter {k}, so there is nothing more to write. Edit or export them, or raise Total chapters on the Setup card to keep going.',{j,k})
