@@ -63,12 +63,41 @@ function inputSection(pg){
   sec.append(fs);
   return sec;
 }
-function drawStages(root,pg,j){
-  const hide=j===0?(SCH.hidden||[]):[],P=pages();
-  refContext(pg.cards);    // the live-state fields (wrap) only matter once a story is running
+/* ---------- one tab per card ----------
+   Only the open card is drawn, so the page is never one long column of four cards. Which card is open is remembered per
+   page and not saved with the project. Until someone picks one it is the first card not made yet (Style once all four exist),
+   and generate.js moves on to the next tab after a card is first made. */
+const ACTIVE_STAGE=new WeakMap();
+const firstUnmade=pg=>{const i=STAGES.findIndex(s=>!pg.cards[s.k]);return i<0?0:i};
+function activeStage(pg){const i=ACTIVE_STAGE.get(pg);return Number.isInteger(i)&&i>=0&&i<STAGES.length?i:firstUnmade(pg)}
+function openStage(pg,i){
+  ACTIVE_STAGE.set(pg,i);draw();
+  const b=document.querySelector('#mid .tabs [aria-selected="true"]');if(b)b.focus();     // a redraw drops focus; keep it on the tabs so the arrow keys keep working
+}
+function stageTabs(pg,act){
+  const bar=el('div',{class:'tabs',role:'tablist','aria-label':t('Cards')}),n=STAGES.length;
   STAGES.forEach((s,i)=>{
+    const done=!!pg.cards[s.k],on=i===act,busy=st.busy===s.k&&st.busyPg===pg;
+    const say=t(s.t)+(done?' — '+t('complete'):'')+(busy?' — '+t('generating'):'');
+    bar.append(el('button',{type:'button',role:'tab',id:'tab-'+s.k,class:'tab'+(on?' on':'')+(done?' done':'')+(busy?' busy':''),'data-k':s.k,
+      'aria-selected':String(on),'aria-controls':'panel-'+s.k,'aria-label':say,title:say,tabindex:on?'0':'-1',
+      onclick:()=>openStage(pg,i),
+      onkeydown:ev=>{
+        const to=ev.key==='ArrowRight'?(i+1)%n:ev.key==='ArrowLeft'?(i+n-1)%n:ev.key==='Home'?0:ev.key==='End'?n-1:null;
+        if(to!=null){ev.preventDefault();openStage(pg,to)}
+      }},
+      el('span',{class:'tabmark','aria-hidden':'true'},busy?'…':done?'✓':''),el('span',{class:'tablabel'},t(s.t))));
+  });
+  return bar;
+}
+function drawStages(root,pg,j){
+  const hide=j===0?(SCH.hidden||[]):[],P=pages(),act=activeStage(pg);
+  refContext(pg.cards);    // the live-state fields (wrap) only matter once a story is running
+  root.append(stageTabs(pg,act));
+  STAGES.forEach((s,i)=>{
+    if(i!==act)return;
     const has=!!pg.cards[s.k],prev=i===0||!!pg.cards[STAGES[i-1].k],busy=st.busy===s.k&&st.busyPg===pg;
-    const sec=el('section',{class:'box stage'+(has?' done':'')+(!prev?' locked':''),'data-card':s.k});
+    const sec=el('section',{class:'box stage'+(has?' done':'')+(!prev?' locked':''),'data-card':s.k,role:'tabpanel',id:'panel-'+s.k,'aria-labelledby':'tab-'+s.k});
     const tags=el('span');
     const base=j>0?P[j-1].cards[s.k]:undefined;
     if(pg.stale[s.k])tags.append(el('span',{class:'tag stale'},t('Built from an earlier version of a previous card')));

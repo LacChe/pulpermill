@@ -116,6 +116,16 @@ label.useex{margin:6px 0 2px;font-size:13px}
 html[lang="zh-Hans"] .prose{font-size:17px;line-height:1.9;letter-spacing:.02em}
 html[lang="zh-Hans"] .prose p{text-indent:2em;margin-bottom:.6em}
 
+/* one tab per card: the open tab is filled with the accent colour, a made card has a check mark, the bar stays in view while scrolling */
+.tabs{display:flex;gap:6px;position:sticky;top:0;z-index:3;background:var(--bg);padding:6px 0 8px;margin:0 0 6px}
+.tab{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;font-weight:600;color:var(--mute);background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.tab:hover{color:var(--ink);border-color:var(--mute)}
+.tab.on,.tab.on:hover{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.tabmark{color:var(--ok);font-weight:700}
+.tabmark:empty{display:none}
+.tab.on .tabmark{color:var(--acc-ink)}
+.tablabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* sections inside a card: a title and a plain description, with room between one section and the next */
 .fsec{margin:0 0 34px}
 .fsec:last-child{margin-bottom:10px}

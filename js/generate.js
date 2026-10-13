@@ -45,11 +45,12 @@ async function generate(i,feedback){
     }
     if(r.seed!=null)st.lastSeed=r.seed;
     if(pg.draft)pg.draft[s.k]='';
+    const firstTime=!pg.cards[s.k];                 // a card made for the first time moves the view on; regenerating one stays put
     pg.cards[s.k]=r.card;pg.warn[s.k]=r.warnings||[];
     pg.took=pg.took||{};pg.took[s.k]=Math.round((Date.now()-t0)/1000);
     pg.stale[s.k]=false;
     STAGES.slice(i+1).forEach(x=>{if(pg.cards[x.k])pg.stale[x.k]=true});
-    if(activeStage(pg)===i&&i+1<STAGES.length)ACTIVE_STAGE.set(pg,i+1);   // move on to the next tab now that this one's done
+    if(firstTime&&activeStage(pg)===i&&i+1<STAGES.length)ACTIVE_STAGE.set(pg,i+1);   // move on to the next tab now that this one's done
   }catch(e){pg.err[s.k]=e.gaveUp?mk('Lost contact with the backend for too long, so this card was not received. Check the backend, then generate it again.'):emsg(e)}
   st.busy=null;st.busyPg=null;st.jobId=null;st.stopping=false;draw();
 }

@@ -487,7 +487,11 @@ const ZH={
   "One sentence on what is true at the end that was not true at the start, which characters visibly change, and how far along the story's six steps the chapter ends: Setup, Spark, Friction, Shift, Peak, Aftermath.":"用一句话写出结尾时成立、而开头时不成立的事,哪些角色发生了明显变化,以及这一章结束时故事走到六个阶段的哪一步:开篇、触发、阻力、转折、高潮、尾声。",
   "Planting and payoff":"伏笔与回收",
   "A plant is something shown now that a later chapter uses again; a payoff is that later use. Reveals are the secrets from the World card that come out in this chapter.":"伏笔是现在展示、之后某一章会再次用到的东西;回收就是后来的那次使用。揭示是世界卡里的秘密在这一章被说出来。",
-  "Other":"其他"
+  "Other":"其他",
+  /* card tabs (views.js) */
+  "Cards":"卡片",
+  "complete":"已完成",
+  "generating":"生成中"
 };
 const PYD=[
   ["^Field required$", "缺少必填项"],
