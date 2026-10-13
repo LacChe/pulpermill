@@ -161,3 +161,10 @@ details[open]:is(.item,.multi,.notes)>summary{background:transparent}
 details[open]>.in,details[open]>.mbody{border-top-color:color-mix(in srgb,var(--acc) 30%,var(--line))}
 details[open] :is(input,textarea,select){border-color:color-mix(in srgb,var(--line) 65%,var(--acc))}
 details[open] details:not([open]){background:color-mix(in srgb,var(--panel) 55%,transparent)}
+/* Inputs follow the depth too, but gently: they stay lighter than the tinted panel around them so the text stays easy to read. */
+:root{--ft1:3%;--ft2:6%;--ft3:9%}
+@media (prefers-color-scheme:dark){:root{--ft1:4%;--ft2:8%;--ft3:12%}}
+details[open]{--ftint:var(--ft1)}
+details[open] details[open]{--ftint:var(--ft2)}
+details[open] details[open] details[open]{--ftint:var(--ft3)}
+details[open] :is(input:not([type=checkbox]):not([type=radio]),textarea,select){background:color-mix(in srgb,var(--field),var(--acc) var(--ftint))}
