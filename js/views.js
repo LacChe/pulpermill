@@ -30,13 +30,13 @@ function drawNav(){
     el('b',{},pageName(j)),el('span',{class:'navsub'},navSub(pg,j))))));
   nav.append(ol);
   const foot=el('div',{class:'navfoot'});
-  foot.append(el('button',{id:'exportstory',disabled:!pages().some(p=>p.result),onclick:exportStory},t('Export story (.md)')));
-  foot.append(el('button',{id:'saveproj',onclick:()=>downloadText(storyFile()+'_project.json',projectFile(),'application/json')},t('Save project')),
-    el('button',{id:'loadproj',disabled:!!st.busy,onclick:()=>$('#projfile').click()},t('Load project')));
+  foot.append(el('button',{id:'exportstory',class:'alt',disabled:!pages().some(p=>p.result),onclick:exportStory},t('Export story (.md)')));
+  foot.append(el('button',{id:'saveproj',class:'alt',onclick:()=>downloadText(storyFile()+'_project.json',projectFile(),'application/json')},t('Save project')),
+    el('button',{id:'loadproj',class:'alt',disabled:!!st.busy,onclick:()=>$('#projfile').click()},t('Load project')));
   if(!st.armed)foot.append(el('button',{id:'reset',class:'danger',disabled:!!st.busy,onclick:()=>{st.armed=true;drawNav()}},t('Reset everything…')));
   else foot.append(el('div',{class:'guard',role:'alertdialog','aria-label':t('Confirm reset')},
     el('p',{class:'hint'},t('This erases every card, note and chapter in this browser. Save the project first if you want to keep it.')),
-    el('div',{class:'row'},el('button',{id:'resetno',onclick:()=>{st.armed=false;drawNav()}},t('Cancel')),el('button',{id:'resetyes',class:'danger solid',onclick:resetAll},t('Erase everything')))));
+    el('div',{class:'row'},el('button',{id:'resetno',class:'alt',onclick:()=>{st.armed=false;drawNav()}},t('Cancel')),el('button',{id:'resetyes',class:'danger solid',onclick:resetAll},t('Erase everything')))));
   nav.append(foot);
 }
 function resetAll(){
@@ -146,8 +146,8 @@ function drawStages(root,pg,j){
       pg.draft=pg.draft||{};fb.value=pg.draft[s.k]||'';if(fb.value)setTimeout(grow,0);
       fb.addEventListener('input',()=>{pg.draft[s.k]=fb.value;grow()});
       sec.append(el('div',{class:'rerun'},fb,
-        el('button',{class:'gen','data-k':s.k,'data-lock':st.busy?'1':'0',disabled:!!st.busy,onclick:()=>generate(i,fb.value.trim())},busy?[t('Generating…'),el('span',{class:'timer'})]:[t('Regenerate with note'),tookTag(pg.took&&pg.took[s.k])]),
-        el('button',{class:'sm clr','data-k':s.k,disabled:!!st.busy,title:t('Remove this card so it can be generated again from scratch. Your notes stay.'),onclick:()=>clearCard(i)},t('Clear card'))));
+        el('button',{class:'gen alt','data-k':s.k,'data-lock':st.busy?'1':'0',disabled:!!st.busy,onclick:()=>generate(i,fb.value.trim())},busy?[t('Generating…'),el('span',{class:'timer'})]:[t('Regenerate with note'),tookTag(pg.took&&pg.took[s.k])]),
+        el('button',{class:'danger clr','data-k':s.k,disabled:!!st.busy,title:t('Remove this card so it can be generated again from scratch. Your notes stay.'),onclick:()=>clearCard(i)},t('Clear card'))));
     }
     if(busy)sec.append(progBlock(true));
     root.append(sec);
@@ -160,12 +160,12 @@ function askNode(j){
   const note=(st.ask&&st.ask.note)||'';
   box.append(el('p',{},note?t('Rewrite chapter {k} with your note? The new version replaces this one.',{k}):t('Rewrite chapter {k}? The new version replaces this one.',{k})));
   if(note)box.append(el('p',{class:'hint asknote'},t('Your note: {note}',{note})));
-  const cancel=el('button',{id:'askno',onclick:()=>{st.ask=null;draw()}},t('Cancel'));
+  const cancel=el('button',{id:'askno',class:'alt',onclick:()=>{st.ask=null;draw()}},t('Cancel'));
   if(needs){
     box.append(el('p',{},end?t('When it finishes, the cards it ends with can replace the ending cards. Only one version of those cards is kept, so if you want to keep the current ones, export them before you generate.'):t('When it finishes, the cards it ends with can replace chapter {n}\'s starting cards. Only one version of those cards is kept, so if you want to keep the current ones, export them before you generate.',{n:k+1})));
     box.append(el('div',{class:'row'},el('button',{id:'askexport',class:'sm',onclick:()=>exportPageCards(j+1)},end?t('Export the ending cards'):t('Export chapter {n}\'s starting cards',{n:k+1})),
       el('button',{id:'askreplace',class:'go',onclick:()=>writeChapter('replace',note)},t('Rewrite and replace them')),
-      el('button',{id:'askkeep',onclick:()=>writeChapter('keep',note)},t('Rewrite and keep them')),cancel));
+      el('button',{id:'askkeep',class:'alt',onclick:()=>writeChapter('keep',note)},t('Rewrite and keep them')),cancel));
   }else box.append(el('div',{class:'row'},el('button',{id:'askyes',class:'go',onclick:()=>writeChapter('replace',note)},t('Rewrite chapter {k}',{k})),cancel));
   return box;
 }
@@ -213,7 +213,7 @@ function drawMid(){
       const grow=()=>{fb.style.height='auto';fb.style.height=Math.min(fb.scrollHeight+2,320)+'px'};
       pg.draft=pg.draft||{};fb.value=pg.draft.chapter||'';if(fb.value)setTimeout(grow,0);
       fb.addEventListener('input',()=>{pg.draft.chapter=fb.value;grow()});
-      head.append(el('div',{class:'rerun'},fb,el('button',{class:'gen',id:'rewritenote',disabled:!!st.busy||!okWrite,onclick:()=>writeChapter(undefined,fb.value.trim())},t('Rewrite with note'),pg.result.secs!=null?tookTag(pg.result.secs):null)));
+      head.append(el('div',{class:'rerun'},fb,el('button',{class:'gen alt',id:'rewritenote',disabled:!!st.busy||!okWrite,onclick:()=>writeChapter(undefined,fb.value.trim())},t('Rewrite with note'),pg.result.secs!=null?tookTag(pg.result.secs):null)));
     }
     const allBroken=brokenIn(pg.cards);
     if(allBroken.length)head.append(el('div',{class:'msg err',role:'alert'},t('Broken links between cards ({n}). Fix the highlighted fields before writing.',{n:allBroken.length})));

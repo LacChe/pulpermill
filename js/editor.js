@@ -254,7 +254,7 @@ function field_(parent,key,en,bp){
         const retitle=()=>{const x=itemTitle(it,i);ttl.textContent=x.text;if(x.text===x.full)sum.removeAttribute('title');else sum.title=x.full};
         inner.addEventListener('input',retitle);inner.addEventListener('change',retitle);
         groupFields(inner,it,here.join('.'),kk=>field(it,kk,en,bi));
-        inner.append(el('button',{class:'sm',onclick:()=>{
+        inner.append(el('button',{class:'sm danger',onclick:()=>{
           if(!confirm(t('Remove “{name}” from this card? This cannot be undone.',{name:itemTitle(it,i).text})))return;       // deleting an item is guarded
           if(pooled)delete usesOf(parent,key)[it.id];v.splice(i,1);render();
           scheduleSave();

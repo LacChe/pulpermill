@@ -172,3 +172,22 @@ details[open] :is(input:not([type=checkbox]):not([type=radio]),textarea,select){
 .head .tags{margin-right:auto}
 /* A character's Export button sits at the right end of its row. */
 .item>summary>button{float:right;margin-left:8px}
+
+/* ---- Buttons: four tiers, all with hover feedback ----
+   .go      big, solid teal: the AI actions (generate, write chapter)
+   .alt     big, solid slate gray: important but not always used (regenerate with note, save, load, cancel)
+   .sm      small, teal outline: everything minor
+   .danger  red outline (solid when it is the final confirmation): anything that throws work away */
+:root{--alt:#55656f;--alt-ink:#fff}
+@media (prefers-color-scheme:dark){:root{--alt:#8c9ea8;--alt-ink:#0f1a1d}}
+button:is(.go,.alt,.sm,.danger){transition:background-color .12s,border-color .12s,color .12s,box-shadow .12s,transform .06s}
+button:is(.go,.alt,.sm,.danger):not(:disabled):active{transform:translateY(1px);box-shadow:none}
+button.go:not(:disabled):hover{background:color-mix(in srgb,var(--acc),var(--ink) 22%);border-color:color-mix(in srgb,var(--acc),var(--ink) 22%);box-shadow:0 2px 6px color-mix(in srgb,var(--acc) 35%,transparent)}
+button.alt{background:var(--alt);color:var(--alt-ink);border-color:var(--alt);font-weight:600}
+button.alt:not(:disabled):hover{background:color-mix(in srgb,var(--alt),var(--ink) 20%);border-color:color-mix(in srgb,var(--alt),var(--ink) 20%);box-shadow:0 2px 6px color-mix(in srgb,var(--alt) 35%,transparent)}
+button.sm:not(.go,.alt,.danger){background:transparent;color:var(--acc);border-color:var(--acc)}
+button.sm:not(.go,.alt,.danger):not(:disabled):hover{background:color-mix(in srgb,var(--acc) 14%,transparent)}
+button.danger{background:transparent}
+button.danger:not(:disabled):hover{background:var(--err-bg)}
+button.danger.solid:not(:disabled):hover{background:color-mix(in srgb,var(--err),#000 22%);border-color:color-mix(in srgb,var(--err),#000 22%)}
+@media (prefers-color-scheme:dark){button.danger.solid{color:#1d0f0e}}
