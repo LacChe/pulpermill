@@ -5,8 +5,8 @@
    showing both an active tab and several nested relationship entries) — sharing one color there would make
    neither signal reliable. A muted indigo sits between the existing warm (--flag) and cool (--acc) accents rather
    than competing with either. */
-:root{--flag:#d9730d;--bg:#e8ecef;--panel:#fff;--ink:#1b2430;--mute:#5d6a78;--line:#c9d1d9;--acc:#0f6b6b;--acc-ink:#fff;--struct:#5b5a9c;--struct-bg:#f1f0f9;--warn:#8a5a0b;--warn-bg:#fbf1dc;--err:#a3302a;--err-bg:#fbe6e4;--field:#f5f7f9;--ok:#1d6b3a;--ok-bg:#e1f3e7;--chg-bg:#fff6cc;--chg-line:#dcc75f}
-@media (prefers-color-scheme:dark){:root{--flag:#ff9f43;--bg:#141a21;--panel:#1d252e;--ink:#e6ebf0;--mute:#93a0ae;--line:#33404d;--acc:#5cc2bd;--acc-ink:#0d1a1a;--struct:#a6a3e0;--struct-bg:#232142;--warn:#e8b75f;--warn-bg:#3a2f18;--err:#f08a82;--err-bg:#40201d;--field:#151c23}}
+:root{--flag:#d9730d;--bg:#e8ecef;--panel:#fff;--ink:#1b2430;--mute:#5d6a78;--line:#c9d1d9;--acc:#0f6b6b;--acc-ink:#fff;--struct:#5b5a9c;--warn:#8a5a0b;--warn-bg:#fbf1dc;--err:#a3302a;--err-bg:#fbe6e4;--field:#f5f7f9;--ok:#1d6b3a;--ok-bg:#e1f3e7;--chg-bg:#fff6cc;--chg-line:#dcc75f}
+@media (prefers-color-scheme:dark){:root{--flag:#ff9f43;--bg:#141a21;--panel:#1d252e;--ink:#e6ebf0;--mute:#93a0ae;--line:#33404d;--acc:#5cc2bd;--acc-ink:#0d1a1a;--struct:#a6a3e0;--warn:#e8b75f;--warn-bg:#3a2f18;--err:#f08a82;--err-bg:#40201d;--field:#151c23}}
 
 @media (prefers-color-scheme:dark){:root{--ok:#7fd69b;--ok-bg:#1c3326;--chg-bg:#3a341a;--chg-line:#7b6b2a}}
 *{box-sizing:border-box}
@@ -137,8 +137,12 @@ html[lang="zh-Hans"] .prose p{text-indent:2em;margin-bottom:.6em}
 /* A field holding a sub-list (e.g. a character's `toward` relationships) is set off from that character's own
    fields: indented, recessed, with a left accent bar and a small caps label, instead of looking like one more
    plain field in the same flat list. */
-.f.nested{margin:14px 0 10px 4px;padding:10px 10px 4px;border-left:3px solid var(--struct);background:var(--struct-bg);border-radius:0 6px 6px 0}
-.f.nested>.ro{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);margin-bottom:6px}
+/* A continuous guide line, not a filled box: a box-fill behind individually-carded items leaves the fill visible
+   only in the gaps *between* cards, which pulses on/off as you scroll past each one — reading as alternating
+   layers rather than "staying nested". A line has nothing to alternate against: it's just there, unbroken, for
+   exactly as long as you're inside the nested list, and gone the moment you're not. */
+.f.nested{margin:14px 0 10px 4px;padding-left:14px;border-left:2px solid var(--struct)}
+.f.nested>.ro{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--struct);margin-bottom:6px}
 /* the entries inside a nested list (e.g. each "toward X" relationship) read as lighter-weight sub-cards, not
    full peers of the top-level character/location/chapter cards they live inside */
 .item.sub{background:var(--panel);border-color:var(--line);margin:0 0 6px;box-shadow:none}
