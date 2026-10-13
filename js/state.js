@@ -11,7 +11,7 @@ const EXAMPLE_USES=[
   {k:'',t:'Same story',d:"the cards describe the example's own story"},
   {k:'sequel',t:'Continue after it',d:'carries on after this chapter'},
   {k:'parallel',t:'New story in the same world',d:'another story in the same world, running alongside this one'}];
-const newPage=()=>({cards:{},stale:{},err:{},warn:{},notes:{style:'',characters:'',world:'',outline:''},chapter:'',use:'',useEx:{style:true,characters:true,world:true,outline:true},base_hash:null,result:null,msg:'',took:{}});
+const newPage=()=>({cards:{},stale:{},err:{},warn:{},notes:{style:'',characters:'',world:'',outline:''},notesOpen:{},chapter:'',use:'',useEx:{style:true,characters:true,world:true,outline:true},base_hash:null,result:null,msg:'',took:{}});
 const st={lastSeed:null,limits:null,busy:null,busyPg:null,banner:'',armed:false,report:null,ask:null,jobId:null,stopping:false,step:'',conn:null,story:{pages:[newPage()],cur:0,job:null}};
 const cur=()=>st.story.pages[st.story.cur];
 const pages=()=>st.story.pages;

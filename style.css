@@ -1,17 +1,5 @@
-/* --acc (teal) means exactly one thing: interactive / active / focused — buttons, the current tab, focus rings.
-   --struct is a separate, deliberately calmer hue for a different meaning: "you're looking at something nested
-   inside something else" — the indent accent on a sub-list, the breadcrumb on an item's header. Keeping these two
-   apart matters once a page has both kinds of signal on screen at once (an open character card, mid-scroll,
-   showing both an active tab and several nested relationship entries) — sharing one color there would make
-   neither signal reliable. A muted indigo sits between the existing warm (--flag) and cool (--acc) accents rather
-   than competing with either. */
-/* --acc and --struct are now one family, not two unrelated hues: --struct is the calm, muted version (nesting
-   guide lines, sub-section labels — background information, shouldn't shout), --acc is the vivid, saturated
-   version of the same violet (buttons, focus rings, the active tab — foreground, meant to draw the eye and invite
-   a click). Same hue, different job, so the palette reads as one coherent purple-toned system rather than teal
-   plus purple competing with each other. --flag/--warn stay orange — untouched. */
-:root{--flag:#d9730d;--bg:#e8ecef;--panel:#fff;--ink:#1b2430;--mute:#5d6a78;--line:#c9d1d9;--acc:#6e35b3;--acc-ink:#fff;--struct:#5b5a9c;--warn:#8a5a0b;--warn-bg:#fbf1dc;--err:#a3302a;--err-bg:#fbe6e4;--field:#f5f7f9;--ok:#1d6b3a;--ok-bg:#e1f3e7;--chg-bg:#fff6cc;--chg-line:#dcc75f}
-@media (prefers-color-scheme:dark){:root{--flag:#ff9f43;--bg:#141a21;--panel:#1d252e;--ink:#e6ebf0;--mute:#93a0ae;--line:#33404d;--acc:#c199f5;--acc-ink:#1a0d26;--struct:#a6a3e0;--warn:#e8b75f;--warn-bg:#3a2f18;--err:#f08a82;--err-bg:#40201d;--field:#151c23}}
+:root{--flag:#d9730d;--bg:#e8ecef;--panel:#fff;--ink:#1b2430;--mute:#5d6a78;--line:#c9d1d9;--acc:#0f6b6b;--acc-ink:#fff;--warn:#8a5a0b;--warn-bg:#fbf1dc;--err:#a3302a;--err-bg:#fbe6e4;--field:#f5f7f9;--ok:#1d6b3a;--ok-bg:#e1f3e7;--chg-bg:#fff6cc;--chg-line:#dcc75f}
+@media (prefers-color-scheme:dark){:root{--flag:#ff9f43;--bg:#141a21;--panel:#1d252e;--ink:#e6ebf0;--mute:#93a0ae;--line:#33404d;--acc:#5cc2bd;--acc-ink:#0d1a1a;--warn:#e8b75f;--warn-bg:#3a2f18;--err:#f08a82;--err-bg:#40201d;--field:#151c23}}
 
 @media (prefers-color-scheme:dark){:root{--ok:#7fd69b;--ok-bg:#1c3326;--chg-bg:#3a341a;--chg-line:#7b6b2a}}
 *{box-sizing:border-box}
@@ -63,12 +51,12 @@ section.box{background:var(--panel);border:1px solid var(--line);border-radius:6
 .seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
 .hint{color:var(--mute);font-size:13px;margin:0 0 8px}
 .stage{border-left:4px solid var(--line)}
-.stage.done{border-left-color:var(--struct)}   /* matches the nested-section guide line, not the button/CTA purple */
+.stage.done{border-left-color:var(--acc)}
 .stage.locked{opacity:.6}
 .head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
 .tag{font-size:12px;padding:2px 8px;border-radius:10px;background:var(--field);border:1px solid var(--line);color:var(--mute)}
 .tag.stale{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
-.tag.ok{border-color:var(--ok);color:var(--ok)}   /* was wired to --acc — an unused rule, but wrong color for it regardless */
+.tag.ok{border-color:var(--acc);color:var(--acc)}
 .msg{padding:8px 10px;border-radius:4px;margin:8px 0;font-size:14px}
 .msg.err{background:var(--err-bg);color:var(--err)}
 .msg.warn{background:var(--warn-bg);color:var(--warn)}
@@ -86,11 +74,6 @@ fieldset>legend{font-size:13px;color:var(--mute);padding:0 4px}
 .rerun textarea{flex:1 1 240px;min-height:38px;max-height:320px;resize:vertical;overflow:auto}
 .took{font-weight:400;font-size:12px;opacity:.85;margin-left:8px}
 .notes{margin:0 0 12px}.notes>summary{cursor:pointer;color:var(--mute);font-size:13px;margin-bottom:6px}
-/* Example chapter is its own box with no other heading, so its collapsible summary carries the same weight an h2
-   would — same treatment as every other card's title, just also clickable to collapse. */
-#examplebox>details.notes{margin:0}
-#examplebox>details.notes>summary{font-size:19px;font-weight:700;color:var(--ink);font-family:inherit;margin-bottom:4px}
-#examplebox>details.notes>summary .tag{margin-left:8px;vertical-align:middle}
 .count{font-size:12px;color:var(--mute);margin:3px 0 0}.count.warn{color:var(--warn)}.count.over{color:var(--err);font-weight:600}
 .ro{color:var(--mute);font-size:13px}
 h3.sm{font-size:14px;margin:12px 0 4px;color:var(--mute);font-family:inherit}
@@ -103,7 +86,7 @@ h3.sm{font-size:14px;margin:12px 0 4px;color:var(--mute);font-family:inherit}
 .f.flag textarea,.f.flag select,.f.flag input:not([type=checkbox]),.f.flag .multi>summary{border:2px solid var(--flag);background:var(--warn-bg)}
 .f .flagwhy{display:block;color:var(--flag);font-size:12px;margin-top:2px}
 .f.bad textarea,.f.bad select,.f.bad input:not([type=checkbox]),.f.bad .multi>summary{border-color:var(--err);background:var(--err-bg)}
-input[type=checkbox]{width:auto;padding:0;margin:0 6px 0 0}
+input[type=checkbox],input[type=radio]{width:auto;padding:0;margin:0 6px 0 0;accent-color:var(--acc)}
 .multi{border:1px solid var(--line);border-radius:4px;background:var(--field)}
 .multi>summary{cursor:pointer;padding:7px 9px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .multi .mbody{border-top:1px solid var(--line);padding:6px 9px;max-height:220px;overflow:auto}
@@ -137,67 +120,3 @@ html[lang="zh-Hans"] .prose p{text-indent:2em;margin-bottom:.6em}
 .used,.usedtag{font-size:12px;white-space:nowrap;color:var(--mute);padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
 .used{margin-top:6px}
 .used.zero,.usedtag.zero{opacity:.6}
-
-/* ---------- nesting: make "this is inside something else" visible at a glance ---------- */
-/* A field holding a sub-list (e.g. a character's `toward` relationships) is set off from that character's own
-   fields: indented, recessed, with a left accent bar and a small caps label, instead of looking like one more
-   plain field in the same flat list. */
-/* A continuous guide line, not a filled box: a box-fill behind individually-carded items leaves the fill visible
-   only in the gaps *between* cards, which pulses on/off as you scroll past each one — reading as alternating
-   layers rather than "staying nested". A line has nothing to alternate against: it's just there, unbroken, for
-   exactly as long as you're inside the nested list, and gone the moment you're not. */
-.f.nested{margin:14px 0 10px 4px;padding-left:14px;border-left:2px solid var(--struct)}
-.f.nested>.ro{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--struct);margin-bottom:6px}
-/* the entries inside a nested list (e.g. each "toward X" relationship) read as lighter-weight sub-cards, not
-   full peers of the top-level character/location/chapter cards they live inside */
-.item.sub{background:var(--panel);border-color:var(--line);margin:0 0 6px;box-shadow:none}
-.item.sub>summary{font-size:13px;font-weight:500;color:var(--mute);padding:5px 8px}
-.item.sub>summary .ttl{color:var(--ink);font-weight:600}
-.item.sub>.in{padding:2px 8px 4px}
-.item.sub .f.nested{margin-left:2px}        /* a further nesting level still indents, just less, so it never runs off the column */
-
-/* ---------- field grouping: a few small dividers so a long card reads as chunks, not one flat list ---------- */
-h3.grp{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);
-  margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--line)}
-.item>.in>h3.grp:first-child{margin-top:4px;padding-top:0;border-top:0}   /* no dangling rule above the very first group */
-
-/* ---------- stage tabs: one card visible at a time, so which one you're looking at is never in question ---------- */
-.stagetabs{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--line);position:sticky;top:0;
-  background:var(--bg);z-index:5;overflow-x:auto}
-.stagetab{background:none;border:none;border-bottom:2px solid transparent;color:var(--mute);font:inherit;
-  font-weight:600;font-size:14px;padding:10px 16px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
-.stagetab:hover:not(:disabled){color:var(--ink)}
-.stagetab.active{color:var(--ink);border-bottom-color:var(--acc)}
-.stagetab.done:not(.active){color:var(--mute)}
-.stagetab .tabcheck{color:var(--ok);font-weight:700}   /* done = the same status green used everywhere else, not the active-tab teal */
-.stagetab.locked,.stagetab:disabled{opacity:.4;cursor:not-allowed}
-/* the active stage's own h2 inside its card becomes redundant with its tab, so it's dropped down a notch rather
-   than repeating, at the same size, what the tab strip already says */
-section.box.stage>.head>h2{font-size:17px}
-
-/* ---------- breadcrumb: which list is this item actually in? ---------- */
-/* Objects, Locations and Groups (and, inside a character, Toward) all render their items as the same plain .item
-   card, so once you've scrolled a screen or two into one list, nothing on screen still says which list you're
-   looking at. Rather than trying to keep a second sticky header perfectly stacked under the first (fragile, and
-   easy to break the next time a heading's height changes), the list's own name just rides along inside every one
-   of its item's headers. */
-.item>summary .crumb{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--struct)}
-.item>summary .crumb::after{content:'  ›  ';opacity:.6;font-weight:400;text-transform:none;letter-spacing:0}
-.item.sub>summary .crumb{font-size:10.5px}
-
-/* ---------- typographic hierarchy: each level should look like a different level, not just a different indent ---------- */
-/* Before this, a card's own h2, a top-level item's summary, and a nested sub-item's summary were all around the
-   same size/weight — the indentation in the last round carries the structure, but your eye still has to read
-   every line at face value to tell which kind of thing it's looking at. Stepping size and weight down at each
-   level lets the structure register before you've read a single word. */
-h2{letter-spacing:-.005em}
-.item:not(.sub)>summary{font-size:16px;font-weight:700}
-h3.grp{font-size:10.5px}
-.item.sub>summary{font-size:12.5px}
-.f>span{font-weight:500}                       /* field labels: a touch heavier so they read as labels, not body text, at a glance */
-
-/* ---------- sticky header on an open top-level card ---------- */
-/* While scrolling a long open character/location/chapter, its name stays visible at the top of the panel instead
-   of scrolling out of view along with everything else. Nested sub-cards (.sub) are left alone: stacking several
-   stuck headers inside one open card would be more confusing than helpful. */
-.item:not(.sub)>summary{position:sticky;top:0;z-index:2;background:var(--panel);box-shadow:0 1px 0 var(--line)}
