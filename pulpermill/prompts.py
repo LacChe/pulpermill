@@ -52,6 +52,13 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
         visible moment or choice, shown in action or dialogue, not merely implied by a character
         acting consistently. If no shifts are listed, do not invent an arc milestone.
 
+        LAST LINES: end the chapter exactly on the moment named in ends_on, and stop there — do not add
+        a line of reflection, summary, or reassurance after it, and do not resolve it early or soften it
+        just because the chapter has run long enough. If ends_on is a question, threat, reversal, or
+        choice left open (true for every chapter but the last), the reader should want to know what
+        happens next, not feel the matter is closed. Only in the final chapter, where the beat lands the
+        story instead, should the ending read as settled.
+
         THE CARDS (story, style, characters, world):
         {context}
 
@@ -422,7 +429,11 @@ def outline_prompt(req, cast, world, want) -> str:
         "- Events are plain actions in order, one sentence each, with nothing explained or summarised.\n"
         "- `ends_on` is the situation the chapter stops at, in a few words, not a quoted line (if the author gives a "
         "closing line, describe what it does instead). It must be true right after the chapter's last event: it may "
-        "not restate an event that already happened in the chapter or ask for something that only happens later.\n"
+        "not restate an event that already happened in the chapter or ask for something that only happens later. It "
+        "must be a hook, not a landing: a question, a threat, a reversal, or a choice still open, never a moment that "
+        "reads as settled or safe to stop on.\n"
+        "- The first event of chapter 1 is a disruption, not scene-setting: something happens, goes wrong, or is said "
+        "that the reader cannot yet explain. Never spend the opening on establishing the setting or routine before it.\n"
         "- Use `reveals` only for a hidden truth that becomes known on the page in chapter 1 to everyone present. Most "
         "stories reveal nothing in the first chapter; leave it empty unless one clearly belongs there.\n"
         "- A plant is a specific object, line or action in chapter 1 that a LATER chapter may use. Leave it empty rather "
@@ -545,7 +556,9 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         "specific the characters run into in the scene (a person, object, rule or event), not only a feeling.\n"
         "- Events are plain actions in order, one sentence each, with nothing explained or summarised.\n"
         "- `ends_on` is the situation the chapter stops at, in a few words, not a quoted line. It must be true right after the "
-        "chapter's last event.\n"
+        "chapter's last event. Unless this is the last chapter, it must be a hook: a question, a threat, a reversal, or a "
+        "choice still open, never a moment that reads as settled or safe to stop on. In the last chapter, land the story "
+        "instead: end on the broad destination, not a cliffhanger.\n"
         "- A new plant is a specific object, line or action in this chapter that a LATER chapter may use. Leave `plants` empty "
         "rather than writing general observations, and write none in the last chapter.\n"
         "- `tone` is one sentence on how this chapter reads, as the narration style defines it.\n"
