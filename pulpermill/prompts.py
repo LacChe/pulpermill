@@ -567,6 +567,12 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         f"- The people listed under PEOPLE are the whole cast of this chapter. `present` and `shifts` use only them, the main "
         f"character is always present, at most {MAX_CAST} are present, and no one else in the story is named or involved, "
         "not even in the events. `location` is a place from the list.\n"
+        + (f"- THIS IS THE LAST CHAPTER: a character's ending above can only be shown if they are in `present` here — anyone "
+           f"left out is excluded from the chapter entirely and their ending cannot happen on the page. Put every person "
+           f"whose ending under \"Where each person ends up\" is not already true in `present` (up to {MAX_CAST}), and write "
+           f"events that actually land each of their endings in action, not by having someone else report it secondhand. "
+           f"Only leave someone out if the cast limit forces a choice or their ending has already happened on the page in an "
+           f"earlier chapter.\n" if n == total else "")
         + "\nREVISING (optional): you may also correct the story's setup when the chapter just written really changed it: "
         "`revised_premise`, `revised_theme`, `revised_ending`, `revised_arcs` (all of them), `revised_leave_open` (the full list) "
         "and `closed_leave_open` (items now settled), with `why_revised`. Do it only when events call for it, keep the rest empty, and "
