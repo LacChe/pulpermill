@@ -4,6 +4,7 @@ The model is read as `runtime.llm` every time it is used, never copied with `fro
 time would be None forever. The lock, the loggers, CURRENT, CANCEL and Cancelled are created once and never rebound, so importing
 them by name is fine.
 """
+
 import logging
 import logging.handlers
 import sys
@@ -11,7 +12,9 @@ import threading
 
 from . import config
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")      # for the libraries that log to the root logger
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(message)s"
+)  # for the libraries that log to the root logger
 
 
 _FILE_PROBLEM_SHOWN = False
@@ -26,12 +29,21 @@ def _own_logger(name, fmt):
         handlers = [logging.StreamHandler(sys.stdout)]
         if config.LOG_FILE:
             try:
-                handlers.append(logging.handlers.RotatingFileHandler(config.LOG_FILE, maxBytes=10**6, backupCount=1, encoding="utf-8"))
+                handlers.append(
+                    logging.handlers.RotatingFileHandler(
+                        config.LOG_FILE, maxBytes=10**6, backupCount=1, encoding="utf-8"
+                    )
+                )
             except OSError as e:
                 global _FILE_PROBLEM_SHOWN
-                if not _FILE_PROBLEM_SHOWN:             # both loggers hit the same problem: say it once
+                if (
+                    not _FILE_PROBLEM_SHOWN
+                ):  # both loggers hit the same problem: say it once
                     _FILE_PROBLEM_SHOWN = True
-                    print(f"could not open the log file {config.LOG_FILE} ({e}); logging to the screen only", file=sys.stdout)
+                    print(
+                        f"could not open the log file {config.LOG_FILE} ({e}); logging to the screen only",
+                        file=sys.stdout,
+                    )
         for h in handlers:
             h.setFormatter(logging.Formatter(fmt))
             lg.addHandler(h)
@@ -40,19 +52,23 @@ def _own_logger(name, fmt):
 
 
 log = _own_logger("cardgen", "%(asctime)s %(levelname)s %(message)s")
-logger = _own_logger("pulpmill", "%(levelname)s %(name)s: %(message)s")      # schema logs through this one
+logger = _own_logger(
+    "pulpmill", "%(levelname)s %(name)s: %(message)s"
+)  # schema logs through this one
 
-llm = None                       # set by model.load_model()
-LLM_LOCK = threading.Lock()      # llama.cpp handles one generation at a time
+llm = None  # set by model.load_model()
+LLM_LOCK = threading.Lock()  # llama.cpp handles one generation at a time
 
 
 class Cancelled(Exception):
     """The user pressed Stop. Raised out of the model call, caught where the job ends. Never swallow it."""
 
 
-CURRENT = threading.local()      # the running job's stop flag lives here, so no function has to pass it along
-CANCEL = {}                      # job id -> threading.Event
-GRAMMAR_OFF = {}                # schema name -> why the JSON grammar cannot be built for it; such a card is written without the grammar from then on
+CURRENT = (
+    threading.local()
+)  # the running job's stop flag lives here, so no function has to pass it along
+CANCEL = {}  # job id -> threading.Event
+GRAMMAR_OFF = {}  # schema name -> why the JSON grammar cannot be built for it; such a card is written without the grammar from then on
 
 
 def stop_requested() -> bool:

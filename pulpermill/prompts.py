@@ -4,8 +4,16 @@ import json
 
 from . import config
 from .schema import (
-    CastDraft, MAX_CAST, MAX_CHAPTERS, MAX_CHARACTERS, OutlineDraft, STORY_STAGES, StyleCard, WorldDraft,
-    spread_stages, stage_lines_for
+    CastDraft,
+    MAX_CAST,
+    MAX_CHAPTERS,
+    MAX_CHARACTERS,
+    OutlineDraft,
+    STORY_STAGES,
+    StyleCard,
+    WorldDraft,
+    spread_stages,
+    stage_lines_for,
 )
 
 
@@ -168,20 +176,25 @@ Previous attempt failed: {error}
 Fix and respond with ONLY corrected JSON."""
 
 
-JSON_RULES = ("Reply with one JSON object that matches the schema below, and nothing else: no commentary, "
-              "no code fences, no markdown asterisks. Include every field in the schema. Use plain text in every field.")
+JSON_RULES = (
+    "Reply with one JSON object that matches the schema below, and nothing else: no commentary, "
+    "no code fences, no markdown asterisks. Include every field in the schema. Use plain text in every field."
+)
 
 
 # What the author wants to do with the example chapter. Any number can be ticked at once, so the prompt says all of them and
 # then says what each means for the card being written.
-CHAPTER_USES = ("sequel", "parallel")      # what a pasted example chapter is for; none: the cards describe its own story
+CHAPTER_USES = (
+    "sequel",
+    "parallel",
+)  # what a pasted example chapter is for; none: the cards describe its own story
 
 
 USE_MEANING = {
     "sequel": "CONTINUE AFTER IT: the story carries on after this chapter. Same world and characters, and what happens next "
-              "builds on everything this chapter established and changed.",
+    "builds on everything this chapter established and changed.",
     "parallel": "NEW STORY IN THE SAME WORLD: a different story in the same world, running alongside this one. Same world, "
-                "rules and writing style; different events and mostly different people. It does not retell this chapter.",
+    "rules and writing style; different events and mostly different people. It does not retell this chapter.",
 }
 
 
@@ -209,20 +222,34 @@ def chapter_source(req) -> str:
     use = getattr(req, "chapter_use", "")
     uses = [use] if use in CHAPTER_USES else []
     body = f"<chapter>\n{req.chapter.strip()}\n</chapter>"
-    overrule = ("The example is a floor, not a ceiling or a lid: the author's notes below may add things the example "
-                "does not show (more characters, more locations, more rules, more hidden truths, a bigger cast than "
-                "the example's own), leave out things the example shows that the notes don't want, or change anything "
-                "the example establishes. This applies to HOW MANY of something there should be just as much as to "
-                "what they are like. Wherever the notes and the example disagree, including on counts, the notes win.")
+    overrule = (
+        "The example is a floor, not a ceiling or a lid: the author's notes below may add things the example "
+        "does not show (more characters, more locations, more rules, more hidden truths, a bigger cast than "
+        "the example's own), leave out things the example shows that the notes don't want, or change anything "
+        "the example establishes. This applies to HOW MANY of something there should be just as much as to "
+        "what they are like. Wherever the notes and the example disagree, including on counts, the notes win."
+    )
     if not uses:
-        return ("SOURCE CHAPTER: one chapter from a story. Treat it as evidence about the whole story and "
-                "infer what it does not say. " + overrule + "\n\n" + body)
+        return (
+            "SOURCE CHAPTER: one chapter from a story. Treat it as evidence about the whole story and "
+            "infer what it does not say. " + overrule + "\n\n" + body
+        )
     stage = USE_FOR_CARD.get(getattr(req, "stage", ""), {})
-    return ("EXAMPLE CHAPTER: one chapter from an existing story, given as the starting point for a NEW story. The author "
-            "wants the new story to be this:\n"
-            + "\n".join(f"- {USE_MEANING[u]}" for u in uses)
-            + ("\n\nFor this card that means:\n" + "\n".join(f"- {stage[u]}" for u in uses if u in stage) if stage else "")
-            + "\n\n" + overrule + "\n\n" + body)
+    return (
+        "EXAMPLE CHAPTER: one chapter from an existing story, given as the starting point for a NEW story. The author "
+        "wants the new story to be this:\n"
+        + "\n".join(f"- {USE_MEANING[u]}" for u in uses)
+        + (
+            "\n\nFor this card that means:\n"
+            + "\n".join(f"- {stage[u]}" for u in uses if u in stage)
+            if stage
+            else ""
+        )
+        + "\n\n"
+        + overrule
+        + "\n\n"
+        + body
+    )
 
 
 def source_block(req) -> str:
@@ -234,9 +261,11 @@ def source_block(req) -> str:
     if req.mode == "chapter" and req.chapter.strip():
         parts.append(chapter_source(req))
     if req.notes.strip():
-        parts.append("AUTHOR DIRECTION: the author's rough notes for this card. These fine-tune and can override "
-                     "anything above, including how many of something there should be, not just what they are like. "
-                     f"Fill in whatever both leave out with fitting choices.\n\n<notes>\n{req.notes.strip()}\n</notes>")
+        parts.append(
+            "AUTHOR DIRECTION: the author's rough notes for this card. These fine-tune and can override "
+            "anything above, including how many of something there should be, not just what they are like. "
+            f"Fill in whatever both leave out with fitting choices.\n\n<notes>\n{req.notes.strip()}\n</notes>"
+        )
     current = current_card_block(req)
     if current:
         parts.append(current)
@@ -250,35 +279,48 @@ def current_card_block(req) -> str:
     current = getattr(req, "current", None)
     if not getattr(req, "feedback", None) or not current:
         return ""
-    return ("CURRENT CARD: what this card already contains, before the change below is applied. Keep every part this "
-            "change doesn't touch exactly as it is -- this is a patch, not a rewrite.\n\n<current_card>\n"
-            + json.dumps(current, ensure_ascii=False) + "\n</current_card>")
+    return (
+        "CURRENT CARD: what this card already contains, before the change below is applied. Keep every part this "
+        "change doesn't touch exactly as it is -- this is a patch, not a rewrite.\n\n<current_card>\n"
+        + json.dumps(current, ensure_ascii=False)
+        + "\n</current_card>"
+    )
 
 
 def feedback_block(feedback, has_current=False) -> str:
     if not feedback:
         return ""
     if has_current:
-        return (f"\nThe author read the CURRENT CARD above and asked for this change: {feedback}\n"
-                "This is an edit, not a fresh draft: change only what the request above requires, and keep every "
-                "other field exactly as the CURRENT CARD shows it unless the change necessarily affects it.\n")
-    return (f"\nThe author asked for this change: {feedback}\n"
-            "Write a genuinely different version that applies the change.\n")
+        return (
+            f"\nThe author read the CURRENT CARD above and asked for this change: {feedback}\n"
+            "This is an edit, not a fresh draft: change only what the request above requires, and keep every "
+            "other field exactly as the CURRENT CARD shows it unless the change necessarily affects it.\n"
+        )
+    return (
+        f"\nThe author asked for this change: {feedback}\n"
+        "Write a genuinely different version that applies the change.\n"
+    )
 
 
-FIDELITY = ("FIDELITY: Copy every fact the source states exactly as stated: who did what to whom, reasons, names, "
-            "numbers, how things work. Never change, soften, reverse or contradict one. Invent only what the source "
-            "leaves open, and keep invented details small.")
+FIDELITY = (
+    "FIDELITY: Copy every fact the source states exactly as stated: who did what to whom, reasons, names, "
+    "numbers, how things work. Never change, soften, reverse or contradict one. Invent only what the source "
+    "leaves open, and keep invented details small."
+)
 
 
 def language_rule(code) -> str:
     lang = config.LANGUAGES.get(code) or config.LANGUAGES["en"]
-    return (f"LANGUAGE: Write every text value in {lang['name']}, whatever language the source is written in. "
-            "JSON keys and fixed option values stay exactly as the schema gives them. Use that language's usual punctuation.")
+    return (
+        f"LANGUAGE: Write every text value in {lang['name']}, whatever language the source is written in. "
+        "JSON keys and fixed option values stay exactly as the schema gives them. Use that language's usual punctuation."
+    )
 
 
 def _language(req) -> dict:
-    return config.LANGUAGES.get(getattr(req, "language", "en")) or config.LANGUAGES["en"]
+    return (
+        config.LANGUAGES.get(getattr(req, "language", "en")) or config.LANGUAGES["en"]
+    )
 
 
 def language_head(req) -> str:
@@ -287,28 +329,40 @@ def language_head(req) -> str:
     if _language(req) is config.LANGUAGES["en"]:
         return ""
     name = _language(req)["name"]
-    return (f"LANGUAGE (this overrides everything else below): write every text value of this card in {name}: every rule, "
-            f"description, name for a habit and every example passage. The author's notes, any example chapter and these "
-            f"instructions may be in another language; that never changes the language the card is written in. JSON keys and "
-            f"fixed option values stay exactly as the schema gives them.\n\n")
+    return (
+        f"LANGUAGE (this overrides everything else below): write every text value of this card in {name}: every rule, "
+        f"description, name for a habit and every example passage. The author's notes, any example chapter and these "
+        f"instructions may be in another language; that never changes the language the card is written in. JSON keys and "
+        f"fixed option values stay exactly as the schema gives them.\n\n"
+    )
 
 
 def tail(req, schema_cls) -> str:
-    end = "" if _language(req) is config.LANGUAGES["en"] else f"\n\nREMINDER: write every text value in {_language(req)['name']}."
+    end = (
+        ""
+        if _language(req) is config.LANGUAGES["en"]
+        else f"\n\nREMINDER: write every text value in {_language(req)['name']}."
+    )
     has_current = bool(getattr(req, "feedback", None) and getattr(req, "current", None))
-    return (f"\n{FIDELITY}\n{feedback_block(req.feedback, has_current)}\n{language_rule(getattr(req, 'language', 'en'))}\n{JSON_RULES}"
-            f"\n\nSCHEMA:\n{json.dumps(schema_cls.model_json_schema())}{end}")
+    return (
+        f"\n{FIDELITY}\n{feedback_block(req.feedback, has_current)}\n{language_rule(getattr(req, 'language', 'en'))}\n{JSON_RULES}"
+        f"\n\nSCHEMA:\n{json.dumps(schema_cls.model_json_schema())}{end}"
+    )
 
 
 # ---------------------------------------------------------------- STYLE
 def style_prompt(req) -> str:
     if req.mode == "chapter":
-        task = ("Describe how this chapter is actually written: the narrator's voice, sentence rhythm, how "
-                "dialogue is handled, how any humor, tension or emotion is handled, and what the writing avoids. "
-                "Infer the point of view and tense from the text.")
+        task = (
+            "Describe how this chapter is actually written: the narrator's voice, sentence rhythm, how "
+            "dialogue is handled, how any humor, tension or emotion is handled, and what the writing avoids. "
+            "Infer the point of view and tense from the text."
+        )
     else:
-        task = ("Base the style on the genre, tone and feel the author describes. Where the notes say nothing "
-                "about it, choose the style that best fits.")
+        task = (
+            "Base the style on the genre, tone and feel the author describes. Where the notes say nothing "
+            "about it, choose the style that best fits."
+        )
     return (
         "You are writing a narration style card for a story-writing engine. The same card is reused for every "
         "chapter of one story, so it says HOW the story is told and never WHAT happens in it.\n\n"
@@ -326,33 +380,44 @@ def style_prompt(req) -> str:
         "`prose_habits` and `avoid`; chapter shapes have their own rule below.\n"
         "- Describe only what the source does. If it has no inner monologue, do not ask for any. Never turn a missing "
         "quality into its opposite.\n"
-        + ("- The avoid list names what this narrator conspicuously never does, up to six items, each named plainly.\n"
-           if req.mode == "chapter" else
-           "- The avoid list holds everything the author said to avoid, each named plainly, and nothing else except "
-           "at most two habits the author's description clearly implies. Do not pad it with generic writing advice.\n") +
-        "- The exemplars are two or three short passages (two to four sentences each) about ordinary everyday "
+        + (
+            "- The avoid list names what this narrator conspicuously never does, up to six items, each named plainly.\n"
+            if req.mode == "chapter"
+            else "- The avoid list holds everything the author said to avoid, each named plainly, and nothing else except "
+            "at most two habits the author's description clearly implies. Do not pad it with generic writing advice.\n"
+        )
+        + "- The exemplars are two or three short passages (two to four sentences each) about ordinary everyday "
         "situations in a different part of life from the story. They use none of the story's nouns, jobs, objects "
         "or settings. They must reproduce points (a) to (e): the same "
         "attitude, the same rhythm, the same handling of feeling. Plain description in the right tense is not enough. "
         "They obey every prose habit and avoid item on the card, and each shows something different.\n"
-        + ("- `chapter_shapes` holds up to four chapter shapes the source uses. Each is one short instruction covering how "
-           "a chapter opens, how it closes and the balance of dialogue and narration, and the shapes differ clearly from one "
-           "another. Structure only, never plot. Leave it empty if the source shows no clear shapes.\n"
-           if req.mode == "chapter" else
-           "- `chapter_shapes` holds 2-4 distinct chapter shapes, each one short instruction covering how a chapter opens, "
-           "how it closes and the balance of dialogue and narration. Use what the author described; invent the rest so "
-           "there are at least two, choosing shapes that fit the genre and tone and that differ clearly from one another "
-           "(for example: one opens on dialogue and closes quiet, another opens on action and closes on a question). "
-           "Structure only, never plot, and never contradict a shape the author gave.\n") +
-        "- Do not copy wording from these instructions.\n" + tail(req, StyleCard))
-
+        + (
+            "- `chapter_shapes` holds up to four chapter shapes the source uses. Each is one short instruction covering how "
+            "a chapter opens, how it closes and the balance of dialogue and narration, and the shapes differ clearly from one "
+            "another. Structure only, never plot. Leave it empty if the source shows no clear shapes.\n"
+            if req.mode == "chapter"
+            else "- `chapter_shapes` holds 2-4 distinct chapter shapes, each one short instruction covering how a chapter opens, "
+            "how it closes and the balance of dialogue and narration. Use what the author described; invent the rest so "
+            "there are at least two, choosing shapes that fit the genre and tone and that differ clearly from one another "
+            "(for example: one opens on dialogue and closes quiet, another opens on action and closes on a question). "
+            "Structure only, never plot, and never contradict a shape the author gave.\n"
+        )
+        + "- Do not copy wording from these instructions.\n"
+        + tail(req, StyleCard)
+    )
 
 
 # ---------------------------------------------------------------- CHARACTERS
 def characters_prompt(req) -> str:
     style = req.cards.get("style") or {}
-    narrator = (f"\nFor contrast, the narrator's voice is: {style['voice']}\n"
-                "Each character's voice must sound different from the narrator's.\n") if style.get("voice") else ""
+    narrator = (
+        (
+            f"\nFor contrast, the narrator's voice is: {style['voice']}\n"
+            "Each character's voice must sound different from the narrator's.\n"
+        )
+        if style.get("voice")
+        else ""
+    )
     return (
         "You are writing the character cards for a story-writing engine.\n\n"
         f"{source_block(req)}\n{narrator}\n"
@@ -373,8 +438,8 @@ def characters_prompt(req) -> str:
         "- Looks and habits are things a reader could watch a person do, never labels.\n"
         "- Each `toward` entry names another character in this cast exactly as that character's `name` is written, "
         "and is written from this character's side only. Add an entry for every other main character they have a stake in.\n"
-        "- Mention no places or objects by id.\n" + tail(req, CastDraft))
-
+        "- Mention no places or objects by id.\n" + tail(req, CastDraft)
+    )
 
 
 # ---------------------------------------------------------------- WORLD
@@ -390,42 +455,76 @@ def world_prompt(req, cast) -> str:
         "- A hidden truth is a true fact that has not yet appeared on the page and steers the story from behind "
         "the scenes. `known_by` lists the names of the cast members the fact is about or who did the thing, unless the "
         "source says nobody knows it, in which case it is empty.\n"
-        + ("- Read the chapter for facts that some characters know and others do not, or that the story keeps back "
-           "for later. List each as a hidden truth, with `known_by` the people who know it. If there are none, leave "
-           "the list empty.\n" if req.mode == "chapter" else "") +
-        "- An object's `owner` is the name of a cast member or null. Its `location` is the exact name of one of "
+        + (
+            "- Read the chapter for facts that some characters know and others do not, or that the story keeps back "
+            "for later. List each as a hidden truth, with `known_by` the people who know it. If there are none, leave "
+            "the list empty.\n"
+            if req.mode == "chapter"
+            else ""
+        )
+        + "- An object's `owner` is the name of a cast member or null. Its `location` is the exact name of one of "
         "the locations you write, or null when the source does not say where it is.\n"
         "- Write a location for every place the source names or says a scene happens in, without merging or skipping "
         "any. Include only the objects and groups that matter to the plot.\n"
-        + tail(req, WorldDraft))
-
+        + tail(req, WorldDraft)
+    )
 
 
 # ---------------------------------------------------------------- OUTLINE
 def outline_prompt(req, cast, world, want) -> str:
     places = "\n".join(f"- {l['name']}: {l['description']}" for l in world["locations"])
-    truths = "\n".join(f"- {t['id']}: {t['fact']}" for t in world.get("hidden_truths", [])) or "(none)"
+    truths = (
+        "\n".join(f"- {t['id']}: {t['fact']}" for t in world.get("hidden_truths", []))
+        or "(none)"
+    )
     rules = "\n".join(f"- {r}" for r in world["rules"])
     names = "\n".join(f"- {c['name']}: {c.get('role', '')}" for c in cast)
-    groups = "\n".join(f"- {g['name']}: {g.get('description', '')}" + (f" Wants: {g['wants']}" if g.get("wants") else "")
-                       for g in world.get("groups", []))
-    group_block = ("GROUPS (background collectives; they cannot be listed in `present`, so they appear only inside "
-                   f"the events text, as unnamed crowds or officials):\n{groups}\n\n") if groups else ""
-    stage_block = "\n".join(f"{k}. {name}: {text}" for k, (name, text) in STORY_STAGES.items())
+    groups = "\n".join(
+        f"- {g['name']}: {g.get('description', '')}"
+        + (f" Wants: {g['wants']}" if g.get("wants") else "")
+        for g in world.get("groups", [])
+    )
+    group_block = (
+        (
+            "GROUPS (background collectives; they cannot be listed in `present`, so they appear only inside "
+            f"the events text, as unnamed crowds or officials):\n{groups}\n\n"
+        )
+        if groups
+        else ""
+    )
+    stage_block = "\n".join(
+        f"{k}. {name}: {text}" for k, (name, text) in STORY_STAGES.items()
+    )
     st = req.cards.get("style") or {}
-    style_block = (f"THE STORY'S NARRATION STYLE (the outline must suit this register):\nLabel: {st.get('label', '')}\n"
-                   f"Voice: {st.get('voice', '')}\n\n") if st else ""
+    style_block = (
+        (
+            f"THE STORY'S NARRATION STYLE (the outline must suit this register):\nLabel: {st.get('label', '')}\n"
+            f"Voice: {st.get('voice', '')}\n\n"
+        )
+        if st
+        else ""
+    )
     if want:
-        count_rule = (f"The story has exactly {want} chapters: set `chapter_count` to {want}. If the author describes more or "
-                      "fewer sections than that, fit them into the chapters in order. ")
-        stage_rule = ("- " + " ".join(l.strip() for l in stage_lines_for(0, spread_stages(want)[0])) + " Build chapter 1 to do all of it.\n")
+        count_rule = (
+            f"The story has exactly {want} chapters: set `chapter_count` to {want}. If the author describes more or "
+            "fewer sections than that, fit them into the chapters in order. "
+        )
+        stage_rule = (
+            "- "
+            + " ".join(l.strip() for l in stage_lines_for(0, spread_stages(want)[0]))
+            + " Build chapter 1 to do all of it.\n"
+        )
     else:
-        count_rule = ("Decide how many chapters the whole story has and set `chapter_count`: exactly the number the author "
-                      "says, else one chapter for each chapter or section they describe (never splitting one of theirs into "
-                      "two); if they describe none, plan five to eight. ")
-        stage_rule = ("- Chapter 1 is the opening of the story and covers the stages it is given: Setup only when the story "
-                      "has six or more chapters, Setup and Spark with three to five chapters, Setup, Spark and Friction with "
-                      "two, all six with a single chapter. Build chapter 1 to do all of that.\n")
+        count_rule = (
+            "Decide how many chapters the whole story has and set `chapter_count`: exactly the number the author "
+            "says, else one chapter for each chapter or section they describe (never splitting one of theirs into "
+            "two); if they describe none, plan five to eight. "
+        )
+        stage_rule = (
+            "- Chapter 1 is the opening of the story and covers the stages it is given: Setup only when the story "
+            "has six or more chapters, Setup and Spark with three to five chapters, Setup, Spark and Friction with "
+            "two, all six with a single chapter. Build chapter 1 to do all of that.\n"
+        )
     return (
         "You are writing the plot outline for a story-writing engine.\n\n"
         f"{source_block(req)}\n\n{style_block}CHARACTERS (write names exactly like this):\n{names}\n\n"
@@ -434,11 +533,13 @@ def outline_prompt(req, cast, world, want) -> str:
         f"THE STORY'S SIX STAGES (a pacing guide for how the whole story escalates. It is NOT a list of chapters: its length "
         f"says nothing about how many chapters to write):\n{stage_block}\n\n"
         f"TASK: Set up the story: its premise, main character, theme, the broad ending it is heading for, the character arcs, "
-        f"how many chapters it has (at most {MAX_CHAPTERS}), and the beat of chapter 1 ONLY. " + count_rule +
-        "The beats of the later chapters are written one at a time after each chapter is finished, so do not plan or "
+        f"how many chapters it has (at most {MAX_CHAPTERS}), and the beat of chapter 1 ONLY. "
+        + count_rule
+        + "The beats of the later chapters are written one at a time after each chapter is finished, so do not plan or "
         "mention them: `chapter_beats` has exactly one item.\n"
-        "\nRULES:\n" + stage_rule +
-        "- Stakes come from the first two stages: by the end of the stage 2 chapter the reader knows what the "
+        "\nRULES:\n"
+        + stage_rule
+        + "- Stakes come from the first two stages: by the end of the stage 2 chapter the reader knows what the "
         "point-of-view character wants or could lose, and in stage 3 it gets worse. `goal` and `obstacle` must be "
         "concrete enough to show that.\n"
         "- Include every beat the author describes for chapter 1, in order, through to the last thing that happens "
@@ -474,8 +575,8 @@ def outline_prompt(req, cast, world, want) -> str:
         "from anyone else's point of view. If the author names the main character, use them; otherwise choose the "
         "person the story follows most closely.\n"
         "- `present`, `shifts` and `arcs` use only the listed characters. Anyone else the story needs appears "
-        "only inside the events text.\n"
-        + tail(req, OutlineDraft))
+        "only inside the events text.\n" + tail(req, OutlineDraft)
+    )
 
 
 # ---------------------------------------------------------------- WORLD
@@ -486,12 +587,12 @@ def cast_lines(cast) -> str:
 # ---------------------------------------------------------------- THE NEXT BEAT
 # A beat is written only when the chapter before it is finished, so it can follow what really happened. Nothing past the chapter
 # being written exists: later beats are not planned, stored or shown to the writer.
-BEAT_TAIL_CHARS = 1500            # how much of the chapter just written the planner reads (the ending is what matters). The
-                                   # chapter WRITER is never shown any of the previous chapter's prose at all (only the facts
-                                   # of what changed, in WHAT THE LAST CHAPTER CHANGED): chapters are not guaranteed to be
-                                   # contiguous, and a quoted passage of prose in the prompt was found to get echoed back
-                                   # verbatim as the new chapter's own opening despite being told not to reuse it — a planner
-                                   # reading a tail to produce structured JSON doesn't have that failure mode, so it keeps one.
+BEAT_TAIL_CHARS = 1500  # how much of the chapter just written the planner reads (the ending is what matters). The
+# chapter WRITER is never shown any of the previous chapter's prose at all (only the facts
+# of what changed, in WHAT THE LAST CHAPTER CHANGED): chapters are not guaranteed to be
+# contiguous, and a quoted passage of prose in the prompt was found to get echoed back
+# verbatim as the new chapter's own opening despite being told not to reuse it — a planner
+# reading a tail to produce structured JSON doesn't have that failure mode, so it keeps one.
 
 
 def next_beat_prompt(story, n, summaries, prev_text, language="en"):
@@ -502,53 +603,124 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
     chars = "\n".join(
         f"- {c.name}: {c.role}. Wants: {c.want}. Blind spot: {c.blind_spot}."
         + (f" Now: {c.wrap.condition}" if c.wrap.condition else "")
-        + (f" Lately: {'; '.join(c.wrap.recent_changes)}" if c.wrap.recent_changes else "") for c in story.characters)
+        + (
+            f" Lately: {'; '.join(c.wrap.recent_changes)}"
+            if c.wrap.recent_changes
+            else ""
+        )
+        for c in story.characters
+    )
     places = "\n".join(f"- {l.name}: {l.description}" for l in w.locations)
     rules = "\n".join(f"- {r}" for r in w.rules) or "(none)"
-    cast_ids = {c.id for c in story.characters}                          # only these people exist for this chapter
-    objs = "\n".join(f"- {o.name}" + ((f", held by {name(o.owner)}" if o.owner in cast_ids else ", held by someone outside this cast") if o.owner else "")
-                     + (f", at {here.get(o.location, o.location)}" if o.location else "") for o in w.objects) or "(none)"
+    cast_ids = {
+        c.id for c in story.characters
+    }  # only these people exist for this chapter
+    objs = (
+        "\n".join(
+            f"- {o.name}"
+            + (
+                (
+                    f", held by {name(o.owner)}"
+                    if o.owner in cast_ids
+                    else ", held by someone outside this cast"
+                )
+                if o.owner
+                else ""
+            )
+            + (f", at {here.get(o.location, o.location)}" if o.location else "")
+            for o in w.objects
+        )
+        or "(none)"
+    )
     groups = "\n".join(f"- {g.name}: {g.description}" for g in w.groups)
     left = story.unrevealed_truths(n - 1)
     done = [t for t in w.hidden_truths if t not in left]
-    know = lambda t: ", ".join(name(c) for c in t.known_by if c in cast_ids) or "no one in this cast"
-    truths = "\n".join(f"- {t.id}: {t.fact} (known to: {know(t)})" for t in left) or "(none left)"
+    know = lambda t: (
+        ", ".join(name(c) for c in t.known_by if c in cast_ids) or "no one in this cast"
+    )
+    truths = (
+        "\n".join(f"- {t.id}: {t.fact} (known to: {know(t)})" for t in left)
+        or "(none left)"
+    )
     revealed = "\n".join(f"- {t.fact}" for t in done) or "(none yet)"
     plants = story.open_plants(n - 1)
     prev = story.beat_for(n - 1) if n > 1 else None
     stage = spread_stages(total)[min(n, total) - 1]
     stage_text = "\n".join(stage_lines_for(prev.stage if prev else 0, stage))
-    stories = "\n".join(f"Chapter {i + 1}: {t}" for i, t in enumerate(summaries)) or "(no earlier chapters)"
+    stories = (
+        "\n".join(f"Chapter {i + 1}: {t}" for i, t in enumerate(summaries))
+        or "(no earlier chapters)"
+    )
     tail_text = prev_text.strip()[-BEAT_TAIL_CHARS:] if prev_text.strip() else "(none)"
     st = story.style
     left_n = total - n + 1
     past = [b for b in plot.chapter_beats if b.chapter_num < n]
-    ledger = "\n".join(f"- Chapter {b.chapter_num}: {b.goal} At {here.get(b.location, b.location)}, with "
-                       f"{', '.join(name(c) for c in b.present)}." + (f" What changed: {b.turn}" if b.turn else "")
-                       + f" Ended on: {b.ends_on}" for b in past) or "(none)"
+    ledger = (
+        "\n".join(
+            f"- Chapter {b.chapter_num}: {b.goal} At {here.get(b.location, b.location)}, with "
+            f"{', '.join(name(c) for c in b.present)}."
+            + (f" What changed: {b.turn}" if b.turn else "")
+            + f" Ended on: {b.ends_on}"
+            for b in past
+        )
+        or "(none)"
+    )
     places_left, people_left = story.least_used(n - 1)
     objects_left, groups_left = story.least_used_world(n - 1)
-    fresh = ("Places the story has been to least: " + ", ".join(f"{a} ({k}×)" for a, k in places_left) + "\n"
-             + ("People who have been on the page least: " + ", ".join(f"{a} ({k}×)" for a, k in people_left) + "\n" if people_left else "")
-             + ("Objects the story has made the least use of: " + ", ".join(f"{a} ({k}×)" for a, k in objects_left) + "\n" if objects_left else "")
-             + ("Groups the story has made the least use of: " + ", ".join(f"{a} ({k}×)" for a, k in groups_left) + "\n" if groups_left else ""))
+    fresh = (
+        "Places the story has been to least: "
+        + ", ".join(f"{a} ({k}×)" for a, k in places_left)
+        + "\n"
+        + (
+            "People who have been on the page least: "
+            + ", ".join(f"{a} ({k}×)" for a, k in people_left)
+            + "\n"
+            if people_left
+            else ""
+        )
+        + (
+            "Objects the story has made the least use of: "
+            + ", ".join(f"{a} ({k}×)" for a, k in objects_left)
+            + "\n"
+            if objects_left
+            else ""
+        )
+        + (
+            "Groups the story has made the least use of: "
+            + ", ".join(f"{a} ({k}×)" for a, k in groups_left)
+            + "\n"
+            if groups_left
+            else ""
+        )
+    )
     return (
         "You are planning the next chapter of a story that is written one chapter at a time. Only the beat of the next "
         f"chapter is needed now: chapter {n} of {total}. Nothing after it has been planned, so do not plan it.\n\n"
         f"THE STORY SO FAR (the premise, theme, ending, arcs and the list of what stays open can be revised: see REVISING)\nPremise: {plot.premise}\nMain character: {name(plot.protagonist)}\n"
         f"Theme (steers the plot; never stated aloud): {plot.theme}\n"
         f"Where the story is heading (a broad destination, not a schedule; change it if events have moved the story elsewhere): {plot.ending}\n"
-        + ("Never resolve or explain: " + "; ".join(plot.leave_open) + "\n" if plot.leave_open else "")
-        + "Where each person ends up: " + "; ".join(f"{name(a.character)}: {a.end}" for a in plot.arcs) + "\n"
+        + (
+            "Never resolve or explain: " + "; ".join(plot.leave_open) + "\n"
+            if plot.leave_open
+            else ""
+        )
+        + "Where each person ends up: "
+        + "; ".join(f"{name(a.character)}: {a.end}" for a in plot.arcs)
+        + "\n"
         f"Narration style: {st.label}. {st.voice}\n\n"
         f"THE CARDS NOW (after chapter {n - 1}; this is the truth of the story at this point)\n"
         f"PEOPLE:\n{chars}\n\nSETTING: {w.setting}\nHOW THE WORLD WORKS (permanent facts; reach for one as an obstacle or a "
         f"stake when it fits this chapter):\n{rules}\n\nPLACES (write names exactly like this):\n{places}\n"
-        f"OBJECTS:\n{objs}\n" + (f"GROUPS (background collectives; they appear only inside the events text):\n{groups}\n" if groups else "")
+        f"OBJECTS:\n{objs}\n"
+        + (
+            f"GROUPS (background collectives; they appear only inside the events text):\n{groups}\n"
+            if groups
+            else ""
+        )
         + f"HIDDEN TRUTHS ALREADY REVEALED (part of what happened):\n{revealed}\n\n"
         f"WHAT HAS HAPPENED\n{stories}\n\nThe last chapter ended like this (the ending only):\n{tail_text}\n"
-        + (f"It stopped at: {prev.ends_on}\n" if prev else "") +
-        f"\nALREADY USED (the earlier chapters in brief; this chapter must not repeat any of them):\n{ledger}\n\n"
+        + (f"It stopped at: {prev.ends_on}\n" if prev else "")
+        + f"\nALREADY USED (the earlier chapters in brief; this chapter must not repeat any of them):\n{ledger}\n\n"
         f"FRESH MATERIAL (use it when the story allows; a new place, an object or group barely touched so far, or a person "
         f"who has been away is the easiest way to make a chapter different):\n{fresh}"
         f"\nTHIS CHAPTER: chapter {n} of {total}\n{stage_text}\n"
@@ -557,9 +729,14 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         f"known on the page in this chapter, to everyone present; most chapters reveal one or none; a truth once revealed cannot be "
         f"chosen again; try to reveal them over the chapters that are left, at a pace the story can carry, but a story does not "
         f"have to reveal every one):\n{truths}\n"
-        + ("Plants not yet paid off (to use one in this chapter, copy its wording exactly into `pays_off`; a plant once paid off "
-           "cannot be chosen again; use what the story calls for and leave the rest):\n" + "\n".join(f"- {p}" for p in plants) + "\n"
-           if plants else "Plants not yet paid off: (none)\n")
+        + (
+            "Plants not yet paid off (to use one in this chapter, copy its wording exactly into `pays_off`; a plant once paid off "
+            "cannot be chosen again; use what the story calls for and leave the rest):\n"
+            + "\n".join(f"- {p}" for p in plants)
+            + "\n"
+            if plants
+            else "Plants not yet paid off: (none)\n"
+        )
         + "\nRULES:\n"
         "- Follow from where the last chapter really ended and from the cards as they are now. Respond to what actually "
         "happened; do not return to any earlier idea of the plot.\n"
@@ -584,15 +761,19 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         f"- The people listed under PEOPLE are the whole cast of this chapter. `present` and `shifts` use only them, the main "
         f"character is always present, at most {MAX_CAST} are present, and no one else in the story is named or involved, "
         "not even in the events. `location` is a place from the list.\n"
-        + (f"- THIS IS THE LAST CHAPTER: a character's ending above can only be shown if they are in `present` here — anyone "
-           f"left out is excluded from the chapter entirely and their ending cannot happen on the page. Put every person "
-           f"whose ending under \"Where each person ends up\" is not already true in `present` (up to {MAX_CAST}), and write "
-           f"events that actually land each of their endings in action, not by having someone else report it secondhand. "
-           f"Only leave someone out if the cast limit forces a choice or their ending has already happened on the page in an "
-           f"earlier chapter.\n" if n == total else "")
+        + (
+            f"- THIS IS THE LAST CHAPTER: a character's ending above can only be shown if they are in `present` here — anyone "
+            f"left out is excluded from the chapter entirely and their ending cannot happen on the page. Put every person "
+            f'whose ending under "Where each person ends up" is not already true in `present` (up to {MAX_CAST}), and write '
+            f"events that actually land each of their endings in action, not by having someone else report it secondhand. "
+            f"Only leave someone out if the cast limit forces a choice or their ending has already happened on the page in an "
+            f"earlier chapter.\n"
+            if n == total
+            else ""
+        )
         + "\nREVISING (optional): you may also correct the story's setup when the chapter just written really changed it: "
         "`revised_premise`, `revised_theme`, `revised_ending`, `revised_arcs` (all of them), `revised_leave_open` (the full list) "
         "and `closed_leave_open` (items now settled), with `why_revised`. Do it only when events call for it, keep the rest empty, and "
         "keep the ending a broad destination, not a schedule. A story is allowed to end up somewhere other than where it started "
-        "heading.\n"
-        + f"{language_rule(language)}\n" + JSON_RULES)
+        "heading.\n" + f"{language_rule(language)}\n" + JSON_RULES
+    )

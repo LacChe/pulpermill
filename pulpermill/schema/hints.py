@@ -31,7 +31,11 @@ REFS = {
 }
 
 # Fields that take one of a fixed set of numbered choices: path -> [[value, name], ...] (shown as "3 · Friction").
-CHOICES = {"outline.chapter_beats.stage": [[k, STORY_STAGES[k][0]] for k in sorted(STORY_STAGES)]}
+CHOICES = {
+    "outline.chapter_beats.stage": [
+        [k, STORY_STAGES[k][0]] for k in sorted(STORY_STAGES)
+    ]
+}
 
 # Fields the card GENERATOR page hides (live state that starts empty). The Story panel shows them.
 GENERATOR_HIDDEN = ["wrap"]
@@ -46,7 +50,12 @@ def ui_hints() -> dict:
       hidden:   field names the generator page leaves out
     Card keys are the four the page uses: style, characters, world, outline.
     """
-    roots = {"style": StyleCard, "characters": CharacterCard, "world": WorldBible, "outline": PlotOutline}
+    roots = {
+        "style": StyleCard,
+        "characters": CharacterCard,
+        "world": WorldBible,
+        "outline": PlotOutline,
+    }
     enums: dict[str, dict[str, list]] = {}
     nullable: list[str] = []
 
@@ -77,7 +86,14 @@ def ui_hints() -> dict:
     for card, cls in roots.items():
         sch = cls.model_json_schema()
         visit(card, sch, sch.get("$defs", {}), [card])
-    return {"enums": enums, "nullable": sorted(set(nullable)), "hidden": list(GENERATOR_HIDDEN), "refs": dict(REFS), "choices": dict(CHOICES), "pools": dict(POOLS)}
+    return {
+        "enums": enums,
+        "nullable": sorted(set(nullable)),
+        "hidden": list(GENERATOR_HIDDEN),
+        "refs": dict(REFS),
+        "choices": dict(CHOICES),
+        "pools": dict(POOLS),
+    }
 
 
 if __name__ == "__main__":

@@ -3,12 +3,22 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional
 
-from .common import M, MAX_CHARACTERS, Recent, Resolver, UsesMap, _pooled, clean_uses, unique_ids
+from .common import (
+    M,
+    MAX_CHARACTERS,
+    Recent,
+    Resolver,
+    UsesMap,
+    _pooled,
+    clean_uses,
+    unique_ids,
+)
 
 
 # ===========================================================================
 # CHARACTERS
 # ===========================================================================
+
 
 class Attitude(BaseModel):
     toward: str = Field(description="The name of another character in the cast.")
@@ -20,6 +30,7 @@ class Attitude(BaseModel):
 
 class CharacterDraft(BaseModel):
     """What the model writes. Core definition: does not change after review."""
+
     name: str
     role: str = Field(
         description="What this person is to the story, in the source's own words for their job or place. "
@@ -34,7 +45,9 @@ class CharacterDraft(BaseModel):
         description="State how they see themselves and the specific thing they do that contradicts it. "
         "A nervous tic is not a blind spot."
     )
-    look: list[str] = Field(description="Two or three physical details a reader would notice.")
+    look: list[str] = Field(
+        description="Two or three physical details a reader would notice."
+    )
     habits: list[str] = Field(
         description="Two or three things they do repeatedly, especially when nervous, lying, or avoiding something."
     )
@@ -45,9 +58,12 @@ class CharacterDraft(BaseModel):
         description="Two or three lines of dialogue showing how they talk, about situations outside this story. "
         "Never a line from the source, never a plot reveal."
     )
-    history: str = Field(description="Two or three sentences of past events that still drive present behavior.")
+    history: str = Field(
+        description="Two or three sentences of past events that still drive present behavior."
+    )
     toward: list[Attitude] = Field(
-        default_factory=list, description="One entry for each other main character this person has a stake in."
+        default_factory=list,
+        description="One entry for each other main character this person has a stake in.",
     )
 
 
@@ -62,12 +78,17 @@ class CastDraft(BaseModel):
 
 class CharacterWrap(BaseModel):
     """Live state. Updated by Pulpermill after each chapter. Plain text only: no object or location ids."""
-    condition: str = Field(default="", description="Current emotional and physical condition.")
+
+    condition: str = Field(
+        default="", description="Current emotional and physical condition."
+    )
     recent_changes: Recent = Field(
-        default_factory=list, description="Latest shifts in what they want, how they act, or how they see someone."
+        default_factory=list,
+        description="Latest shifts in what they want, how they act, or how they see someone.",
     )
     recent_details: Recent = Field(
-        default_factory=list, description="Latest newly established facts about them, including past events."
+        default_factory=list,
+        description="Latest newly established facts about them, including past events.",
     )
 
 
@@ -78,12 +99,23 @@ class CharacterCard(CharacterDraft):
 
     @model_validator(mode="after")
     def _tidy_uses(self):
-        self.uses = clean_uses(self.uses, _pooled("characters", {"look": self.look, "habits": self.habits,
-                                                                 "sample_lines": self.sample_lines}))
+        self.uses = clean_uses(
+            self.uses,
+            _pooled(
+                "characters",
+                {
+                    "look": self.look,
+                    "habits": self.habits,
+                    "sample_lines": self.sample_lines,
+                },
+            ),
+        )
         return self
 
 
-def finalize_cast(draft: CastDraft, notes: Optional[list[str]] = None) -> list[CharacterCard]:
+def finalize_cast(
+    draft: CastDraft, notes: Optional[list[str]] = None
+) -> list[CharacterCard]:
     """Assign ids from names and rewrite `toward` from names to ids. A `toward` that names nobody in the cast is dropped
     and reported in `notes` (it is not worth regenerating the whole cast for)."""
     notes = notes if notes is not None else []
@@ -96,9 +128,17 @@ def finalize_cast(draft: CastDraft, notes: Optional[list[str]] = None) -> list[C
         for a in data["toward"]:
             tid = who.find(a["toward"])
             if tid is None:
-                notes.append(M("{name}: feelings toward '{other}' were dropped, because nobody in the cast has that name", name=c.name, other=a["toward"]))
+                notes.append(
+                    M(
+                        "{name}: feelings toward '{other}' were dropped, because nobody in the cast has that name",
+                        name=c.name,
+                        other=a["toward"],
+                    )
+                )
             elif tid == cid:
-                notes.append(M("{name}: an attitude toward themselves was dropped", name=c.name))
+                notes.append(
+                    M("{name}: an attitude toward themselves was dropped", name=c.name)
+                )
             elif tid not in seen:
                 seen.add(tid)
                 resolved.append({"toward": tid, "attitude": a["attitude"]})

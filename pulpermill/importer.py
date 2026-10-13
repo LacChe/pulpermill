@@ -7,28 +7,61 @@ from pydantic import BaseModel, ValidationError
 
 from .runtime import logger
 from .schema import (
-    CharacterCard, M, PlotOutline, StyleCard, WorldBible, check_characters, check_outline, check_style, check_world,
-    slugify
+    CharacterCard,
+    M,
+    PlotOutline,
+    StyleCard,
+    WorldBible,
+    check_characters,
+    check_outline,
+    check_style,
+    check_world,
+    slugify,
 )
 
 
-CARD_MODELS = {"style": StyleCard, "characters": CharacterCard, "world": WorldBible, "outline": PlotOutline}
+CARD_MODELS = {
+    "style": StyleCard,
+    "characters": CharacterCard,
+    "world": WorldBible,
+    "outline": PlotOutline,
+}
 
 
-WRAPPER_KEYS = ("style", "characters", "world", "outline", "plot")   # "plot" is what StoryProject calls the outline
+WRAPPER_KEYS = (
+    "style",
+    "characters",
+    "world",
+    "outline",
+    "plot",
+)  # "plot" is what StoryProject calls the outline
 
 
 META_KEYS = {"format", "version", "chapter", "saved", "slug", "note"}
 
 
-SCORE_MIN = 2           # a loose card file must share at least this many field names with one card type
+SCORE_MIN = (
+    2  # a loose card file must share at least this many field names with one card type
+)
 
 
-_KINDS = {dict: M("an object"), list: M("a list"), str: M("text"), int: M("a number"), float: M("a number"),
-          bool: M("true/false"), type(None): M("null")}
+_KINDS = {
+    dict: M("an object"),
+    list: M("a list"),
+    str: M("text"),
+    int: M("a number"),
+    float: M("a number"),
+    bool: M("true/false"),
+    type(None): M("null"),
+}
 
 
-KIND = {"style": M("style"), "characters": M("characters"), "world": M("world"), "outline": M("setup")}
+KIND = {
+    "style": M("style"),
+    "characters": M("characters"),
+    "world": M("world"),
+    "outline": M("setup"),
+}
 
 
 def _kind(v):
@@ -117,9 +150,20 @@ def salvage(cls, data, label):
     data = copy.deepcopy(data)
     unknown = unknown_paths(cls, data)
     if unknown:
-        warnings.append(M("{label}: ignored unrelated field(s): {fields} (+{n} more)", label=label, fields=", ".join(unknown[:5]), n=len(unknown) - 5)
-                        if len(unknown) > 5 else
-                        M("{label}: ignored unrelated field(s): {fields}", label=label, fields=", ".join(unknown)))
+        warnings.append(
+            M(
+                "{label}: ignored unrelated field(s): {fields} (+{n} more)",
+                label=label,
+                fields=", ".join(unknown[:5]),
+                n=len(unknown) - 5,
+            )
+            if len(unknown) > 5
+            else M(
+                "{label}: ignored unrelated field(s): {fields}",
+                label=label,
+                fields=", ".join(unknown),
+            )
+        )
     for _ in range(300):
         try:
             return cls.model_validate(data), warnings, None
@@ -136,13 +180,31 @@ def salvage(cls, data, label):
                 try:
                     cls.model_validate(trial)
                 except ValidationError as v2:
-                    if any(x["type"] == "missing" and tuple(x["loc"]) == prefix for x in v2.errors()):
-                        continue                  # a required field: dropping it only moves the problem up a level
-                warnings.append(M("{label}: dropped {path} ({why})", label=label, path=_path_text(data, prefix), why=msg))
+                    if any(
+                        x["type"] == "missing" and tuple(x["loc"]) == prefix
+                        for x in v2.errors()
+                    ):
+                        continue  # a required field: dropping it only moves the problem up a level
+                warnings.append(
+                    M(
+                        "{label}: dropped {path} ({why})",
+                        label=label,
+                        path=_path_text(data, prefix),
+                        why=msg,
+                    )
+                )
                 data, dropped = trial, True
                 break
             if not dropped:
-                return None, warnings, M("{path}: {why}", path=_path_text(data, loc) or M("the card"), why=msg)
+                return (
+                    None,
+                    warnings,
+                    M(
+                        "{path}: {why}",
+                        path=_path_text(data, loc) or M("the card"),
+                        why=msg,
+                    ),
+                )
     return None, warnings, M("too many problems to repair")
 
 
@@ -159,14 +221,29 @@ def _load_characters(raw, label, warnings):
     for i, item in enumerate(raw):
         tag = M("{label}: character #{n}", label=label, n=i + 1)
         if not isinstance(item, dict):
-            warnings.append(M("{tag} is {kind}, not an object; skipped", tag=tag, kind=_kind(item)))
+            warnings.append(
+                M("{tag} is {kind}, not an object; skipped", tag=tag, kind=_kind(item))
+            )
             continue
         item = copy.deepcopy(item)
         if _name_of(item):
-            tag = M("{label}: character #{n} ({name})", label=label, n=i + 1, name=_name_of(item))
-        if not (isinstance(item.get("id"), str) and item["id"].strip()) and isinstance(item.get("name"), str) and item["name"].strip():
-            item["id"] = slugify(item["name"])           # a character written as a draft has no id yet
-            warnings.append(M("{tag}: had no id, so it was given '{id}'", tag=tag, id=item["id"]))
+            tag = M(
+                "{label}: character #{n} ({name})",
+                label=label,
+                n=i + 1,
+                name=_name_of(item),
+            )
+        if (
+            not (isinstance(item.get("id"), str) and item["id"].strip())
+            and isinstance(item.get("name"), str)
+            and item["name"].strip()
+        ):
+            item["id"] = slugify(
+                item["name"]
+            )  # a character written as a draft has no id yet
+            warnings.append(
+                M("{tag}: had no id, so it was given '{id}'", tag=tag, id=item["id"])
+            )
         obj, w, err = salvage(CharacterCard, item, tag)
         warnings.extend(w)
         if err:
@@ -174,7 +251,13 @@ def _load_characters(raw, label, warnings):
             continue
         d = obj.model_dump(mode="json")
         if d["id"] in seen:
-            warnings.append(M("{tag}: id '{id}' is already used by an earlier character; skipped", tag=tag, id=d["id"]))
+            warnings.append(
+                M(
+                    "{tag}: id '{id}' is already used by an earlier character; skipped",
+                    tag=tag,
+                    id=d["id"],
+                )
+            )
             continue
         seen.add(d["id"])
         out.append(d)
@@ -183,19 +266,34 @@ def _load_characters(raw, label, warnings):
 
 def soft_checks(c):
     """The same consistency checks the generator runs, over whichever cards are present. Advice only."""
+
     def parse(cls, v):
         try:
             return cls.model_validate(v)
-        except ValidationError:                     # a card that does not fit is left out of the checks (advice only)
+        except (
+            ValidationError
+        ):  # a card that does not fit is left out of the checks (advice only)
             return None
-    chars = [x for x in (parse(CharacterCard, v) for v in (c.get("characters") or [])) if x]
-    world, style, plot = parse(WorldBible, c.get("world")), parse(StyleCard, c.get("style")), parse(PlotOutline, c.get("outline"))
+
+    chars = [
+        x for x in (parse(CharacterCard, v) for v in (c.get("characters") or [])) if x
+    ]
+    world, style, plot = (
+        parse(WorldBible, c.get("world")),
+        parse(StyleCard, c.get("style")),
+        parse(PlotOutline, c.get("outline")),
+    )
     out = []
     try:
         if style and chars:
             out += check_style(style, [x.name for x in chars])
         if chars:
-            out += check_characters(chars, ({l.id for l in world.locations} | {o.id for o in world.objects}) if world else set())
+            out += check_characters(
+                chars,
+                ({l.id for l in world.locations} | {o.id for o in world.objects})
+                if world
+                else set(),
+            )
         if world and chars:
             out += check_world(world, {x.id for x in chars})
         if plot and world and chars:
@@ -214,33 +312,76 @@ def import_cards(items, existing):
     def put(kind, value, name):
         if kind == "characters":
             if not isinstance(value, list):
-                warnings.append(M("{name}: 'characters' should be a list of characters, found {kind}; skipped", name=name, kind=_kind(value)))
+                warnings.append(
+                    M(
+                        "{name}: 'characters' should be a list of characters, found {kind}; skipped",
+                        name=name,
+                        kind=_kind(value),
+                    )
+                )
                 return
             if chars["replace"] is not None:
-                warnings.append(M("{name}: a character list was already given in {src}; using this one instead", name=name, src=chars["src"]))
+                warnings.append(
+                    M(
+                        "{name}: a character list was already given in {src}; using this one instead",
+                        name=name,
+                        src=chars["src"],
+                    )
+                )
             chars["replace"], chars["src"] = value, name
             return
         if not isinstance(value, dict):
-            warnings.append(M("{name}: '{kind}' should be an object, found {found}; skipped", name=name, kind=KIND[kind], found=_kind(value)))
+            warnings.append(
+                M(
+                    "{name}: '{kind}' should be an object, found {found}; skipped",
+                    name=name,
+                    kind=KIND[kind],
+                    found=_kind(value),
+                )
+            )
             return
         if kind in found:
-            warnings.append(M("{name}: a {kind} card was already given in {src}; using this one instead", name=name, kind=KIND[kind], src=found[kind][1]))
+            warnings.append(
+                M(
+                    "{name}: a {kind} card was already given in {src}; using this one instead",
+                    name=name,
+                    kind=KIND[kind],
+                    src=found[kind][1],
+                )
+            )
         found[kind] = (value, name)
 
     def extras(name, data, used):
         extra = [k for k in data if k not in used and k not in META_KEYS]
         if extra:
-            warnings.append(M("{name}: ignored unrelated top-level field(s): {fields}", name=name, fields=", ".join(map(str, extra[:6]))))
+            warnings.append(
+                M(
+                    "{name}: ignored unrelated top-level field(s): {fields}",
+                    name=name,
+                    fields=", ".join(map(str, extra[:6])),
+                )
+            )
 
     def handle(name, data, depth=0):
         if isinstance(data, list):
             put("characters", data, name)
             return
         if not isinstance(data, dict):
-            warnings.append(M("{name}: expected a JSON object or list, found {kind}; skipped", name=name, kind=_kind(data)))
+            warnings.append(
+                M(
+                    "{name}: expected a JSON object or list, found {kind}; skipped",
+                    name=name,
+                    kind=_kind(data),
+                )
+            )
             return
         if data.get("format") == "pulpermill-project":
-            warnings.append(M("{name}: this is a whole-project file; use Load project to open it. Skipped.", name=name))
+            warnings.append(
+                M(
+                    "{name}: this is a whole-project file; use Load project to open it. Skipped.",
+                    name=name,
+                )
+            )
             return
         wrapped = [k for k in WRAPPER_KEYS if k in data]
         if wrapped:
@@ -254,8 +395,13 @@ def import_cards(items, existing):
             return
         kind = classify(data)
         if kind is None:
-            warnings.append(M("{name}: not recognised as a style, character, world or setup card (its fields: {fields}); skipped",
-                              name=name, fields=", ".join(map(str, sorted(data)[:6])) or M("none")))
+            warnings.append(
+                M(
+                    "{name}: not recognised as a style, character, world or setup card (its fields: {fields}); skipped",
+                    name=name,
+                    fields=", ".join(map(str, sorted(data)[:6])) or M("none"),
+                )
+            )
         elif kind == "characters":
             chars["loose"].append((name, data))
         else:
@@ -264,30 +410,60 @@ def import_cards(items, existing):
     for name, data in items:
         try:
             handle(name or "file", data)
-        except Exception as e:                      # a file must never take the importer down
-            logger.warning("import: %s could not be read as cards: %s: %s", name, type(e).__name__, e)
-            warnings.append(M("{name}: could not be read as cards ({why}); skipped", name=name, why=f"{type(e).__name__}: {e}"))
+        except Exception as e:  # a file must never take the importer down
+            logger.warning(
+                "import: %s could not be read as cards: %s: %s",
+                name,
+                type(e).__name__,
+                e,
+            )
+            warnings.append(
+                M(
+                    "{name}: could not be read as cards ({why}); skipped",
+                    name=name,
+                    why=f"{type(e).__name__}: {e}",
+                )
+            )
 
     cards, imported = {}, []
     for kind in ("style", "world", "outline"):
         if kind in found:
             value, name = found[kind]
-            obj, w, err = salvage(CARD_MODELS[kind], value, M("{name}: {kind}", name=name, kind=KIND[kind]))
+            obj, w, err = salvage(
+                CARD_MODELS[kind],
+                value,
+                M("{name}: {kind}", name=name, kind=KIND[kind]),
+            )
             warnings.extend(w)
             if err:
-                warnings.append(M("{name}: {kind} not imported ({why})", name=name, kind=KIND[kind], why=err))
+                warnings.append(
+                    M(
+                        "{name}: {kind} not imported ({why})",
+                        name=name,
+                        kind=KIND[kind],
+                        why=err,
+                    )
+                )
                 continue
             cards[kind] = obj.model_dump(mode="json")
             imported.append(KIND[kind])
 
     if chars["replace"] is not None or chars["loose"]:
-        existing_chars = [c for c in ((existing or {}).get("characters") or []) if isinstance(c, dict)]
+        existing_chars = [
+            c for c in ((existing or {}).get("characters") or []) if isinstance(c, dict)
+        ]
         replacing = chars["replace"] is not None
-        final = _load_characters(chars["replace"], chars["src"], warnings) if replacing else list(existing_chars)
+        final = (
+            _load_characters(chars["replace"], chars["src"], warnings)
+            if replacing
+            else list(existing_chars)
+        )
         touched = len(final) if replacing else 0
         for name, d in chars["loose"]:
             for c in _load_characters([d], name, warnings):
-                at = next((i for i, x in enumerate(final) if x.get("id") == c["id"]), None)
+                at = next(
+                    (i for i, x in enumerate(final) if x.get("id") == c["id"]), None
+                )
                 if at is None:
                     final.append(c)
                 else:
@@ -295,11 +471,25 @@ def import_cards(items, existing):
                 touched += 0 if replacing else 1
         if final and touched:
             cards["characters"] = final
-            imported.append(M("characters ({n})", n=len(final)) if replacing else
-                            M("characters ({touched} added or updated, {n} in the cast)", touched=touched, n=len(final)))
+            imported.append(
+                M("characters ({n})", n=len(final))
+                if replacing
+                else M(
+                    "characters ({touched} added or updated, {n} in the cast)",
+                    touched=touched,
+                    n=len(final),
+                )
+            )
         else:
-            warnings.append(M("No valid characters were found, so the cast was left as it was."))
+            warnings.append(
+                M("No valid characters were found, so the cast was left as it was.")
+            )
 
     merged = {k: v for k, v in (existing or {}).items() if v}
     merged.update(cards)
-    return {"cards": cards, "imported": imported, "warnings": warnings, "checks": soft_checks(merged) if cards else []}
+    return {
+        "cards": cards,
+        "imported": imported,
+        "warnings": warnings,
+        "checks": soft_checks(merged) if cards else [],
+    }

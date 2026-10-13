@@ -7,16 +7,24 @@ from pydantic.json_schema import SkipJsonSchema
 from typing import Annotated, Optional
 
 
-
 class Msg(str):
     """A message in English that also remembers its template and parameters, so the page can show it in another language.
     Everywhere else (logging, joins, tests) it is an ordinary string. Build one with M("template with {slots}", slot=value)."""
+
     template: str
     params: dict
     at: tuple = ()
 
     def __new__(cls, template: str, **params):
-        obj = super().__new__(cls, template.format(**{k: (", ".join(map(str, v)) if isinstance(v, list) else v) for k, v in params.items()}))
+        obj = super().__new__(
+            cls,
+            template.format(
+                **{
+                    k: (", ".join(map(str, v)) if isinstance(v, list) else v)
+                    for k, v in params.items()
+                }
+            ),
+        )
         obj.template, obj.params, obj.at = template, params, []
         return obj
 
@@ -25,7 +33,14 @@ class Msg(str):
         path ("characters.role"), `item` the id (or chapter number) of the list item it sits in, `value` what is wrong with
         it. mode "is": the field is flagged while it still holds `value` (or, for a list, still contains it); mode
         "lacks": it is flagged while a list does not contain `value`."""
-        self.at.append({"path": path, "item": None if item is None else str(item), "value": value, "mode": mode})
+        self.at.append(
+            {
+                "path": path,
+                "item": None if item is None else str(item),
+                "value": value,
+                "mode": mode,
+            }
+        )
         return self
 
 
@@ -35,7 +50,11 @@ M = Msg
 def to_json(x):
     """Plain JSON for the page: a message becomes {"s": English text, "t": template, "p": params}; containers are walked."""
     if isinstance(x, Msg):
-        out = {"s": str(x), "t": x.template, "p": {k: to_json(v) for k, v in x.params.items()}}
+        out = {
+            "s": str(x),
+            "t": x.template,
+            "p": {k: to_json(v) for k, v in x.params.items()},
+        }
         if x.at:
             out["at"] = list(x.at)
         return out
@@ -46,7 +65,7 @@ def to_json(x):
     return x
 
 
-_CJK = "\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff"          # Han characters: written without spaces, so counted one by one
+_CJK = "\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff"  # Han characters: written without spaces, so counted one by one
 _CJK_RE = re.compile(f"[{_CJK}]")
 _WORD_RE = re.compile(f"[^\\W_{_CJK}]+(?:['\u2019-][^\\W_{_CJK}]+)*")
 
@@ -71,19 +90,28 @@ def similar(a: str, b: str, threshold: Optional[float] = None) -> bool:
     x, y = squash(a), squash(b)
     if min(len(x), len(y)) < DUPLICATE_MIN_CHARS:
         return False
-    A, B = {x[i:i + 2] for i in range(len(x) - 1)}, {y[i:i + 2] for i in range(len(y) - 1)}
-    return len(A & B) / len(A | B) >= (DUPLICATE_SIMILARITY if threshold is None else threshold)
+    A, B = (
+        {x[i : i + 2] for i in range(len(x) - 1)},
+        {y[i : i + 2] for i in range(len(y) - 1)},
+    )
+    return len(A & B) / len(A | B) >= (
+        DUPLICATE_SIMILARITY if threshold is None else threshold
+    )
 
 
 RECENT_N = 5
-DUPLICATE_SIMILARITY = 0.45     # a new "lasting change" or "detail" this alike to one already on any character is dropped
-SAME_CHARACTER_SIMILARITY = 0.3   # against the same character's own current entries the bar is lower: the same arc, said again, is not news
-MAX_HABITS = 5                   # habits on a card; a new one pushes the oldest out
-DUPLICATE_MIN_CHARS = 24        # ...but only for entries this long (letters and digits); short ones differ by a word and mean different things
-MAX_CHARACTERS = 6      # people one cast generation writes; a project can hold any number
-MAX_CAST = 6            # people a single chapter can be written about (the main character included)
-MAX_CHAPTERS = 10       # chapters in a generated outline
-MAX_CHAPTER_NUM = 20    # hard ceiling when LOADING an outline, so longer hand-written ones still load
+DUPLICATE_SIMILARITY = 0.45  # a new "lasting change" or "detail" this alike to one already on any character is dropped
+SAME_CHARACTER_SIMILARITY = 0.3  # against the same character's own current entries the bar is lower: the same arc, said again, is not news
+MAX_HABITS = 5  # habits on a card; a new one pushes the oldest out
+DUPLICATE_MIN_CHARS = 24  # ...but only for entries this long (letters and digits); short ones differ by a word and mean different things
+MAX_CHARACTERS = 6  # people one cast generation writes; a project can hold any number
+MAX_CAST = (
+    6  # people a single chapter can be written about (the main character included)
+)
+MAX_CHAPTERS = 10  # chapters in a generated outline
+MAX_CHAPTER_NUM = (
+    20  # hard ceiling when LOADING an outline, so longer hand-written ones still load
+)
 logger = logging.getLogger("pulpmill")
 
 
@@ -119,24 +147,27 @@ POOLS = {
     "world.groups": 1,
 }
 
+
 # {list field: {item key: times handed to the writer}}. The key is the item's text, or its id for places, objects and groups.
 # It is code-owned live state: it is never part of the schema the model writes.
 def _lenient_uses(v):
     """A count that is not a number is dropped rather than failing the whole card: this is bookkeeping, not content."""
     out: dict[str, dict[str, int]] = {}
-    for field, row in (v.items() if isinstance(v, dict) else ()):
+    for field, row in v.items() if isinstance(v, dict) else ():
         if isinstance(row, dict):
             kept = {}
             for k, n in row.items():
                 try:
                     kept[str(k)] = int(n)
                 except (TypeError, ValueError):
-                    pass                              # a count that is not a number is skipped
+                    pass  # a count that is not a number is skipped
             out[str(field)] = kept
     return out
 
 
-UsesMap = SkipJsonSchema[Annotated[dict[str, dict[str, int]], BeforeValidator(_lenient_uses)]]
+UsesMap = SkipJsonSchema[
+    Annotated[dict[str, dict[str, int]], BeforeValidator(_lenient_uses)]
+]
 
 
 def _pooled(card: str, fields: dict[str, list[str]]) -> dict[str, list[str]]:
@@ -164,15 +195,21 @@ def clean_uses(uses, live: dict[str, list[str]]) -> dict[str, dict[str, int]]:
 
 def _shown(items: list, chosen: Optional[list[str]], key=lambda x: x) -> list:
     """The items the writer sees: all of them when the list is not rotating (chosen is None), else the chosen ones."""
-    return list(items) if chosen is None else [x for x in items if key(x) in set(chosen)]
+    return (
+        list(items) if chosen is None else [x for x in items if key(x) in set(chosen)]
+    )
 
 
-def pick_least_used(keys: list[str], used: dict[str, int], k: int, required=()) -> list[str]:
+def pick_least_used(
+    keys: list[str], used: dict[str, int], k: int, required=()
+) -> list[str]:
     """The required items, plus the k least-used of the rest (ties keep the card's order). Returned in card order."""
     keys = list(dict.fromkeys(keys))
     req = set(required)
-    rest = sorted((x for x in keys if x not in req), key=lambda x: used.get(x, 0))      # sorted() is stable
-    chosen = req | set(rest[:max(k, 0)])
+    rest = sorted(
+        (x for x in keys if x not in req), key=lambda x: used.get(x, 0)
+    )  # sorted() is stable
+    chosen = req | set(rest[: max(k, 0)])
     return [x for x in keys if x in chosen]
 
 
@@ -184,7 +221,7 @@ def _mentions(seq: list[str], name: str) -> bool:
     """True when the name's words (titles and articles left out) come one after another in the token list."""
     want = _name_tokens(name)
     n = len(want)
-    return n > 0 and any(seq[i:i + n] == want for i in range(len(seq) - n + 1))
+    return n > 0 and any(seq[i : i + n] == want for i in range(len(seq) - n + 1))
 
 
 def slugify(name: str) -> str:
@@ -207,19 +244,112 @@ def unique_ids(names: list[str], prefix: str = "") -> list[str]:
 # ---------------------------------------------------------------------------
 
 _TITLES = {
-    "the", "a", "an", "mr", "mrs", "ms", "miss", "mx", "dr", "doctor", "prof", "professor", "sir", "dame", "lord", "lady",
-    "king", "queen", "prince", "princess", "duke", "duchess", "earl", "count", "countess", "baron", "baroness",
-    "emperor", "empress", "master", "mistress", "madam", "madame", "captain", "capt", "general", "colonel", "major",
-    "sergeant", "lieutenant", "admiral", "commander", "judge", "father", "mother", "brother", "sister", "saint", "st",
-    "uncle", "aunt", "old", "young", "little", "big", "grand", "great",
+    "the",
+    "a",
+    "an",
+    "mr",
+    "mrs",
+    "ms",
+    "miss",
+    "mx",
+    "dr",
+    "doctor",
+    "prof",
+    "professor",
+    "sir",
+    "dame",
+    "lord",
+    "lady",
+    "king",
+    "queen",
+    "prince",
+    "princess",
+    "duke",
+    "duchess",
+    "earl",
+    "count",
+    "countess",
+    "baron",
+    "baroness",
+    "emperor",
+    "empress",
+    "master",
+    "mistress",
+    "madam",
+    "madame",
+    "captain",
+    "capt",
+    "general",
+    "colonel",
+    "major",
+    "sergeant",
+    "lieutenant",
+    "admiral",
+    "commander",
+    "judge",
+    "father",
+    "mother",
+    "brother",
+    "sister",
+    "saint",
+    "st",
+    "uncle",
+    "aunt",
+    "old",
+    "young",
+    "little",
+    "big",
+    "grand",
+    "great",
 }
 
 
 _TITLES_ZH = (
-    "国王", "女王", "王后", "王子", "公主", "皇帝", "皇后", "太子", "公爵", "侯爵", "伯爵", "男爵", "爵士", "夫人", "小姐", "先生",
-    "女士", "太太", "大人", "陛下", "殿下", "阁下", "老爷", "少爷", "姑娘", "博士", "教授", "医生", "船长", "将军", "上校", "少校",
-    "中尉", "队长", "老师", "师傅", "大师", "神父", "修女", "大叔", "阿姨", "叔叔", "姐姐", "哥哥",
-)   # multi-character titles only: a single character such as 王 is as often a surname as a title
+    "国王",
+    "女王",
+    "王后",
+    "王子",
+    "公主",
+    "皇帝",
+    "皇后",
+    "太子",
+    "公爵",
+    "侯爵",
+    "伯爵",
+    "男爵",
+    "爵士",
+    "夫人",
+    "小姐",
+    "先生",
+    "女士",
+    "太太",
+    "大人",
+    "陛下",
+    "殿下",
+    "阁下",
+    "老爷",
+    "少爷",
+    "姑娘",
+    "博士",
+    "教授",
+    "医生",
+    "船长",
+    "将军",
+    "上校",
+    "少校",
+    "中尉",
+    "队长",
+    "老师",
+    "师傅",
+    "大师",
+    "神父",
+    "修女",
+    "大叔",
+    "阿姨",
+    "叔叔",
+    "姐姐",
+    "哥哥",
+)  # multi-character titles only: a single character such as 王 is as often a surname as a title
 
 
 def _tokens(text: str) -> list[str]:
@@ -268,13 +398,16 @@ class Resolver:
         near = [rid for rid, t in self.tokens.items() if t and (q <= t or t <= q)]
         if len(near) <= 1:
             return near[0] if near else None
-        score = {rid: (len(q & self.tokens[rid]), -len(q ^ self.tokens[rid])) for rid in near}
+        score = {
+            rid: (len(q & self.tokens[rid]), -len(q ^ self.tokens[rid])) for rid in near
+        }
         best = max(score.values())
         top = [rid for rid, sc in score.items() if sc == best]
         return top[0] if len(top) == 1 else None
 
 
 # --- text helpers shared by the outline, story and check sections (they sat in the checks section; moved here so those do not import each other) ---
+
 
 def _as_dicts(items) -> list[dict]:
     return [i.model_dump() if isinstance(i, BaseModel) else i for i in items]
@@ -285,16 +418,62 @@ def _words(text: str) -> list[str]:
 
 
 # Words ignored when matching a plant to its payoff (_content_words).
-_PAYOFF_STOP = {"the", "and", "but", "for", "with", "when", "then", "this", "that", "they", "she", "her", "his", "him",
-         "its", "one", "two", "who", "what", "where", "after", "before", "while", "about", "into", "from", "has",
-         "had", "was", "were", "are", "not", "out", "off", "all", "any", "her", "their", "them", "there", "than"}
+_PAYOFF_STOP = {
+    "the",
+    "and",
+    "but",
+    "for",
+    "with",
+    "when",
+    "then",
+    "this",
+    "that",
+    "they",
+    "she",
+    "her",
+    "his",
+    "him",
+    "its",
+    "one",
+    "two",
+    "who",
+    "what",
+    "where",
+    "after",
+    "before",
+    "while",
+    "about",
+    "into",
+    "from",
+    "has",
+    "had",
+    "was",
+    "were",
+    "are",
+    "not",
+    "out",
+    "off",
+    "all",
+    "any",
+    "her",
+    "their",
+    "them",
+    "there",
+    "than",
+}
 
 
 def _content_words(text: str) -> set[str]:
     """Meaningful words with a trailing plural 's' removed, so 'pillow' and 'pillows' match."""
-    words = {re.sub(r"s$", "", w) for w in _words(text) if len(w) > 2 and w not in _PAYOFF_STOP}
-    for run in "".join(ch if _CJK_RE.match(ch) else " " for ch in text).split():       # Han text: overlapping pairs of characters
-        words |= {run[i:i + 2] for i in range(len(run) - 1)}
+    words = {
+        re.sub(r"s$", "", w)
+        for w in _words(text)
+        if len(w) > 2 and w not in _PAYOFF_STOP
+    }
+    for run in "".join(
+        ch if _CJK_RE.match(ch) else " " for ch in text
+    ).split():  # Han text: overlapping pairs of characters
+        words |= {run[i : i + 2] for i in range(len(run) - 1)}
     return words
 
 
