@@ -324,9 +324,11 @@ def style_prompt(req) -> str:
            "a chapter opens, how it closes and the balance of dialogue and narration, and the shapes differ clearly from one "
            "another. Structure only, never plot. Leave it empty if the source shows no clear shapes.\n"
            if req.mode == "chapter" else
-           "- `chapter_shapes` holds only the chapter shapes the author described, one per shape, each covering how a chapter "
-           "opens, how it closes and the balance of dialogue and narration. If the author described none, leave it empty. "
-           "Do not invent any.\n") +
+           "- `chapter_shapes` holds 2-4 distinct chapter shapes, each one short instruction covering how a chapter opens, "
+           "how it closes and the balance of dialogue and narration. Use what the author described; invent the rest so "
+           "there are at least two, choosing shapes that fit the genre and tone and that differ clearly from one another "
+           "(for example: one opens on dialogue and closes quiet, another opens on action and closes on a question). "
+           "Structure only, never plot, and never contradict a shape the author gave.\n") +
         "- Do not copy wording from these instructions.\n" + tail(req, StyleCard))
 
 
