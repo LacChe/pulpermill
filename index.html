@@ -8,20 +8,18 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand">
-    <h1>Pulpermill</h1>
-    <div class="seg" id="langseg" role="group" data-i18n-aria="Language" aria-label="Language">
-      <button id="lang-en" type="button" aria-pressed="true">English</button><button id="lang-zh" type="button" aria-pressed="false">简体中文</button>
-    </div>
-  </div>
+  <h1>Pulpermill</h1>
+  <label><span data-i18n="Story name (used in file names)"></span><input id="slug" data-i18n-ph="my_story" placeholder="my_story" autocomplete="off"></label>
+  <span class="grow"></span>
+  <button id="stopbtn" class="danger" hidden></button>
   <label><span data-i18n="Backend URL (ngrok)"></span><input id="base" placeholder="https://xxxx.ngrok-free.app" autocomplete="off"></label>
   <div class="field">
     <span id="conn" role="status"></span>
     <button id="test" data-i18n="Test connection"></button>
   </div>
-  <label><span data-i18n="Story name (used in file names)"></span><input id="slug" data-i18n-ph="my_story" placeholder="my_story" autocomplete="off"></label>
-  <span class="grow"></span>
-  <button id="stopbtn" class="danger" hidden></button>
+  <div class="seg" id="langseg" role="group" data-i18n-aria="Language" aria-label="Language">
+    <button id="lang-en" type="button" aria-pressed="true">English</button><button id="lang-zh" type="button" aria-pressed="false">简体中文</button>
+  </div>
 </header>
 <div id="banner" role="alert"></div>
 <div class="app">
