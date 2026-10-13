@@ -105,7 +105,7 @@ function drawStages(root,pg,j){
     if(i!==act)return;
     const has=!!pg.cards[s.k],prev=i===0||!!pg.cards[STAGES[i-1].k],busy=st.busy===s.k&&st.busyPg===pg;
     const sec=el('section',{class:'box stage'+(has?' done':'')+(!prev?' locked':''),'data-card':s.k,role:'tabpanel',id:'panel-'+s.k,'aria-labelledby':'tab-'+s.k});
-    const tags=el('span');
+    const tags=el('span',{class:'tags'});
     const base=j>0?P[j-1].cards[s.k]:undefined;
     if(pg.stale[s.k])tags.append(el('span',{class:'tag stale'},t('Built from an earlier version of a previous card')));
     else if(has)tags.append(el('span',{class:'tag'},j===0?t('Ready to check'):t('Ready')));

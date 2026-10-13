@@ -247,7 +247,7 @@ function field_(parent,key,en,bp){
         const pooled=isPool(pathStr)&&it&&it.id!=null,n=pooled?(usesOf(parent,key)[it.id]||0):0;
         const isCast=PATH.join('.')==='characters',ii=i;
         const expBtn=isCast?el('button',{class:'sm',type:'button',title:t('Export this character'),onclick:(ev)=>{ev.preventDefault();ev.stopPropagation();exportCharacter(st.story.cur,ii)}},t('Export')):null;
-        const ttl=el('span',{class:'ttl'},ti.text),sum=el('summary',ti.text===ti.full?{}:{title:ti.full},ttl,tag,expBtn,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
+        const ttl=el('span',{class:'ttl'},ti.text),sum=el('summary',ti.text===ti.full?{}:{title:ti.full},expBtn,ttl,tag,pooled?el('span',{class:'tag usedtag'+(n?'':' zero'),title:usedTip()},usedTxt(n)):null,broken?el('span',{class:'tag bad'},t('broken link')):null);
         const d=el('details',broken?{class:'item',open:'open'}:{class:'item'},sum);
         const inner=el('div',{class:'in'});
         /* the title follows what is typed (or picked) in the fields it is made from */

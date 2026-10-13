@@ -168,3 +168,7 @@ details[open]{--ftint:var(--ft1)}
 details[open] details[open]{--ftint:var(--ft2)}
 details[open] details[open] details[open]{--ftint:var(--ft3)}
 details[open] :is(input:not([type=checkbox]):not([type=radio]),textarea,select){background:color-mix(in srgb,var(--field),var(--acc) var(--ftint))}
+/* Card header: the status chips sit next to the title, the buttons go to the right. */
+.head .tags{margin-right:auto}
+/* A character's Export button sits at the right end of its row. */
+.item>summary>button{float:right;margin-left:8px}
