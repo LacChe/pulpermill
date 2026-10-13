@@ -9,7 +9,6 @@
 <body>
 <header class="top">
   <h1>Pulpermill</h1>
-  <label><span data-i18n="Story name (used in file names)"></span><input id="slug" data-i18n-ph="my_story" placeholder="my_story" autocomplete="off"></label>
   <span class="grow"></span>
   <button id="stopbtn" class="danger" hidden></button>
   <label><span data-i18n="Backend URL (ngrok)"></span><input id="base" placeholder="https://xxxx.ngrok-free.app" autocomplete="off"></label>
@@ -23,7 +22,7 @@
 </header>
 <div id="banner" role="alert"></div>
 <div class="app">
-  <nav id="nav" data-i18n-aria="Chapters" aria-label="Chapters"></nav>
+  <nav id="nav" data-i18n-aria="Chapters" aria-label="Chapters"><label class="storyname"><span data-i18n="Story name"></span><input id="slug" data-i18n-ph="my_story" placeholder="my_story" autocomplete="off"></label></nav>
   <main id="mid"></main>
   <aside id="right" data-i18n-aria="Story" aria-label="Story"></aside>
 </div>

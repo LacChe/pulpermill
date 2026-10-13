@@ -23,7 +23,7 @@ function navSub(pg,j){
 }
 function goPage(j){st.story.cur=j;st.report=null;st.armed=false;st.ask=null;draw(false);const r=$('#right');if(r)r.scrollTop=0;try{window.scrollTo(0,0)}catch(e){/* no scrolling here (e.g. a test page); nothing depends on it */}}
 function drawNav(){
-  const nav=$('#nav'),S=st.story;nav.innerHTML='';
+  const nav=$('#nav'),S=st.story;[...nav.children].forEach(c=>{if(!c.classList.contains('storyname'))c.remove()});
   nav.append(el('h2',{},t('Chapters')));
   const ol=el('ol',{class:'navlist'});
   S.pages.forEach((pg,j)=>ol.append(el('li',{},el('button',{type:'button',class:'navbtn','aria-current':j===S.cur?'page':false,onclick:()=>goPage(j)},

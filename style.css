@@ -32,6 +32,7 @@ select{width:auto;min-width:200px}
 /* three columns: chapters | cards | story */
 .app{display:grid;grid-template-columns:200px minmax(0,1.15fr) minmax(0,1fr);gap:14px;max-width:1500px;margin:0 auto;padding:14px 16px 60px;align-items:start}
 #nav{position:sticky;top:12px;height:calc(100vh - 100px);min-height:340px;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px}
+#nav .storyname{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--mute);margin-bottom:12px}
 #nav h2{font-size:16px;margin-bottom:8px}
 .navlist{list-style:none;margin:0 0 10px;padding:0;overflow:auto;flex:1 1 auto}
 .navbtn{display:block;width:100%;text-align:left;margin:0 0 4px;border-color:transparent;background:transparent;padding:6px 8px}

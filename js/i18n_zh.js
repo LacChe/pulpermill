@@ -3,7 +3,7 @@ const ZH={
   "Pulpermill":"Pulpermill",
   "Backend URL (ngrok)":"后端地址(ngrok)",
   "Test connection":"测试连接",
-  "Story name (used in file names)":"故事名称(用于文件名)",
+  "Story name":"故事名称",
   "my_story":"我的故事",
   "Language":"语言",
   "Stop":"停止",
