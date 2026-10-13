@@ -421,7 +421,7 @@ fieldset > legend {
   align-items: flex-start;
 }
 .rerun textarea {
-  flex: 1 1 240px;
+  width: 100%;
   min-height: 38px;
   max-height: 320px;
   resize: vertical;
