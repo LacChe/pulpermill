@@ -26,85 +26,75 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
         {language}. The cards, notes, earlier chapters and these instructions may be written in other languages;
         that never changes the language you write in.
 
-        Write chapter {chapter_num}, ~{target_words} {unit}, prose only, no meta-commentary.
-        Do not include a chapter title, heading, or number at the top — begin directly with the prose.
-        Stay strictly consistent with the cards below and do not contradict facts. Stay close to the
-        word target: neither wrap up early nor run substantially long.
+        You're continuing a story already in progress. Read who's here and what the world is like, catch up on
+        what's happened, then write chapter {chapter_num} as a scene you're actually inside -- felt and specific,
+        not a report that certain facts occurred. ~{target_words} {unit}, prose only, no meta-commentary, no
+        chapter title or heading at the top: begin directly with the prose.
 
-        CAST CONSTRAINT: The only named, recurring characters are: {named_cast}. They are the whole cast of this chapter:
-        no other character of this story appears, speaks or acts in it.
-        Introduce no other named or significant characters (anyone who could recur or matter to the
-        plot). Minor background figures for texture are allowed, but they never get a proper name, not
-        even a first name or a nickname used once: refer to them by role or brief description,
-        consistently, in narration and in dialogue. A figure who needs to recur is not incidental, so
-        leave them out.
-
-        KNOWLEDGE CONSTRAINT: A character may only act on, reference, or react to what they have
-        witnessed or been told in the story so far (see STORY SO FAR and WHAT THE LAST CHAPTER
-        CHANGED), plus any hidden truth marked as known by them. No character may state, hint at, or
-        act on a hidden truth they are not listed for, unless this chapter's beat says it is revealed here.
-
-        PLOT CONSTRAINT: This chapter MUST accomplish the beat given at the very end of this prompt
-        (THIS CHAPTER'S BEAT). It is what must actually happen, not a suggestion or mood. The events
-        occur in the order given, the goal and obstacle drive the chapter, and it ends on the moment
-        named. You may write original scene detail, dialogue, and pacing to get there, but do not
-        skip, defer, soften, or substitute any event. Dramatize every listed character shift as a
-        visible moment or choice, shown in action or dialogue, not merely implied by a character
-        acting consistently. If no shifts are listed, do not invent an arc milestone.
-
-        LAST LINES: end the chapter exactly on the moment named in ends_on, and stop there — do not add
-        a line of reflection, summary, or reassurance after it, and do not resolve it early or soften it
-        just because the chapter has run long enough. If ends_on is a question, threat, reversal, or
-        choice left open (true for every chapter but the last), the reader should want to know what
-        happens next, not feel the matter is closed. Only in the final chapter, where the beat lands the
-        story instead, should the ending read as settled.
-
-        THE CARDS (story, style, characters, world):
+        THE STORY (style, cast, and the world it happens in):
         {context}
 
-        HOW TO READ THE CARDS: Each section says what its fields are for. Write each character as
-        their current state says they are now, never contradict the world's rules, and follow the
-        beat's Narration line for person and tense. The lists of looks, habits, sample lines, exemplars, chapter shapes, places,
-        objects and groups are a selection made for this chapter, not everything on the cards. If an ENDING
-        section appears, this is the final chapter: land it.
+        HOW TO READ THE CARDS: each section says what its fields are for. Write each character as their current
+        state says they are now, never contradict the world's rules, and follow the beat's narration line for
+        person and tense. The lists of looks, habits, sample lines, exemplars, chapter shapes, places, objects and
+        groups are a selection made for this chapter, not everything on the cards. If an ENDING section appears,
+        this is the final chapter: land it.
 
         STORY SO FAR (summary of earlier chapters):
         {prior_summary_block}
 
-        PROSE CONSTRAINTS:
-        - Exemplars and sample lines show rhythm, register, and voice only. Never reproduce or closely
-          paraphrase a sentence, clause, or distinctive phrase from them. Follow the prose habits, and
-          never do anything on the never-do list.
-        - Looks and habits are reference facts: do not re-describe a character's appearance, voice, or
-          mannerisms just because they appear in a scene. A look or habit given for this chapter is used
-          AT MOST ONCE, in one sentence, when a moment truly calls for it (a habit when the character is
-          nervous, lying or avoiding something; a look when it is changing or newly relevant, such as an
-          injury, a prop being used, a reaction). Once it has been shown, do not return to it, repeat the
-          gesture, or mention it again anywhere else in the chapter, even in passing: this applies most of
-          all to a vivid signature object or tic (a coin, a pen, a drink) that is easy to reach for again —
-          once it has done its one moment of work, leave it alone for the rest of the chapter.
-        - If the style section gives a chapter shape, open and close the chapter as it says. Without one, begin with
-          someone doing or saying something and do not open the way the previous chapter opened. Either way, never
-          open on a smell, the weather or the light. A catchphrase or gesture from the cards is used at
-          most once per chapter.
-        - Once a rule, mechanism, or detail has been established in an earlier chapter, treat it as
-          understood and do not re-explain it.
-        - Do not narrate that a moment is significant, tense, or emotional: dramatize it through
-          action, dialogue, and concrete sensory detail and trust the reader to feel it. Watch for
-          stock phrasing that announces weight rather than earning it (e.g. "exhaled sharply through
-          his/her nose," "carrying the weight of," "beyond simple words," "without a word"); these
-          illustrate the pattern and are not an exhaustive list. Vary physical tics and transitions
-          rather than defaulting to a recurring gesture.
-
-        WHAT THE LAST CHAPTER CHANGED (plain facts, already true as this chapter opens; treat every one
-        of them as settled and already known to the characters who were there — do not re-establish,
-        re-explain, or have a character rediscover any of them):
+        WHAT THE LAST CHAPTER CHANGED (plain facts, already true as this chapter opens; treat every one of them as
+        settled and already known to the characters who were there -- do not re-establish, re-explain, or have a
+        character rediscover any of them):
         {changes_block}
 
-        THIS CHAPTER'S BEAT (open the chapter at the Location and When given here; chapters are not
-        necessarily back to back, so do not assume this one picks up right where the last one left off):
+        THIS CHAPTER -- what has to happen, and where it has to land. Chapters aren't necessarily back to back,
+        so don't assume this one picks up right where the last one left off:
         {beat_block}
         {note_block}
+
+        Everything above is the scene itself. A few hard lines around it, to hold in mind rather than check off
+        one by one:
+        - Cast: the only named, recurring people in this chapter are {named_cast} -- the whole cast of it. No one
+          else from this story appears, speaks, or acts here. A minor background figure for texture is fine, but
+          never gets a name, not even once: refer to them by role or brief description. A figure who needs to
+          recur isn't incidental, so leave them out.
+        - Knowledge: a character only acts on what they themselves have witnessed or been told so far (see STORY
+          SO FAR and WHAT CHANGED above), plus any hidden truth marked as known to them. Nobody states, hints at,
+          or acts on a hidden truth they aren't listed for, unless this chapter's beat reveals it.
+        - The beat above is what actually happens here, not a mood to gesture at: the events occur in the order
+          given, the goal and obstacle drive the chapter, and it ends on the moment named. Find your own scene
+          detail, dialogue, and pacing to get there, but don't skip, defer, soften, or substitute the event itself.
+          Dramatize every listed character shift as a visible moment or choice, not implied consistency. If no
+          shifts are listed, don't invent an arc milestone of your own.
+        - End the chapter exactly on the moment named in the beat's stopping point, and stop there: no line of
+          reflection, summary, or reassurance after it, and don't resolve it early or soften it just because the
+          chapter has run long enough. If that moment is a question, threat, reversal, or choice left open (true
+          for every chapter but the last), the reader should want to know what happens next, not feel the matter
+          is closed. Only in the final chapter, where the beat lands the story instead, should it read as settled.
+
+        CRAFT:
+        - Exemplars and sample lines are rhythm, register and voice only -- never reproduce or closely paraphrase
+          a sentence, clause, or distinctive phrase from them. Follow the prose habits, and never do anything on
+          the never-do list.
+        - Looks and habits are reference facts, not things to perform: don't re-describe a character's
+          appearance, voice, or mannerisms just because they're in a scene. Reach for a given look or habit at
+          most once, in one sentence, when a moment truly calls for it (a habit when they're nervous, lying, or
+          avoiding something; a look when it's changing or newly relevant -- an injury, a prop, a reaction). Once
+          it's done its one moment of work, leave it alone for the rest of the chapter -- this matters most for a
+          vivid signature object or tic (a coin, a pen, a drink), which is easy to reach for again.
+        - If the style section gives a chapter shape, open and close the chapter as it says. Without one, begin
+          with someone doing or saying something, and don't open the way the previous chapter opened. Either way,
+          never open on a smell, the weather, or the light. A catchphrase or gesture from the cards is used at
+          most once per chapter.
+        - Once a rule, mechanism, or detail has been established in an earlier chapter, treat it as understood
+          and don't re-explain it.
+        - Don't narrate that a moment is significant, tense, or emotional: dramatize it through action, dialogue,
+          and concrete sensory detail and trust the reader to feel it. Watch for stock phrasing that announces
+          weight rather than earning it (e.g. "exhaled sharply through his/her nose," "carrying the weight of,"
+          "beyond simple words," "without a word") -- these illustrate the pattern, not an exhaustive list. Vary
+          physical tics and transitions rather than defaulting to a recurring gesture.
+
         Write the chapter in {language}."""
 
 

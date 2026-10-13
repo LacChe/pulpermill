@@ -185,43 +185,43 @@ class StoryProject(BaseModel):
         return "\n".join(parts)
 
     CHARACTER_GUIDE: ClassVar[str] = (
-        "How to read a character: Role = who they are to the story. Wants = a lasting personal drive, not this "
-        "story's particular goal (see the beat and 'Ends the story' for that); let it shape their choices in "
-        "character. Blind spot = how they see themselves versus what they actually do; show the contradiction "
-        "in action and never explain it. Looks and Habits = established facts, a selection for this chapter; use one "
-        "when a moment calls for it, and never contradict them. Voice = how they speak. Sample lines = their voice only; never reuse them. "
-        "History = background; surface it only if the beat calls for it. Toward = how they feel about and act "
-        "toward another character. Now, Recent changes and Recent details = their current state; write them as "
-        "they are now. Ends the story = where they end up; land it.")
+        "Each character below is given as a person, not a form. What drives them is a lasting trait, not this "
+        "story's particular goal -- the beat and where they end up are what to pursue this chapter. Their blind "
+        "spot is how they see themselves versus what they actually do: show the contradiction in action, never "
+        "explain it. Looks, habits and sample lines are established facts, a selection for this chapter -- use "
+        "one when a moment calls for it, never contradict them, and never reuse a sample line verbatim. History "
+        "is background: surface it only if the beat calls for it. How they feel toward someone else in the scene "
+        "is from their side only. What comes last -- their condition and anything that's shifted lately -- is the "
+        "truth of them as this chapter opens; write them as they are now. Where a character ends the story, if "
+        "given, is a destination to land, not to explain early.")
 
     def _character_text(self, c: CharacterCard, present: set[str], arc_end: Optional[str], feed: Optional[dict] = None) -> str:
         mine = ((feed or {}).get("characters") or {}).get(c.id) or {}
         look, habits, lines = (_shown(getattr(c, f), mine.get(f)) for f in ("look", "habits", "sample_lines"))
-        rows = [c.name,
-                f"  Role: {c.role}",
-                f"  Wants: {c.want}",
-                f"  Blind spot: {c.blind_spot}"]
+        strip = lambda s: s.rstrip(".") if s else s
+        bits = [f"is {strip(c.role)}.", f"What drives them: {strip(c.want)}.", f"Their blind spot: {strip(c.blind_spot)}."]
         if look:
-            rows.append("  Looks: " + "; ".join(look))
+            bits.append("Physically: " + "; ".join(look) + ".")
         if habits:
-            rows.append("  Habits: " + "; ".join(habits))
-        rows.append(f"  Voice: {c.voice}")
+            bits.append("Habits: " + "; ".join(habits) + ".")
+        bits.append(f"Voice: {strip(c.voice)}.")
         if lines:
-            rows.append("  Sample lines: " + " | ".join(f'"{l}"' for l in lines))
+            bits.append("They might say something like " + ", or ".join(f'"{l}"' for l in lines) + ".")
         if c.history:
-            rows.append(f"  History: {c.history}")
-        for a in c.toward:
-            if a.toward in present:
-                rows.append(f"  Toward {self.name_of(a.toward)}: {a.attitude}")
+            bits.append(c.history if c.history.endswith((".", "!", "?")) else c.history + ".")
+        toward = [f"toward {self.name_of(a.toward)}, {strip(a.attitude)}" for a in c.toward if a.toward in present]
+        if toward:
+            joined = "; ".join(toward)
+            bits.append(joined[:1].upper() + joined[1:] + ".")
         if c.wrap.condition:
-            rows.append(f"  Now: {c.wrap.condition}")
+            bits.append(f"Right now: {strip(c.wrap.condition)}.")
         if c.wrap.recent_changes:
-            rows.append("  Recent changes: " + "; ".join(c.wrap.recent_changes))
+            bits.append("Lately: " + "; ".join(c.wrap.recent_changes) + ".")
         if c.wrap.recent_details:
-            rows.append("  Recent details: " + "; ".join(c.wrap.recent_details))
+            bits.append("Also established: " + "; ".join(c.wrap.recent_details) + ".")
         if arc_end:
-            rows.append(f"  Ends the story: {arc_end}")
-        return "\n".join(rows)
+            bits.append(f"By the end of the story: {strip(arc_end)}.")
+        return f"{c.name} " + " ".join(bits)
 
     def _world_text(self, feed: Optional[dict] = None) -> str:
         w = self.world
@@ -299,38 +299,35 @@ class StoryProject(BaseModel):
         """Readable text for the chapter's beat: every line says what it is for, and no ids appear."""
         b = self.beat_for(chapter_num)
         loc = next((l for l in self.world.locations if l.id == b.location), None)
+        where = loc.name if loc else b.location
+        name = self.name_of(self.plot.protagonist)
         lines = [
-            f"Narration: {self.narration_rule(b)}",
+            self.narration_rule(b),
             *self.stage_lines(chapter_num),
-            f"Location: {loc.name if loc else b.location}",
-            f"When: {b.when}",
-            f"Present: {', '.join(self.name_of(p) for p in b.present)}",
-            f"Goal (what the point-of-view character is after): {b.goal}",
-            f"Obstacle (what gets in the way; make it happen on the page): {b.obstacle}",
-            "Events, in order:",
+            f"The chapter opens at {where}, {b.when}, with {', '.join(self.name_of(p) for p in b.present)} on the page.",
+            f"{name} is after this: {b.goal} Standing in the way: {b.obstacle}",
+            "What happens, in order (write only this; nothing from the next chapter begins here):",
             *[f"  {i}. {e}" for i, e in enumerate(b.events, 1)],
-            f"Chapter stops at this point (a situation to arrive at, not a line to copy; end the chapter as soon as it is "
-            f"reached and write nothing past it): {b.ends_on}",
-            "Write only the events above. Nothing from the next chapter may happen or begin here.",
+            f"Stop the chapter as soon as this is reached, writing nothing past it -- a situation to arrive at, "
+            f"not a line to copy: {b.ends_on}",
         ]
         if b.tone:
-            lines.append(f"Tone (the mood of this chapter's telling): {b.tone}")
+            lines.append(f"The telling itself: {b.tone}")
         if b.shifts:
-            lines.append("Character shifts (each must be dramatized in action or dialogue):")
+            lines.append("Dramatize these in action or dialogue, not just implied consistency:")
             lines += [f"  - {self.name_of(s.character)}: {s.movement}" for s in b.shifts]
         if b.plants:
-            lines.append("Plant (place quietly on the page; do not resolve): " + "; ".join(b.plants))
+            lines.append("Place quietly on the page, without resolving it: " + "; ".join(b.plants))
         if b.pays_off:
-            lines.append("Pay off (earlier setups that resolve now): " + "; ".join(b.pays_off))
+            lines.append("Earlier setups that resolve now: " + "; ".join(b.pays_off))
         if b.reveals:
             facts = {t.id: t.fact for t in self.world.hidden_truths}
-            lines.append("Hidden truths revealed on the page in this chapter (everyone present learns them): "
-                         + "; ".join(facts.get(r, r) for r in b.reveals))
+            lines.append("Everyone present learns this on the page now: " + "; ".join(facts.get(r, r) for r in b.reveals))
         facts = {t.id: t.fact for t in self.world.hidden_truths}
         later = [t.fact for t in self.unrevealed_truths(chapter_num)]
         if later:
-            lines.append("Not revealed yet (no one states, explains or hints at these now, even a "
-                         "character who knows them): " + "; ".join(dict.fromkeys(later)))
+            lines.append("Not revealed yet -- no one states, explains or hints at these now, even a "
+                         "character who knows them: " + "; ".join(dict.fromkeys(later)))
         if self.plot.leave_open:
             lines.append("Never resolve or explain in this story: " + "; ".join(self.plot.leave_open))
         return "\n".join(lines)
