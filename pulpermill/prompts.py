@@ -222,32 +222,59 @@ def chapter_source(req) -> str:
     use = getattr(req, "chapter_use", "")
     uses = [use] if use in CHAPTER_USES else []
     body = f"<chapter>\n{req.chapter.strip()}\n</chapter>"
+    overrule = ("The example is a floor, not a ceiling or a lid: the author's notes below may add things the example "
+                "does not show (more characters, more locations, more rules, more hidden truths, a bigger cast than "
+                "the example's own), leave out things the example shows that the notes don't want, or change anything "
+                "the example establishes. This applies to HOW MANY of something there should be just as much as to "
+                "what they are like. Wherever the notes and the example disagree, including on counts, the notes win.")
     if not uses:
         return ("SOURCE CHAPTER: one chapter from a story. Treat it as evidence about the whole story and "
-                "infer what it does not say. The author direction, if any, wins where the two disagree.\n\n" + body)
+                "infer what it does not say. " + overrule + "\n\n" + body)
     stage = USE_FOR_CARD.get(getattr(req, "stage", ""), {})
     return ("EXAMPLE CHAPTER: one chapter from an existing story, given as the starting point for a NEW story. The author "
             "wants the new story to be this:\n"
             + "\n".join(f"- {USE_MEANING[u]}" for u in uses)
             + ("\n\nFor this card that means:\n" + "\n".join(f"- {stage[u]}" for u in uses if u in stage) if stage else "")
-            + "\n\nWhere the author direction says which way to take it, follow it; where it does not, choose a direction that "
-              "the chapter hints at but does not develop. The author direction wins wherever it disagrees with the chapter.\n\n" + body)
+            + "\n\n" + overrule + "\n\n" + body)
 
 
 def source_block(req) -> str:
-    """Only this card's own notes (and the example chapter, when it is switched on for this card). Other cards' notes are never sent."""
+    """This card's own notes (and the example chapter, when it is switched on for this card), plus the card's current
+    content when this is a revision. Other cards' notes are never sent. Reading order mirrors the authority order:
+    example (foundation) -> notes (fine-tuner, wins on any disagreement, including counts) -> current card (what
+    exists now, to be patched rather than replaced -- see feedback_block)."""
     parts = []
     if req.mode == "chapter" and req.chapter.strip():
         parts.append(chapter_source(req))
     if req.notes.strip():
-        parts.append("AUTHOR DIRECTION: the author's rough notes for this card. Fill in whatever they leave out "
-                     f"with fitting choices.\n\n<notes>\n{req.notes.strip()}\n</notes>")
+        parts.append("AUTHOR DIRECTION: the author's rough notes for this card. These fine-tune and can override "
+                     "anything above, including how many of something there should be, not just what they are like. "
+                     f"Fill in whatever both leave out with fitting choices.\n\n<notes>\n{req.notes.strip()}\n</notes>")
+    current = current_card_block(req)
+    if current:
+        parts.append(current)
     return "\n\n".join(parts)
 
 
-def feedback_block(feedback) -> str:
+def current_card_block(req) -> str:
+    """The card as it stands right now, shown only when this is a revision (a change request over an existing card).
+    Without this, a 'regenerate with a note' request has no way to know what it is changing and silently writes a
+    brand-new card from the example/notes alone -- this gives the model something concrete to keep or patch."""
+    current = getattr(req, "current", None)
+    if not getattr(req, "feedback", None) or not current:
+        return ""
+    return ("CURRENT CARD: what this card already contains, before the change below is applied. Keep every part this "
+            "change doesn't touch exactly as it is -- this is a patch, not a rewrite.\n\n<current_card>\n"
+            + json.dumps(current, ensure_ascii=False) + "\n</current_card>")
+
+
+def feedback_block(feedback, has_current=False) -> str:
     if not feedback:
         return ""
+    if has_current:
+        return (f"\nThe author read the CURRENT CARD above and asked for this change: {feedback}\n"
+                "This is an edit, not a fresh draft: change only what the request above requires, and keep every "
+                "other field exactly as the CURRENT CARD shows it unless the change necessarily affects it.\n")
     return (f"\nThe author asked for this change: {feedback}\n"
             "Write a genuinely different version that applies the change.\n")
 
@@ -281,7 +308,8 @@ def language_head(req) -> str:
 
 def tail(req, schema_cls) -> str:
     end = "" if _language(req) is config.LANGUAGES["en"] else f"\n\nREMINDER: write every text value in {_language(req)['name']}."
-    return (f"\n{FIDELITY}\n{feedback_block(req.feedback)}\n{language_rule(getattr(req, 'language', 'en'))}\n{JSON_RULES}"
+    has_current = bool(getattr(req, "feedback", None) and getattr(req, "current", None))
+    return (f"\n{FIDELITY}\n{feedback_block(req.feedback, has_current)}\n{language_rule(getattr(req, 'language', 'en'))}\n{JSON_RULES}"
             f"\n\nSCHEMA:\n{json.dumps(schema_cls.model_json_schema())}{end}")
 
 

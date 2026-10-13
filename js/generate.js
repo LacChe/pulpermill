@@ -27,7 +27,7 @@ async function generate(i,feedback){
   try{
     const res=await api('/generate',{method:'POST',body:JSON.stringify({
       stage:s.k,mode:ch?'chapter':'notes',notes:pg.notes[s.k]||'',chapter:ch,chapter_use:ch?(pg.use||''):'',language:LANG,
-      feedback:feedback||null,cards:earlier,seed:seedParam()})});
+      feedback:feedback||null,current:feedback?(pg.cards[s.k]||null):null,cards:earlier,seed:seedParam()})});
     if(res.error)throw Object.assign(new Error(res.error),{m:apiErr(res)});
     st.jobId=res.job;st.stopping=false;drawTop();
     let r;

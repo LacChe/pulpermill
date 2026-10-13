@@ -53,6 +53,8 @@ class GenRequest(BaseModel):
     chapter: Text = ""     # the example chapter (chapter mode only: it is switched on for this card)
     chapter_use: ShortText = ""   # what the example is for: "sequel" or "parallel" (empty: the cards describe the example's own story)
     feedback: Optional[Text] = None
+    current: Optional[CardsJson] = None   # this card's own current content, sent only on a feedback revision, so the
+                                           # change can patch it instead of silently writing a new card from scratch
     cards: CardsJson = {}
     seed: Optional[int] = None   # model seed; none means a new random one (which is reported back)
     language: ShortText = "en"   # what the card text is written in; a key of LANGUAGES
