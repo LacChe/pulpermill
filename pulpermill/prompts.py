@@ -5,6 +5,7 @@ import json
 from . import config
 from .schema import (
     CastDraft,
+    DESIGN_ANCHORS,
     MAX_CAST,
     MAX_CHAPTERS,
     MAX_CHARACTERS,
@@ -351,46 +352,68 @@ def tail(req, schema_cls) -> str:
 
 
 # ---------------------------------------------------------------- STYLE
+def _anchor_lines() -> str:
+    """The reference points for each design field, one line per field. They show the range, they are not a menu."""
+    return "\n".join(f"  {k}: {', '.join(v)}" for k, v in DESIGN_ANCHORS.items())
+
+
 def style_prompt(req) -> str:
     if req.mode == "chapter":
         task = (
-            "Describe how this chapter is actually written: the narrator's voice, sentence rhythm, how "
-            "dialogue is handled, how any humor, tension or emotion is handled, and what the writing avoids. "
-            "Infer the point of view and tense from the text."
+            "Work out how this chapter is actually written and fill in each design field from what the text does: what the "
+            "narrator notices and ignores, its attitude, how much language each moment gets, the kind of words, how crude "
+            "the language is and where, the figures of speech, how the sentences move, how far the narration goes inside the "
+            "main character, the humor, how speech is written down, and how time is handled. Infer the point of view and "
+            "tense from the text."
         )
     else:
         task = (
-            "Base the style on the genre, tone and feel the author describes. Where the notes say nothing "
-            "about it, choose the style that best fits."
+            "Design the narration from the genre, tone and feel the author describes, and from anything they say about how it "
+            "should read: brief or lavish, plain or ornate words, clean or coarse language, what the narrator pays attention "
+            "to. Where the notes say nothing about a field, choose what best fits the genre, and choose with character: a "
+            "narrator a reader would recognise, not a safe average."
         )
     return (
-        "You are writing a narration style card for a story-writing engine. The same card is reused for every "
-        "chapter of one story, so it says HOW the story is told and never WHAT happens in it.\n\n"
+        "You are designing a narration style card for a story-writing engine. The same card is reused for every chapter of "
+        "one story, so it says HOW the story is told and never WHAT happens in it. The style is designed, not just "
+        "labelled: each choice about how the narrator perceives the world and builds its prose is made on purpose, and "
+        "the card holds them together as one narrator.\n\n"
         f"{source_block(req)}\n\nTASK: {task}\nRULES:\n"
         "- The card contains no character names, place names, plot events, or nouns that belong only to this story. "
         "That includes the exemplars.\n"
-        "- Every rule is concrete enough that a reader could check it on the page.\n"
-        "- Write rules as things to do. Do not add a sentence-length limit, a dialogue ratio or any other number "
-        "unless the author gave one.\n"
-        "- Before writing, work out what makes this narrator recognisable and put each point on the card: "
-        "(a) the narrator's attitude toward events and what they tend to notice or make of things (humor, irony, awe, menace, tenderness, or none); (b) whether the narrator comments "
-        "on events or stays silent, and how; (c) sentence rhythm, including any contrast between long and short; "
-        "(d) how much of a chapter is dialogue and how it is tagged; (e) how an emotional moment is handled; "
-        "(f) how chapters open and close, described as the narrator's moves and never as plot. Put them in `voice`, "
-        "`prose_habits` and `avoid`; chapter shapes have their own rule below.\n"
-        "- Describe only what the source does. If it has no inner monologue, do not ask for any. Never turn a missing "
-        "quality into its opposite.\n"
+        "- Each design field (lens, stance, economy, diction, vulgarity, figurative, cadence, interiority, humor, "
+        "dialogue_manner, time_handling) states one choice in a short phrase of plain words. These reference points show "
+        "the range of each field; they are not a menu, so combine them or use your own words when the description calls "
+        "for it:\n"
+        f"{_anchor_lines()}\n"
+        "- The author's choices are fixed. When the notes ask for something (clipped sentences, fancy words, plain words, "
+        "coarse language, no metaphor), the matching field says exactly that, and `narrator` and the exemplars show it. "
+        "Never soften, tidy or tone down a choice the author made, crude language included.\n"
+        "- The fields agree with one another. When the author's choices pull against each other (lavish imagery in clipped "
+        "sentences), say in `narrator` how they fit together instead of dropping one.\n"
+        "- `narrator` is the heart of the card, and the one description of the narrator the writer reads in full. Write it as "
+        "a lens: what this narrator perceives, what it ignores, what it makes of what it sees, and how that sounds on "
+        "the page. It describes a way of seeing, not formulas: no sentence-length limits, ratios, counts or checklists. "
+        "To show the difference, a mechanical card says 'alternate long and short sentences; never open on the weather', "
+        "while a lens says 'the narrator is cynical and transactional, grounded in physical objects, and never explains "
+        "what a character feels, only what they touch, grip or ignore'; another lens says 'the narrator is tactile and "
+        "superstitious, and every object carries the weight of old bargains, bloodlines or hidden decay'. Write a lens "
+        "for this story's own style in that spirit, in your own words.\n"
+        "- Do not add a sentence-length limit, a dialogue ratio or any other number unless the author gave one.\n"
+        "- `signature_moves` are three to five recurring devices a reader would recognise, each a thing the narrator does "
+        "(not a rule and not a restatement of a design field). Each one holds for any story in this style.\n"
         + (
-            "- The avoid list names what this narrator conspicuously never does, up to six items, each named plainly.\n"
+            "- `off_limits` names what this narrator conspicuously never does, up to four items, each named plainly. Leave "
+            "it empty if nothing stands out.\n"
             if req.mode == "chapter"
-            else "- The avoid list holds everything the author said to avoid, each named plainly, and nothing else except "
-            "at most two habits the author's description clearly implies. Do not pad it with generic writing advice.\n"
+            else "- `off_limits` holds everything the author said to avoid, each named plainly, and nothing else. Leave it "
+            "empty if the author named nothing. Do not pad it with generic writing advice.\n"
         )
         + "- The exemplars are two or three short passages (two to four sentences each) about ordinary everyday "
         "situations in a different part of life from the story. They use none of the story's nouns, jobs, objects "
-        "or settings. They must reproduce points (a) to (e): the same "
-        "attitude, the same rhythm, the same handling of feeling. Plain description in the right tense is not enough. "
-        "They obey every prose habit and avoid item on the card, and each shows something different.\n"
+        "or settings. They carry the whole design: the same lens, stance, economy, kind of words, crudeness, "
+        "figures of speech, humor and handling of the character's inner life, so a passage in plain description "
+        "is not enough. They obey `signature_moves` and `off_limits`, and each shows something different.\n"
         + (
             "- `chapter_shapes` holds up to four chapter shapes the source uses. Each is one short instruction covering how "
             "a chapter opens, how it closes and the balance of dialogue and narration, and the shapes differ clearly from one "

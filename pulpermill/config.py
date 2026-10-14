@@ -44,7 +44,7 @@ CARD_TOP_P, CARD_TOP_K = (
     64,
 )  # nucleus and top-k sampling for every card (chapters have their own, in CHAPTER_GEN)
 MAX_TOKENS = {
-    "style": 2000,
+    "style": 2600,
     "characters": 5500,
     "world": 4000,
     "outline": 3500,
@@ -56,7 +56,7 @@ INSTRUCTION_TOKENS = (
 )
 RETRY_RESERVE = 400  # room kept for a retry's error message
 MIN_TOKENS = {
-    "style": 1200,
+    "style": 1600,
     "characters": 4200,
     "world": 2500,
     "outline": 2500,

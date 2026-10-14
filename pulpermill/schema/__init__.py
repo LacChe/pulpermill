@@ -82,7 +82,7 @@ from .common import (
     _content_words,
     _related,
 )
-from .style import POV, Tense, StyleCard
+from .style import DESIGN_ANCHORS, POV, Tense, StyleCard
 from .characters import (
     Attitude,
     CharacterDraft,
