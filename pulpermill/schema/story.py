@@ -3,7 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 from typing import ClassVar, Optional
 
-from .characters import CharacterCard
+from .characters import PORTRAIT_FIELDS, CharacterCard
 from .common import M, POOLS, _beat_seq, _mentions, _related, _shown, pick_least_used
 from .outline import (
     BEAT_CLASH,
@@ -162,11 +162,11 @@ class StoryProject(BaseModel):
 
     def feed(self, chapter_num: int) -> dict:
         """What the writer is handed from the rotating lists for this chapter, as item keys (text, or id for places, objects
-        and groups): {"style": {field: [...]}, "characters": {id: {field: [...]}}, "world": {field: [...]}}. A list that is
-        not rotating is simply absent, and the writer gets it whole. Only characters in the scene get a share."""
+        and groups): {"style": {field: [...]}, "world": {field: [...]}}. A list that is not rotating is simply absent, and
+        the writer gets it whole. Characters have no rotating lists: a portrait is always given whole."""
         b = self.beat_for(chapter_num)
         seq = self._beat_seq(chapter_num)
-        out: dict = {"style": {}, "characters": {}, "world": {}}
+        out: dict = {"style": {}, "world": {}}
 
         def pick(owner, card, field, keys, required=()):
             k = POOLS.get(f"{card}.{field}")
@@ -182,12 +182,6 @@ class StoryProject(BaseModel):
         ):
             if (ch := pick(self.style, "style", f, keys)) is not None:
                 out["style"][f] = ch
-        for c in self.characters:
-            if c.id not in b.present:
-                continue
-            for f in ("look", "habits", "sample_lines"):
-                if (ch := pick(c, "characters", f, getattr(c, f))) is not None:
-                    out["characters"].setdefault(c.id, {})[f] = ch
         w, here = self.world, set(b.present)
         need = {
             "locations": {
@@ -221,10 +215,6 @@ class StoryProject(BaseModel):
 
         for f, keys in feed.get("style", {}).items():
             bump(self.style, f, keys)
-        for cid, fields in feed.get("characters", {}).items():
-            if (c := self.character_by_id(cid)) is not None:
-                for f, keys in fields.items():
-                    bump(c, f, keys)
         for f, keys in feed.get("world", {}).items():
             bump(self.world, f, keys)
 
@@ -307,67 +297,28 @@ class StoryProject(BaseModel):
         return "\n".join(parts)
 
     CHARACTER_GUIDE: ClassVar[str] = (
-        "Each character below is given as a person, not a form. What drives them is a lasting trait, not this "
-        "story's particular goal -- the beat and where they end up are what to pursue this chapter. Their blind "
-        "spot is how they see themselves versus what they actually do: show the contradiction in action, never "
-        "explain it. Looks, habits and sample lines are established facts, a selection for this chapter -- use "
-        "one when a moment calls for it, never contradict them, and never reuse a sample line verbatim. History "
-        "is background: surface it only if the beat calls for it. How they feel toward someone else in the scene "
-        "is from their side only. What comes last -- their condition and anything that's shifted lately -- is the "
-        "truth of them as this chapter opens; write them as they are now. Where a character ends the story, if "
-        "given, is a destination to land, not to explain early."
+        "Each character below is a portrait of a person: who they are in any story, never what has happened to them. "
+        "What has happened comes from the story so far and from what the last chapter changed, so let those decide "
+        "how fresh or worn they are as this chapter opens. Their want is a lasting trait, not this story's goal; the "
+        "beat and the destination are what to pursue. Show the way they armor themselves, the way they treat people "
+        "and the contradiction in how they see themselves through what they do, never by explaining it. What they "
+        "do under pressure is a tendency, not a prop to produce on cue: show it once, when pressure truly builds, "
+        "and otherwise leave it alone. Their voice and the lines that show it are register only, never lines to "
+        "repeat. Their wound and limits are background: surface them only if the beat calls for it. Where a "
+        "character ends the story, if given, is a destination to land, not to explain early."
     )
 
-    def _character_text(
-        self,
-        c: CharacterCard,
-        present: set[str],
-        arc_end: Optional[str],
-        feed: Optional[dict] = None,
-    ) -> str:
-        mine = ((feed or {}).get("characters") or {}).get(c.id) or {}
-        look, habits, lines = (
-            _shown(getattr(c, f), mine.get(f))
-            for f in ("look", "habits", "sample_lines")
-        )
+    def _character_text(self, c: CharacterCard, arc_end: Optional[str] = None) -> str:
+        """One person as a paragraph of prose: the portrait fields in reading order, never a form or a list."""
         strip = lambda s: s.rstrip(".") if s else s
         bits = [
-            f"is {strip(c.role)}.",
-            f"What drives them: {strip(c.want)}.",
-            f"Their blind spot: {strip(c.blind_spot)}.",
+            v if v.endswith((".", "!", "?")) else v + "."
+            for v in (getattr(c, f).strip() for f in PORTRAIT_FIELDS)
+            if v
         ]
-        if look:
-            bits.append("Physically: " + "; ".join(look) + ".")
-        if habits:
-            bits.append("Habits: " + "; ".join(habits) + ".")
-        bits.append(f"Voice: {strip(c.voice)}.")
-        if lines:
-            bits.append(
-                "They might say something like "
-                + ", or ".join(f'"{l}"' for l in lines)
-                + "."
-            )
-        if c.history:
-            bits.append(
-                c.history if c.history.endswith((".", "!", "?")) else c.history + "."
-            )
-        toward = [
-            f"toward {self.name_of(a.toward)}, {strip(a.attitude)}"
-            for a in c.toward
-            if a.toward in present
-        ]
-        if toward:
-            joined = "; ".join(toward)
-            bits.append(joined[:1].upper() + joined[1:] + ".")
-        if c.wrap.condition:
-            bits.append(f"Right now: {strip(c.wrap.condition)}.")
-        if c.wrap.recent_changes:
-            bits.append("Lately: " + "; ".join(c.wrap.recent_changes) + ".")
-        if c.wrap.recent_details:
-            bits.append("Also established: " + "; ".join(c.wrap.recent_details) + ".")
         if arc_end:
             bits.append(f"By the end of the story: {strip(arc_end)}.")
-        return f"{c.name} " + " ".join(bits)
+        return f"{c.name}. " + " ".join(bits)
 
     def _world_text(self, feed: Optional[dict] = None) -> str:
         w = self.world
@@ -437,13 +388,15 @@ class StoryProject(BaseModel):
         feed = feed if feed is not None else self.feed(chapter_num)
 
         here = [
-            self._character_text(c, present, arcs.get(c.id) if final else None, feed)
+            self._character_text(c, arcs.get(c.id) if final else None)
             for c in self.characters
             if c.id in present
         ]
-        others = [
-            f"- {c.name}: {c.role}" for c in self.characters if c.id not in present
-        ]
+        others = "; ".join(
+            f"{c.name}, {c.role.strip().rstrip('.')}"
+            for c in self.characters
+            if c.id not in present
+        )
 
         parts = [
             self._story_text(),
@@ -455,8 +408,7 @@ class StoryProject(BaseModel):
         ]
         if others:
             parts.append(
-                "OTHER CHARACTERS (reference only, keep out of scenes):\n"
-                + "\n".join(others)
+                "OTHER CHARACTERS (reference only, keep out of scenes): " + others + "."
             )
         parts.append(self._world_text(feed))
         if final:

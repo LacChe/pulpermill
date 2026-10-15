@@ -26,7 +26,8 @@ from .schema import (
 
 SUMMARIZE_CHAPTER_PROMPT = """Read the chapter text below and write a summary of it: 3-5 sentences of
         plain prose covering key plot events, revelations, and character actions. Also state who learns
-        or is told what, and any object that changes hands. Focus on facts that matter for continuity
+        or is told what, and any object that changes hands. End with one sentence on how each person who
+        acted in the chapter is feeling as it closes, and where things stand between them. Focus on facts that matter for continuity
         — do not include stylistic commentary. Do NOT use markdown bold, headers, asterisks, or any
         formatting, and do not add a label or preamble: begin directly with the summary. Refer to every
         person by name. Never write "I" or "we": the chapter is narrated by {narrator}, so use that name.
@@ -49,10 +50,11 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
         THE STORY (style, cast, and the world it happens in):
         {context}
 
-        HOW TO READ THE CARDS: each section says what its fields are for. Write each character as their current
-        state says they are now, never contradict the world's rules, and follow the beat's narration line for
-        person and tense. The lists of looks, habits, sample lines, exemplars, chapter shapes, places, objects and
-        groups are a selection made for this chapter, not everything on the cards. If an ENDING section appears,
+        HOW TO READ THE CARDS: each section says what it is for. Each character is a portrait of who they are;
+        what they have lived through in this story comes from the story so far, and the summary's last lines say
+        how they feel as this chapter opens. Never contradict the world's rules, and follow the beat's narration
+        line for person and tense. The lists of exemplars, chapter shapes, places, objects and groups are a
+        selection made for this chapter, not everything on the cards. If an ENDING section appears,
         this is the final chapter: land it.
 
         STORY SO FAR (summary of earlier chapters):
@@ -89,15 +91,14 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
           is closed. Only in the final chapter, where the beat lands the story instead, should it read as settled.
 
         CRAFT:
-        - Exemplars and sample lines are rhythm, register and voice only -- never reproduce or closely paraphrase
+        - Exemplars are rhythm and register only -- never reproduce or closely paraphrase
           a sentence, clause, or distinctive phrase from them. Write the way the narrator sees, use its signature
           moves when a moment calls for them, and never do anything on the off-limits list.
-        - Looks and habits are reference facts, not things to perform: don't re-describe a character's
-          appearance, voice, or mannerisms just because they're in a scene. Reach for a given look or habit at
-          most once, in one sentence, when a moment truly calls for it (a habit when they're nervous, lying, or
-          avoiding something; a look when it's changing or newly relevant -- an injury, a prop, a reaction). Once
-          it's done its one moment of work, leave it alone for the rest of the chapter -- this matters most for a
-          vivid signature object or tic (a coin, a pen, a drink), which is easy to reach for again.
+        - A character's tell, look and manner are tendencies, not props to produce on cue: don't re-describe
+          anyone's appearance or voice just because they're in a scene. Show a tell once, in one sentence, when
+          pressure truly builds, then leave it alone for the rest of the chapter -- this matters most for a vivid
+          repeated motion, which is easy to reach for again. Let people under pressure also do things the portrait
+          never mentions.
         - If the style section gives a chapter shape, open and close the chapter as it says. Without one, begin
           with someone doing or saying something, and don't open the way the previous chapter opened. A catchphrase
           or gesture from the cards is used at most once per chapter.
@@ -696,13 +697,7 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
     name = story.name_of
     here = {l.id: l.name for l in w.locations}
     chars = "\n".join(
-        f"- {c.name}: {c.role}. Wants: {c.want}. Blind spot: {c.blind_spot}."
-        + (f" Now: {c.wrap.condition}" if c.wrap.condition else "")
-        + (
-            f" Lately: {'; '.join(c.wrap.recent_changes)}"
-            if c.wrap.recent_changes
-            else ""
-        )
+        f"- {c.name}: {c.role.rstrip('.')}. {c.want.rstrip('.')}. {c.blind_spot.rstrip('.')}. {c.limits.rstrip('.')}."
         for c in story.characters
     )
     places = "\n".join(f"- {l.name}: {l.description}" for l in w.locations)

@@ -87,7 +87,7 @@ CHAPTER_GEN = dict(
 CHAPTER_TOKENS_PER_WORD = 2.0  # generous ceiling above the target word count (token/word ratio varies with style)
 CHAPTER_MIN_ROOM_PER_WORD = 1.4  # refuse to start if the prompt leaves less room than this many tokens per target word
 SUMMARY_GEN = dict(
-    max_tokens=260, temperature=0.3, repeat_penalty=1.3, frequency_penalty=0.2
+    max_tokens=340, temperature=0.3, repeat_penalty=1.3, frequency_penalty=0.2
 )
 SUMMARY_RETRIES = 1  # extra tries, each with a different seed, when a summary stops at the token limit in the middle of a sentence (0 = never retry)
 EXTRACT_GEN = dict(max_tokens=1800, temperature=0.2)
