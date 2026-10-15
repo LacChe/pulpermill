@@ -267,6 +267,9 @@ select {
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 16px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel) var(--bg);
 }
 @media (max-width: 1100px) {
   .app {
