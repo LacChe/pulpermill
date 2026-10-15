@@ -46,6 +46,7 @@ CARD_TOP_P, CARD_TOP_K = (
 MAX_TOKENS = {
     "style": 2600,
     "characters": 5500,
+    "character": 1600,  # one person, rewritten alone
     "world": 4000,
     "outline": 3500,
     "beat": 2500,
@@ -58,6 +59,7 @@ RETRY_RESERVE = 400  # room kept for a retry's error message
 MIN_TOKENS = {
     "style": 1600,
     "characters": 4200,
+    "character": 1100,
     "world": 2500,
     "outline": 2500,
     "beat": 1500,

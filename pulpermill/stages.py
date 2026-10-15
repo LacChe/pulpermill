@@ -6,6 +6,8 @@ from . import config, generation, prompts
 from .prompts import _language, language_head, style_prompt
 from .schema import (
     CastDraft,
+    CharacterCard,
+    CharacterDraft,
     M,
     MAX_CHARACTERS,
     NextBeatD,
@@ -180,7 +182,40 @@ def cast_tweak(schema):
     schema["properties"]["characters"].update(maxItems=MAX_CHARACTERS)
 
 
+def run_one_character(req):
+    """Write one person again. The rest of the cast is kept exactly as the page sent it and shown to the model, so the new card
+    differs from them; the card keeps its id, so nothing that points at it breaks. Returns the whole cast with that card swapped."""
+    cast = req.cards.get("characters") or []
+    target = next((c for c in cast if c.get("id") == req.character), None)
+    if target is None:
+        raise ValueError(M("there is no character '{id}' in the cast", id=req.character))
+    others = [c for c in cast if c["id"] != target["id"]]
+    taken = {n.lower() for c in others for n in [c["name"]]}
+
+    def post(d):
+        if d.name.strip().lower() in taken:
+            raise ValueError(
+                M("the name '{name}' belongs to another character; keep '{old}'", name=d.name, old=target["name"])
+            )
+        return CharacterCard(id=target["id"], **d.model_dump())
+
+    card = generation.structured_call(
+        language_head(req) + prompts.character_prompt(req, cast, target),
+        CharacterDraft,
+        max_tokens=config.MAX_TOKENS["character"],
+        temperature=config.TEMPS["characters"],
+        min_tokens=config.MIN_TOKENS["character"],
+        post=lang_post(req, post),
+    )
+    new = [card if c["id"] == target["id"] else CharacterCard(**c) for c in cast]
+    return [c.model_dump(mode="json") for c in new], story_words_in_cards(
+        [card], req
+    ) + check_characters(new, set())
+
+
 def run_characters(req):
+    if getattr(req, "character", None):
+        return run_one_character(req)
     prompt = prompts.characters_prompt(req)
     cards = generation.structured_call(
         language_head(req) + prompt,
@@ -258,6 +293,7 @@ STAGES = {
 GRAMMAR_CHECKS = [
     (StyleCard, None),
     (CastDraft, cast_tweak),
+    (CharacterDraft, None),
     (WorldDraft, None),
     (OutlineDraft, None),
     (NextBeatD, None),

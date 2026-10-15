@@ -5,12 +5,14 @@ import json
 from . import config
 from .schema import (
     CastDraft,
+    CharacterDraft,
     DESIGN_ANCHORS,
     DIAL_FIELDS,
     MAX_CAST,
     MAX_CHAPTERS,
     MAX_CHARACTERS,
     OutlineDraft,
+    PORTRAIT_FIELDS,
     STORY_STAGES,
     StyleCard,
     WorldDraft,
@@ -449,7 +451,46 @@ def _style_facts(style: dict, keys) -> str:
     return "\n".join(out)
 
 
-def characters_prompt(req) -> str:
+CARD_RULES = (
+    "- Use what the source says about who each person is. Invent the missing details sparingly and concretely.\n"
+    "- The test for every sentence: would it still be true if this person woke up in a different genre and setting, "
+    "say a noir, a space heist or a dinner party? Be specific about the person and silent about the story: no plot "
+    "events, no places, objects or organizations, no other character's name, nothing that happens to them here. Where the "
+    "source shows a person in one situation, write the lasting tendency behind what they do there, not the situation.\n"
+    "- When the author states a trait outright (a habit, a look, a past, a way of speaking), keep it as written. What the "
+    "author describes as happening in the story is plot and stays out of the card.\n"
+    "- Portable does not mean generic. Skip labels and archetypes (the cynic, the loyal soldier) and give each person "
+    "the particular, slightly unexpected shape that makes them one person: an odd loyalty, a kindness they hide, a rule "
+    "nobody asked them to keep.\n"
+    "- Give everyone a soft spot, however well hidden. A cast of nothing but armor has no way for anyone to reach anyone.\n"
+    "- Every field is one or two full sentences of prose about the person: no lists, no labels, no fragments. The fields "
+    "are read one after another as a single description, so each must read naturally after the one before it: after "
+    "`role`, refer to the person with a pronoun, not their name.\n"
+    "- `role` completes the sentence \"<name> is ...\": a phrase about the kind of person they are, never a bare title.\n"
+    "- `tell` and `presence` are things a reader could watch a body do or see, never labels. `tell` names a kind of "
+    "motion and a kind of thing, never one named object, so that the writer can use whatever the scene holds.\n"
+    "- `blind_spot` is one specific contradiction between how the person sees themselves and what they do (for example: "
+    "calls herself easygoing, yet redoes everyone else's work). A nervous tic is not a blind spot.\n"
+    "- The lines in `voice` are new, unique to this person, and give away no plot.\n"
+    "- Story-bound against portable, shown in other genres (never copy their wording). want: not 'wants to find out who "
+    "took the ledger' but 'wants to be the one everyone needs and dreads being the one nobody calls'. wound: not 'was "
+    "ruined by the Ashgrove Guild' but 'was left behind by the one person who promised to return, and learned not to wait "
+    "on anyone'. armor: not 'is suspicious of the forged signature' but 'treats every offer as a trap until it is proven otherwise, and answers kindness with a question'. with_people: not 'learned the secret from the informant' but 'keeps count of what each person leaves unsaid, and lets a silence run on until the other one fills it'. tell: not 'turns a signet ring' but 'when tension rises, the hands go looking for something to peel, "
+    "fray or turn over, whatever the room holds'. limits: not 'will not betray the captain' but 'will not lie to someone "
+    "who depends on the truth, unless the lie is all that keeps someone they love alive'.\n"
+)
+
+CAST_RULES = (
+    "- Write the cast as foils when there is more than one person: each handles the same pressure differently from "
+    "someone else (one withholds, another overshares; one flees, another stands and fights), so the cast creates friction "
+    "without anyone being named in anyone else's card.\n"
+    "- Compare the characters as you write: no two share a want, a wound, a stance, a tell, a way with people, a limit, a blind spot or a manner of speaking.\n"
+    "- Write every character's fields in different words and different sentence shapes. No phrase of four or more "
+    "words may appear in the same field of two characters, and no two fields may open the same way.\n"
+)
+
+
+def _cast_narrator(req) -> str:
     style = req.cards.get("style") or {}
     facts = _style_facts(style, ("diction", "dialogue_manner", "humor"))
     narrator = (
@@ -463,6 +504,11 @@ def characters_prompt(req) -> str:
         if style.get("narrator")
         else ""
     )
+    return narrator
+
+
+def characters_prompt(req) -> str:
+    narrator = _cast_narrator(req)
     return (
         "You are writing the character cards for a story-writing engine. Each card is a portrait of one person that has to "
         "hold in any story: it says who the person is, never what happens to them. The author reviews the cards, and a card "
@@ -472,39 +518,42 @@ def characters_prompt(req) -> str:
         f"source describes one person), at most {MAX_CHARACTERS}. If the source has more people than that, keep the "
         f"{MAX_CHARACTERS} who matter most to the plot.\n"
         "RULES:\n"
-        "- Use what the source says about who each person is. Invent the missing details sparingly and concretely.\n"
-        "- The test for every sentence: would it still be true if this person woke up in a different genre and setting, "
-        "say a noir, a space heist or a dinner party? Be specific about the person and silent about the story: no plot "
-        "events, no places, objects or organizations, no other character's name, nothing that happens to them here. Where the "
-        "source shows a person in one situation, write the lasting tendency behind what they do there, not the situation.\n"
-        "- When the author states a trait outright (a habit, a look, a past, a way of speaking), keep it as written. What the "
-        "author describes as happening in the story is plot and stays out of the card.\n"
-        "- Portable does not mean generic. Skip labels and archetypes (the cynic, the loyal soldier) and give each person "
-        "the particular, slightly unexpected shape that makes them one person: an odd loyalty, a kindness they hide, a rule "
-        "nobody asked them to keep.\n"
-        "- Give everyone a soft spot, however well hidden. A cast of nothing but armor has no way for anyone to reach anyone.\n"
-        "- Every field is one or two full sentences of prose about the person: no lists, no labels, no fragments. The fields "
-        "are read one after another as a single description, so each must read naturally after the one before it: after "
-        "`role`, refer to the person with a pronoun, not their name.\n"
-        "- `role` completes the sentence \"<name> is ...\": a phrase about the kind of person they are, never a bare title.\n"
-        "- `tell` and `presence` are things a reader could watch a body do or see, never labels. `tell` names a kind of "
-        "motion and a kind of thing, never one named object, so that the writer can use whatever the scene holds.\n"
-        "- `blind_spot` is one specific contradiction between how the person sees themselves and what they do (for example: "
-        "calls herself easygoing, yet redoes everyone else's work). A nervous tic is not a blind spot.\n"
-        "- The lines in `voice` are new, unique to this person, and give away no plot.\n"
-        "- Story-bound against portable, shown in other genres (never copy their wording). want: not 'wants to find out who "
-        "took the ledger' but 'wants to be the one everyone needs and dreads being the one nobody calls'. wound: not 'was "
-        "ruined by the Ashgrove Guild' but 'was left behind by the one person who promised to return, and learned not to wait "
-        "on anyone'. armor: not 'is suspicious of the forged signature' but 'treats every offer as a trap until it is proven otherwise, and answers kindness with a question'. with_people: not 'learned the secret from the informant' but 'keeps count of what each person leaves unsaid, and lets a silence run on until the other one fills it'. tell: not 'turns a signet ring' but 'when tension rises, the hands go looking for something to peel, "
-        "fray or turn over, whatever the room holds'. limits: not 'will not betray the captain' but 'will not lie to someone "
-        "who depends on the truth, unless the lie is all that keeps someone they love alive'.\n"
-        "- Write the cast as foils when there is more than one person: each handles the same pressure differently from "
-        "someone else (one withholds, another overshares; one flees, another stands and fights), so the cast creates friction "
-        "without anyone being named in anyone else's card.\n"
-        "- Compare the characters as you write: no two share a want, a wound, a stance, a tell, a way with people, a limit, a blind spot or a manner of speaking.\n"
-        "- Write every character's fields in different words and different sentence shapes. No phrase of four or more "
-        "words may appear in the same field of two characters, and no two fields may open the same way.\n"
+        + CARD_RULES
+        + CAST_RULES
         + tail(req, CastDraft)
+    )
+
+
+def portrait_paragraph(c) -> str:
+    """One card as a paragraph, the fields read one after another: how the cast is shown to a model that is not writing it."""
+    return f"{c['name']}. " + " ".join(
+        str(c.get(f, "")).strip() for f in PORTRAIT_FIELDS if str(c.get(f, "")).strip()
+    )
+
+
+def character_prompt(req, cast, target) -> str:
+    """Write one person again, with the rest of the cast shown so that the new card differs from every one of them."""
+    others = [c for c in cast if c["id"] != target["id"]]
+    around = (
+        "THE REST OF THE CAST (already written and fixed; they are here only so that this person differs from every one of "
+        "them in want, wound, stance, tell, way with people, limits, blind spot and voice, and never names them):\n\n"
+        + "\n\n".join(portrait_paragraph(c) for c in others)
+        + "\n\n"
+        if others
+        else ""
+    )
+    return (
+        "You are rewriting one character card for a story-writing engine. A card is a portrait of one person that has to "
+        "hold in any story: it says who the person is, never what happens to them. The author reviews the card, and it may "
+        "later be taken out of this story and used in a completely different one.\n\n"
+        f"{source_block(req)}\n{_cast_narrator(req)}\n{around}"
+        f"TASK: Write the card for one person only: {target['name']}. Keep the name exactly "
+        f"(unless the author's change asks for another).\n"
+        "RULES:\n"
+        + CARD_RULES
+        + "- This is one person among others: give them a different want, wound, stance, tell, way with people, limit, "
+        "blind spot and manner of speaking from everyone listed above, and phrase every field in different words.\n"
+        + tail(req, CharacterDraft)
     )
 
 

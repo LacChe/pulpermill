@@ -86,6 +86,9 @@ class GenRequest(BaseModel):
     )
     chapter_use: ShortText = ""  # what the example is for: "sequel" or "parallel" (empty: the cards describe the example's own story)
     feedback: Optional[Text] = None
+    character: Optional[ShortText] = (
+        None  # characters stage only: the id of the one person to write again; the rest of the cast is kept as sent
+    )
     current: Optional[CardsJson] = (
         None  # this card's own current content, sent only on a feedback revision, so the
     )
