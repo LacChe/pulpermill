@@ -402,6 +402,9 @@ section.box {
   font-size: 12px;
   font-weight: 500;
   border-radius: 999px;
+  background: transparent;
+  color: var(--mute);
+  border-color: var(--mute);
 }
 .f > span {
   display: block;
@@ -999,6 +1002,12 @@ button.sm:not(.go, .alt, .danger):not(:disabled):hover {
   background: var(--sm-hov);
   border-color: var(--sm-hline);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+.chips button.sm.chip:not(.go, .alt, .danger):not(:disabled):hover {
+  background: color-mix(in srgb, var(--panel), var(--mute) 8%);
+  color: color-mix(in srgb, var(--mute), white 20%);
+  border-color: color-mix(in srgb, var(--mute), white 20%);
+  box-shadow: none;
 }
 button.danger {
   background: transparent;
