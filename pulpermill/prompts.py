@@ -115,9 +115,8 @@ EXTRACT_STATE_UPDATE_PROMPT = """Read the chapter below and extract what changed
         SCHEMA:
         {schema}
 
-        KNOWN CHARACTERS (already have cards, shown here with their card and current state. Track
-        them via character_updates, and do NOT list them in unintroduced_characters even under a
-        nickname or description):
+        KNOWN CHARACTERS (already have cards. Do NOT list them in unintroduced_characters, even
+        under a nickname or description):
         {known_characters}
 
         EXISTING OBJECTS (use these ids exactly in object_moves and object_updates):
@@ -131,27 +130,7 @@ EXTRACT_STATE_UPDATE_PROMPT = """Read the chapter below and extract what changed
 
         Rules for filling the schema:
         - Use ids exactly as listed above. Never invent an id.
-        - character_updates: include an entry for every KNOWN character who appears or acts in this
-          chapter, with their condition (emotional and physical, at the end of the chapter). Compare
-          against each character's card and current state above before filling anything else, and leave
-          every other field empty unless the chapter clearly calls for it. Never put object or location ids
-          in a character update.
-        - "change": a turning point, not a mood. It must be a different kind of shift from every line in any
-          character's current state: if it could be written as a rewording of one of them, or says the same
-          arc again with a new detail, leave it empty. One short sentence. Most characters have no change in
-          most chapters, and a chapter with none is normal.
-        - "detail": only a durable fact the chapter newly established about them that is NOT already on their
-          card or in their current state.
-        - "new_habit": a repeated behavior the chapter showed as a pattern (it happens more than once, or is plainly
-          how they now act), not a one-off action, and not already among their habits. "dropped_habit": a habit from
-          their card, copied exactly, that they have clearly given up or can no longer keep.
-        - A character's want and blind spot are fixed personality traits and are never rewritten: if this chapter
-          bears on either (they got what they wanted, saw through their blind spot, and so on), that belongs in
-          "change" as a turning point, not as a rewrite of the trait itself.
-        - Write every text value (condition, change, detail, habits,
-          descriptions) in {language}. Ids and JSON keys stay exactly as given.
-        - Every entry is about that one character only. Never copy or reword another character's entry, or an
-          entry already listed in a current state: if it is not new and specific, leave it empty.
+        - Write every text value (descriptions) in {language}. Ids and JSON keys stay exactly as given.
         - location_updates, object_updates, group_updates: only for something this chapter physically or
           materially changed (a place damaged, rebuilt, emptied or taken over; an object broken, opened, emptied or
           used up; a group that split, grew, lost its leader or changed what it wants). Write the new description

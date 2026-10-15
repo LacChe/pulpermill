@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
-from pydantic import AfterValidator, BaseModel, BeforeValidator
+from pydantic import BaseModel, BeforeValidator
 from pydantic.json_schema import SkipJsonSchema
 from typing import Annotated, Optional
 
@@ -99,10 +99,7 @@ def similar(a: str, b: str, threshold: Optional[float] = None) -> bool:
     )
 
 
-RECENT_N = 5
-DUPLICATE_SIMILARITY = 0.45  # a new "lasting change" or "detail" this alike to one already on any character is dropped
-SAME_CHARACTER_SIMILARITY = 0.3  # against the same character's own current entries the bar is lower: the same arc, said again, is not news
-MAX_HABITS = 5  # habits on a card; a new one pushes the oldest out
+DUPLICATE_SIMILARITY = 0.45  # two texts this alike are the same statement (similar())
 DUPLICATE_MIN_CHARS = 24  # ...but only for entries this long (letters and digits); short ones differ by a word and mean different things
 MAX_CHARACTERS = 6  # people one cast generation writes; a project can hold any number
 MAX_CAST = (
@@ -113,18 +110,6 @@ MAX_CHAPTER_NUM = (
     20  # hard ceiling when LOADING an outline, so longer hand-written ones still load
 )
 logger = logging.getLogger("pulpmill")
-
-
-def _keep_recent(v: list[str]) -> list[str]:
-    return v[-RECENT_N:]
-
-
-Recent = Annotated[list[str], AfterValidator(_keep_recent)]
-
-
-def push_recent(items: list[str], new: str) -> list[str]:
-    """Append and trim to the most recent RECENT_N. Use this, not list.append."""
-    return (items + [new])[-RECENT_N:]
 
 
 # ---------------------------------------------------------------------------

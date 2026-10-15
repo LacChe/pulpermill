@@ -287,18 +287,8 @@ def check_habit_overuse(story, chapter_text, feed):
 
 
 def _character_block(c):
-    """One character as the extractor should see them: the authored core (minus voice and sample
-    lines, which never produce facts) plus current wrap, so it can tell what is already established."""
-    core = c.model_dump(exclude={"wrap", "id", "voice", "sample_lines", "uses"})
-    state = {
-        "condition": c.wrap.condition,
-        "recent_changes": c.wrap.recent_changes,
-        "recent_details": c.wrap.recent_details,
-    }
-    return (
-        f"- {c.id} ({c.name})\n  CARD: {json.dumps(core, ensure_ascii=False)}\n"
-        f"  CURRENT STATE: {json.dumps(state, ensure_ascii=False)}"
-    )
+    """One character as the extractor should see them: only who they are, so it can tell a known person from a new one."""
+    return f"- {c.id} ({c.name}): {c.role}"
 
 
 def extract_state_update(story, chapter_text, chapter_num, retries=None, language="en"):
