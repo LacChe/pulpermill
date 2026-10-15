@@ -33,7 +33,7 @@ MODEL_SIZE_FALLBACK_BYTES = (
 # ---------------------------------------------------------------- CARD generation settings
 TEMPS = {
     "style": 0.7,
-    "characters": 0.4,
+    "characters": 0.6,  # a little warmer than the other cards: the character fields are prose. Lower it if the cards get too wild
     "world": 0.4,
     "outline": 0.4,
     "beat": 0.5,

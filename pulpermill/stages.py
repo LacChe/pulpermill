@@ -10,6 +10,7 @@ from .schema import (
     MAX_CHARACTERS,
     NextBeatD,
     OutlineDraft,
+    PORTRAIT_FIELDS,
     StateUpdate,
     StyleCard,
     WorldBible,
@@ -138,8 +139,7 @@ def run_style(req):
 
 
 # ---------------------------------------------------------------- CHARACTERS
-def cast_post(d, notes):
-    notes.clear()  # runs again on a retry: only the final attempt's notes count
+def cast_post(d):
     if len(d.characters) > MAX_CHARACTERS:
         raise ValueError(
             M(
@@ -148,7 +148,31 @@ def cast_post(d, notes):
                 max=MAX_CHARACTERS,
             )
         )
-    return finalize_cast(d, notes)
+    return finalize_cast(d)
+
+
+def story_words_in_cards(cards, req) -> list:
+    """Name-like words from the author's input (a place, an object, a person outside the cast) that a card has used. A card
+    should hold up in any story, so these are story details that leaked in. The cast's own names are expected and left out."""
+    src = req.notes + "\n" + (req.chapter if req.mode == "chapter" else "")
+    own = {w.lower() for c in cards for w in re.findall(r"[A-Za-z']+", c.name)}
+    names = [n for n in guess_names(src) if n not in own]
+    out = []
+    for c in cards:
+        for n in names:
+            for field in PORTRAIT_FIELDS:
+                value = getattr(c, field)
+                if re.search(rf"\b{re.escape(n)}\b", value.lower()):
+                    out.append(
+                        M(
+                            "{name}: {field} uses '{word}', a name-like word from your input; a card should not name story details",
+                            name=c.name,
+                            field=field,
+                            word=n,
+                        ).on(f"characters.{field}", c.id, value)
+                    )
+                    break  # one note for each word, however many fields use it
+    return out
 
 
 def cast_tweak(schema):
@@ -158,19 +182,18 @@ def cast_tweak(schema):
 
 def run_characters(req):
     prompt = prompts.characters_prompt(req)
-    notes: list = []
     cards = generation.structured_call(
         language_head(req) + prompt,
         CastDraft,
         max_tokens=config.MAX_TOKENS["characters"],
         temperature=config.TEMPS["characters"],
         min_tokens=config.MIN_TOKENS["characters"],
-        post=lang_post(req, lambda d: cast_post(d, notes)),
+        post=lang_post(req, cast_post),
         tweak=cast_tweak,
     )
-    return [c.model_dump(mode="json") for c in cards], notes + check_characters(
-        cards, set()
-    )
+    return [c.model_dump(mode="json") for c in cards], story_words_in_cards(
+        cards, req
+    ) + check_characters(cards, set())
 
 
 def run_world(req):

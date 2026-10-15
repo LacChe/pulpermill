@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
-from typing import Optional
 
 from .common import MAX_CHARACTERS, unique_ids
 
@@ -84,7 +83,7 @@ class CastDraft(BaseModel):
         min_length=1,
         max_length=MAX_CHARACTERS,
         description="The whole cast, written together. Compare them as you write: no two characters may share "
-        "a want, a blind spot, a tell, or a manner of speaking.",
+        "a want, a wound, a stance, a tell, a way with people, a limit, a blind spot, or a manner of speaking.",
     )
 
 
@@ -92,11 +91,8 @@ class CharacterCard(CharacterDraft):
     id: str
 
 
-def finalize_cast(
-    draft: CastDraft, notes: Optional[list[str]] = None
-) -> list[CharacterCard]:
-    """Assign ids from names. A character holds no reference to another card, so nothing else needs resolving. `notes` is
-    not used any more; it stays in the signature only so the callers do not have to change yet."""
+def finalize_cast(draft: CastDraft) -> list[CharacterCard]:
+    """Assign ids from names. A character holds no reference to another card, so nothing else needs resolving."""
     ids = unique_ids([c.name for c in draft.characters])
     return [
         CharacterCard(id=cid, **c.model_dump())

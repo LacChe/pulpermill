@@ -204,7 +204,7 @@ USE_FOR_CARD = {
         "parallel": "the writing style stays the example's own",
     },
     "characters": {
-        "sequel": "the example's characters stay as the chapter shows them; add a new person only when the continuation needs one",
+        "sequel": "the example's characters stay who the chapter shows them to be, written as lasting traits and not as what happens to them in it; add a new person only when the continuation needs one",
         "parallel": "the leads are new people who belong in this world; people from the example may appear but do not lead",
     },
     "world": {
@@ -464,26 +464,47 @@ def characters_prompt(req) -> str:
         else ""
     )
     return (
-        "You are writing the character cards for a story-writing engine.\n\n"
+        "You are writing the character cards for a story-writing engine. Each card is a portrait of one person that has to "
+        "hold in any story: it says who the person is, never what happens to them. The author reviews the cards, and a card "
+        "may later be taken out of this story and used in a completely different one.\n\n"
         f"{source_block(req)}\n{narrator}\n"
-        f"TASK: Write the whole cast together, one card per main character the source describes, at most {MAX_CHARACTERS}. "
-        f"If the source has more people than that, keep the {MAX_CHARACTERS} who matter most to the plot.\n"
+        f"TASK: Write the whole cast together, one card per main character the source describes (one card is fine if the "
+        f"source describes one person), at most {MAX_CHARACTERS}. If the source has more people than that, keep the "
+        f"{MAX_CHARACTERS} who matter most to the plot.\n"
         "RULES:\n"
-        "- Use what the source says. Invent the missing details sparingly and concretely.\n"
-        "- Compare the characters as you write: no two share a want, a blind spot, a habit or a manner of speaking.\n"
+        "- Use what the source says about who each person is. Invent the missing details sparingly and concretely.\n"
+        "- The test for every sentence: would it still be true if this person woke up in a different genre and setting, "
+        "say a noir, a space heist or a dinner party? Be specific about the person and silent about the story: no plot "
+        "events, no places, objects or organizations, no other character's name, nothing that happens to them here. Where the "
+        "source shows a person in one situation, write the lasting tendency behind what they do there, not the situation.\n"
+        "- When the author states a trait outright (a habit, a look, a past, a way of speaking), keep it as written. What the "
+        "author describes as happening in the story is plot and stays out of the card.\n"
+        "- Portable does not mean generic. Skip labels and archetypes (the cynic, the loyal soldier) and give each person "
+        "the particular, slightly unexpected shape that makes them one person: an odd loyalty, a kindness they hide, a rule "
+        "nobody asked them to keep.\n"
+        "- Give everyone a soft spot, however well hidden. A cast of nothing but armor has no way for anyone to reach anyone.\n"
+        "- Every field is one or two full sentences of prose about the person: no lists, no labels, no fragments. The fields "
+        "are read one after another as a single description, so each must read naturally after the one before it: after "
+        "`role`, refer to the person with a pronoun, not their name.\n"
+        "- `role` completes the sentence \"<name> is ...\": a phrase about the kind of person they are, never a bare title.\n"
+        "- `tell` and `presence` are things a reader could watch a body do or see, never labels. `tell` names a kind of "
+        "motion and a kind of thing, never one named object, so that the writer can use whatever the scene holds.\n"
+        "- `blind_spot` is one specific contradiction between how the person sees themselves and what they do (for example: "
+        "calls herself easygoing, yet redoes everyone else's work). A nervous tic is not a blind spot.\n"
+        "- The lines in `voice` are new, unique to this person, and give away no plot.\n"
+        "- Story-bound against portable, shown in other genres (never copy their wording). want: not 'wants to find out who "
+        "took the ledger' but 'wants to be the one everyone needs and dreads being the one nobody calls'. wound: not 'was "
+        "ruined by the Ashgrove Guild' but 'was left behind by the one person who promised to return, and learned not to wait "
+        "on anyone'. armor: not 'is suspicious of the forged signature' but 'treats every offer as a trap until it is proven otherwise, and answers kindness with a question'. with_people: not 'learned the secret from the informant' but 'keeps count of what each person leaves unsaid, and lets a silence run on until the other one fills it'. tell: not 'turns a signet ring' but 'when tension rises, the hands go looking for something to peel, "
+        "fray or turn over, whatever the room holds'. limits: not 'will not betray the captain' but 'will not lie to someone "
+        "who depends on the truth, unless the lie is all that keeps someone they love alive'.\n"
+        "- Write the cast as foils when there is more than one person: each handles the same pressure differently from "
+        "someone else (one withholds, another overshares; one flees, another stands and fights), so the cast creates friction "
+        "without anyone being named in anyone else's card.\n"
+        "- Compare the characters as you write: no two share a want, a wound, a stance, a tell, a way with people, a limit, a blind spot or a manner of speaking.\n"
         "- Write every character's fields in different words and different sentence shapes. No phrase of four or more "
         "words may appear in the same field of two characters, and no two fields may open the same way.\n"
-        "- `role` says in a few words what this person is and does in this story, using the source's own words for "
-        "their job or place. Never use a title that belongs to a different character, even a minor one, and never "
-        "a single bare word.\n"
-        "- `sample_lines` are new lines this person might say in situations outside the story. Each is unique to "
-        "this person, quotes nothing from the source, and gives away no plot.\n"
-        "- `blind_spot` says how the person sees themselves and the specific thing they do that contradicts it "
-        "(for example: calls herself easygoing, yet redoes everyone else's work). A nervous tic is not a blind spot.\n"
-        "- Looks and habits are things a reader could watch a person do, never labels.\n"
-        "- Each `toward` entry names another character in this cast exactly as that character's `name` is written, "
-        "and is written from this character's side only. Add an entry for every other main character they have a stake in.\n"
-        "- Mention no places or objects by id.\n" + tail(req, CastDraft)
+        + tail(req, CastDraft)
     )
 
 
