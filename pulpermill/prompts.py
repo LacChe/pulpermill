@@ -426,14 +426,26 @@ def style_prompt(req) -> str:
 
 
 # ---------------------------------------------------------------- CHARACTERS
+def _style_facts(style: dict, keys) -> str:
+    """The listed design fields of a style card as 'name: value' lines, skipping blanks."""
+    return "\n".join(
+        f"- {k.replace('_', ' ')}: {style[k]}" for k in keys if str(style.get(k) or "").strip()
+    )
+
+
 def characters_prompt(req) -> str:
     style = req.cards.get("style") or {}
+    facts = _style_facts(style, ("diction", "vulgarity", "dialogue_manner", "humor"))
     narrator = (
         (
-            f"\nFor contrast, the narrator's voice is: {style['voice']}\n"
-            "Each character's voice must sound different from the narrator's.\n"
+            f"\nTHE STORY'S NARRATION (fixed; the cast speaks inside this story):\nNarrator: {style['narrator']}\n"
+            + (f"{facts}\n" if facts else "")
+            + "Each character's voice must sound different from the narrator's. How crude anyone's language is, and "
+            "whether it is crude in dialogue, follows the vulgarity line above: where it allows coarse speech, let "
+            "the characters who would swear swear, and where it says none, write no one who does. Their words stay "
+            "within the story's diction unless a character's background gives a reason to differ.\n"
         )
-        if style.get("voice")
+        if style.get("narrator")
         else ""
     )
     return (
@@ -514,10 +526,11 @@ def outline_prompt(req, cast, world, want) -> str:
         f"{k}. {name}: {text}" for k, (name, text) in STORY_STAGES.items()
     )
     st = req.cards.get("style") or {}
+    mood = _style_facts(st, ("stance", "humor", "time_handling", "interiority"))
     style_block = (
         (
             f"THE STORY'S NARRATION STYLE (the outline must suit this register):\nLabel: {st.get('label', '')}\n"
-            f"Voice: {st.get('voice', '')}\n\n"
+            f"Narrator: {st.get('narrator', '')}\n" + (f"{mood}\n" if mood else "") + "\n"
         )
         if st
         else ""
@@ -671,6 +684,7 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
     )
     tail_text = prev_text.strip()[-BEAT_TAIL_CHARS:] if prev_text.strip() else "(none)"
     st = story.style
+    mood = _style_facts(st.model_dump(), ("stance", "humor", "time_handling", "interiority"))
     left_n = total - n + 1
     past = [b for b in plot.chapter_beats if b.chapter_num < n]
     ledger = (
@@ -725,7 +739,9 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         + "Where each person ends up: "
         + "; ".join(f"{name(a.character)}: {a.end}" for a in plot.arcs)
         + "\n"
-        f"Narration style: {st.label}. {st.narrator}\n\n"
+        f"Narration style: {st.label}. {st.narrator}\n"
+        + (f"{mood}\n" if mood else "")
+        + "\n"
         f"THE CARDS NOW (after chapter {n - 1}; this is the truth of the story at this point)\n"
         f"PEOPLE:\n{chars}\n\nSETTING: {w.setting}\nHOW THE WORLD WORKS (permanent facts; reach for one as an obstacle or a "
         f"stake when it fits this chapter):\n{rules}\n\nPLACES (write names exactly like this):\n{places}\n"

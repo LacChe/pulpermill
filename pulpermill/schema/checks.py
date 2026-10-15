@@ -16,10 +16,34 @@ from .world import WorldBible
 # ===========================================================================
 
 
-def check_style(style: StyleCard, cast_names: list[str]) -> list[str]:
-    """Style must be story-agnostic: no character names."""
-    text = style.model_dump_json().lower()
+# Phrases that pull against each other when one narrator is meant to use both. A flag, never a rejection: the author may
+# want the tension, and the narrator paragraph is where it is reconciled.
+_DIAL_CONFLICTS = [
+    (("economy",), ("clipped", "terse", "spare"), ("economy", "figurative", "diction"), ("maximalist", "lush", "lavish", "ornate")),
+    (("interiority",), ("behaviorist", "behaviourist"), ("interiority",), ("open feeling", "stream of thought")),
+    (("figurative",), ("literal", "no metaphor", "none"), ("figurative",), ("rich", "lush", "heavy")),
+    (("cadence",), ("staccato", "clipped"), ("cadence",), ("rolling", "breathless", "flowing")),
+    (("vulgarity",), ("none",), ("diction",), ("street", "coarse", "crude")),
+]
+
+
+def check_style_dials(style: StyleCard) -> list[str]:
+    """Light coherence check: flags design fields whose chosen words oppose each other."""
     out = []
+    for a_fields, a_words, b_fields, b_words in _DIAL_CONFLICTS:
+        a = " ".join(getattr(style, f, "") for f in a_fields).lower()
+        b = " ".join(getattr(style, f, "") for f in b_fields).lower()
+        hit_a = next((w for w in a_words if w in a), None)
+        hit_b = next((w for w in b_words if w in b), None)
+        if hit_a and hit_b and hit_a != hit_b:
+            out.append(M("style dials pull against each other: '{a}' and '{b}'", a=hit_a, b=hit_b))
+    return out
+
+
+def check_style(style: StyleCard, cast_names: list[str]) -> list[str]:
+    """Style must be story-agnostic: no character names. Also flags dials that conflict."""
+    text = style.model_dump_json().lower()
+    out = check_style_dials(style)
     for name in cast_names:
         for part in {name.lower(), *name.lower().split()}:
             if _CJK_RE.search(part):

@@ -267,6 +267,20 @@ class StoryProject(BaseModel):
             f"Narrator (how this narrator perceives the world and puts it on the page; write every sentence of "
             f"the chapter through it): {st.narrator}",
         ]
+        mechanics = [
+            f"{label}: {getattr(st, key).strip()}"
+            for key, label in (
+                ("vulgarity", "Crude language"),
+                ("dialogue_manner", "Dialogue"),
+                ("time_handling", "Time"),
+            )
+            if getattr(st, key, "").strip()
+        ]
+        if mechanics:
+            parts.append(
+                "Hard settings (these apply exactly as written, in narration and in what characters say): "
+                + "; ".join(mechanics)
+            )
         if st.signature_moves:
             parts.append(
                 "Signature moves (things this narrator does again and again; let them recur when a moment calls "

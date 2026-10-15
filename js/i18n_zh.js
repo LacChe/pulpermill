@@ -389,6 +389,7 @@ const ZH = {
   "{obj} is now at {where} (was {was})": "{obj}现在位于{where}(原为{was})",
   "{obj} is now at {where}": "{obj}现在位于{where}",
   "style mentions character name '{name}'": "文风里提到了角色名“{name}”",
+  "style dials pull against each other: '{a}' and '{b}'": "文风设置互相冲突:“{a}”与“{b}”",
   "{id}: core mentions world id '{wid}'":
     "{id}:核心设定里出现了世界观编号“{wid}”",
   "{id}: toward unknown character '{who}'": "{id}:对未知角色“{who}”的态度",
