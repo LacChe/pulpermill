@@ -1,147 +1,104 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 from typing import Optional
 
-from .common import (
-    M,
-    MAX_CHARACTERS,
-    Recent,
-    Resolver,
-    UsesMap,
-    _pooled,
-    clean_uses,
-    unique_ids,
-)
+from .common import MAX_CHARACTERS, unique_ids
 
 
 # ===========================================================================
 # CHARACTERS
+# A character is a portrait of a person that holds in any story: who they are, never what has happened to them.
+# Pulpermill never edits a card after it is reviewed, so a card can be taken out of one project and dropped into another.
 # ===========================================================================
 
 
-class Attitude(BaseModel):
-    toward: str = Field(description="The name of another character in the cast.")
-    attitude: str = Field(
-        description="One or two sentences, from this character's side only: what they want from that person "
-        "and how they act around them."
-    )
+# The prose fields in the order they are read: this is the order the writer is given them.
+PORTRAIT_FIELDS = (
+    "role",
+    "want",
+    "wound",
+    "armor",
+    "tell",
+    "with_people",
+    "soft_spot",
+    "limits",
+    "blind_spot",
+    "voice",
+    "presence",
+)
 
 
 class CharacterDraft(BaseModel):
-    """What the model writes. Core definition: does not change after review."""
+    """One person, written as a portrait that would hold in any story. Every text field is plain prose: one or two full
+    sentences in the third person, naming nothing that belongs to a single story (no plot, no places, no objects, no other
+    characters), and reading naturally when the fields are joined in order."""
 
     name: str
     role: str = Field(
-        description="What this person is to the story, in the source's own words for their job or place. "
-        "Never a title that belongs to someone else. Say what they do, not only a one-word title."
+        description="How this person would be introduced to a stranger: the trade, station or bearing they would carry "
+        "into any story. Never a one-word title, and nothing about what happens to them in this story."
     )
     want: str = Field(
-        description="A lasting personal drive -- the kind of thing they generally chase or need, as a standing "
-        "trait, not a goal belonging to any one story. What they're after in this particular story lives in the "
-        "outline and chapter beats, not here."
+        description="What they chase and what they are running from, as lasting traits of the person and not as a goal "
+        "belonging to any one story. Name the fear underneath the want."
+    )
+    wound: str = Field(
+        description="What happened to them long ago and the rule about the world it taught them, in setting-neutral "
+        "terms: no named people, places or institutions."
+    )
+    armor: str = Field(
+        description="Their default stance when cornered or threatened, and how they keep people at a distance: how they "
+        "meet conflict, not what any particular conflict is."
+    )
+    tell: str = Field(
+        description="What pressure does to their body: a repeated motion and the kind of thing they do it with, described "
+        "so that any setting could supply the object. Never a named prop."
+    )
+    with_people: str = Field(
+        description="How they handle other people and what people hold back: what they hide, how they dig for what others "
+        "hide, and how they treat someone who can do nothing for them."
+    )
+    soft_spot: str = Field(
+        description="What gets past the armor: what they love, what makes them laugh, and how they are when they stop "
+        "defending themselves."
+    )
+    limits: str = Field(
+        description="What they will never do, and what it would take to make them do it."
     )
     blind_spot: str = Field(
-        description="State how they see themselves and the specific thing they do that contradicts it. "
+        description="How they see themselves, and the specific thing they do that contradicts it. "
         "A nervous tic is not a blind spot."
     )
-    look: list[str] = Field(
-        description="Two or three physical details a reader would notice."
-    )
-    habits: list[str] = Field(
-        description="Two or three things they do repeatedly, especially when nervous, lying, or avoiding something."
-    )
     voice: str = Field(
-        description="How they talk: vocabulary, rhythm, what they never say. Different from the narrator's voice."
+        description="How they talk: vocabulary, rhythm, what they never say, with one or two lines of them speaking about "
+        "something outside any story. Different from the narrator's voice. Never a line from the source."
     )
-    sample_lines: list[str] = Field(
-        description="Two or three lines of dialogue showing how they talk, about situations outside this story. "
-        "Never a line from the source, never a plot reveal."
-    )
-    history: str = Field(
-        description="Two or three sentences of past events that still drive present behavior."
-    )
-    toward: list[Attitude] = Field(
-        default_factory=list,
-        description="One entry for each other main character this person has a stake in.",
+    presence: str = Field(
+        description="How they carry themselves and take up space, with the one physical detail a person would remember."
     )
 
 
 class CastDraft(BaseModel):
     characters: list[CharacterDraft] = Field(
-        min_length=2,
+        min_length=1,
         max_length=MAX_CHARACTERS,
         description="The whole cast, written together. Compare them as you write: no two characters may share "
-        "a want, a blind spot, a habit, or a manner of speaking.",
-    )
-
-
-class CharacterWrap(BaseModel):
-    """Live state. Updated by Pulpermill after each chapter. Plain text only: no object or location ids."""
-
-    condition: str = Field(
-        default="", description="Current emotional and physical condition."
-    )
-    recent_changes: Recent = Field(
-        default_factory=list,
-        description="Latest shifts in what they want, how they act, or how they see someone.",
-    )
-    recent_details: Recent = Field(
-        default_factory=list,
-        description="Latest newly established facts about them, including past events.",
+        "a want, a blind spot, a tell, or a manner of speaking.",
     )
 
 
 class CharacterCard(CharacterDraft):
     id: str
-    wrap: CharacterWrap = Field(default_factory=CharacterWrap)
-    uses: UsesMap = Field(default_factory=dict)
-
-    @model_validator(mode="after")
-    def _tidy_uses(self):
-        self.uses = clean_uses(
-            self.uses,
-            _pooled(
-                "characters",
-                {
-                    "look": self.look,
-                    "habits": self.habits,
-                    "sample_lines": self.sample_lines,
-                },
-            ),
-        )
-        return self
 
 
 def finalize_cast(
     draft: CastDraft, notes: Optional[list[str]] = None
 ) -> list[CharacterCard]:
-    """Assign ids from names and rewrite `toward` from names to ids. A `toward` that names nobody in the cast is dropped
-    and reported in `notes` (it is not worth regenerating the whole cast for)."""
-    notes = notes if notes is not None else []
+    """Assign ids from names. A character holds no reference to another card, so nothing else needs resolving. `notes` is
+    not used any more; it stays in the signature only so the callers do not have to change yet."""
     ids = unique_ids([c.name for c in draft.characters])
-    who = Resolver([{"id": i, "name": c.name} for c, i in zip(draft.characters, ids)])
-    cards = []
-    for c, cid in zip(draft.characters, ids):
-        data = c.model_dump()
-        resolved, seen = [], set()
-        for a in data["toward"]:
-            tid = who.find(a["toward"])
-            if tid is None:
-                notes.append(
-                    M(
-                        "{name}: feelings toward '{other}' were dropped, because nobody in the cast has that name",
-                        name=c.name,
-                        other=a["toward"],
-                    )
-                )
-            elif tid == cid:
-                notes.append(
-                    M("{name}: an attitude toward themselves was dropped", name=c.name)
-                )
-            elif tid not in seen:
-                seen.add(tid)
-                resolved.append({"toward": tid, "attitude": a["attitude"]})
-        data["toward"] = resolved
-        cards.append(CharacterCard(id=cid, **data))
-    return cards
+    return [
+        CharacterCard(id=cid, **c.model_dump())
+        for c, cid in zip(draft.characters, ids)
+    ]

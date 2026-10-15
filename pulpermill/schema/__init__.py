@@ -6,19 +6,21 @@ DEPENDENCY ORDER (each card may only read cards to its left):
     Style  <-  Characters  <-  World  <-  Outline
 
   * Style      : portable narration style. No names, no plot, no world nouns.
-  * Characters : who people are. No object/location ids, no future arc.
-                 Characters may refer to each other (by name while authoring).
+  * Characters : who people are, written to hold in any story. No object or
+                 location ids, no plot, no future arc, and no reference to
+                 another character.
   * World      : rules, hidden truths, places, objects, groups. May point at
                  characters by id (owner, known_by). Never holds story events.
   * Outline    : what happens and how characters change. May point at everything.
 
-CORE + LIVE STATE
-  Every Character has an authored CORE (reviewed by the human, edited by
-  nobody afterwards) and a WRAP: live state that Pulpermill updates after each
-  chapter (model-added wrap lists keep only the most recent 5). The World is
-  fully authored: the model never adds entries to it. Only three things in it
-  change during a story: an object's owner, an object's location, and a
-  truth's known_by.
+PORTABLE CHARACTERS
+  A Character is authored once, reviewed by the human and never edited by
+  Pulpermill afterwards: it holds who the person is, never what has happened to
+  them. What happens to people during a story is carried by the chapter
+  summaries, the beats and the World's live values, so a card can be taken out
+  of one project and dropped into another. The World is fully authored: the
+  model never adds entries to it. Only three things in it change during a
+  story: an object's owner, an object's location, and a truth's known_by.
 
 HIDDEN TRUTHS
   The outline decides when each truth is revealed (ChapterBeat.reveals). After
@@ -95,10 +97,9 @@ from .style import (
     ladders_for_prompt,
 )
 from .characters import (
-    Attitude,
+    PORTRAIT_FIELDS,
     CharacterDraft,
     CastDraft,
-    CharacterWrap,
     CharacterCard,
     finalize_cast,
 )

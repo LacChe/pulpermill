@@ -18,7 +18,6 @@ from .world import WorldBible, WorldDraft
 # positions. The page checks each of them against the cards it holds, so that when one card is regenerated it can mark
 # every field on the other cards that now points at something that is gone.
 REFS = {
-    "characters.toward.toward": "character",
     "world.objects.owner": "character",
     "world.objects.location": "location",
     "world.hidden_truths.known_by": "character",
@@ -37,8 +36,8 @@ CHOICES = {
     ]
 }
 
-# Fields the card GENERATOR page hides (live state that starts empty). The Story panel shows them.
-GENERATOR_HIDDEN = ["wrap"]
+# Fields the card GENERATOR page hides (live state that starts empty). None now: a character holds no live state.
+GENERATOR_HIDDEN: list[str] = []
 
 
 def ui_hints() -> dict:

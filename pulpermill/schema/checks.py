@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 from pydantic import BaseModel
 
-from .characters import CharacterCard
-from .common import M, _CJK_RE, _related, est_words, squash
+from .characters import PORTRAIT_FIELDS, CharacterCard
+from .common import M, _CJK_RE, _TITLES, _related, est_words, similar
 from .outline import LAST_STAGE, PlotOutline
 from .story import StoryProject
 from .style import StyleCard
@@ -51,52 +51,98 @@ def check_style(style: StyleCard, cast_names: list[str]) -> list[str]:
     return out
 
 
+THIN_FIELD_WORDS = 4  # a portrait field shorter than this is a label, not a sentence about the person
+
+# The fields that should differ from one character to the next: no two characters share a drive, a defense, a tell or a manner of speaking.
+_DISTINCT_FIELDS = (
+    "want",
+    "wound",
+    "armor",
+    "tell",
+    "with_people",
+    "soft_spot",
+    "limits",
+    "blind_spot",
+    "voice",
+)
+
+
+def _name_forms(name: str) -> set[str]:
+    """The ways a person's name can turn up in another card's text: the whole name, and each word of it that is not a title
+    or an article. Matched with the capital letters as written, so that a name like Mark is not found in 'a mark'."""
+    name = name.strip()
+    forms = {name} if name else set()
+    for w in re.findall(r"[^\W_]+", name):
+        if not _CJK_RE.search(w) and len(w) > 2 and w.lower() not in _TITLES:
+            forms.add(w)
+    return forms
+
+
+def _text_has(form: str, text: str) -> bool:
+    if _CJK_RE.search(form):
+        return len(form) >= 2 and form in text
+    return re.search(rf"\b{re.escape(form)}\b", text) is not None
+
+
 def check_characters(chars: list[CharacterCard], world_ids: set[str]) -> list[str]:
     out = []
-    ids = {c.id for c in chars}
     for c in chars:
-        core = c.model_dump(exclude={"wrap", "id"})
-        blob = str(core).lower()
+        blob = str(c.model_dump(exclude={"id"})).lower()
         for wid in world_ids:
             if wid.lower() in blob:
                 out.append(M("{id}: core mentions world id '{wid}'", id=c.id, wid=wid))
-        for a in c.toward:
-            if a.toward not in ids:
-                out.append(
-                    M("{id}: toward unknown character '{who}'", id=c.id, who=a.toward)
-                )
-        n_words = est_words(c.role)
-        if n_words <= 1:
-            out.append(
-                (
-                    M(
-                        "{id}: role is empty. Say what this person is and does in this story; a bare title leaves the model to fill in its own idea of it",
-                        id=c.id,
-                    )
-                    if n_words == 0
-                    else M(
-                        "{id}: role is one word ('{role}'). Say what this person is and does in this story; a bare title leaves the model to fill in its own idea of it",
-                        id=c.id,
-                        role=c.role,
-                    )
-                ).on("characters.role", c.id, c.role)
-            )
-    seen: dict[str, tuple[str, str]] = {}
-    for c in chars:
-        for line in c.sample_lines:
-            key = squash(line)
-            if key and seen.setdefault(key, (c.id, line))[0] != c.id:
-                other_id, other_line = seen[key]
+        for field in PORTRAIT_FIELDS:
+            value = getattr(c, field)
+            n_words = est_words(value)
+            if n_words == 0:
                 out.append(
                     M(
-                        "{a} and {b} have the same sample line: '{line}'",
-                        a=c.id,
-                        b=other_id,
-                        line=line[:60],
-                    )
-                    .on("characters.sample_lines", c.id, line)
-                    .on("characters.sample_lines", other_id, other_line)
+                        "{id}: {field} is empty. Write it as one or two sentences about this person, so the writer is not left to invent it",
+                        id=c.id,
+                        field=field,
+                    ).on(f"characters.{field}", c.id, value)
                 )
+            elif n_words < THIN_FIELD_WORDS:
+                out.append(
+                    M(
+                        "{id}: {field} is only a few words ('{value}'). Write it as one or two full sentences about this person, not a label",
+                        id=c.id,
+                        field=field,
+                        value=value[:60],
+                    ).on(f"characters.{field}", c.id, value)
+                )
+        for other in chars:
+            if other.id == c.id:
+                continue
+            forms = _name_forms(other.name)
+            for field in PORTRAIT_FIELDS:
+                value = getattr(c, field)
+                hit = next((f for f in sorted(forms) if _text_has(f, value)), None)
+                if hit:
+                    out.append(
+                        M(
+                            "{id}: {field} names another character ('{who}'). A card should hold up in any story, so write it without other people's names",
+                            id=c.id,
+                            field=field,
+                            who=hit,
+                        ).on(f"characters.{field}", c.id, value)
+                    )
+                    break  # one note for each person named, however many fields name them
+    for field in _DISTINCT_FIELDS:
+        for i, a in enumerate(chars):
+            for b in chars[i + 1 :]:
+                va, vb = getattr(a, field), getattr(b, field)
+                if similar(va, vb):
+                    out.append(
+                        M(
+                            "{a} and {b} have nearly the same {field}; no two characters should share one",
+                            a=a.id,
+                            b=b.id,
+                            field=field,
+                        )
+                        .on(f"characters.{field}", a.id, va)
+                        .on(f"characters.{field}", b.id, vb)
+                    )
     return out
 
 
