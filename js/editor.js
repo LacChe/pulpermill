@@ -315,19 +315,23 @@ function usedList(parent, key, hasBase, old) {
           { class: "urow" },
           ta,
           el(
-            "span",
-            { class: "used" + (n ? "" : " zero"), title: usedTip() },
-            usedTxt(n),
-          ),
-          el(
-            "button",
-            {
-              class: "sm",
-              type: "button",
-              title: t("Remove this item"),
-              onclick: () => drop(i, cur),
-            },
-            "×",
+            "div",
+            { class: "urow-actions" },
+            el(
+              "button",
+              {
+                class: "sm",
+                type: "button",
+                title: t("Remove this item"),
+                onclick: () => drop(i, cur),
+              },
+              "×",
+            ),
+            el(
+              "span",
+              { class: "used" + (n ? "" : " zero"), title: usedTip() },
+              usedTxt(n),
+            ),
           ),
         ),
       );

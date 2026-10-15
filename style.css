@@ -796,6 +796,12 @@ html[lang="zh-Hans"] .prose p {
   flex: 1;
   min-width: 0;
 }
+.urow-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
 .used,
 .usedtag {
   font-size: 12px;
@@ -807,6 +813,9 @@ html[lang="zh-Hans"] .prose p {
 }
 .used {
   margin-top: 6px;
+}
+.urow-actions .used {
+  margin-top: 0;
 }
 .used.zero,
 .usedtag.zero {
