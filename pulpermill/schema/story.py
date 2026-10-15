@@ -270,7 +270,6 @@ class StoryProject(BaseModel):
         mechanics = [
             f"{label}: {getattr(st, key).strip()}"
             for key, label in (
-                ("vulgarity", "Crude language"),
                 ("dialogue_manner", "Dialogue"),
                 ("time_handling", "Time"),
             )
@@ -278,7 +277,7 @@ class StoryProject(BaseModel):
         ]
         if mechanics:
             parts.append(
-                "Hard settings (these apply exactly as written, in narration and in what characters say): "
+                "Hard settings (these apply exactly as written): "
                 + "; ".join(mechanics)
             )
         if st.signature_moves:

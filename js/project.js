@@ -7,7 +7,6 @@ const STYLE_TEXT_FIELDS = [
   "stance",
   "economy",
   "diction",
-  "vulgarity",
   "figurative",
   "cadence",
   "interiority",
@@ -121,6 +120,7 @@ function normalizeProject(p) {
       delete s.voice;
       delete s.prose_habits;
       delete s.avoid;
+      delete s.vulgarity;
       STYLE_TEXT_FIELDS.forEach((k) => {
         if (typeof s[k] !== "string") s[k] = "";
       });

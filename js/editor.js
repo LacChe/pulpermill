@@ -23,7 +23,7 @@ const STAGES = [
 ];
 const HINTS = {
   style:
-    "How should the narration sound? What does the narrator notice and ignore, and what attitude does it take toward events? How crude or polished is the language, and where? How much metaphor, how funny, how far inside the main character's head? What rhythm, how much dialogue? What would ruin it?",
+    "How should the narration sound? What does the narrator notice and ignore, and what attitude does it take toward events? How plain or ornate are the words? How much metaphor, how funny, how far inside the main character's head? What rhythm, how much dialogue? What would ruin it?",
   characters:
     "For each person: what they want, how they see themselves versus what they actually do, how they talk, their habits, and how they feel about each other person. Say exactly who did what to whom.",
   world:

@@ -19,11 +19,11 @@ from .world import WorldBible
 # Phrases that pull against each other when one narrator is meant to use both. A flag, never a rejection: the author may
 # want the tension, and the narrator paragraph is where it is reconciled.
 _DIAL_CONFLICTS = [
-    (("economy",), ("clipped", "terse", "spare"), ("economy", "figurative", "diction"), ("maximalist", "lush", "lavish", "ornate")),
+    (("economy",), ("clipped", "terse", "spare"), ("economy", "figurative", "diction"), ("maximalist", "lush", "lavish", "expansive", "ornate")),
     (("interiority",), ("behaviorist", "behaviourist"), ("interiority",), ("open feeling", "stream of thought")),
     (("figurative",), ("literal", "no metaphor", "none"), ("figurative",), ("rich", "lush", "heavy")),
     (("cadence",), ("staccato", "clipped"), ("cadence",), ("rolling", "breathless", "flowing")),
-    (("vulgarity",), ("none",), ("diction",), ("street", "coarse", "crude")),
+    (("diction",), ("plain", "simple", "everyday"), ("diction",), ("ornate", "archaic", "obscure", "flowery")),
 ]
 
 

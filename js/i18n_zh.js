@@ -172,8 +172,8 @@ const ZH = {
     "背景设定、规则、隐藏真相、地点、物品和团体。",
   "Premise, ending, arcs and the opening beat. The story continues from here, one chapter at a time.":
     "故事前提、结局、角色弧线和开篇要点。故事从这里开始,逐章继续写下去。",
-  "How should the narration sound? What does the narrator notice and ignore, and what attitude does it take toward events? How crude or polished is the language, and where? How much metaphor, how funny, how far inside the main character's head? What rhythm, how much dialogue? What would ruin it?":
-    "叙述听起来应该是什么样?讲述者会注意什么、忽略什么,对事件抱什么态度?语言是粗粝还是雅致,粗在哪里?比喻多不多,有多幽默,在主角的内心里走多深?节奏如何,对话占多少?什么会毁掉它?",
+  "How should the narration sound? What does the narrator notice and ignore, and what attitude does it take toward events? How plain or ornate are the words? How much metaphor, how funny, how far inside the main character's head? What rhythm, how much dialogue? What would ruin it?":
+    "叙述听起来应该是什么样?讲述者会注意什么、忽略什么,对事件抱什么态度?用词是平实还是华丽?比喻多不多,有多幽默,在主角的内心里走多深?节奏如何,对话占多少?什么会毁掉它?",
   "For each person: what they want, how they see themselves versus what they actually do, how they talk, their habits, and how they feel about each other person. Say exactly who did what to whom.":
     "对每个人物:他们想要什么,自我认知与实际行为有何差距,说话方式,习惯,以及对其他每个人的感受。请明确写出谁对谁做了什么。",
   "The place and occasion, how it works as plain fact (one line per mechanic), the places, the objects that matter, and the secrets: what is true, who knows it, who does not.":
@@ -568,7 +568,6 @@ const ZH = {
   stance: "态度",
   economy: "笔墨详略",
   diction: "用词",
-  vulgarity: "粗俗程度",
   figurative: "比喻",
   cadence: "节奏",
   interiority: "内心刻画",
@@ -599,24 +598,22 @@ const ZH = {
   /* style suggestions (SCH.anchors) */
   "anchor cynical": "愤世嫉俗",
   "anchor tender": "温柔",
-  "anchor wry": "嘲讽",
+  "anchor weary": "倦怠",
   "anchor awed": "惊叹",
   "anchor clinical": "冷静客观",
   "anchor menacing": "充满威胁",
   "anchor clipped": "简短利落",
   "anchor plain": "平实",
+  "anchor spare": "精简",
   "anchor measured": "适度",
-  "anchor lush": "繁茂华丽",
-  "anchor maximalist": "极繁",
+  "anchor full": "充分",
+  "anchor expansive": "铺陈丰沛",
   "anchor literary": "文学化",
   "anchor archaic": "古雅",
   "anchor technical": "专业术语",
   "anchor street": "市井口语",
   "anchor ornate": "华丽",
   "anchor none": "无",
-  "anchor implied": "暗示",
-  "anchor occasional": "偶尔",
-  "anchor pervasive": "随处可见",
   "anchor literal": "直白",
   "anchor sparing": "克制",
   "anchor rich": "丰富",
@@ -648,8 +645,8 @@ const ZH = {
   Perspective: "视角与观察",
   "How the narrator takes in the world. The lens is what it notices and what it never registers. Stance is its attitude toward events. Interiority is how far it goes inside the main character's mind. Write a few words in each box, or pick a suggestion below it.":
     "叙述者如何接收这个世界。观察视角是它会注意什么、从不留意什么。态度是它对事件的看法。内心刻画是它深入主角内心的程度。每个框里写几个词,或者点击下方的建议。",
-  "The words themselves: how much language each moment gets, what kind of words are used, how crude the language is and where (narration, dialogue or both), and how much metaphor there is.":
-    "文字本身:每个时刻用多少笔墨,用什么样的词,语言有多粗俗、出现在哪里(叙述、对话,还是两者),以及比喻有多少。",
+  "The words themselves: how much language each moment gets, how plain or ornate the words are, and how much metaphor there is.":
+    "文字本身:每个时刻用多少笔墨,用词是平实还是华丽,以及比喻有多少。",
   "Rhythm and manner": "节奏与风格",
   "How the narration moves: the feel of its sentences, whether and how it is funny, how speech is written down, and how it treats time inside a chapter.":
     "叙述如何推进:句子的节奏感,是否幽默、怎样幽默,对话怎么写,以及一章之内怎样处理时间。",

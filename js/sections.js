@@ -17,8 +17,8 @@ const SECTIONS = {
     },
     {
       t: "Language",
-      keys: ["economy", "diction", "vulgarity", "figurative"],
-      d: "The words themselves: how much language each moment gets, what kind of words are used, how crude the language is and where (narration, dialogue or both), and how much metaphor there is.",
+      keys: ["economy", "diction", "figurative"],
+      d: "The words themselves: how much language each moment gets, how plain or ornate the words are, and how much metaphor there is.",
     },
     {
       t: "Rhythm and manner",

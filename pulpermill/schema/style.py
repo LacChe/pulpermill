@@ -27,10 +27,9 @@ class Tense(str, Enum):
 # Reference points for the range of each design field, in the order the card lists them. They are shown to the model as
 # examples of the range, and the page can offer them as suggestions; a field may use any of them, a mix, or its own words.
 DESIGN_ANCHORS: dict[str, list[str]] = {
-    "stance": ["cynical", "tender", "wry", "awed", "clinical", "menacing"],
-    "economy": ["clipped", "plain", "measured", "lush", "maximalist"],
-    "diction": ["plain", "literary", "archaic", "technical", "street", "ornate"],
-    "vulgarity": ["none", "implied", "occasional", "pervasive"],
+    "stance": ["cynical", "tender", "weary", "awed", "clinical", "menacing"],
+    "economy": ["clipped", "spare", "measured", "full", "expansive"],
+    "diction": ["plain", "street", "technical", "literary", "archaic", "ornate"],
     "figurative": ["literal", "sparing", "rich"],
     "cadence": ["staccato", "rolling", "breathless", "deliberate", "mixed"],
     "interiority": ["behaviorist", "filtered thought", "open feeling", "stream of thought"],
@@ -61,22 +60,20 @@ class StyleCard(BaseModel):
     )
     economy: str = Field(
         description="How much language the narration gives each moment, in a few words: anywhere from clipped and to the "
-        "point to lush and lavish."
+        "point to full and expansive. This is about quantity, not the kind of words."
     )
     diction: str = Field(
-        description="The kind of words the narration reaches for, in a few words (plain, literary, archaic, technical, "
-        "street, ornate). Say whether fancy or uncommon words are welcome."
-    )
-    vulgarity: str = Field(
-        description="How crude the language gets and where: coarse words and profanity in the narration, in dialogue, in "
-        "both, or nowhere. State it plainly, even when the answer is none."
+        description="How plain or elaborate the words are, in a few words: everyday words anyone follows at once at one "
+        "end, literary, technical, archaic, street or ornate words at the other. Say whether fancy or obscure words are "
+        "welcome or kept out."
     )
     figurative: str = Field(
         description="How much metaphor and simile the narration uses and what they are drawn from. Say literal if it "
         "uses none."
     )
     cadence: str = Field(
-        description="How the sentences move, described by feel and not by a formula (staccato, rolling, breathless, "
+        description="How the sentences move, described by feel and not by a formula: short and chopped or long and "
+        "looping, plain statements set side by side or clauses nested inside clauses (staccato, rolling, breathless, "
         "deliberate, or a stated mix)."
     )
     interiority: str = Field(
@@ -98,7 +95,7 @@ class StyleCard(BaseModel):
     narrator: str = Field(
         description="Four to six sentences in which the narrator takes in the world: what it notices, what it ignores, "
         "what it makes of what it sees, and how that sounds on the page. One coherent way of perceiving that blends every "
-        "design field above, including how crude the language is and where it is crude. Not a list of settings and not a set of rules. Describe the narration only. Leave out "
+        "design field above, including how plain or ornate its words are. Not a list of settings and not a set of rules. Describe the narration only. Leave out "
         "names, plot, and anything that belongs to one story."
     )
     signature_moves: list[str] = Field(

@@ -356,15 +356,15 @@ def style_prompt(req) -> str:
     if req.mode == "chapter":
         task = (
             "Work out how this chapter is actually written and fill in each design field from what the text does: what the "
-            "narrator notices and ignores, its attitude, how much language each moment gets, the kind of words, how crude "
-            "the language is and where, the figures of speech, how the sentences move, how far the narration goes inside the "
+            "narrator notices and ignores, its attitude, how much language each moment gets, how plain or ornate the "
+            "words are, the figures of speech, how the sentences move, how far the narration goes inside the "
             "main character, the humor, how speech is written down, and how time is handled. Infer the point of view and "
             "tense from the text."
         )
     else:
         task = (
             "Design the narration from the genre, tone and feel the author describes, and from anything they say about how it "
-            "should read: brief or lavish, plain or ornate words, clean or coarse language, what the narrator pays attention "
+            "should read: brief or lavish, plain or ornate words, what the narrator pays attention "
             "to. Where the notes say nothing about a field, choose what best fits the genre, and choose with character: a "
             "narrator a reader would recognise, not a safe average."
         )
@@ -376,14 +376,14 @@ def style_prompt(req) -> str:
         f"{source_block(req)}\n\nTASK: {task}\nRULES:\n"
         "- The card contains no character names, place names, plot events, or nouns that belong only to this story. "
         "That includes the exemplars.\n"
-        "- Each design field (lens, stance, economy, diction, vulgarity, figurative, cadence, interiority, humor, "
+        "- Each design field (lens, stance, economy, diction, figurative, cadence, interiority, humor, "
         "dialogue_manner, time_handling) states one choice in a short phrase of plain words. These reference points show "
         "the range of each field; they are not a menu, so combine them or use your own words when the description calls "
         "for it:\n"
         f"{_anchor_lines()}\n"
         "- The author's choices are fixed. When the notes ask for something (clipped sentences, fancy words, plain words, "
-        "coarse language, no metaphor), the matching field says exactly that, and `narrator` and the exemplars show it. "
-        "Never soften, tidy or tone down a choice the author made, crude language included.\n"
+        "no metaphor), the matching field says exactly that, and `narrator` and the exemplars show it. "
+        "Never soften, tidy or tone down a choice the author made, plain words included.\n"
         "- The fields agree with one another. When the author's choices pull against each other (lavish imagery in clipped "
         "sentences), say in `narrator` how they fit together instead of dropping one.\n"
         "- `narrator` is the heart of the card, and the one description of the narrator the writer reads in full. Write it as "
@@ -406,7 +406,7 @@ def style_prompt(req) -> str:
         )
         + "- The exemplars are two or three short passages (two to four sentences each) about ordinary everyday "
         "situations in a different part of life from the story. They use none of the story's nouns, jobs, objects "
-        "or settings. They carry the whole design: the same lens, stance, economy, kind of words, crudeness, "
+        "or settings. They carry the whole design: the same lens, stance, economy, kind of words, "
         "figures of speech, humor and handling of the character's inner life, so a passage in plain description "
         "is not enough. They obey `signature_moves` and `off_limits`, and each shows something different.\n"
         + (
@@ -435,15 +435,14 @@ def _style_facts(style: dict, keys) -> str:
 
 def characters_prompt(req) -> str:
     style = req.cards.get("style") or {}
-    facts = _style_facts(style, ("diction", "vulgarity", "dialogue_manner", "humor"))
+    facts = _style_facts(style, ("diction", "dialogue_manner", "humor"))
     narrator = (
         (
             f"\nTHE STORY'S NARRATION (fixed; the cast speaks inside this story):\nNarrator: {style['narrator']}\n"
             + (f"{facts}\n" if facts else "")
-            + "Each character's voice must sound different from the narrator's. How crude anyone's language is, and "
-            "whether it is crude in dialogue, follows the vulgarity line above: where it allows coarse speech, let "
-            "the characters who would swear swear, and where it says none, write no one who does. Their words stay "
-            "within the story's diction unless a character's background gives a reason to differ.\n"
+            + "Each character's voice must sound different from the narrator's, while their words "
+            "stay within the story's diction: if it is plain, no one talks in obscure or flowery words unless their "
+            "background gives a reason.\n"
         )
         if style.get("narrator")
         else ""
