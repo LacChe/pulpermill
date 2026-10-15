@@ -84,8 +84,8 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
 
         CRAFT:
         - Exemplars and sample lines are rhythm, register and voice only -- never reproduce or closely paraphrase
-          a sentence, clause, or distinctive phrase from them. Follow the prose habits, and never do anything on
-          the never-do list.
+          a sentence, clause, or distinctive phrase from them. Write the way the narrator sees, use its signature
+          moves when a moment calls for them, and never do anything on the off-limits list.
         - Looks and habits are reference facts, not things to perform: don't re-describe a character's
           appearance, voice, or mannerisms just because they're in a scene. Reach for a given look or habit at
           most once, in one sentence, when a moment truly calls for it (a habit when they're nervous, lying, or
@@ -93,16 +93,11 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
           it's done its one moment of work, leave it alone for the rest of the chapter -- this matters most for a
           vivid signature object or tic (a coin, a pen, a drink), which is easy to reach for again.
         - If the style section gives a chapter shape, open and close the chapter as it says. Without one, begin
-          with someone doing or saying something, and don't open the way the previous chapter opened. Either way,
-          never open on a smell, the weather, or the light. A catchphrase or gesture from the cards is used at
-          most once per chapter.
+          with someone doing or saying something, and don't open the way the previous chapter opened. A catchphrase
+          or gesture from the cards is used at most once per chapter.
         - Once a rule, mechanism, or detail has been established in an earlier chapter, treat it as understood
           and don't re-explain it.
-        - Don't narrate that a moment is significant, tense, or emotional: dramatize it through action, dialogue,
-          and concrete sensory detail and trust the reader to feel it. Watch for stock phrasing that announces
-          weight rather than earning it (e.g. "exhaled sharply through his/her nose," "carrying the weight of,"
-          "beyond simple words," "without a word") -- these illustrate the pattern, not an exhaustive list. Vary
-          physical tics and transitions rather than defaulting to a recurring gesture.
+        - Vary physical tics and transitions rather than defaulting to a recurring gesture.
 
         Write the chapter in {language}."""
 
@@ -730,7 +725,7 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         + "Where each person ends up: "
         + "; ".join(f"{name(a.character)}: {a.end}" for a in plot.arcs)
         + "\n"
-        f"Narration style: {st.label}. {st.voice}\n\n"
+        f"Narration style: {st.label}. {st.narrator}\n\n"
         f"THE CARDS NOW (after chapter {n - 1}; this is the truth of the story at this point)\n"
         f"PEOPLE:\n{chars}\n\nSETTING: {w.setting}\nHOW THE WORLD WORKS (permanent facts; reach for one as an obstacle or a "
         f"stake when it fits this chapter):\n{rules}\n\nPLACES (write names exactly like this):\n{places}\n"

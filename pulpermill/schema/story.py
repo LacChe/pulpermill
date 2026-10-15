@@ -264,16 +264,16 @@ class StoryProject(BaseModel):
 
         parts = [
             f"STYLE: {st.label} (hold this flavor throughout)",
-            f"Voice (how the narrator sounds and how its humor, tension or sentiment works; hold it "
-            f"throughout): {st.voice}",
+            f"Narrator (how this narrator perceives the world and puts it on the page; write every sentence of "
+            f"the chapter through it): {st.narrator}",
         ]
-        if st.prose_habits:
+        if st.signature_moves:
             parts.append(
-                "Prose habits (concrete habits; follow them):\n"
-                + bullets(st.prose_habits)
+                "Signature moves (things this narrator does again and again; let them recur when a moment calls "
+                "for them, never in every paragraph):\n" + bullets(st.signature_moves)
             )
-        if st.avoid:
-            parts.append("Never do these:\n" + bullets(st.avoid))
+        if st.off_limits:
+            parts.append("Never do these:\n" + bullets(st.off_limits))
         if shapes:
             parts.append(
                 "Chapter shape (how this chapter opens, closes and balances dialogue and narration; it was chosen for "

@@ -98,7 +98,7 @@ class StyleCard(BaseModel):
     narrator: str = Field(
         description="Four to six sentences in which the narrator takes in the world: what it notices, what it ignores, "
         "what it makes of what it sees, and how that sounds on the page. One coherent way of perceiving that blends every "
-        "design field above. Not a list of settings and not a set of rules. Describe the narration only. Leave out "
+        "design field above, including how crude the language is and where it is crude. Not a list of settings and not a set of rules. Describe the narration only. Leave out "
         "names, plot, and anything that belongs to one story."
     )
     signature_moves: list[str] = Field(
