@@ -448,8 +448,8 @@ function anchorChips(ta, words) {
    description of the chosen level under it, and a one-line note. The card stores {level, note}; the writer is sent the level's
    description, never the number. */
 function dialField(parent, key, hasBase, old) {
-  /* an older backend has no ladders: the slider still works, with plain numbers for names and no description */
-  const rungs = (SCH.ladders || {})[key] || [1, 2, 3, 4, 5].map((i) => [String(i), ""]),
+  /* the backend's wording when it sent any, else the copy in ladders.js */
+  const rungs = (SCH.ladders || {})[key] || DIAL_LADDERS[key] || [1, 2, 3, 4, 5].map((i) => [String(i), ""]),
     d = parent[key];
   const lv = () => Math.min(5, Math.max(1, Number(d.level) || 3));
   const name = (i) => t(rungs[i - 1][0]);
