@@ -246,7 +246,7 @@ const ZH = {
   notes: "笔记",
   "Clear the {card} card for chapter {k}? Your notes for it stay, so you can generate it again from scratch.":
     "要清空第{k}章的{card}卡片吗?你为它写的备注会保留,之后可以从头重新生成。",
-  "used {n}×": "已用 {n} 次",
+  "{n}×": "{n}×",
   "How many chapters this was handed to the writer in. The least-used items are handed over next.":
     "已有多少章把它交给了写作模型。下一章会优先交出用得最少的条目。",
   "Remove “{name}” from this card? This cannot be undone.":

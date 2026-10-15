@@ -253,7 +253,7 @@ function itemTitle(it, i) {
 /* Use counts. A list the backend rotates (SCH.pools) shows, beside each item, how many chapters it was handed to the writer in;
    the least-used ones are handed over next. The counts live in the owning card's `uses` ({field: {item text or id: n}}).
    A plain text list becomes one row per item so each count sits next to its item; editing an item's text keeps its count. */
-const usedTxt = (n) => t("used {n}×", { n });
+const usedTxt = (n) => t("{n}×", { n });
 const usedTip = () =>
   t(
     "How many chapters this was handed to the writer in. The least-used items are handed over next.",
