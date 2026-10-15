@@ -45,6 +45,9 @@
 }
 * {
   box-sizing: border-box;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel) var(--bg);
 }
 html {
   scroll-padding-top: 12px;
@@ -94,9 +97,6 @@ select {
 textarea {
   resize: vertical;
   min-height: 38px;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: var(--panel) var(--bg);
 }
 input:focus-visible,
 textarea:focus-visible,
@@ -267,9 +267,6 @@ select {
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 16px;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: var(--panel) var(--bg);
 }
 @media (max-width: 1100px) {
   .app {
