@@ -201,6 +201,10 @@ function normalizeProject(p) {
     pages: P,
     cur: Math.min(Math.max(curIdx, 0), P.length - 1),
     job: null,
+    narrBasis:
+      p.story && p.story.narrBasis && typeof p.story.narrBasis === "object"
+        ? p.story.narrBasis
+        : null,
   };
 }
 function loadProjectFile(text) {

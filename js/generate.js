@@ -118,6 +118,7 @@ async function generate(i, feedback) {
     if (pg.draft) pg.draft[s.k] = "";
     const firstTime = !pg.cards[s.k]; // a card made for the first time moves the view on; regenerating one stays put
     pg.cards[s.k] = r.card;
+    if (s.k === "style") stampNarrator(r.card);
     pg.warn[s.k] = r.warnings || [];
     pg.took = pg.took || {};
     pg.took[s.k] = Math.round((Date.now() - t0) / 1000);

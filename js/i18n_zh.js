@@ -147,6 +147,7 @@ const ZH = {
   "Paste one chapter here.": "在这里粘贴一章。",
   "Built from an earlier version of a previous card":
     "基于前一张卡片的旧版本生成",
+  "Narrator written from earlier style settings": "旁白是按旧的风格设置写成的",
   "Ready to check": "待检查",
   "Changed since the last chapter": "较上一章有改动",
   "Up to {n} chapters.": "最多 {n} 章。",

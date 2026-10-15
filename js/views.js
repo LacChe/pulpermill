@@ -393,6 +393,10 @@ function drawStages(root, pg, j) {
           j === 0 ? t("Ready to check") : t("Ready"),
         ),
       );
+    if (s.k === "style" && narratorStale(pg))
+      tags.append(
+        el("span", { class: "tag stale" }, t("Narrator written from earlier style settings")),
+      );
     const broken = has ? scanRefs(pg.cards[s.k], [s.k], []) : [];
     if (broken.length)
       tags.append(
@@ -1055,6 +1059,10 @@ function drawRight() {
         { class: "tag stale" },
         t("Out of date: an earlier chapter was rewritten"),
       ),
+    );
+  if (narratorStale(pg))
+    tags.append(
+      el("span", { class: "tag stale" }, t("Narrator written from earlier style settings")),
     );
   if (r && cardsEdited(pg))
     tags.append(el("span", { class: "tag stale" }, t("Cards changed since")));

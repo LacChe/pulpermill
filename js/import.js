@@ -80,6 +80,7 @@ async function importFiles(files) {
   Object.keys(got).forEach((k) => {
     if (CARD_KEYS.includes(k)) {
       pg.cards[k] = got[k];
+      if (k === "style") stampNarrator(got[k]);
       delete pg.stale[k];
       delete pg.err[k];
       delete pg.warn[k];

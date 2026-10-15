@@ -109,6 +109,32 @@ function resStale(j) {
   const prev = P[j - 1].result;
   return !prev || pg.result.parent_id !== prev.id || resStale(j - 1);
 }
+/* The narrator paragraph is written from these fields. The story keeps one note (`narrBasis`) of what they were and what the
+   paragraph said when it was last generated or imported. The paragraph is out of date when one of them has changed since, unless
+   the paragraph itself was edited by hand (the author has then reconciled it). No note (an older project): not flagged. */
+const NARRATOR_FROM = [
+  "lens",
+  "stance",
+  "cadence",
+  "dialogue_manner",
+  "time_handling",
+  "economy",
+  "diction",
+  "figurative",
+  "interiority",
+  "humor",
+];
+const narratorInputs = (s) => hash(NARRATOR_FROM.map((k) => s[k]));
+const stampNarrator = (s) => {
+  st.story.narrBasis = s
+    ? { inputs: narratorInputs(s), narrator: s.narrator }
+    : null;
+};
+function narratorStale(pg) {
+  const b = st.story.narrBasis,
+    s = pg && pg.cards && pg.cards.style;
+  return !!(b && s && b.narrator === s.narrator && b.inputs !== narratorInputs(s));
+}
 const cardsEdited = (pg) => !!pg.result && pg.result.start_hash !== snap(pg);
 const edited = (pg) => pg.base_hash == null || pg.base_hash !== snap(pg);
 function fillPage(pg, cards) {
