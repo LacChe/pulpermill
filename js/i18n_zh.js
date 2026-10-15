@@ -389,11 +389,6 @@ const ZH = {
   "{obj} is now at {where} (was {was})": "{obj}现在位于{where}(原为{was})",
   "{obj} is now at {where}": "{obj}现在位于{where}",
   "style mentions character name '{name}'": "文风里提到了角色名“{name}”",
-  "style dials pull against each other: clipped economy with rich figurative language": "文风设置互相冲突:极简的笔墨搭配丰富的比喻",
-  "style dials pull against each other: clipped economy with ornate diction": "文风设置互相冲突:极简的笔墨搭配华丽的用词",
-  "style dials pull against each other: expansive economy with purely behaviorist interiority": "文风设置互相冲突:铺陈丰沛的笔墨搭配只写行为的内心刻画",
-  "style dials pull against each other: plain diction with rich figurative language": "文风设置互相冲突:平实的用词搭配丰富的比喻",
-  "style dials pull against each other: purely behaviorist interiority with pervasive humor": "文风设置互相冲突:只写行为的内心刻画搭配无处不在的幽默",
   "{id}: core mentions world id '{wid}'":
     "{id}:核心设定里出现了世界观编号“{wid}”",
   "{id}: toward unknown character '{who}'": "{id}:对未知角色“{who}”的态度",

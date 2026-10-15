@@ -5,7 +5,7 @@ import json
 from .characters import CastDraft, CharacterCard
 from .common import POOLS
 from .outline import PlotOutline, STORY_STAGES
-from .style import DESIGN_ANCHORS, DIAL_FIELDS, LADDERS, StyleCard
+from .style import DESIGN_ANCHORS, LADDERS, StyleCard
 from .updates import StateUpdate
 from .world import WorldBible, WorldDraft
 
@@ -94,7 +94,6 @@ def ui_hints() -> dict:
         "choices": dict(CHOICES),
         "pools": dict(POOLS),
         "anchors": {k: list(v) for k, v in DESIGN_ANCHORS.items()},
-        "dials": list(DIAL_FIELDS),
         "ladders": {k: [[n, t] for n, t in v] for k, v in LADDERS.items()},
     }
 

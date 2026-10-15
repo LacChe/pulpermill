@@ -36,7 +36,6 @@ DESIGN_ANCHORS: dict[str, list[str]] = {
 # The dials: five choices that run along one line, picked as a level from 1 to 5 (3 is the middle and the default). Each
 # level has a fixed description, and that description is what every prompt is sent, never the bare number. Each entry is
 # (name, description); the order is the order of the levels.
-DIAL_DEFAULT = 3
 LADDERS: dict[str, list[tuple[str, str]]] = {
     "economy": [
         ("Clipped", "Each moment gets the least language that carries it: one beat, one detail at most, then the next. Anything that doesn't move the scene or reveal the character is left out."),
@@ -89,18 +88,6 @@ class Dial(BaseModel):
         description="An optional short phrase that bends the level for this story (for example, which kind of humor). "
         "Leave it empty when the level says it all.",
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def _loose(cls, v):
-        """Accept a bare number, or a bare phrase (an older card): the phrase becomes the note at the middle level."""
-        if isinstance(v, bool):
-            return {"level": DIAL_DEFAULT}
-        if isinstance(v, int):
-            return {"level": v}
-        if isinstance(v, str):
-            return {"level": DIAL_DEFAULT, "note": v}
-        return v
 
 
 def ladder_name(field: str, dial: "Dial") -> str:

@@ -102,31 +102,10 @@ function normalizeProject(p) {
       s = c.style;
     if (s && (s.pov === "third_omniscient" || s.pov === "third_person"))
       s.pov = "third_limited";
-    /* older style cards had a `voice` paragraph, `prose_habits` and `avoid`; the card now has a narrator paragraph,
-       signature moves and an off-limits list, plus the design fields, which an old card starts with blank */
+    /* a style card missing a field (one saved before the dials) gets the middle level and blank text */
     if (s && typeof s === "object") {
-      const list = (x) =>
-        Array.isArray(x)
-          ? x.filter((y) => typeof y === "string" && y.trim())
-          : typeof x === "string" && x.trim()
-            ? [x.trim()]
-            : [];
-      if (!s.narrator && typeof s.voice === "string") s.narrator = s.voice;
-      if (!list(s.signature_moves).length) s.signature_moves = list(s.prose_habits);
-      if (!list(s.off_limits).length) s.off_limits = list(s.avoid);
-      delete s.voice;
-      delete s.prose_habits;
-      delete s.avoid;
-      delete s.vulgarity;
       STYLE_DIALS.forEach((k) => {
-        const x = s[k];
-        if (typeof x === "number") s[k] = { level: x, note: "" };
-        else if (typeof x === "string") s[k] = { level: 3, note: x };
-        else if (!x || typeof x !== "object") s[k] = { level: 3, note: "" };
-        else {
-          s[k].level = Math.min(5, Math.max(1, Math.round(Number(x.level)) || 3));
-          if (typeof s[k].note !== "string") s[k].note = "";
-        }
+        if (!s[k] || typeof s[k] !== "object") s[k] = { level: 3, note: "" };
       });
       STYLE_TEXT_FIELDS.forEach((k) => {
         if (typeof s[k] !== "string") s[k] = "";
