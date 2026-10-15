@@ -18,33 +18,19 @@ const ICONS = (() => {
         b +
         "</svg>",
     );
-  const glass = (sand) =>
+  /* Two solid triangles on a coloured square: the bright one is where the sand is. */
+  const SAND = "#fde68a",
+    EMPTY = "#78350f";
+  const glass = (top, bottom) =>
     '<rect x="3" y="3" width="26" height="26" rx="6" fill="#b7791f"/>' +
-    sand +
-    '<path d="M9.5 7h13M9.5 25h13M11 7c0 5 5 6 5 9s-5 4-5 9M21 7c0 5-5 6-5 9s5 4 5 9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
-  const SAND = "#fde68a";
+    '<path d="M7 6h18L16 16z" fill="' + top + '"/>' +
+    '<path d="M16 16l9 10H7z" fill="' + bottom + '"/>';
   return {
     idle: svg(
       '<rect x="3" y="3" width="26" height="26" rx="6" fill="#1e6fe0"/><path d="M10 9h12M10 14h12M10 19h12M10 24h7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>',
     ),
-    waiting: svg(
-      glass(
-        '<path d="M12.3 8.8h7.4c-.4 2.6-2.2 3.8-3.7 6.4-1.5-2.6-3.3-3.8-3.7-6.4z" fill="' +
-          SAND +
-          '"/><path d="M16 15v7" stroke="' +
-          SAND +
-          '" stroke-width="1.2" stroke-linecap="round"/><path d="M13.2 24h5.6L16 21.6z" fill="' +
-          SAND +
-          '"/>',
-      ),
-    ),
-    waitingB: svg(
-      glass(
-        '<path d="M12.3 24h7.4c-.4-2.6-2.2-3.8-3.7-6.4-1.5 2.6-3.3 3.8-3.7 6.4z" fill="' +
-          SAND +
-          '"/>',
-      ),
-    ),
+    waiting: svg(glass(SAND, EMPTY)),
+    waitingB: svg(glass(EMPTY, SAND)),
     done: svg(
       '<rect x="3" y="3" width="26" height="26" rx="6" fill="#22c55e"/><path d="M9 17l5 5 9-11" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>',
     ),
