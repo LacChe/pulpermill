@@ -6,6 +6,7 @@ from . import config
 from .schema import (
     CastDraft,
     DESIGN_ANCHORS,
+    DIAL_FIELDS,
     MAX_CAST,
     MAX_CHAPTERS,
     MAX_CHARACTERS,
@@ -13,6 +14,9 @@ from .schema import (
     STORY_STAGES,
     StyleCard,
     WorldDraft,
+    ladder_text,
+    ladders_for_prompt,
+    Dial,
     spread_stages,
     stage_lines_for,
 )
@@ -376,14 +380,20 @@ def style_prompt(req) -> str:
         f"{source_block(req)}\n\nTASK: {task}\nRULES:\n"
         "- The card contains no character names, place names, plot events, or nouns that belong only to this story. "
         "That includes the exemplars.\n"
-        "- Each design field (lens, stance, economy, diction, figurative, cadence, interiority, humor, "
-        "dialogue_manner, time_handling) states one choice in a short phrase of plain words. These reference points show "
-        "the range of each field; they are not a menu, so combine them or use your own words when the description calls "
-        "for it:\n"
+        "- Five fields are dials: economy, diction, figurative, interiority and humor. Each is `{level, note}`, where "
+        "`level` is a whole number from 1 to 5 and 3 is the middle. Choose the level whose description fits the story, and "
+        "use `note` only to bend it (for example the kind of humor). Here is what every level means:\n"
+        f"{ladders_for_prompt()}\n"
+        "- `lens`, `stance`, `cadence`, `dialogue_manner` and `time_handling` each state one choice in a short phrase of "
+        "plain words. These reference points show the range of each; they are not a menu, so combine them or use your own "
+        "words when the description calls for it:\n"
         f"{_anchor_lines()}\n"
         "- The author's choices are fixed. When the notes ask for something (clipped sentences, fancy words, plain words, "
-        "no metaphor), the matching field says exactly that, and `narrator` and the exemplars show it. "
+        "no metaphor), the matching field says exactly that (the level that describes it), and `narrator` and the "
+        "exemplars show it. When a CURRENT CARD is shown, every level and phrase in it is the author's choice: keep it. "
         "Never soften, tidy or tone down a choice the author made, plain words included.\n"
+        "- `narrator` is written from the levels you chose: it carries each one's description in your own words, without "
+        "quoting it and without contradicting it.\n"
         "- The fields agree with one another. When the author's choices pull against each other (lavish imagery in clipped "
         "sentences), say in `narrator` how they fit together instead of dropping one.\n"
         "- `narrator` is the heart of the card, and the one description of the narrator the writer reads in full. Write it as "
@@ -427,10 +437,16 @@ def style_prompt(req) -> str:
 
 # ---------------------------------------------------------------- CHARACTERS
 def _style_facts(style: dict, keys) -> str:
-    """The listed design fields of a style card as 'name: value' lines, skipping blanks."""
-    return "\n".join(
-        f"- {k.replace('_', ' ')}: {style[k]}" for k in keys if str(style.get(k) or "").strip()
-    )
+    """The listed design fields of a style card as 'name: value' lines, skipping blanks. A dial is sent as the description
+    of its level (never the number)."""
+    out = []
+    for k in keys:
+        v = style.get(k)
+        if k in DIAL_FIELDS and isinstance(v, dict):
+            v = ladder_text(k, Dial(**v))
+        if str(v or "").strip():
+            out.append(f"- {k.replace('_', ' ')}: {v}")
+    return "\n".join(out)
 
 
 def characters_prompt(req) -> str:

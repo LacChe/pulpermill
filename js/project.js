@@ -5,16 +5,13 @@ const transient = (k, v) =>
 const STYLE_TEXT_FIELDS = [
   "lens",
   "stance",
-  "economy",
-  "diction",
-  "figurative",
   "cadence",
-  "interiority",
-  "humor",
   "dialogue_manner",
   "time_handling",
   "narrator",
 ];
+/* the style dials: each is {level: 1 to 5, note}; 3 is the middle and the default */
+const STYLE_DIALS = ["economy", "diction", "figurative", "interiority", "humor"];
 let saveT = null;
 function scheduleSave() {
   clearTimeout(saveT);
@@ -121,6 +118,16 @@ function normalizeProject(p) {
       delete s.prose_habits;
       delete s.avoid;
       delete s.vulgarity;
+      STYLE_DIALS.forEach((k) => {
+        const x = s[k];
+        if (typeof x === "number") s[k] = { level: x, note: "" };
+        else if (typeof x === "string") s[k] = { level: 3, note: x };
+        else if (!x || typeof x !== "object") s[k] = { level: 3, note: "" };
+        else {
+          s[k].level = Math.min(5, Math.max(1, Math.round(Number(x.level)) || 3));
+          if (typeof s[k].note !== "string") s[k].note = "";
+        }
+      });
       STYLE_TEXT_FIELDS.forEach((k) => {
         if (typeof s[k] !== "string") s[k] = "";
       });

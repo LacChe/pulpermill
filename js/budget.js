@@ -23,8 +23,8 @@ function priorTokens(k) {
   if (k === "characters")
     return c.style
       ? tokensEst(
-          [c.style.narrator, c.style.diction].join(" "),
-        ) + 60
+          [c.style.narrator, c.style.dialogue_manner].join(" "),
+        ) + 120 /* the diction and humor level descriptions */
       : 90;
   const cast = c.characters
     ? tokensEst(

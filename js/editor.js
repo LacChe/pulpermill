@@ -444,6 +444,50 @@ function anchorChips(ta, words) {
   );
   return row;
 }
+/* A style dial (SCH.dials, with the wording of its five levels in SCH.ladders, both from the backend): a slider from 1 to 5, the
+   description of the chosen level under it, and a one-line note. The card stores {level, note}; the writer is sent the level's
+   description, never the number. */
+function dialField(parent, key, hasBase, old) {
+  const rungs = SCH.ladders[key],
+    d = parent[key];
+  const lv = () => Math.min(5, Math.max(1, Number(d.level) || 3));
+  const name = (i) => t(rungs[i - 1][0]);
+  const summary = (x) =>
+    x && typeof x === "object"
+      ? x.level + " · " + name(Math.min(5, Math.max(1, Number(x.level) || 3))) + (x.note ? " (" + x.note + ")" : "")
+      : String(x == null ? "" : x);
+  const slider = el("input", { type: "range", min: "1", max: "5", step: "1" });
+  slider.value = String(lv());
+  const ends = el(
+    "div",
+    { class: "dialends" },
+    rungs.map((r, i) => el("span", { class: "dialtick" }, name(i + 1))),
+  );
+  const desc = el("p", { class: "dialdesc" });
+  const note = el("input", {
+    type: "text",
+    class: "dialnote",
+    placeholder: t("Note (optional): a few words to bend this level"),
+  });
+  note.value = d.note || "";
+  const show = () => {
+    const i = lv();
+    desc.textContent = name(i) + ". " + t(rungs[i - 1][1]);
+    [...ends.children].forEach((s, j) => s.classList.toggle("on", j === i - 1));
+  };
+  slider.addEventListener("input", () => {
+    d.level = Number(slider.value);
+    show();
+  });
+  note.addEventListener("input", () => {
+    d.note = note.value;
+    slider.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  show();
+  const lab = el("label", { class: "f dial" }, el("span", {}, label(key)), slider, ends, desc, note);
+  if (hasBase) track(lab, slider, summary(old), () => summary(d));
+  return lab;
+}
 function choiceSelect(parent, key, choices, path, hasBase, old) {
   const v = parent[key],
     has = !(v == null || v === "" || v === 0),
@@ -517,6 +561,15 @@ function field_(parent, key, en, bp) {
     old = hasBase ? bp[key] : undefined;
   if (HIDE.includes(key) || key === "uses") return null; // use counts are shown beside the items they count
   if (key === "id") return el("div", { class: "ro" }, "id: " + v);
+  if (
+    PATH.length === 2 &&
+    PATH[0] === "style" &&
+    ((SCH.dials || []).includes(key)) &&
+    v &&
+    typeof v === "object" &&
+    (SCH.ladders || {})[key]
+  )
+    return dialField(parent, key, hasBase, old);
   const pathStr = PATH.join("."),
     rk = (SCH.refs || {})[pathStr],
     ch = (SCH.choices || {})[pathStr];

@@ -1003,3 +1003,13 @@ button.danger.solid:not(:disabled):hover {
     color: #1d0f0e;
   }
 }
+
+/* style dials: a 1 to 5 slider, the five level names under it (the chosen one highlighted), its description, and a note */
+.f.dial input[type="range"] { width: 100%; margin: 6px 0 2px; }
+.dialends { display: flex; justify-content: space-between; gap: 4px; font-size: 0.78em; opacity: 0.6; }
+.dialends .dialtick { flex: 1; text-align: center; }
+.dialends .dialtick:first-child { text-align: left; }
+.dialends .dialtick:last-child { text-align: right; }
+.dialends .dialtick.on { opacity: 1; font-weight: 600; }
+.dialdesc { margin: 8px 0 6px; font-size: 0.92em; line-height: 1.45; }
+.dialnote { width: 100%; box-sizing: border-box; }

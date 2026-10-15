@@ -12,7 +12,7 @@ from .outline import (
     beat_similarity,
     stage_lines_for,
 )
-from .style import POV, StyleCard
+from .style import DIAL_FIELDS, POV, StyleCard, ladder_text
 from .world import WorldBible
 
 
@@ -280,6 +280,12 @@ class StoryProject(BaseModel):
                 "Hard settings (these apply exactly as written): "
                 + "; ".join(mechanics)
             )
+        parts.append(
+            "How this narrator writes (apply each description as written):\n"
+            + bullets(
+                f"{f.capitalize()}: {ladder_text(f, getattr(st, f))}" for f in DIAL_FIELDS
+            )
+        )
         if st.signature_moves:
             parts.append(
                 "Signature moves (things this narrator does again and again; let them recur when a moment calls "

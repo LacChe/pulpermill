@@ -16,27 +16,23 @@ from .world import WorldBible
 # ===========================================================================
 
 
-# Phrases that pull against each other when one narrator is meant to use both. A flag, never a rejection: the author may
-# want the tension, and the narrator paragraph is where it is reconciled.
+# Dial settings that pull against each other when one narrator is meant to use both: (field, test, field, test, message).
+# A flag, never a rejection: the author may want the tension, and the narrator paragraph is where it is reconciled.
 _DIAL_CONFLICTS = [
-    (("economy",), ("clipped", "terse", "spare"), ("economy", "figurative", "diction"), ("maximalist", "lush", "lavish", "expansive", "ornate")),
-    (("interiority",), ("behaviorist", "behaviourist"), ("interiority",), ("open feeling", "stream of thought")),
-    (("figurative",), ("literal", "no metaphor", "none"), ("figurative",), ("rich", "lush", "heavy")),
-    (("cadence",), ("staccato", "clipped"), ("cadence",), ("rolling", "breathless", "flowing")),
-    (("diction",), ("plain", "simple", "everyday"), ("diction",), ("ornate", "archaic", "obscure", "flowery")),
+    ("economy", lambda n: n <= 2, "figurative", lambda n: n >= 5, "style dials pull against each other: clipped economy with rich figurative language"),
+    ("economy", lambda n: n <= 2, "diction", lambda n: n >= 5, "style dials pull against each other: clipped economy with ornate diction"),
+    ("economy", lambda n: n >= 5, "interiority", lambda n: n <= 1, "style dials pull against each other: expansive economy with purely behaviorist interiority"),
+    ("diction", lambda n: n <= 1, "figurative", lambda n: n >= 5, "style dials pull against each other: plain diction with rich figurative language"),
+    ("interiority", lambda n: n <= 1, "humor", lambda n: n >= 5, "style dials pull against each other: purely behaviorist interiority with pervasive humor"),
 ]
 
 
 def check_style_dials(style: StyleCard) -> list[str]:
-    """Light coherence check: flags design fields whose chosen words oppose each other."""
+    """Light coherence check: flags dial levels that oppose each other."""
     out = []
-    for a_fields, a_words, b_fields, b_words in _DIAL_CONFLICTS:
-        a = " ".join(getattr(style, f, "") for f in a_fields).lower()
-        b = " ".join(getattr(style, f, "") for f in b_fields).lower()
-        hit_a = next((w for w in a_words if w in a), None)
-        hit_b = next((w for w in b_words if w in b), None)
-        if hit_a and hit_b and hit_a != hit_b:
-            out.append(M("style dials pull against each other: '{a}' and '{b}'", a=hit_a, b=hit_b))
+    for fa, ta, fb, tb, what in _DIAL_CONFLICTS:
+        if ta(getattr(style, fa).level) and tb(getattr(style, fb).level):
+            out.append(M(what))
     return out
 
 

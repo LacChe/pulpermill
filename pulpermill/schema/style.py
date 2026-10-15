@@ -28,15 +28,99 @@ class Tense(str, Enum):
 # examples of the range, and the page can offer them as suggestions; a field may use any of them, a mix, or its own words.
 DESIGN_ANCHORS: dict[str, list[str]] = {
     "stance": ["cynical", "tender", "weary", "awed", "clinical", "menacing"],
-    "economy": ["clipped", "spare", "measured", "full", "expansive"],
-    "diction": ["plain", "street", "technical", "literary", "archaic", "ornate"],
-    "figurative": ["literal", "sparing", "rich"],
     "cadence": ["staccato", "rolling", "breathless", "deliberate", "mixed"],
-    "interiority": ["behaviorist", "filtered thought", "open feeling", "stream of thought"],
-    "humor": ["none", "dry", "absurd", "gallows", "light"],
     "dialogue_manner": ["plainly tagged", "sparingly tagged", "mostly untagged", "dialect-flavored"],
     "time_handling": ["tight continuous scenes", "summary that skips ahead", "lingering on single moments"],
 }
+
+# The dials: five choices that run along one line, picked as a level from 1 to 5 (3 is the middle and the default). Each
+# level has a fixed description, and that description is what every prompt is sent, never the bare number. Each entry is
+# (name, description); the order is the order of the levels.
+DIAL_DEFAULT = 3
+LADDERS: dict[str, list[tuple[str, str]]] = {
+    "economy": [
+        ("Clipped", "Each moment gets the least language that carries it: one beat, one detail at most, then the next. Anything that doesn't move the scene or reveal the character is left out."),
+        ("Spare", "A few chosen details per moment, stated briefly, and then on. The prose moves faster than the events feel."),
+        ("Measured", "Each moment gets enough language to ground it: what is seen, what is done, what it costs. Neither rushed nor lingered over."),
+        ("Full", "Moments are given room. Detail is allowed to build up, and a scene can stay on a gesture, a room or a pause before moving on."),
+        ("Expansive", "Scenes are built out slowly and abundantly. The narration takes its time over setting, bodies, objects and small shifts, and is happy to give a single moment a whole paragraph."),
+    ],
+    "diction": [
+        ("Plain", "Everyday words a child could follow, and short ones where there is a choice. Nothing obscure, no showy vocabulary, and no word that makes the reader stop."),
+        ("Simple", "Mostly everyday words, with the occasional precise or less common one when it is the right word. Easy to read without effort."),
+        ("Balanced", "Ordinary and exact words side by side. The vocabulary is neither plain nor showy, and it stays natural to the narrator."),
+        ("Literary", "A wider, more deliberate vocabulary. Words are chosen for connotation and sound as well as sense, and less common words are welcome when they fit."),
+        ("Ornate", "Rich, elaborate, elevated language. Rare, archaic or learned words and formal phrasing are used freely, and the prose is meant to be savored as well as followed."),
+    ],
+    "figurative": [
+        ("Literal", "No metaphor or simile. Things are described as they are, and the narration states what happens directly."),
+        ("Sparing", "An image appears only when plain description would not carry it, and then briefly. Most pages have none."),
+        ("Occasional", "A figure of speech now and then, usually short and drawn from the story's own world. Plain description does most of the work."),
+        ("Frequent", "Images are a normal part of how things are described. Several appear in a scene, and they are expected to do work, not decorate."),
+        ("Rich", "Figurative language runs through the narration. Metaphor and simile are how the narrator sees, so scenes are described through comparison more often than through direct statement."),
+    ],
+    "interiority": [
+        ("Behaviorist", "The narration records only what can be seen and heard: actions, objects, speech. What the character thinks or feels is never stated, only shown through what they do."),
+        ("Restrained", "Thoughts and feelings are given only rarely and briefly, mostly through a physical sign or a short, flat remark. The reader infers most of what the character feels."),
+        ("Filtered", "The narration passes through the character's mind. It reports what they notice, think and feel in the narrator's own words, enough to follow them but not at length."),
+        ("Open", "Feelings and thoughts are stated openly and are a regular part of the page. The reader is told what the character wants, fears and makes of what happens."),
+        ("Stream of thought", "The narration is the character's own mind: associations, interruptions, half-formed thoughts and memories surface as they come, and the line between what happens and what they think is thin."),
+    ],
+    "humor": [
+        ("None", "The narration is in earnest throughout, with no jokes and no irony played for laughs."),
+        ("Rare", "Wit appears only occasionally, as a dry aside or a small ironic turn, and the story stays serious around it."),
+        ("Present", "A light vein of humor runs through the narration: wry observations and small ironies. It does not take over serious moments."),
+        ("Frequent", "Humor is a regular part of how the narrator speaks. Many paragraphs have a joke, an absurd comparison or a deflating aside, and it can sit beside serious events."),
+        ("Pervasive", "The narration is comic as a default. Almost everything is seen through a joke, an exaggeration or an absurdity, even in dark moments."),
+    ],
+}
+DIAL_FIELDS = tuple(LADDERS)
+
+
+class Dial(BaseModel):
+    level: int = Field(
+        ge=1,
+        le=5,
+        description="A whole number from 1 to 5. The levels for this field are listed in the instructions; choose the one "
+        "whose description fits. 3 is the middle.",
+    )
+    note: str = Field(
+        default="",
+        description="An optional short phrase that bends the level for this story (for example, which kind of humor). "
+        "Leave it empty when the level says it all.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _loose(cls, v):
+        """Accept a bare number, or a bare phrase (an older card): the phrase becomes the note at the middle level."""
+        if isinstance(v, bool):
+            return {"level": DIAL_DEFAULT}
+        if isinstance(v, int):
+            return {"level": v}
+        if isinstance(v, str):
+            return {"level": DIAL_DEFAULT, "note": v}
+        return v
+
+
+def ladder_name(field: str, dial: "Dial") -> str:
+    return LADDERS[field][min(5, max(1, dial.level)) - 1][0]
+
+
+def ladder_text(field: str, dial: "Dial") -> str:
+    """What a prompt is sent for this dial: the level's name and description, then the author's note if there is one."""
+    name, text = LADDERS[field][min(5, max(1, dial.level)) - 1]
+    note = dial.note.strip()
+    return f"{name}. {text}" + (f" Author's note: {note}" if note else "")
+
+
+def ladders_for_prompt() -> str:
+    """Every level of every dial, for the style generator, so it can see what each number means."""
+    out = []
+    for field, rungs in LADDERS.items():
+        out.append(f"{field.replace('_', ' ')}:")
+        out += [f"  {i}. {n}: {t}" for i, (n, t) in enumerate(rungs, 1)]
+    return "\n".join(out)
 
 
 class StyleCard(BaseModel):
@@ -58,30 +142,25 @@ class StyleCard(BaseModel):
         description="The narrator's attitude toward what happens, in a few words (for example cynical, tender, wry, awed, "
         "clinical, menacing). Add a clause if it needs one."
     )
-    economy: str = Field(
-        description="How much language the narration gives each moment, in a few words: anywhere from clipped and to the "
-        "point to full and expansive. This is about quantity, not the kind of words."
+    economy: Dial = Field(
+        description="How much language each moment gets (1 clipped to 5 expansive). A quantity only, not the kind of words."
     )
-    diction: str = Field(
-        description="How plain or elaborate the words are, in a few words: everyday words anyone follows at once at one "
-        "end, literary, technical, archaic, street or ornate words at the other. Say whether fancy or obscure words are "
-        "welcome or kept out."
+    diction: Dial = Field(
+        description="How plain or ornate the words are (1 plain to 5 ornate). Whether fancy or obscure words are welcome."
     )
-    figurative: str = Field(
-        description="How much metaphor and simile the narration uses and what they are drawn from. Say literal if it "
-        "uses none."
+    figurative: Dial = Field(
+        description="How much metaphor and simile there is (1 literal to 5 rich)."
     )
     cadence: str = Field(
         description="How the sentences move, described by feel and not by a formula: short and chopped or long and "
         "looping, plain statements set side by side or clauses nested inside clauses (staccato, rolling, breathless, "
         "deliberate, or a stated mix)."
     )
-    interiority: str = Field(
-        description="How far the narration goes inside the main character's mind: only actions and objects, filtered "
-        "thought, open feeling, or stream of thought."
+    interiority: Dial = Field(
+        description="How far the narration goes inside the main character's mind (1 behaviorist to 5 stream of thought)."
     )
-    humor: str = Field(
-        description="Whether and how comedy works in the narration (none, dry, absurd, gallows, light)."
+    humor: Dial = Field(
+        description="How much comedy there is in the narration (1 none to 5 pervasive). Put the kind of humor in the note."
     )
     dialogue_manner: str = Field(
         description="How speech is written down: how tagged it is, and whether characters talk differently from the "
