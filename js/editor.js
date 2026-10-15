@@ -448,7 +448,8 @@ function anchorChips(ta, words) {
    description of the chosen level under it, and a one-line note. The card stores {level, note}; the writer is sent the level's
    description, never the number. */
 function dialField(parent, key, hasBase, old) {
-  const rungs = SCH.ladders[key],
+  /* an older backend has no ladders: the slider still works, with plain numbers for names and no description */
+  const rungs = (SCH.ladders || {})[key] || [1, 2, 3, 4, 5].map((i) => [String(i), ""]),
     d = parent[key];
   const lv = () => Math.min(5, Math.max(1, Number(d.level) || 3));
   const name = (i) => t(rungs[i - 1][0]);
@@ -472,7 +473,7 @@ function dialField(parent, key, hasBase, old) {
   note.value = d.note || "";
   const show = () => {
     const i = lv();
-    desc.textContent = name(i) + ". " + t(rungs[i - 1][1]);
+    desc.textContent = rungs[i - 1][1] ? name(i) + ". " + t(rungs[i - 1][1]) : "";
     [...ends.children].forEach((s, j) => s.classList.toggle("on", j === i - 1));
   };
   slider.addEventListener("input", () => {
@@ -564,10 +565,10 @@ function field_(parent, key, en, bp) {
   if (
     PATH.length === 2 &&
     PATH[0] === "style" &&
-    ((SCH.dials || []).includes(key)) &&
     v &&
     typeof v === "object" &&
-    (SCH.ladders || {})[key]
+    !Array.isArray(v) &&
+    typeof v.level === "number"
   )
     return dialField(parent, key, hasBase, old);
   const pathStr = PATH.join("."),

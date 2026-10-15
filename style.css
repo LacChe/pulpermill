@@ -1005,6 +1005,7 @@ button.danger.solid:not(:disabled):hover {
 }
 
 /* style dials: a 1 to 5 slider, the five level names under it (the chosen one highlighted), its description, and a note */
+.f.dial { margin-top: 14px; }
 .f.dial input[type="range"] { width: 100%; margin: 6px 0 2px; }
 .dialends { display: flex; justify-content: space-between; gap: 4px; font-size: 0.78em; opacity: 0.6; }
 .dialends .dialtick { flex: 1; text-align: center; }
