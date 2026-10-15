@@ -1129,32 +1129,35 @@ function drawRight() {
   root.append(prose(r.text));
   root.append(
     el(
-      "h3",
-      { class: "sm" },
+      "details",
+      { class: "notes" },
+      el(
+        "summary",
+        {},
+        r.changes.length
+          ? t("What this chapter changed in the cards")
+          : t("This chapter changed nothing in the cards"),
+      ),
       r.changes.length
-        ? t("What this chapter changed in the cards")
-        : t("This chapter changed nothing in the cards"),
+        ? el(
+            "ul",
+            { class: "chg" },
+            r.changes.map((x) =>
+              el(
+                "li",
+                {},
+                msg(x.text) +
+                  (x.dropped && x.dropped.length
+                    ? t(" (dropped from the card: {items})", {
+                        items: x.dropped.join("; "),
+                      })
+                    : ""),
+              ),
+            ),
+          )
+        : null,
     ),
   );
-  if (r.changes.length)
-    root.append(
-      el(
-        "ul",
-        { class: "chg" },
-        r.changes.map((x) =>
-          el(
-            "li",
-            {},
-            msg(x.text) +
-              (x.dropped && x.dropped.length
-                ? t(" (dropped from the card: {items})", {
-                    items: x.dropped.join("; "),
-                  })
-                : ""),
-          ),
-        ),
-      ),
-    );
   root.append(
     el(
       "div",
