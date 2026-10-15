@@ -21,7 +21,11 @@ function priorTokens(k) {
   const c = st.cards;
   if (k === "style") return 0;
   if (k === "characters")
-    return c.style ? tokensEst(c.style.voice || "") + 60 : 90;
+    return c.style
+      ? tokensEst(
+          [c.style.narrator, c.style.diction, c.style.vulgarity].join(" "),
+        ) + 60
+      : 90;
   const cast = c.characters
     ? tokensEst(
         c.characters

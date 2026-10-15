@@ -11,19 +11,39 @@ const SECTIONS = {
       d: 'Choose who is speaking and when. Point of view is whose eyes we see the story through: "I" (first person), or "she" or "he" staying close to one character (third person). Tense is whether events are told as already over (past) or as they happen (present).',
     },
     {
-      t: "How the narrator sounds",
-      keys: ["voice", "exemplars"],
-      d: "Describe the narrator's personality: calm or sarcastic, chatty or stiff, serious or funny. The sample passages show that voice at work, so write them about ordinary situations, not about your plot.",
+      t: "Perspective",
+      keys: ["lens", "stance", "interiority"],
+      d: "How the narrator takes in the world. The lens is what it notices and what it never registers. Stance is its attitude toward events. Interiority is how far it goes inside the main character's mind. Write a few words in each box, or pick a suggestion below it.",
     },
     {
-      t: "Writing rules",
-      keys: ["prose_habits", "avoid"],
-      d: "Concrete rules a reader could check on the page, such as short sentences or little description of the weather, and a list of habits the writing must never show.",
+      t: "Language",
+      keys: ["economy", "diction", "vulgarity", "figurative"],
+      d: "The words themselves: how much language each moment gets, what kind of words are used, how crude the language is and where (narration, dialogue or both), and how much metaphor there is.",
+    },
+    {
+      t: "Rhythm and manner",
+      keys: ["cadence", "humor", "dialogue_manner", "time_handling"],
+      d: "How the narration moves: the feel of its sentences, whether and how it is funny, how speech is written down, and how it treats time inside a chapter.",
+    },
+    {
+      t: "Narrator",
+      keys: ["narrator"],
+      d: "One paragraph that blends every choice above into a single way of perceiving the world. This is the description the chapter writer reads, so edit it directly if the narrator does not sound right to you.",
+    },
+    {
+      t: "Signature moves and off-limits",
+      keys: ["signature_moves", "off_limits"],
+      d: "Signature moves are devices this narrator uses again and again that a reader would recognise. Off-limits lists what the narration must never do. Leave it empty if there is nothing to rule out.",
     },
     {
       t: "Chapter shapes",
       keys: ["chapter_shapes"],
       d: "Templates for how a single chapter is built: how it opens, how it closes, how much is dialogue. They describe structure only, never plot.",
+    },
+    {
+      t: "Sample passages",
+      keys: ["exemplars"],
+      d: "Short passages that show the narrator at work. Write them about ordinary situations, not about your plot.",
     },
   ],
   characters: [

@@ -1,6 +1,21 @@
 /* Pulpermill page: Saving and loading the project (browser storage and project files). */
 const transient = (k, v) =>
   k === "msg" || k === "err" || k === "draft" ? undefined : v; // drafts: unsent notes, kept across redraws only
+/* the text fields a style card gained when the narrator was redesigned (kept here only so an older project can be upgraded) */
+const STYLE_TEXT_FIELDS = [
+  "lens",
+  "stance",
+  "economy",
+  "diction",
+  "vulgarity",
+  "figurative",
+  "cadence",
+  "interiority",
+  "humor",
+  "dialogue_manner",
+  "time_handling",
+  "narrator",
+];
 let saveT = null;
 function scheduleSave() {
   clearTimeout(saveT);
@@ -91,6 +106,28 @@ function normalizeProject(p) {
       s = c.style;
     if (s && (s.pov === "third_omniscient" || s.pov === "third_person"))
       s.pov = "third_limited";
+    /* older style cards had a `voice` paragraph, `prose_habits` and `avoid`; the card now has a narrator paragraph,
+       signature moves and an off-limits list, plus the design fields, which an old card starts with blank */
+    if (s && typeof s === "object") {
+      const list = (x) =>
+        Array.isArray(x)
+          ? x.filter((y) => typeof y === "string" && y.trim())
+          : typeof x === "string" && x.trim()
+            ? [x.trim()]
+            : [];
+      if (!s.narrator && typeof s.voice === "string") s.narrator = s.voice;
+      if (!list(s.signature_moves).length) s.signature_moves = list(s.prose_habits);
+      if (!list(s.off_limits).length) s.off_limits = list(s.avoid);
+      delete s.voice;
+      delete s.prose_habits;
+      delete s.avoid;
+      STYLE_TEXT_FIELDS.forEach((k) => {
+        if (typeof s[k] !== "string") s[k] = "";
+      });
+      ["signature_moves", "off_limits"].forEach((k) => {
+        if (!Array.isArray(s[k])) s[k] = [];
+      });
+    }
     if (o && typeof o === "object") {
       const bs = Array.isArray(o.chapter_beats) ? o.chapter_beats : [];
       if (o.protagonist == null || o.protagonist === "")

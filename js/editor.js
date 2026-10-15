@@ -23,7 +23,7 @@ const STAGES = [
 ];
 const HINTS = {
   style:
-    "How should the narration sound? What kind of narrator is telling this, and what attitude does it take toward events (humor, if any)? Do they comment or stay quiet? How do they handle feelings? What rhythm, how much dialogue? What would ruin it?",
+    "How should the narration sound? What does the narrator notice and ignore, and what attitude does it take toward events? How crude or polished is the language, and where? How much metaphor, how funny, how far inside the main character's head? What rhythm, how much dialogue? What would ruin it?",
   characters:
     "For each person: what they want, how they see themselves versus what they actually do, how they talk, their habits, and how they feel about each other person. Say exactly who did what to whom.",
   world:
@@ -413,6 +413,37 @@ function refMulti(parent, key, kind, path, hasBase, old) {
   markRef(lab, det, kind, path, () => parent[key] || []);
   return lab;
 }
+/* The short phrases offered under a style field (SCH.anchors, from the backend) are only suggestions: a click puts one in the
+   box, and the box still takes any words. */
+const anchorLabel = (w) =>
+  LANG === "zh" && Object.prototype.hasOwnProperty.call(ZH, "anchor " + w)
+    ? ZH["anchor " + w]
+    : w;
+function anchorChips(ta, words) {
+  const row = el(
+    "div",
+    { class: "chips" },
+    el("span", { class: "chiplab" }, t("Suggestions")),
+  );
+  words.forEach((w) =>
+    row.append(
+      el(
+        "button",
+        {
+          class: "sm chip",
+          type: "button",
+          onclick: () => {
+            ta.value = anchorLabel(w);
+            ta.dispatchEvent(new Event("input", { bubbles: true }));
+            ta.focus();
+          },
+        },
+        anchorLabel(w),
+      ),
+    ),
+  );
+  return row;
+}
 function choiceSelect(parent, key, choices, path, hasBase, old) {
   const v = parent[key],
     has = !(v == null || v === "" || v === 0),
@@ -714,6 +745,8 @@ function field_(parent, key, en, bp) {
     parent[key] = isNum ? Number(ta.value) : ta.value;
   });
   const lab = el("label", { class: "f" }, el("span", {}, label(key)), ta);
+  const words = !isNum && PATH.length === 2 && PATH[0] === "style" && (SCH.anchors || {})[key];
+  if (words && words.length) lab.append(anchorChips(ta, words));
   if (hasBase) track(lab, ta, old, () => parent[key]);
   if (rk && !isNum) markRef(lab, ta, rk, pathStr, () => [ta.value.trim()]);
   return lab;

@@ -381,6 +381,25 @@ section.box {
 .f {
   margin: 0 0 10px;
 }
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin-top: 4px;
+}
+.chips .chiplab {
+  display: inline;
+  font-size: 12px;
+  color: var(--mute);
+  margin: 0 2px 0 0;
+}
+.chips button.sm.chip:not(.go, .alt, .danger) {
+  padding: 1px 9px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 999px;
+}
 .f > span {
   display: block;
   font-size: 13px;
