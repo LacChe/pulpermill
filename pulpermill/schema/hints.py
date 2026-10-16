@@ -45,6 +45,8 @@ def ui_hints() -> dict:
       nullable: ["world.objects.owner", ...]  dotted paths (no list indexes) of fields that may be null,
                 so an emptied text box can be saved as null
       hidden:   field names the generator page leaves out
+      lists:    {dotted path: a blank item} for every list whose items are objects, so the page can add the first item to
+                an empty list (it has no earlier item to copy)
     Card keys are the four the page uses: style, characters, world, outline.
     """
     roots = {
@@ -55,6 +57,7 @@ def ui_hints() -> dict:
     }
     enums: dict[str, dict[str, list]] = {}
     nullable: list[str] = []
+    lists: dict[str, dict] = {}
 
     def unwrap(node, defs):
         null = False
@@ -65,6 +68,23 @@ def ui_hints() -> dict:
         while "$ref" in node:
             node = defs[node["$ref"].split("/")[-1]]
         return node, null
+
+    def blank_of(node, defs):
+        """A new, empty item of the shape `node` describes: text empty, lists empty, numbers 0, a choice its first value."""
+        out = {}
+        for name, sub in (node.get("properties") or {}).items():
+            inner, _ = unwrap(sub, defs)
+            if "enum" in inner:
+                out[name] = inner["enum"][0]
+            elif inner.get("type") == "array":
+                out[name] = []
+            elif inner.get("properties"):
+                out[name] = blank_of(inner, defs)
+            elif inner.get("type") in ("integer", "number"):
+                out[name] = 0
+            else:
+                out[name] = ""
+        return out
 
     def visit(card, node, defs, path):
         node, _ = unwrap(node, defs)
@@ -78,6 +98,10 @@ def ui_hints() -> dict:
                 nullable.append(".".join(here))
             if "enum" in inner:
                 enums.setdefault(card, {})[name] = list(inner["enum"])
+            if inner.get("type") == "array":
+                item, _ = unwrap(inner.get("items", {}), defs)
+                if item.get("properties"):
+                    lists[".".join(here)] = blank_of(item, defs)
             visit(card, inner, defs, here)
 
     for card, cls in roots.items():
@@ -86,6 +110,7 @@ def ui_hints() -> dict:
     return {
         "enums": enums,
         "nullable": sorted(set(nullable)),
+        "lists": lists,
         "hidden": list(GENERATOR_HIDDEN),
         "refs": dict(REFS),
         "choices": dict(CHOICES),
