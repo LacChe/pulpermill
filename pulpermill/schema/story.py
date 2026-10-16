@@ -229,12 +229,25 @@ class StoryProject(BaseModel):
             f"and no 'I' outside quoted dialogue."
         )
 
-    def _story_text(self) -> str:
-        return (
-            "STORY\n"
-            f"Premise (what the whole story is about): {self.plot.premise}\n"
-            f"Theme (what the story steers toward; never state it aloud): {self.plot.theme}"
-        )
+    def _story_text(self, present: set) -> str:
+        """The story's spine for the writer: what it is about, what stands against the main character, the choice it forces,
+        its shape, and what lies between the people who are on the page in this chapter."""
+        plot = self.plot
+        lines = [
+            "STORY",
+            f"Premise (what the whole story is about): {plot.premise}",
+            f"Opposition (what stands against {self.name_of(plot.protagonist)}): {plot.opposition}",
+            f"Theme (the choice the story forces; never state it aloud): {plot.theme}",
+            f"Shape (where the story rises and falls; know where this chapter sits in it): {plot.shape}",
+        ]
+        ties = [
+            f"{self.name_of(r.a)} and {self.name_of(r.b)}: {r.between}"
+            for r in plot.relationships
+            if r.a in present and r.b in present
+        ]
+        if ties:
+            lines.append("Between the people here:\n" + "\n".join(f"- {t}" for t in ties))
+        return "\n".join(lines)
 
     def _style_text(self, feed: Optional[dict] = None) -> str:
         st = self.style
@@ -402,7 +415,7 @@ class StoryProject(BaseModel):
         )
 
         parts = [
-            self._story_text(),
+            self._story_text(present),
             self._style_text(feed),
             "CHARACTERS IN THIS CHAPTER\n"
             + self.CHARACTER_GUIDE
@@ -421,22 +434,35 @@ class StoryProject(BaseModel):
         return "\n\n".join(parts)
 
     def render_beat(self, chapter_num: int) -> str:
-        """Readable text for the chapter's beat: every line says what it is for, and no ids appear."""
+        """The chapter's beat as a short brief for the writer: every line says what it is for, and no ids appear."""
         b = self.beat_for(chapter_num)
         loc = next((l for l in self.world.locations if l.id == b.location), None)
         where = loc.name if loc else b.location
         name = self.name_of(self.plot.protagonist)
+        direction = getattr(b.direction, "value", b.direction)
         lines = [
             self.narration_rule(b),
-            f"The chapter opens at {where}, {b.when}, with {', '.join(self.name_of(p) for p in b.present)} on the page.",
-            f"{name} is after this: {b.goal} Standing in the way: {b.obstacle}",
-            "What happens, in order (write only this; nothing from the next chapter begins here):",
+            f"The chapter opens at {where}, {b.when}, with {', '.join(self.name_of(p) for p in b.present)} on the page. "
+            f"It opens like this: {b.opening}",
+            f"{name} is after this: {b.goal} What crosses it: {b.obstacle}",
+        ]
+        lines += [f"{self.name_of(a.character)} is after: {a.wants}" for a in b.agendas]
+        lines.append(
+            {
+                "better": f"By the end {name} is better off than at the start, at a price someone can see.",
+                "worse": f"By the end {name} is worse off than at the start.",
+                "mixed": f"By the end {name} has gained something and lost something.",
+            }.get(direction, "")
+        )
+        lines += [
+            "The moves, in order, each one a shift in who has the upper hand (these are what the chapter has to arrive at; "
+            "nothing from the next chapter begins here):",
             *[f"  {i}. {e}" for i, e in enumerate(b.events, 1)],
             f"Stop the chapter as soon as this is reached, writing nothing past it -- a situation to arrive at, "
             f"not a line to copy: {b.ends_on}",
         ]
-        if b.agendas:
-            lines += [f"{self.name_of(a.character)} is after: {a.wants}" for a in b.agendas]
+        if b.turn:
+            lines.append(f"What is different once it has happened: {b.turn}")
         if b.plants:
             lines.append(
                 "Place quietly on the page, without resolving it: "
