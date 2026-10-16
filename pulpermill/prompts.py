@@ -142,6 +142,8 @@ EXTRACT_STATE_UPDATE_PROMPT = """Read the chapter below and extract what changed
           materially changed (a place damaged, rebuilt, emptied or taken over; an object broken, opened, emptied or
           used up; a group that split, grew, lost its leader or changed what it wants). Write the new description
           of the thing as it is now, with the change folded in and its other facts kept, in one or two sentences.
+          Keep the register of the existing description (what the thing does to people, why they want it or fear it):
+          fold the change into that, never rewrite it as a plain inventory line.
           If nothing about it changed, do not list it. Do not reword a description that is still true.
         - object_moves: only for objects whose owner or location actually changed this chapter.
           For new_owner and new_location, use null for no change and "none" to clear the value.
@@ -622,7 +624,11 @@ def world_prompt(req, cast) -> str:
 def outline_prompt(req, cast, world, want) -> str:
     places = "\n".join(f"- {l['name']}: {l['description']}" for l in world["locations"])
     truths = (
-        "\n".join(f"- {t['id']}: {t['fact']}" for t in world.get("hidden_truths", []))
+        "\n".join(
+            f"- {t['id']}: {t['fact']}"
+            + (f" At stake: {t['stake'].strip()}" if str(t.get("stake", "")).strip() else "")
+            for t in world.get("hidden_truths", [])
+        )
         or "(none)"
     )
     rules = "\n".join(f"- {r}" for r in world["rules"])
@@ -638,6 +644,11 @@ def outline_prompt(req, cast, world, want) -> str:
             f"the events text, as unnamed crowds or officials):\n{groups}\n\n"
         )
         if groups
+        else ""
+    )
+    pressure_block = (
+        f"WHAT LIVING HERE COSTS: {world['pressure'].strip()}\n\n"
+        if str(world.get("pressure", "")).strip()
         else ""
     )
     stage_block = "\n".join(
@@ -677,7 +688,7 @@ def outline_prompt(req, cast, world, want) -> str:
     return (
         "You are writing the plot outline for a story-writing engine.\n\n"
         f"{source_block(req)}\n\n{style_block}CHARACTERS (write names exactly like this):\n{names}\n\n"
-        f"LOCATIONS (write names exactly like this):\n{places}\n\nHOW THE WORLD WORKS:\n{rules}\n\n{group_block}"
+        f"LOCATIONS (write names exactly like this):\n{places}\n\n{pressure_block}HOW THINGS WORK HERE:\n{rules}\n\n{group_block}"
         f"HIDDEN TRUTHS (refer to them by id in `reveals`):\n{truths}\n\n"
         f"THE STORY'S SIX STAGES (a pacing guide for how the whole story escalates. It is NOT a list of chapters: its length "
         f"says nothing about how many chapters to write):\n{stage_block}\n\n"
@@ -782,7 +793,11 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         ", ".join(name(c) for c in t.known_by if c in cast_ids) or "no one in this cast"
     )
     truths = (
-        "\n".join(f"- {t.id}: {t.fact} (known to: {know(t)})" for t in left)
+        "\n".join(
+            f"- {t.id}: {t.fact} (known to: {know(t)})"
+            + (f" At stake: {t.stake.strip()}" if t.stake.strip() else "")
+            for t in left
+        )
         or "(none left)"
     )
     revealed = "\n".join(f"- {t.fact}" for t in done) or "(none yet)"
@@ -855,7 +870,9 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         + (f"{mood}\n" if mood else "")
         + "\n"
         f"THE CARDS NOW (after chapter {n - 1}; this is the truth of the story at this point)\n"
-        f"PEOPLE:\n{chars}\n\nSETTING: {w.setting}\nHOW THE WORLD WORKS (permanent facts; reach for one as an obstacle or a "
+        f"PEOPLE:\n{chars}\n\nSETTING: {w.setting}\n"
+        + (f"WHAT LIVING HERE COSTS: {w.pressure}\n" if w.pressure.strip() else "")
+        + f"HOW THINGS WORK HERE (each carries a price; reach for one as an obstacle or a "
         f"stake when it fits this chapter):\n{rules}\n\nPLACES (write names exactly like this):\n{places}\n"
         f"OBJECTS:\n{objs}\n"
         + (
@@ -888,10 +905,10 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         "happened; do not return to any earlier idea of the plot.\n"
         "- Each event happens once. Never repeat an earlier chapter's event, scene, argument or confession, and do not replay "
         "an earlier chapter with different wording. The story must move forward: something is different when this chapter ends.\n"
-        "- Before settling on the obstacle and events, check FRESH MATERIAL and HOW THE WORLD WORKS for something the story "
-        "has barely used: an object, a group or a world rule the cards already give you. Reach for one of these instead of "
-        "returning to the same two or three details the last few chapters leaned on, whenever it genuinely fits the chapter; "
-        "do not force one in where it does not.\n"
+        "- Before settling on the obstacle and events, check FRESH MATERIAL, WHAT LIVING HERE COSTS and HOW THINGS WORK HERE for "
+        "something the story has barely used: a cost someone has not yet had to pay, a rule's price, a secret's stake, an "
+        "object or a group. Reach for one of these instead of returning to the same two or three details the last few "
+        "chapters leaned on, whenever it genuinely fits the chapter; do not force one in where it does not.\n"
         "- `turn` says what changed. A chapter whose `turn` could be written about an earlier chapter is the wrong chapter.\n"
         "- Make this chapter do what its story stage asks, and move the story toward its destination without rushing it.\n"
         "- `goal` is what the main character wants plus, where it applies, what they are holding back. `obstacle` is something "
