@@ -93,35 +93,35 @@ const SECTIONS = {
   outline: [
     {
       t: "The story's core",
-      keys: ["premise", "protagonist", "theme", "ending"],
-      d: "Premise is the story in one or two sentences: who wants what, and what goes wrong. Protagonist is the one character the story follows. Theme is the idea underneath, a condition that must be met before things can change; no character ever says it aloud. Ending is what is concretely true at the close, not just what people have learned.",
+      keys: ["premise", "protagonist", "opposition", "theme", "ending"],
+      d: "Premise is the story in one or two sentences: who wants what, what stands in the way, and what winning or losing would cost. Protagonist is the one character the story follows. Opposition is what stands against them and what it wants; a person with a want of their own works better than a vague force. Theme is the choice the story forces, two good things set against each other; no character ever says it aloud. Ending is the answer to the story's central question and what it cost, as a concrete situation.",
     },
     {
-      t: "Character arcs and open questions",
-      keys: ["arcs", "leave_open"],
-      d: 'An arc is how a person changes from start to finish, paired with something they do or say that shows it. "Leave open" lists questions you want the story to deliberately never answer.',
+      t: "People and arcs",
+      keys: ["relationships", "arcs", "leave_open"],
+      d: 'A relationship pairs two characters and says what lies between them: a debt, a lie, a grievance, a hunger. An arc is how a person ends up, paired with something they do or say that shows it, what forces the change and what it costs them. "Leave open" lists questions you want the story to deliberately never answer.',
     },
     {
       t: "Length and chapter plan",
-      keys: ["total_chapters", "chapter_beats"],
-      d: "How many chapters the whole story has, fixed from the start, and the plan for each one. Only the chapter you are working on has a plan; the next is planned after it is written.",
+      keys: ["total_chapters", "shape", "chapter_beats"],
+      d: "How many chapters the whole story has, fixed from the start. Shape says where hope, a false win, the low point, the peak and the coda fall, with chapter numbers, rising and falling rather than climbing steadily. Only the chapter you are working on has a plan; the next is planned after it is written.",
     },
   ],
   "outline.chapter_beats": [
     {
       t: "Scene",
-      keys: ["chapter_num", "when", "location", "present", "tone"],
-      d: "When and where the chapter starts, who is there, and what mood it carries.",
+      keys: ["chapter_num", "when", "location", "present", "opening"],
+      d: "When and where the chapter starts, who is there, and the first thing that happens on the page: someone already doing or saying something.",
     },
     {
       t: "Conflict and action",
-      keys: ["goal", "obstacle", "events", "ends_on"],
-      d: "What the main character wants in this chapter, what stands in the way, the three to five things that happen in order, and the situation the chapter stops on.",
+      keys: ["goal", "obstacle", "agendas", "events", "ends_on"],
+      d: "What the main character wants in this chapter, and what runs up against it, best of all another person's competing want. Agendas say what each other person present is after or hiding. Events are the few things that happen in order, each a shift in who has the upper hand. Ends on is the situation the chapter stops on.",
     },
     {
       t: "What changes",
-      keys: ["turn", "shifts", "stage"],
-      d: "One sentence on what is true at the end that was not true at the start, which characters visibly change, and how far along the story's six steps the chapter ends: Setup, Spark, Friction, Shift, Peak, Aftermath.",
+      keys: ["turn", "direction"],
+      d: "One sentence on what is true at the end that was not true at the start, and whether the chapter leaves the main character better off, worse off, or both.",
     },
     {
       t: "Planting and payoff",
