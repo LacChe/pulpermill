@@ -176,10 +176,7 @@ class StoryProject(BaseModel):
                 else pick_least_used(keys, owner.uses.get(field, {}), k, required)
             )
 
-        for f, keys in (
-            ("exemplars", self.style.exemplars),
-            ("chapter_shapes", self.style.chapter_shapes),
-        ):
+        for f, keys in (("exemplars", self.style.exemplars),):
             if (ch := pick(self.style, "style", f, keys)) is not None:
                 out["style"][f] = ch
         w, here = self.world, set(b.present)
@@ -245,9 +242,6 @@ class StoryProject(BaseModel):
         exemplars = _shown(
             st.exemplars, ((feed or {}).get("style") or {}).get("exemplars")
         )
-        shapes = _shown(
-            st.chapter_shapes, ((feed or {}).get("style") or {}).get("chapter_shapes")
-        )
 
         def bullets(items):
             return "\n".join(f"- {i}" for i in items)
@@ -283,12 +277,6 @@ class StoryProject(BaseModel):
             )
         if st.off_limits:
             parts.append("Never do these:\n" + bullets(st.off_limits))
-        if shapes:
-            parts.append(
-                "Chapter shape (how this chapter opens, closes and balances dialogue and narration; it was chosen for "
-                "this chapter alone, so build the chapter this way):\n"
-                + bullets(shapes)
-            )
         if exemplars:
             parts.append(
                 "Exemplars (rhythm and register only; never reproduce or closely paraphrase):\n"

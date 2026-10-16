@@ -36,11 +36,6 @@ const SECTIONS = {
       d: "Signature moves are devices this narrator uses again and again that a reader would recognise. Off-limits lists what the narration must never do. Leave it empty if there is nothing to rule out.",
     },
     {
-      t: "Chapter shapes",
-      keys: ["chapter_shapes"],
-      d: "Templates for how a single chapter is built: how it opens, how it closes, how much is dialogue. They describe structure only, never plot.",
-    },
-    {
       t: "Sample passages",
       keys: ["exemplars"],
       d: "Short passages that show the narrator at work. Write them about ordinary situations, not about your plot.",

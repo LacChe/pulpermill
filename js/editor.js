@@ -297,12 +297,7 @@ const usesOf = (owner, key) => {
   return (owner.uses[key] = owner.uses[key] || {});
 };
 /* A short note under a list whose empty state means something. */
-const LIST_HINTS = {
-  "style.chapter_shapes": () =>
-    t(
-      "One shape is handed to each chapter in turn, the least-used first. Empty is fine: the model then decides how each chapter opens and closes.",
-    ),
-};
+const LIST_HINTS = {};
 const withListHint = (lab, path) => {
   const h = LIST_HINTS[path];
   if (h) lab.append(el("p", { class: "hint" }, h()));

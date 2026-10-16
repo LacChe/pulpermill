@@ -174,12 +174,6 @@ class StyleCard(BaseModel):
         description="What the narration must never do, each named plainly. Only what the author said or what this "
         "narrator conspicuously never does. Leave the list empty when there is nothing to name.",
     )
-    chapter_shapes: list[str] = Field(
-        default_factory=list,
-        description="Zero to six chapter shapes. Each shape is one short instruction for how a single chapter is built: how it "
-        "opens, how it closes, and the balance of dialogue and narration. The shapes differ clearly from one another and describe "
-        "structure only, never plot. Leave the list empty when no shape was asked for.",
-    )
     exemplars: list[str] = Field(
         description="Two or three short passages in this style about ordinary, unrelated everyday situations. "
         "No proper nouns. The passages show rhythm and tone only."

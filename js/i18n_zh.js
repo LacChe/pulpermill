@@ -65,8 +65,6 @@ const ZH = {
     "此卡片所依据的卡片有 {n} 处链接失效。请先修复标出的字段。",
   "The cards have broken links ({n}). Fix the highlighted fields before writing chapter {k}.":
     "卡片有 {n} 处链接失效。请先修复标出的字段,再撰写第{k}章。",
-  "One shape is handed to each chapter in turn, the least-used first. Empty is fine: the model then decides how each chapter opens and closes.":
-    "每章按顺序分到一种结构,优先使用次数最少的。留空也可以:此时由模型自己决定每章如何开头和收尾。",
   "Planning the next chapter": "正在规划下一章",
   "What is the example for?": "示例章节用来做什么?",
   "Same story": "同一个故事",
@@ -531,7 +529,6 @@ const ZH = {
   presence: "气场",
   "chapter beats": "章节要点",
   "chapter num": "章节序号",
-  "chapter shapes": "章节结构",
   "total chapters": "章节总数",
   turn: "本章转变",
   protagonist: "主角",
@@ -698,9 +695,6 @@ const ZH = {
   "Sample passages": "范例段落",
   "Short passages that show the narrator at work. Write them about ordinary situations, not about your plot.":
     "展示叙述者实际写法的短段落。请写日常场景,不要写你的情节。",
-  "Chapter shapes": "章节结构",
-  "Templates for how a single chapter is built: how it opens, how it closes, how much is dialogue. They describe structure only, never plot.":
-    "一章如何搭建的模板:怎样开头、怎样收尾、对话占多少。它们只描述结构,从不涉及情节。",
   "Who they are": "他们是谁",
   "What to call them, how they would be introduced to a stranger, and how they carry themselves. Write them so they would hold in any story: nothing here should depend on this plot.":
     "他们叫什么,向陌生人怎样介绍他们,以及他们的举止气场。要写成在任何故事里都成立的样子:这里的内容不应依赖这一个情节。",

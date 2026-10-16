@@ -123,7 +123,6 @@ logger = logging.getLogger("pulpmill")
 
 POOLS = {
     "style.exemplars": 1,
-    "style.chapter_shapes": 1,
     "world.locations": 2,
     "world.objects": 2,
     "world.groups": 1,

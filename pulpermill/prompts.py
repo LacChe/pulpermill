@@ -56,7 +56,7 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
         how they feel as this chapter opens. Never contradict how things work in the world, and follow the beat's narration
         line for person and tense. The world is a short page: what living there costs, how things work, the
         places the story can go, the things and groups that matter, and what is unspoken. The lists of exemplars,
-        chapter shapes, places, things and groups are a selection made for this chapter, not everything on the
+        places, things and groups are a selection made for this chapter, not everything on the
         cards. If an ENDING section appears, this is the final chapter: land it.
 
         STORY SO FAR (summary of earlier chapters):
@@ -101,8 +101,7 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
           pressure truly builds, then leave it alone for the rest of the chapter -- this matters most for a vivid
           repeated motion, which is easy to reach for again. Let people under pressure also do things the portrait
           never mentions.
-        - If the style section gives a chapter shape, open and close the chapter as it says. Without one, begin
-          with someone doing or saying something, and don't open the way the previous chapter opened. A catchphrase
+        - Begin with someone doing or saying something, and don't open the way the previous chapter opened. A catchphrase
           or gesture from the cards is used at most once per chapter.
         - The places, things and groups listed are the tracked ones. A minor passing thing (a cup, a doorway, a
           stray dog) may be invented in the scene, provided it stays minor, is never named as recurring, and carries
@@ -409,17 +408,6 @@ def style_prompt(req) -> str:
         "or settings. They carry the whole design: the same lens, stance, economy, kind of words, "
         "figures of speech, humor and handling of the character's inner life, so a passage in plain description "
         "is not enough. They obey `signature_moves` and `off_limits`, and each shows something different.\n"
-        + (
-            "- `chapter_shapes` holds up to four chapter shapes the source uses. Each is one short instruction covering how "
-            "a chapter opens, how it closes and the balance of dialogue and narration, and the shapes differ clearly from one "
-            "another. Structure only, never plot. Leave it empty if the source shows no clear shapes.\n"
-            if req.mode == "chapter"
-            else "- `chapter_shapes` holds 2-4 distinct chapter shapes, each one short instruction covering how a chapter opens, "
-            "how it closes and the balance of dialogue and narration. Use what the author described; invent the rest so "
-            "there are at least two, choosing shapes that fit the genre and tone and that differ clearly from one another "
-            "(for example: one opens on dialogue and closes quiet, another opens on action and closes on a question). "
-            "Structure only, never plot, and never contradict a shape the author gave.\n"
-        )
         + "- Do not copy wording from these instructions.\n"
         + tail(req, StyleCard)
     )
