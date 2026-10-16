@@ -13,15 +13,12 @@ from .schema import (
     MAX_CHARACTERS,
     OutlineDraft,
     PORTRAIT_FIELDS,
-    STORY_STAGES,
     StyleCard,
     WORLD_TARGETS,
     WorldDraft,
     ladder_text,
     ladders_for_prompt,
     Dial,
-    spread_stages,
-    stage_lines_for,
 )
 
 
@@ -82,15 +79,17 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
           SO FAR and WHAT CHANGED above), plus any hidden truth marked as known to them. Nobody states, hints at,
           or acts on a hidden truth they aren't listed for, unless this chapter's beat reveals it.
         - The beat above is what actually happens here, not a mood to gesture at: the events occur in the order
-          given, the goal and obstacle drive the chapter, and it ends on the moment named. Find your own scene
-          detail, dialogue, and pacing to get there, but don't skip, defer, soften, or substitute the event itself.
-          Dramatize every listed character shift as a visible moment or choice, not implied consistency. If no
-          shifts are listed, don't invent an arc milestone of your own.
+          given, the goal and what crosses it drive the chapter, and it ends on the moment named. Find your own scene
+          detail, dialogue, and pacing to arrive at each move and at the turn, but the chapter has to get there.
+          Open as the beat's opening says. Everyone listed as being after something is after it on the page, in what
+          they say, withhold and do, not in a line that announces it; the main character's goal meets those wants,
+          and nobody simply gives way. Don't invent an arc milestone of your own.
         - End the chapter exactly on the moment named in the beat's stopping point, and stop there: no line of
           reflection, summary, or reassurance after it, and don't resolve it early or soften it just because the
-          chapter has run long enough. If that moment is a question, threat, reversal, or choice left open (true
-          for every chapter but the last), the reader should want to know what happens next, not feel the matter
-          is closed. Only in the final chapter, where the beat lands the story instead, should it read as settled.
+          chapter has run long enough. If that moment is a question, threat, reversal, or choice left open, the
+          reader should want to know what happens next, not feel the matter is closed. A chapter that is a release
+          may settle, with one thing still open; only in the final chapter, where the beat lands the story instead,
+          should it read as settled.
 
         CRAFT:
         - Exemplars are rhythm and register only -- never reproduce or closely paraphrase
@@ -535,19 +534,9 @@ def character_prompt(req, cast, target) -> str:
 
 # ---------------------------------------------------------------- WORLD
 def world_cast_lines(cast) -> str:
-    """The cast as the world card sees it: name, role, want and armor, so the world's pressure can rub against what each
-    person wants and how they defend themselves. (The outline's cast_lines stays name and role only.)"""
-
-    def one(c):
-        def sent(f):
-            t = str(c.get(f, "")).strip()
-            return t if not t or t[-1] in ".!?" else t + "."
-
-        role = str(c.get("role", "")).strip().rstrip(".")
-        head = f"- {c['name']} is {role}." if role else f"- {c['name']}."
-        return " ".join(x for x in (head, sent("want"), sent("armor")) if x)
-
-    return "\n".join(one(c) for c in cast)
+    """The cast as the world card sees it: role, want and armor, so the world's pressure can rub against what each person
+    wants and how they defend themselves."""
+    return cast_lines(cast, ("want", "armor"))
 
 
 WORLD_RULES = (
@@ -609,6 +598,25 @@ def world_prompt(req, cast) -> str:
 
 
 # ---------------------------------------------------------------- OUTLINE
+def cast_lines(cast, fields=("want", "armor", "with_people", "soft_spot", "limits")) -> str:
+    """The one place the cast is turned into prompt text: a line per person, their role and then the listed fields as
+    sentences. `cast` may be dicts or character models. The outline and the next-beat planner read the full line; the
+    world card reads only want and armor."""
+
+    def one(c):
+        c = c if isinstance(c, dict) else c.model_dump()
+
+        def sent(f):
+            t = str(c.get(f, "")).strip()
+            return t if not t or t[-1] in ".!?" else t + "."
+
+        role = str(c.get("role", "")).strip().rstrip(".")
+        head = f"- {c['name']} is {role}." if role else f"- {c['name']}."
+        return " ".join(x for x in (head, *(sent(f) for f in fields)) if x)
+
+    return "\n".join(one(c) for c in cast)
+
+
 def outline_prompt(req, cast, world, want) -> str:
     places = "\n".join(f"- {l['name']}: {l['description']}" for l in world["locations"])
     truths = (
@@ -620,7 +628,7 @@ def outline_prompt(req, cast, world, want) -> str:
         or "(none)"
     )
     rules = "\n".join(f"- {r}" for r in world["rules"])
-    names = "\n".join(f"- {c['name']}: {c.get('role', '')}" for c in cast)
+    names = cast_lines(cast)
     groups = "\n".join(
         f"- {g['name']}: {g.get('description', '')}"
         + (f" Wants: {g['wants']}" if g.get("wants") else "")
@@ -639,9 +647,6 @@ def outline_prompt(req, cast, world, want) -> str:
         if str(world.get("pressure", "")).strip()
         else ""
     )
-    stage_block = "\n".join(
-        f"{k}. {name}: {text}" for k, (name, text) in STORY_STAGES.items()
-    )
     st = req.cards.get("style") or {}
     mood = _style_facts(st, ("stance", "humor", "time_handling", "interiority"))
     style_block = (
@@ -657,79 +662,86 @@ def outline_prompt(req, cast, world, want) -> str:
             f"The story has exactly {want} chapters: set `chapter_count` to {want}. If the author describes more or "
             "fewer sections than that, fit them into the chapters in order. "
         )
-        stage_rule = (
-            "- "
-            + " ".join(l.strip() for l in stage_lines_for(0, spread_stages(want)[0]))
-            + " Build chapter 1 to do all of it.\n"
-        )
     else:
         count_rule = (
             "Decide how many chapters the whole story has and set `chapter_count`: exactly the number the author "
             "says, else one chapter for each chapter or section they describe (never splitting one of theirs into "
             "two); if they describe none, plan five to eight. "
         )
-        stage_rule = (
-            "- Chapter 1 is the opening of the story and covers the stages it is given: Setup only when the story "
-            "has six or more chapters, Setup and Spark with three to five chapters, Setup, Spark and Friction with "
-            "two, all six with a single chapter. Build chapter 1 to do all of that.\n"
-        )
     return (
-        "You are writing the plot outline for a story-writing engine.\n\n"
+        "You are writing the plot outline for a story-writing engine. A story here is people wanting things that cross "
+        "each other, so the outline is built from wants in conflict, not from a list of events.\n\n"
         f"{source_block(req)}\n\n{style_block}CHARACTERS (write names exactly like this):\n{names}\n\n"
         f"LOCATIONS (write names exactly like this):\n{places}\n\n{pressure_block}HOW THINGS WORK HERE:\n{rules}\n\n{group_block}"
         f"HIDDEN TRUTHS (refer to them by id in `reveals`):\n{truths}\n\n"
-        f"THE STORY'S SIX STAGES (a pacing guide for how the whole story escalates. It is NOT a list of chapters: its length "
-        f"says nothing about how many chapters to write):\n{stage_block}\n\n"
-        f"TASK: Set up the story: its premise, main character, theme, the broad ending it is heading for, the character arcs, "
-        f"how many chapters it has (at most {MAX_CHAPTERS}), and the beat of chapter 1 ONLY. "
+        f"TASK: Set up the story: its premise, main character, the opposition, what lies between the people, the theme, the "
+        f"shape of the whole story, the ending it is heading for, the character arcs, how many chapters it has (at most "
+        f"{MAX_CHAPTERS}), and the beat of chapter 1 ONLY. "
         + count_rule
         + "The beats of the later chapters are written one at a time after each chapter is finished, so do not plan or "
         "mention them: `chapter_beats` has exactly one item.\n"
         "\nRULES:\n"
-        + stage_rule
-        + "- Stakes come from the first two stages: by the end of the stage 2 chapter the reader knows what the "
-        "point-of-view character wants or could lose, and in stage 3 it gets worse. `goal` and `obstacle` must be "
-        "concrete enough to show that.\n"
-        "- Include every beat the author describes for chapter 1, in order, through to the last thing that happens "
-        "in it, and use only the people the author places in that chapter for `present`.\n"
-        "- Events are plain actions in order, one sentence each, with nothing explained or summarised.\n"
-        "- `ends_on` is the situation the chapter stops at, in a few words, not a quoted line (if the author gives a "
-        "closing line, describe what it does instead). It must be true right after the chapter's last event: it may "
-        "not restate an event that already happened in the chapter or ask for something that only happens later. It "
-        "must be a hook, not a landing: a question, a threat, a reversal, or a choice still open, never a moment that "
-        "reads as settled or safe to stop on.\n"
-        "- Open chapter 1 already in motion: someone doing or wanting something, a choice being made, an exchange "
-        "underway. Never spend the opening establishing the setting, routine, or backstory before anything happens; "
-        "the stage's own baseline comes through in what the character does, not in description first. Do not jump "
-        "ahead to the Spark's disruption unless chapter 1's stage already includes it.\n"
-        "- Use `reveals` only for a hidden truth that becomes known on the page in chapter 1 to everyone present. Most "
-        "stories reveal nothing in the first chapter; leave it empty unless one clearly belongs there.\n"
-        "- A plant is a specific object, line or action in chapter 1 that a LATER chapter may use. Leave it empty rather "
-        "than writing general observations about a character.\n"
-        "- Give chapter 1 a `tone`: one sentence on that chapter's mood as the narration style defines it, and "
-        "where it turns, tightens or is undercut.\n"
-        "- Show change through what happens on the page. An arc, a shift or an ending may name the change, but it also "
-        "says the concrete thing the person does or says that shows it. For example: 'Mara comes to trust her brother: "
-        "she hands him the keys.'\n"
-        "- `goal` is what the person wants plus, where it applies, what they are holding back. `obstacle` is something "
-        "specific the characters run into in the scene (a person, object, rule or event), not only a feeling.\n"
-        "- `ending` is the broad destination, a concrete situation: what has been done or said and what is still open. It "
-        "is not only a summary of what everyone now understands, and it does not fix the events on the way there.\n"
-        "- `arcs` say where each main person ends up. They are destinations, not a schedule of chapters.\n"
-        "- `leave_open` holds only what the author says must stay unresolved or unexplained. If they said nothing, "
-        "leave it empty. Never invent a new central question.\n"
+        "- `premise` is one or two sentences: who wants what, what stands in the way, and what winning or losing would "
+        "cost them.\n"
         "- `protagonist` is the story's ONE main character, by exact name from the list. The whole story is told from "
         "this one person's side, in every chapter, so they are in every chapter's `present` and no chapter is told "
         "from anyone else's point of view. If the author names the main character, use them; otherwise choose the "
         "person the story follows most closely.\n"
-        "- `present`, `shifts` and `arcs` use only the listed characters. Anyone else the story needs appears "
-        "only inside the events text.\n" + tail(req, OutlineDraft)
+        "- `opposition` is what stands against the protagonist and what it wants: a person with a want of their own, a "
+        "group, or a price the world exacts. Prefer a person to a vague force, and it may be someone the protagonist "
+        "cares about.\n"
+        "- `relationships` pair two people from the CHARACTERS list, using their exact names, and say what lies between "
+        "them in this story: a debt, a lie, a grievance, a hunger. List only the pairs that matter, and leave the list "
+        "empty if none does. Never make up a person to complete a pair.\n"
+        "- `theme` is the choice the story forces, written as two goods set against each other (loyalty against the "
+        "truth, safety against belonging). It is not a moral, and no one says it aloud.\n"
+        "- `shape` says where the story's hope, its false win, its low point, its peak and its coda fall, each with a "
+        "chapter number, scaled to the number of chapters (a short story folds several of these into one chapter). Let "
+        "it rise and fall: a win that costs something, a setback that opens a door. Do not write one steady climb.\n"
+        "- `ending` is the answer to the story's central question and what it cost: a concrete situation, what has been "
+        "done or said and what is still open, not only a summary of what everyone now understands. It does not fix the "
+        "events on the way there.\n"
+        "- `arcs` say where each main person ends up, as a destination and not a schedule: the end state with a concrete "
+        "thing they do or say that shows it, what forces the change, and what it costs them. For example: 'Mara comes to "
+        "trust her brother: she hands him the keys, because the one time she held on, someone paid for it.'\n"
+        "- `leave_open` holds only what the author says must stay unresolved or unexplained. If they said nothing, "
+        "leave it empty. Never invent a new central question.\n"
+        "- The author's beats for chapter 1 are its spine: keep them, in order, through to the last thing that happens "
+        "in it, and use only the people the author places in that chapter for `present`. Add the want and the "
+        "opposition underneath them rather than replacing anything.\n"
+        "- `opening` is the first thing that happens on the page: someone doing or saying something, already in motion. "
+        "Never open on the setting, a routine or backstory.\n"
+        "- `direction` says whether the chapter leaves the main character better off (better), worse off (worse), or "
+        "both (mixed).\n"
+        "- `goal` is what the main character wants in this chapter plus, where it applies, what they are holding back. "
+        "`obstacle` is what runs up against it, preferably another person's competing want, otherwise a specific object, "
+        "rule or event, never only a feeling.\n"
+        "- `agendas` hold one item for each OTHER person present: what they want from this scene, a want that competes "
+        "with the main character's or a thing they are hiding. Leave it empty if no one else is present.\n"
+        "- `events` are a few sentences in order, each a change in leverage: someone gains, loses or gives up an "
+        "advantage, a secret, a hold on someone. A bare action with no change in who has the upper hand is not an event.\n"
+        "- `ends_on` is the situation the chapter stops at, in a few words, not a quoted line (if the author gives a "
+        "closing line, describe what it does instead). It must be true right after the chapter's last event: it may not "
+        "restate an event that already happened in the chapter or ask for something that only happens later. Make it a "
+        "hook: a question, a threat, a reversal, or a choice still open. The exception is a chapter that is a release "
+        "(the shape says so, or its direction is better), which may end settled with one thing still open.\n"
+        "- Use `reveals` only for a hidden truth that becomes known on the page in chapter 1 to everyone present. Most "
+        "stories reveal nothing in the first chapter; leave it empty unless one clearly belongs there.\n"
+        "- A plant is a specific object, line or action in chapter 1 that a LATER chapter may use. Leave it empty rather "
+        "than writing general observations about a character.\n"
+        "- Show change through what happens on the page: `turn` is what is true at the end that was not true at the start.\n"
+        "- Every person who acts is someone from the CHARACTERS list. Anyone else the story needs appears only inside the "
+        "events text, as an unnamed role (the clerk, a guard), never with a name. `protagonist`, `present`, `agendas`, "
+        "`relationships` and `arcs` use only the listed characters.\n"
+        "- Shown in other genres (never copy their wording). premise: not 'a ghostwriter finishes a memoir' but 'a "
+        "ghostwriter wants her name on the memoir she wrote, and the client's daughter, who inherits the brand, will bury "
+        "it; winning costs her the only friend she has in the house'. obstacle: not 'a locked door' but 'the quartermaster, "
+        "who needs the same ledger kept shut and will say anything to keep it so'. event: not 'she opens the ledger' but "
+        "'she opens the ledger in front of the one man who cannot afford it read, and he lets her, which tells her what "
+        "he has planned'. shape: not 'tension builds to the climax' but 'hope at 2 when the ally agrees; false win at 5 "
+        "when the vote carries and costs the ally her seat; low point at 7; peak at 9; coda at 10'.\n"
+        + tail(req, OutlineDraft)
     )
-
-
-# ---------------------------------------------------------------- WORLD
-def cast_lines(cast) -> str:
-    return "\n".join(f"- {c['name']}: {c.get('role', '')}" for c in cast)
 
 
 # ---------------------------------------------------------------- THE NEXT BEAT
@@ -748,10 +760,7 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
     plot, w, total = story.plot, story.world, story.plot.total_chapters
     name = story.name_of
     here = {l.id: l.name for l in w.locations}
-    chars = "\n".join(
-        f"- {c.name}: {c.role.rstrip('.')}. {c.want.rstrip('.')}. {c.blind_spot.rstrip('.')}. {c.limits.rstrip('.')}."
-        for c in story.characters
-    )
+    chars = cast_lines(story.characters)
     places = "\n".join(f"- {l.name}: {l.description}" for l in w.locations)
     rules = "\n".join(f"- {r}" for r in w.rules) or "(none)"
     cast_ids = {
@@ -791,8 +800,6 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
     revealed = "\n".join(f"- {t.fact}" for t in done) or "(none yet)"
     plants = story.open_plants(n - 1)
     prev = story.beat_for(n - 1) if n > 1 else None
-    stage = spread_stages(total)[min(n, total) - 1]
-    stage_text = "\n".join(stage_lines_for(prev.stage if prev else 0, stage))
     stories = (
         "\n".join(f"Chapter {i + 1}: {t}" for i, t in enumerate(summaries))
         or "(no earlier chapters)"
@@ -806,11 +813,16 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         "\n".join(
             f"- Chapter {b.chapter_num}: {b.goal} At {here.get(b.location, b.location)}, with "
             f"{', '.join(name(c) for c in b.present)}."
+            + (f" Opened: {b.opening}" if b.opening else "")
             + (f" What changed: {b.turn}" if b.turn else "")
             + f" Ended on: {b.ends_on}"
             for b in past
         )
         or "(none)"
+    )
+    dirs = ", ".join(getattr(b.direction, "value", b.direction) for b in past) or "(none yet)"
+    ties = "\n".join(
+        f"- {name(r.a)} and {name(r.b)}: {r.between}" for r in plot.relationships
     )
     places_left, people_left = story.least_used(n - 1)
     objects_left, groups_left = story.least_used_world(n - 1)
@@ -843,8 +855,11 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
     return (
         "You are planning the next chapter of a story that is written one chapter at a time. Only the beat of the next "
         f"chapter is needed now: chapter {n} of {total}. Nothing after it has been planned, so do not plan it.\n\n"
-        f"THE STORY SO FAR (the premise, theme, ending, arcs and the list of what stays open can be revised: see REVISING)\nPremise: {plot.premise}\nMain character: {name(plot.protagonist)}\n"
-        f"Theme (steers the plot; never stated aloud): {plot.theme}\n"
+        f"THE STORY SO FAR (the premise, opposition, theme, shape, ending, arcs and the list of what stays open can be revised: see REVISING)\nPremise: {plot.premise}\nMain character: {name(plot.protagonist)}\n"
+        f"Opposition: {plot.opposition}\n"
+        + (f"Between people:\n{ties}\n" if ties else "")
+        + f"Theme (steers the plot; never stated aloud): {plot.theme}\n"
+        f"Shape of the whole story (where hope, the false win, the low point, the peak and the coda fall; a guide, not a schedule): {plot.shape}\n"
         f"Where the story is heading (a broad destination, not a schedule; change it if events have moved the story elsewhere): {plot.ending}\n"
         + (
             "Never resolve or explain: " + "; ".join(plot.leave_open) + "\n"
@@ -858,7 +873,7 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         + (f"{mood}\n" if mood else "")
         + "\n"
         f"THE CARDS NOW (after chapter {n - 1}; this is the truth of the story at this point)\n"
-        f"PEOPLE:\n{chars}\n\nSETTING: {w.setting}\n"
+        f"PEOPLE (the whole cast):\n{chars}\n\nSETTING: {w.setting}\n"
         + (f"WHAT LIVING HERE COSTS: {w.pressure}\n" if w.pressure.strip() else "")
         + f"HOW THINGS WORK HERE (each carries a price; reach for one as an obstacle or a "
         f"stake when it fits this chapter):\n{rules}\n\nPLACES (write names exactly like this):\n{places}\n"
@@ -871,10 +886,10 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         + f"HIDDEN TRUTHS ALREADY REVEALED (part of what happened):\n{revealed}\n\n"
         f"WHAT HAS HAPPENED\n{stories}\n\nThe last chapter ended like this (the ending only):\n{tail_text}\n"
         + (f"It stopped at: {prev.ends_on}\n" if prev else "")
-        + f"\nALREADY USED (the earlier chapters in brief; this chapter must not repeat any of them):\n{ledger}\n\n"
-        f"FRESH MATERIAL (use it when the story allows; a new place, an object or group barely touched so far, or a person "
-        f"who has been away is the easiest way to make a chapter different):\n{fresh}"
-        f"\nTHIS CHAPTER: chapter {n} of {total}\n{stage_text}\n"
+        + f"\nTHE EARLIER CHAPTERS IN BRIEF (what has already been done and how each opened):\n{ledger}\n"
+        f"DIRECTION SO FAR (whether each chapter left the main character better off, worse off or mixed): {dirs}\n\n"
+        f"UNUSED MATERIAL (optional; reach for it only when it serves the story):\n{fresh}"
+        f"\nTHIS CHAPTER: chapter {n} of {total}\n"
         f"Chapters left, counting this one: {left_n}.\n\n"
         f"CHOOSE FROM WHAT IS STILL AVAILABLE\nHidden truths not yet revealed (put an id in `reveals` only if that truth becomes "
         f"known on the page in this chapter, to everyone present; most chapters reveal one or none; a truth once revealed cannot be "
@@ -893,37 +908,46 @@ def next_beat_prompt(story, n, summaries, prev_text, language="en"):
         "happened; do not return to any earlier idea of the plot.\n"
         "- Each event happens once. Never repeat an earlier chapter's event, scene, argument or confession, and do not replay "
         "an earlier chapter with different wording. The story must move forward: something is different when this chapter ends.\n"
-        "- Before settling on the obstacle and events, check FRESH MATERIAL, WHAT LIVING HERE COSTS and HOW THINGS WORK HERE for "
-        "something the story has barely used: a cost someone has not yet had to pay, a rule's price, a secret's stake, an "
-        "object or a group. Reach for one of these instead of returning to the same two or three details the last few "
-        "chapters leaned on, whenever it genuinely fits the chapter; do not force one in where it does not.\n"
+        "- Each beat follows from the last by \"therefore\" or \"but\", never \"and then\": what the last chapter left "
+        "standing is what this one has to deal with.\n"
+        "- WHAT LIVING HERE COSTS, HOW THINGS WORK HERE and the hidden truths offer ready material: a cost someone has not "
+        "yet had to pay, a rule's price, a secret's stake. Use one when it genuinely fits this chapter; a chapter is not "
+        "better for being different.\n"
         "- `turn` says what changed. A chapter whose `turn` could be written about an earlier chapter is the wrong chapter.\n"
-        "- Make this chapter do what its story stage asks, and move the story toward its destination without rushing it.\n"
-        "- `goal` is what the main character wants plus, where it applies, what they are holding back. `obstacle` is something "
-        "specific the characters run into in the scene (a person, object, rule or event), not only a feeling.\n"
-        "- Events are plain actions in order, one sentence each, with nothing explained or summarised.\n"
+        "- `direction` is whether this chapter leaves the main character better off (better), worse off (worse) or both "
+        "(mixed). Read DIRECTION SO FAR and do not run the same direction for long: wins cost something and losses open a "
+        "door. Let the shape say where the story should be by now.\n"
+        "- As the chapters run out the story narrows: fewer places, fewer people, each choice costing more, moving toward "
+        "the peak the shape names.\n"
+        "- `goal` is what the main character wants plus, where it applies, what they are holding back. `obstacle` is what "
+        "runs up against it, preferably another person's competing want, otherwise a specific object, rule or event, never "
+        "only a feeling.\n"
+        "- `opening` is the first thing that happens on the page: someone doing or saying something, already in motion, and "
+        "not the way an earlier chapter opened (see the earlier chapters in brief).\n"
+        "- `agendas` hold one item for each other person present: what they want from this scene, a want that competes with "
+        "the main character's or a thing they are hiding. People's wants come from their cards and from what has happened.\n"
+        "- `events` are a few sentences in order, each a change in leverage: someone gains, loses or gives up an advantage, a "
+        "secret, a hold on someone. A bare action with no change in who has the upper hand is not an event.\n"
         "- `ends_on` is the situation the chapter stops at, in a few words, not a quoted line. It must be true right after the "
-        "chapter's last event. Unless this is the last chapter, it must be a hook: a question, a threat, a reversal, or a "
-        "choice still open, never a moment that reads as settled or safe to stop on. In the last chapter, land the story "
-        "instead: end on the broad destination, not a cliffhanger.\n"
+        "chapter's last event. Unless this is the last chapter, make it a hook: a question, a threat, a reversal, or a "
+        "choice still open. A chapter that is a release (the shape says so, or its direction is better) may end settled with "
+        "one thing still open. In the last chapter, land the story instead.\n"
         "- A new plant is a specific object, line or action in this chapter that a LATER chapter may use. Leave `plants` empty "
         "rather than writing general observations, and write none in the last chapter.\n"
-        "- `tone` is one sentence on how this chapter reads, as the narration style defines it.\n"
-        f"- The people listed under PEOPLE are the whole cast of this chapter. `present` and `shifts` use only them, the main "
+        f"- The people listed under PEOPLE are the whole cast of this chapter. `present` and `agendas` use only them, the main "
         f"character is always present, at most {MAX_CAST} are present, and no one else in the story is named or involved, "
         "not even in the events. `location` is a place from the list.\n"
         + (
-            f"- THIS IS THE LAST CHAPTER: a character's ending above can only be shown if they are in `present` here — anyone "
-            f"left out is excluded from the chapter entirely and their ending cannot happen on the page. Put every person "
-            f'whose ending under "Where each person ends up" is not already true in `present` (up to {MAX_CAST}), and write '
-            f"events that actually land each of their endings in action, not by having someone else report it secondhand. "
-            f"Only leave someone out if the cast limit forces a choice or their ending has already happened on the page in an "
-            f"earlier chapter.\n"
+            f"- THIS IS THE LAST CHAPTER: land the answer to the story's central question and what it costs, as the ending "
+            f"above describes. Show each person's ending under \"Where each person ends up\" that can be shown, in action "
+            f"and not reported secondhand, but everyone need not be present: put in `present` the people the answer and its "
+            f"price need (up to {MAX_CAST}). An ending that has already happened on the page does not need showing again.\n"
             if n == total
             else ""
         )
         + "\nREVISING (optional): you may also correct the story's setup when the chapter just written really changed it: "
-        "`revised_premise`, `revised_theme`, `revised_ending`, `revised_arcs` (all of them), `revised_leave_open` (the full list) "
+        "`revised_premise`, `revised_opposition` (who or what now stands against the main character), `revised_theme`, "
+        "`revised_shape` (with chapter numbers), `revised_ending`, `revised_arcs` (all of them), `revised_leave_open` (the full list) "
         "and `closed_leave_open` (items now settled), with `why_revised`. Do it only when events call for it, keep the rest empty, and "
         "keep the ending a broad destination, not a schedule. A story is allowed to end up somewhere other than where it started "
         "heading.\n" + f"{language_rule(language)}\n" + JSON_RULES
