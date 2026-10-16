@@ -328,52 +328,68 @@ class StoryProject(BaseModel):
             _shown(getattr(w, f), mine.get(f), lambda x: x.id)
             for f in ("locations", "objects", "groups")
         )
-        parts = ["WORLD", f"Setting (the place and occasion): {w.setting}"]
+        def sentence(t: str) -> str:
+            t = t.strip()
+            return t if not t or t[-1] in ".!?" else t + "."
+
+        # The world reads as a short page, not a form: no ids, no labelled rule lists.
+        parts = ["WORLD"]
+        opening = " ".join(sentence(x) for x in (w.setting, w.pressure) if x.strip())
+        if opening:
+            parts.append(opening)
         if w.rules:
             parts.append(
-                "Rules (permanent facts; never contradict them and do not re-explain them):\n"
-                + "\n".join(f"- {r}" for r in w.rules)
+                "How things work here (settled; do not re-explain them):\n"
+                + " ".join(sentence(r) for r in w.rules)
             )
-        if w.hidden_truths:
-            rows = []
-            for t in w.hidden_truths:
-                who = ", ".join(self.name_of(k) for k in t.known_by) or "nobody yet"
-                rows.append(f"- {t.fact} (known by: {who})")
+        if locations:
             parts.append(
-                "Hidden truths (true facts the story keeps back; a character may act on one only if it "
-                "lists them as knowing it, or if this chapter's beat reveals it):\n"
-                + "\n".join(rows)
+                "Places the story can go:\n"
+                + "\n".join(f"{l.name}: {sentence(l.description)}" for l in locations)
             )
-        parts.append(
-            "Locations:\n"
-            + "\n".join(f"- {l.name}: {l.description}" for l in locations)
-        )
         if objects:
             rows = []
             for o in objects:
-                row = f"- {o.name}: {o.description}"
-                if o.owner:
-                    row += f" Held by {self.name_of(o.owner)}."
-                if o.location:
-                    row += f" At {loc.get(o.location, o.location)}."
+                row = f"{o.name}: {sentence(o.description)}"
+                where = loc.get(o.location, o.location) if o.location else None
+                if o.owner and where:
+                    row += f" {self.name_of(o.owner)} has it, at {where}."
+                elif o.owner:
+                    row += f" {self.name_of(o.owner)} has it."
+                elif where:
+                    row += f" It is at {where}."
                 rows.append(row)
             parts.append(
-                "Objects (who holds each and where it sits are current; respect them):\n"
+                "Things that matter (who has each and where it is are current; respect them):\n"
                 + "\n".join(rows)
             )
         if groups:
             rows = []
             for g in groups:
-                row = f"- {g.name}: {g.description}"
-                if g.wants:
-                    row += f" Wants: {g.wants}"
+                row = f"{g.name}: {sentence(g.description)}"
+                if g.wants.strip():
+                    row += f" They want {g.wants.strip().rstrip('.')}."
                 rows.append(row)
             parts.append(
-                "Groups (background collectives; they may appear as unnamed crowds or officials, their "
-                "wants shape how they act, and they are never given proper names):\n"
+                "People to reckon with (they act through unnamed officials or crowds, never through a named person):\n"
                 + "\n".join(rows)
             )
-        return "\n".join(parts)
+        if w.hidden_truths:
+            rows = []
+            for t in w.hidden_truths:
+                who = ", ".join(self.name_of(k) for k in t.known_by) or "nobody yet"
+                row = f"{sentence(t.fact)} Known by: {who}."
+                if t.stake.strip():
+                    row += f" At stake: {sentence(t.stake)}"
+                rows.append(row)
+            parts.append(
+                "Unspoken (true, but not yet on the page; a character acts on one only if listed as knowing it, "
+                "or if this chapter reveals it):\n" + "\n".join(rows)
+            )
+        parts.append(
+            "The places, things and groups above are a selection made for this chapter, not everything in the world."
+        )
+        return "\n\n".join(parts)
 
     def context_for_chapter(self, chapter_num: int, feed: Optional[dict] = None) -> str:
         """

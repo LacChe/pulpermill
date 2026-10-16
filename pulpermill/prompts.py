@@ -53,10 +53,11 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
 
         HOW TO READ THE CARDS: each section says what it is for. Each character is a portrait of who they are;
         what they have lived through in this story comes from the story so far, and the summary's last lines say
-        how they feel as this chapter opens. Never contradict the world's rules, and follow the beat's narration
-        line for person and tense. The lists of exemplars, chapter shapes, places, objects and groups are a
-        selection made for this chapter, not everything on the cards. If an ENDING section appears,
-        this is the final chapter: land it.
+        how they feel as this chapter opens. Never contradict how things work in the world, and follow the beat's narration
+        line for person and tense. The world is a short page: what living there costs, how things work, the
+        places the story can go, the things and groups that matter, and what is unspoken. The lists of exemplars,
+        chapter shapes, places, things and groups are a selection made for this chapter, not everything on the
+        cards. If an ENDING section appears, this is the final chapter: land it.
 
         STORY SO FAR (summary of earlier chapters):
         {prior_summary_block}
@@ -103,6 +104,10 @@ GENERATE_CHAPTER_PROMPT = """LANGUAGE (this overrides everything else below): wr
         - If the style section gives a chapter shape, open and close the chapter as it says. Without one, begin
           with someone doing or saying something, and don't open the way the previous chapter opened. A catchphrase
           or gesture from the cards is used at most once per chapter.
+        - The places, things and groups listed are the tracked ones. A minor passing thing (a cup, a doorway, a
+          stray dog) may be invented in the scene, provided it stays minor, is never named as recurring, and carries
+          no plot. Let the world's pressure and what is unspoken shape what people do and avoid, rather than
+          touching every item listed.
         - Once a rule, mechanism, or detail has been established in an earlier chapter, treat it as understood
           and don't re-explain it.
         - Vary physical tics and transitions rather than defaulting to a recurring gesture.
