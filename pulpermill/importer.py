@@ -467,6 +467,18 @@ def import_cards(items, existing):
                 if at is None:
                     final.append(c)
                 else:
+                    old = final[at].get("name", "")
+                    if old.strip().lower() != c["name"].strip().lower():
+                        warnings.append(
+                            M(
+                                "{file}: '{new}' replaced '{old}', who has the same id '{id}'; "
+                                "if they are two different people, give one of them another id",
+                                file=name,
+                                new=c["name"],
+                                old=old,
+                                id=c["id"],
+                            )
+                        )
                     final[at] = c
                 touched += 0 if replacing else 1
         if final and touched:
