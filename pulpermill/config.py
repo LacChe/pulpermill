@@ -48,7 +48,7 @@ MAX_TOKENS = {
     "characters": 5500,
     "character": 1600,  # one person, rewritten alone
     "world": 4000,
-    "outline": 3500,
+    "outline": 4200,  # opposition, relationships, shape and agendas make the card longer. An estimate: re-measure on a real run
     "beat": 2500,
 }  # answer budget per stage
 CHARS_PER_TOKEN = 3.5  # conservative, for the length counters in the page
@@ -61,7 +61,7 @@ MIN_TOKENS = {
     "characters": 4200,
     "character": 1100,
     "world": 2500,
-    "outline": 2500,
+    "outline": 2800,
     "beat": 1500,
 }  # smallest answer a card may get; sets the input limits
 # MAX_CHARACTERS and MAX_CHAPTERS come from schema.py
