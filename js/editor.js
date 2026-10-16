@@ -13,7 +13,7 @@ const STAGES = [
   {
     k: "world",
     t: "World",
-    d: "Setting, rules, hidden truths, places, objects and groups.",
+    d: "The place and what living there costs, how things work, places, objects, groups and secrets.",
   },
   {
     k: "outline",
@@ -27,7 +27,7 @@ const HINTS = {
   characters:
     "For each person: what they want, how they see themselves versus what they actually do, what they do under pressure, how they talk, and how they treat people. Leave out what happens to them in this story.",
   world:
-    "The place and occasion, how it works as plain fact (one line per mechanic), the places, the objects that matter, and the secrets: what is true, who knows it, who does not.",
+    "Where and when, and what living there costs. How things work, and what each rule makes people give up. The places and what they do to people, the objects people want or fear, the groups they live under, and the secrets: what is true, who is guarding it, and what exposure would cost.",
   outline:
     "Chapter by chapter: where, whose point of view, what each person wants and is hiding, what goes wrong, how it ends. What must be planted early and pay off later. What the ending looks like concretely, and what stays unresolved.",
 };

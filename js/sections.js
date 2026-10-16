@@ -70,24 +70,29 @@ const SECTIONS = {
   ],
   world: [
     {
-      t: "Setting and rules",
-      keys: ["setting", "rules"],
-      d: "The time and place, and what counts as normal there. Rules are plain facts about how this world works (laws, limits, mechanics), stated as settled fact, not as writing advice.",
+      t: "The place and what it costs",
+      keys: ["setting", "pressure"],
+      d: "Setting is where and when, and what an ordinary day is like; it may carry one past event that people still live under. Pressure is what living here costs: what is scarce, forbidden or owed, and who feels it.",
+    },
+    {
+      t: "How things work here",
+      keys: ["rules"],
+      d: "Short statements, each a mechanic or custom plus what it makes people do or give up. A rule with no price attached is not worth keeping.",
     },
     {
       t: "Places",
       keys: ["locations"],
-      d: "The settings where scenes happen. A few concrete sensory details for each (what it looks, sounds and smells like) are enough.",
+      d: "The settings where scenes happen. For each, say what the place does to people: who belongs there and who does not, what is done or hidden there.",
     },
     {
       t: "Objects and groups",
       keys: ["objects", "groups"],
-      d: "Objects are things that matter to the plot, with who holds them and where they are. Groups are factions or organizations; only say what a group wants if it affects the story.",
+      d: "Objects are things people want, fear or have paid for, with who holds them and where they are now. Groups are factions or organizations: how they are felt in daily life, and what they want.",
     },
     {
       t: "Secrets",
       keys: ["hidden_truths"],
-      d: "Facts that are true in your world but have not appeared on the page yet. They steer the story from behind the scenes, and you choose which characters already know each one. Readers learn a secret when a chapter reveals it.",
+      d: "Facts that are true in your world but have not appeared on the page yet. For each, say who is guarding it and what exposure would cost, and choose which characters already know it. Readers learn a secret when a chapter reveals it.",
     },
   ],
   outline: [

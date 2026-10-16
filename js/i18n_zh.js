@@ -167,16 +167,16 @@ const ZH = {
     "叙述的语气和腔调。根据你的输入生成,不含人名和情节。",
   "The whole cast in one pass, written to be different from each other.":
     "一次生成全部角色,彼此各不相同。",
-  "Setting, rules, hidden truths, places, objects and groups.":
-    "背景设定、规则、隐藏真相、地点、物品和团体。",
+  "The place and what living there costs, how things work, places, objects, groups and secrets.":
+    "地点及生活在那里的代价、事物如何运转、地点、物品、团体和秘密。",
   "Premise, ending, arcs and the opening beat. The story continues from here, one chapter at a time.":
     "故事前提、结局、角色弧线和开篇要点。故事从这里开始,逐章继续写下去。",
   "How should the narration sound? What does the narrator notice and ignore, and what attitude does it take toward events? How plain or ornate are the words? How much metaphor, how funny, how far inside the main character's head? What rhythm, how much dialogue? What would ruin it?":
     "叙述听起来应该是什么样?讲述者会注意什么、忽略什么,对事件抱什么态度?用词是平实还是华丽?比喻多不多,有多幽默,在主角的内心里走多深?节奏如何,对话占多少?什么会毁掉它?",
   "For each person: what they want, how they see themselves versus what they actually do, what they do under pressure, how they talk, and how they treat people. Leave out what happens to them in this story.":
     "对每个人物:他们想要什么,自我认知与实际行为有何差距,压力下的反应,怎么说话,以及待人方式。不要写他们在这个故事里经历了什么。",
-  "The place and occasion, how it works as plain fact (one line per mechanic), the places, the objects that matter, and the secrets: what is true, who knows it, who does not.":
-    "地点与场合,它如何运作的客观事实(每条规则一行),各个地点,重要的物品,以及秘密:真相是什么,谁知道,谁不知道。",
+  "Where and when, and what living there costs. How things work, and what each rule makes people give up. The places and what they do to people, the objects people want or fear, the groups they live under, and the secrets: what is true, who is guarding it, and what exposure would cost.":
+    "时间地点,以及生活在那里的代价。事物如何运转,每条规则让人付出什么。地点对人的影响,人们渴望或畏惧的物品,他们生活其下的团体,以及秘密:真相是什么,谁在守着它,暴露会付出什么代价。",
   "Chapter by chapter: where, whose point of view, what each person wants and is hiding, what goes wrong, how it ends. What must be planted early and pay off later. What the ending looks like concretely, and what stays unresolved.":
     "逐章写明:在哪里,谁的视角,每个人想要什么、隐瞒什么,哪里出了问题,如何收尾。哪些要早早埋下、之后回收。结局具体是什么样,哪些事保持悬而未决。",
   "Chapter {k} story": "第{k}章故事",
@@ -398,6 +398,14 @@ const ZH = {
   "{a} and {b} have the same sample line: '{line}'":
     "{a}和{b}有相同的台词示例:“{line}”",
   "{id}: unknown known_by '{who}'": "{id}:未知的知情者“{who}”",
+  "{id}: the stake is empty. Say who is guarding this secret and what exposure would cost":
+    "{id}:利害为空。请写明谁在守着这个秘密,以及暴露会付出什么代价",
+  "The world has no pressure. Say in a sentence or two what living here costs, and who feels it":
+    "这个世界没有压力。请用一两句话写明生活在这里的代价,以及谁在承受",
+  "The world has no places. The outline needs at least one location":
+    "这个世界没有地点。大纲至少需要一个地点",
+  "The world has {n} {field}; about {hi} is the most the writer can keep in view, so anything more is better left to the scene":
+    "这个世界有 {n} 个{field};写作者最多能同时兼顾约 {hi} 个,更多的留给场景自己去发挥更好",
   "ch{n}: unknown character '{who}'": "第{n}章:未知的角色“{who}”",
   "ch{n}: reveals unknown truth '{truth}'": "第{n}章:揭示了未知的真相“{truth}”",
   "{name}: an attitude toward themselves was dropped":
@@ -539,6 +547,8 @@ const ZH = {
   "hidden truths": "隐藏真相",
   id: "编号",
   "known by": "知情者",
+  pressure: "压力",
+  stake: "利害",
   label: "标签",
   "leave open": "保持开放",
   locations: "地点列表",
@@ -703,18 +713,21 @@ const ZH = {
   "With people and in speech": "待人与说话",
   "How they handle others and what they hold back, what gets past their armor, and how they talk. Give each character a different way of speaking.":
     "他们如何对待别人、对别人隐瞒什么,什么能突破他们的防备,以及他们怎么说话。每个角色的说话方式要不同。",
-  "Setting and rules": "背景与规则",
-  "The time and place, and what counts as normal there. Rules are plain facts about how this world works (laws, limits, mechanics), stated as settled fact, not as writing advice.":
-    "时间和地点,以及那里什么算正常。规则是关于这个世界如何运转的朴素事实(法律、限制、机制),按既定事实来写,不是写作建议。",
+  "The place and what it costs": "地点与代价",
+  "Setting is where and when, and what an ordinary day is like; it may carry one past event that people still live under. Pressure is what living here costs: what is scarce, forbidden or owed, and who feels it.":
+    "背景设定是时间、地点,以及寻常一天是什么样;它可以带上一件人们至今仍活在其阴影下的往事。压力是生活在这里的代价:什么稀缺、被禁止或欠着债,以及谁在承受。",
+  "How things work here": "这里的运转方式",
+  "Short statements, each a mechanic or custom plus what it makes people do or give up. A rule with no price attached is not worth keeping.":
+    "简短的陈述,每条是一种机制或习俗,加上它让人做什么或放弃什么。没有代价的规则不值得保留。",
   Places: "地点",
-  "The settings where scenes happen. A few concrete sensory details for each (what it looks, sounds and smells like) are enough.":
-    "场景发生的地方。每处写几个具体的感官细节(看起来、听起来、闻起来是什么样)就够了。",
+  "The settings where scenes happen. For each, say what the place does to people: who belongs there and who does not, what is done or hidden there.":
+    "场景发生的地方。对每处写明它对人的影响:谁属于那里、谁不属于,那里发生或隐藏着什么。",
   "Objects and groups": "物品与团体",
-  "Objects are things that matter to the plot, with who holds them and where they are. Groups are factions or organizations; only say what a group wants if it affects the story.":
-    "物品是对情节重要的东西,写明谁拿着、放在哪里。团体是派系或组织;只有当它的诉求会影响故事时,才写它想要什么。",
+  "Objects are things people want, fear or have paid for, with who holds them and where they are now. Groups are factions or organizations: how they are felt in daily life, and what they want.":
+    "物品是人们渴望、畏惧或为之付出过代价的东西,写明现在谁拿着、放在哪里。团体是派系或组织:日常生活里怎样感受到它们,以及它们想要什么。",
   Secrets: "秘密",
-  "Facts that are true in your world but have not appeared on the page yet. They steer the story from behind the scenes, and you choose which characters already know each one. Readers learn a secret when a chapter reveals it.":
-    "在你的世界里为真、但尚未在文中出现的事实。它们在幕后推动故事,你来选择哪些角色已经知道。读者会在某一章揭示它时才得知。",
+  "Facts that are true in your world but have not appeared on the page yet. For each, say who is guarding it and what exposure would cost, and choose which characters already know it. Readers learn a secret when a chapter reveals it.":
+    "在你的世界里为真、但尚未在文中出现的事实。对每条写明谁在守着它、暴露会付出什么代价,并选择哪些角色已经知道。读者会在某一章揭示它时才得知。",
   "The story's core": "故事的核心",
   "Premise is the story in one or two sentences: who wants what, and what goes wrong. Protagonist is the one character the story follows. Theme is the idea underneath, a condition that must be met before things can change; no character ever says it aloud. Ending is what is concretely true at the close, not just what people have learned.":
     "故事前提是用一两句话讲清楚的故事:谁想要什么,哪里出了问题。主角是故事始终跟随的那一个角色。主题是藏在底下的想法,是事情发生改变之前必须满足的条件,没有角色会把它说出口。结局是结尾时具体成立的事实,而不只是人们明白了什么。",
