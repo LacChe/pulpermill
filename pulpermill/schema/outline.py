@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import dataclasses
 import re
+from enum import Enum
 from pydantic import BaseModel, Field, model_validator
-from pydantic.json_schema import SkipJsonSchema
 from typing import Optional, TYPE_CHECKING
 
 from .common import (
@@ -26,66 +26,25 @@ if TYPE_CHECKING:  # only the annotation of finalize_next_beat needs it; a real 
 # ===========================================================================
 
 
-class Shift(BaseModel):
+class Direction(str, Enum):
+    better = "better"
+    worse = "worse"
+    mixed = "mixed"
+
+
+class Agenda(BaseModel):
     character: str = Field(description="Character id or name.")
-    movement: str = Field(
-        description="One line: what changes in this person during the chapter, including what they do or say "
-        "differently that shows it."
+    wants: str = Field(
+        description="What this person is after in this scene, including anything they are hiding or holding back."
     )
 
 
-# --- the six-stage escalation chain: every chapter says which stage it portrays ----------------------------
-# Neutral wording on purpose: the style card carries the genre's flavour (pulp, reflective, comic), the stages only
-# say what has to change. Stakes live in Spark and Friction. These strings go to the model in English, like every
-# other prompt in this file; the page shows only the number.
-STORY_STAGES: dict[int, tuple[str, str]] = {
-    1: (
-        "Setup",
-        "Show the baseline: who is where, what they are doing, what normal looks like right before it breaks. "
-        "Make clear what the point-of-view character wants or is trying to protect. No backstory or "
-        "exposition dump; action or dialogue sets the scene.",
-    ),
-    2: (
-        "Spark",
-        "One disruptive event (a discovery, an arrival, a threat) interrupts the baseline and forces a "
-        "choice or an immediate action. Going back to the baseline becomes impossible. The disruption makes "
-        "concrete what the point-of-view character stands to gain or lose.",
-    ),
-    3: (
-        "Friction",
-        "The character tries to deal with the Spark and it goes badly: the attempt fails, backfires or "
-        "uncovers a deeper problem. By the end the situation is visibly worse or more urgent than it was, "
-        "and what failing would cost is clearer than before.",
-    ),
-    4: (
-        "Shift",
-        "A turning point: a reveal, a betrayal, a new deadline or a reversal changes the rules. The approach "
-        "used in Friction no longer works and cannot be used again. The characters are pushed into a "
-        "high-risk choice they cannot take back.",
-    ),
-    5: (
-        "Peak",
-        "Everything built up collides at the point of highest pressure. The core conflict is met head-on and "
-        "someone has to commit fully, with no safety net. The immediate tension is settled one way or the "
-        "other: who got what, and what was lost.",
-    ),
-    6: (
-        "Aftermath",
-        "Short. Show the direct result of the Peak and what is now different for the characters or their "
-        "world. End on a compact closing beat in the register the style card sets.",
-    ),
-}
-LAST_STAGE = max(STORY_STAGES)
-
-
-def spread_stages(n: int) -> list[int]:
-    """Stage each of n chapters ends in: non-decreasing, ends on the last stage. Up to six chapters share the six stages
-    in equal runs (3 chapters: 2, 4, 6, so each covers two stages); more than six repeat the middle ones."""
-    if n <= 0:
-        return []
-    if n <= LAST_STAGE:
-        return [-(-LAST_STAGE * (i + 1) // n) for i in range(n)]
-    return [int(1 + i * (LAST_STAGE - 1) / (n - 1) + 0.5) for i in range(n)]
+class Relationship(BaseModel):
+    a: str = Field(description="Character id.")
+    b: str = Field(description="Character id.")
+    between: str = Field(
+        description="What lies between these two in this story: a debt, a lie, a grievance, a hunger."
+    )
 
 
 _NUM_WORDS = {
@@ -160,51 +119,46 @@ def chapter_count_in(text: str) -> Optional[int]:
     return next((n for _, n in found if 1 <= n <= MAX_CHAPTERS), None)
 
 
-def stages_valid(stages: list) -> bool:
-    return (
-        bool(stages)
-        and all(isinstance(x, int) and 1 <= x <= LAST_STAGE for x in stages)
-        and all(a <= b for a, b in zip(stages, stages[1:]))
-        and stages[-1] == LAST_STAGE
-    )
-
-
-STAGE_FIELD_DOC = (
-    "Which of the six story stages this chapter ends in, as a number 1-6: 1 Setup, 2 Spark, 3 Friction, 4 Shift, "
-    "5 Peak, 6 Aftermath. Never goes down from one chapter to the next, and the last chapter is 6. If a chapter "
-    "follows a jump (for example from 2 to 4), it also covers the stages it skipped."
+OPENING_DOC = (
+    "The first moment on the page, chosen for this chapter's job: who is doing or saying what, and where. Structure "
+    "only; the writer chooses the words."
 )
-
-
-def stage_lines_for(prev: Optional[int], stage: int) -> list[str]:
-    """The story stage(s) a chapter ending in `stage` has to portray, given the stage the chapter before it ended in
-    (0 before the first chapter, None when unknown)."""
-    if prev is None:
-        prev = stage  # earlier chapter has no stage: say nothing about skips
-    first = (
-        prev + 1 if prev < stage else stage
-    )  # a repeated stage is a continuation, not a skip
-    covered = list(range(first, stage + 1))
-    head = "Story stage" + ("s" if len(covered) > 1 else "")
-    names = ", then ".join(f"{k} {STORY_STAGES[k][0]}" for k in covered)
-    lines = [f"{head} (how far the story must get in this chapter): {names}"]
-    if prev == stage:
-        lines.append(
-            "  The previous chapter was in this same stage. Advance within it: a new situation, new people or a different "
-            "kind of obstacle, never a repeat of what already happened."
-        )
-    for k in covered:
-        lines.append(f"  {STORY_STAGES[k][0]}: {STORY_STAGES[k][1]}")
-    if len(covered) > 1:
-        lines.append(
-            "  Cover these in order, each getting its own part of the chapter, and keep the last one for "
-            "the final part so the chapter ends on its closing moment."
-        )
-    if stage == LAST_STAGE:
-        lines.append(
-            "  This is the end of the story: do not stop before the result and the closing beat have been written."
-        )
-    return lines
+DIRECTION_DOC = (
+    "For the main character, how things stand at the chapter's end compared with its start: better, worse, or mixed "
+    "(a gain and a loss together)."
+)
+GOAL_DOC = (
+    "What the main character wants in this chapter and, if they are hiding or avoiding something while they go "
+    "after it, what that is."
+)
+OBSTACLE_DOC = (
+    "Whose want crosses the main character's, and what that force is doing now. Prefer a person with a competing "
+    "want; use an object, rule or event only when no person fits."
+)
+EVENTS_DOC = (
+    "Three to five lines, in order, one sentence each. Each line is a change in leverage (someone gains ground, "
+    "loses it, or is exposed), not a bare action."
+)
+ENDS_ON_DOC = (
+    "The situation the chapter stops at, in a few words (for example: 'they are cornered at the vault "
+    "door'). A point to arrive at, not a quoted line: the writer chooses the exact words. It must be true after "
+    "this chapter's last event and must not depend on anything from an earlier or later chapter."
+)
+TURN_DOC = (
+    "One sentence: what is true when this chapter ends that was not true when it began (a decision made, a "
+    "secret out, a relationship changed, a plan broken, a new danger). If nothing changed, the chapter is not worth writing."
+)
+PLANTS_DOC = (
+    "Concrete things that appear or happen on the page in this chapter (an object, a line of "
+    "dialogue, an action) and that a LATER chapter uses again. Write the thing itself, not what it means or "
+    "symbolises. Empty if there are none."
+)
+PAYS_OFF_DOC = (
+    "For each earlier plant this chapter uses again, copy that plant's wording exactly. Empty if there are none."
+)
+AGENDAS_DOC = (
+    "One item for each other person present: what they are after in this scene, including anything they are hiding."
+)
 
 
 class ChapterBeat(BaseModel):
@@ -214,81 +168,66 @@ class ChapterBeat(BaseModel):
     present: list[str] = Field(
         description="Character ids of everyone in the scene, including the main character."
     )
-    stage: Optional[int] = Field(
-        default=None, ge=1, le=LAST_STAGE, description=STAGE_FIELD_DOC
-    )
-    goal: str = Field(
-        description="What the main character wants in this chapter and, if they are hiding or avoiding something "
-        "while they go after it, what that is."
-    )
-    obstacle: str = Field(
-        description="What interferes with the goal in this scene. Prefer something specific the characters run into "
-        "(a person, object, rule or event) over a bare feeling."
-    )
-    events: list[str] = Field(
-        description="Three to five actions, in order, one sentence each. Plain actions only."
-    )
-    ends_on: str = Field(
-        description="The situation the chapter stops at, in a few words (for example: 'they are cornered at the vault "
-        "door'). A point to arrive at, not a quoted line: the writer chooses the exact words. It must be true after "
-        "this chapter's last event and must not depend on anything from an earlier or later chapter."
-    )
-    turn: str = Field(
-        default="",
-        description="One sentence: what is true when this chapter ends that was not true when it began (a decision made, a "
-        "secret out, a relationship changed, a plan broken, a new danger). If nothing changed, the chapter is not worth writing.",
-    )
-    tone: Optional[str] = Field(
-        default=None,
-        description="One sentence on how this chapter reads, its mood as the style card defines it, and where that "
-        "mood turns or is undercut. About the register of the telling, not about how the characters develop.",
-    )
-    shifts: list[Shift] = Field(
-        default_factory=list,
-        description="Only characters who visibly change this chapter.",
-    )
-    plants: list[str] = Field(
-        default_factory=list,
-        description="Concrete things that appear or happen on the page in this chapter (an object, a line of "
-        "dialogue, an action) and that a LATER chapter uses again. Write the thing itself, not what it means or "
-        "symbolises. Empty if there are none.",
-    )
-    pays_off: list[str] = Field(
-        default_factory=list,
-        description="For each earlier plant this chapter uses again, copy that plant's wording exactly. "
-        "Empty if there are none.",
-    )
+    opening: str = Field(description=OPENING_DOC)
+    direction: Direction = Field(description=DIRECTION_DOC)
+    goal: str = Field(description=GOAL_DOC)
+    obstacle: str = Field(description=OBSTACLE_DOC)
+    agendas: list[Agenda] = Field(description=AGENDAS_DOC)
+    events: list[str] = Field(description=EVENTS_DOC)
+    ends_on: str = Field(description=ENDS_ON_DOC)
+    turn: str = Field(default="", description=TURN_DOC)
+    plants: list[str] = Field(default_factory=list, description=PLANTS_DOC)
+    pays_off: list[str] = Field(default_factory=list, description=PAYS_OFF_DOC)
     reveals: list[str] = Field(
         default_factory=list,
         description="Ids of hidden truths (like truth_1) that become known on the page to everyone present.",
     )
 
 
+ARC_END_DOC = (
+    "How this person ends up, stated with the concrete thing they do or say on the page that shows it, plus what in "
+    "this story forces the change and what it costs them."
+)
+PREMISE_DOC = (
+    "One or two sentences: who wants what, what stands in the way, and what winning or losing would cost."
+)
+OPPOSITION_DOC = (
+    "Who or what stands against the main character (a person, a group, the world's pressure, their own flaw), what it "
+    "wants, and what it does if nobody stops it."
+)
+THEME_DOC = (
+    "The choice the story forces, written as two goods set against each other. Steers the plot; no character ever "
+    "states it."
+)
+SHAPE_DOC = (
+    "A few plain sentences saying where hope, the false win, the low point, the peak and the coda fall, with chapter "
+    "numbers, scaled to the total number of chapters. Rising and falling, not a steady climb."
+)
+ENDING_DOC = (
+    "The answer to the story's central question and its price: what has been done or said, what it cost, and what is "
+    "still open. A situation, not only what the characters now understand."
+)
+BETWEEN_DOC = (
+    "What lies between these two in this story: a debt, a lie, a grievance, a hunger."
+)
+
+
 class CharacterArc(BaseModel):
     character: str = Field(description="Character id.")
-    end: str = Field(
-        description="How this person has changed by the end, stated together with the concrete thing they do or "
-        "say on the page that shows it."
-    )
+    end: str = Field(description=ARC_END_DOC)
 
 
 class PlotOutline(BaseModel):
-    premise: str = Field(
-        description="One or two sentences: who wants what from whom, where, and what goes wrong."
-    )
+    premise: str = Field(description=PREMISE_DOC)
     protagonist: str = Field(
-        default="",
         description="Character id of the story's one main character. Every chapter is told from this person's side, in "
         "the person (first or third) the style card sets, and never from anyone else's.",
     )
-    theme: str = Field(
-        description="One line, phrased as a condition that has to be met before things can change. Steers the plot; "
-        "no character ever states it."
-    )
-    ending: str = Field(
-        description="What is concretely true at the end: what has been done or said, and what is still open. "
-        "A situation, not only a summary of what the characters now understand."
-    )
+    opposition: str = Field(description=OPPOSITION_DOC)
+    relationships: list[Relationship]
+    theme: str = Field(description=THEME_DOC)
+    shape: str = Field(description=SHAPE_DOC)
+    ending: str = Field(description=ENDING_DOC)
     arcs: list[CharacterArc]
     leave_open: list[str] = Field(
         default_factory=list,
@@ -302,41 +241,21 @@ class PlotOutline(BaseModel):
     )
     chapter_beats: list[ChapterBeat] = Field(min_length=1)
 
-    @model_validator(mode="before")
-    @classmethod
-    def _older_outlines(cls, d):
-        """Outlines made when each chapter had its own point of view: the main character is the first chapter's."""
-        if (
-            isinstance(d, dict)
-            and not d.get("total_chapters")
-            and d.get("chapter_beats")
-        ):
-            d = {
-                **d,
-                "total_chapters": len(d["chapter_beats"]),
-            }  # a complete outline: its length is the total
-        if isinstance(d, dict) and not d.get("protagonist"):
-            beats = d.get("chapter_beats") or []
-            arcs = d.get("arcs") or []
-            first = (
-                beats[0].get("pov") if beats and isinstance(beats[0], dict) else None
-            ) or (
-                arcs[0].get("character") if arcs and isinstance(arcs[0], dict) else None
-            )
-            if first:
-                d = {**d, "protagonist": first}
-        return d
-
 
 # --- what the model writes for an outline: names instead of ids -------------------------------------------
 
 
-class ShiftD(BaseModel):
+class AgendaD(BaseModel):
     character: str = Field(description="Character name.")
-    movement: str = Field(
-        description="One line: what changes in this person during the chapter, including what they do or say "
-        "differently that shows it."
+    wants: str = Field(
+        description="What this person is after in this scene, including anything they are hiding or holding back."
     )
+
+
+class RelationshipD(BaseModel):
+    a: str = Field(description="Exact character name from the cast list.")
+    b: str = Field(description="Exact character name from the cast list.")
+    between: str = Field(description=BETWEEN_DOC)
 
 
 class BeatD(BaseModel):
@@ -345,50 +264,16 @@ class BeatD(BaseModel):
     present: list[str] = Field(
         description="Names of everyone in the scene, including the main character."
     )
-    stage: SkipJsonSchema[int] = (
-        0  # never asked of the model: code assigns it from the fixed spread of stages
-    )
-    goal: str = Field(
-        description="What the main character wants in this chapter and, if they are hiding or avoiding something "
-        "while they go after it, what that is."
-    )
-    obstacle: str = Field(
-        description="What interferes with the goal in this scene. Prefer something specific the characters run into "
-        "(a person, object, rule or event) over a bare feeling."
-    )
-    events: list[str] = Field(
-        description="Three to five actions, in order, one sentence each. Plain actions only."
-    )
-    ends_on: str = Field(
-        description="The situation the chapter stops at, in a few words (for example: 'they are cornered at the vault "
-        "door'). A point to arrive at, not a quoted line: the writer chooses the exact words. It must be true after "
-        "this chapter's last event and must not depend on anything from an earlier or later chapter."
-    )
-    turn: str = Field(
-        default="",
-        description="One sentence: what is true when this chapter ends that was not true when it began (a decision made, a "
-        "secret out, a relationship changed, a plan broken, a new danger). If nothing changed, the chapter is not worth writing.",
-    )
-    tone: Optional[str] = Field(
-        default=None,
-        description="One sentence on how this chapter reads, its mood as the style card defines it, and where that "
-        "mood turns or is undercut. About the register of the telling, not about how the characters develop.",
-    )
-    shifts: list[ShiftD] = Field(
-        default_factory=list,
-        description="Only characters who visibly change this chapter.",
-    )
-    plants: list[str] = Field(
-        default_factory=list,
-        description="Concrete things that appear or happen on the page in this chapter (an object, a line of "
-        "dialogue, an action) and that a LATER chapter uses again. Write the thing itself, not what it means or "
-        "symbolises. Empty if there are none.",
-    )
-    pays_off: list[str] = Field(
-        default_factory=list,
-        description="For each earlier plant this chapter uses again, copy that plant's wording exactly. "
-        "Empty if there are none.",
-    )
+    opening: str = Field(description=OPENING_DOC)
+    direction: Direction = Field(description=DIRECTION_DOC)
+    goal: str = Field(description=GOAL_DOC)
+    obstacle: str = Field(description=OBSTACLE_DOC)
+    agendas: list[AgendaD] = Field(description=AGENDAS_DOC)
+    events: list[str] = Field(description=EVENTS_DOC)
+    ends_on: str = Field(description=ENDS_ON_DOC)
+    turn: str = Field(default="", description=TURN_DOC)
+    plants: list[str] = Field(default_factory=list, description=PLANTS_DOC)
+    pays_off: list[str] = Field(default_factory=list, description=PAYS_OFF_DOC)
     reveals: list[str] = Field(
         default_factory=list,
         description="Ids of hidden truths (like truth_1) that become known on the page to everyone present. Only ids from the "
@@ -398,10 +283,7 @@ class BeatD(BaseModel):
 
 class ArcD(BaseModel):
     character: str = Field(description="Character name.")
-    end: str = Field(
-        description="How this person has changed by the end, stated together with the concrete thing they do or "
-        "say on the page that shows it."
-    )
+    end: str = Field(description=ARC_END_DOC)
 
 
 class NextBeatD(BeatD):
@@ -416,9 +298,17 @@ class NextBeatD(BeatD):
         default="",
         description="Only if the story has really changed since the premise was written: the premise as it should now read. Otherwise empty.",
     )
+    revised_opposition: str = Field(
+        default="",
+        description="Only if events have changed who or what stands against the main character: the opposition as it should now read. Otherwise empty.",
+    )
     revised_theme: str = Field(
         default="",
         description="Only if the story's real subject has shifted: the theme as it should now read. Otherwise empty.",
+    )
+    revised_shape: str = Field(
+        default="",
+        description="Only if events have bent the story's course: the shape as it should now read, with chapter numbers. Otherwise empty.",
     )
     revised_ending: str = Field(
         default="",
@@ -444,21 +334,16 @@ class NextBeatD(BeatD):
 
 
 class OutlineDraft(BaseModel):
-    premise: str = Field(
-        description="One or two sentences: who wants what from whom, where, and what goes wrong."
-    )
+    premise: str = Field(description=PREMISE_DOC)
     protagonist: str = Field(
         description="Exact name, from the character list, of the story's one main character. The whole story is told "
         "from this person's side in every chapter."
     )
-    theme: str = Field(
-        description="One line, phrased as a condition that has to be met before things can change. Steers the plot; "
-        "no character ever states it."
-    )
-    ending: str = Field(
-        description="What is concretely true at the end: what has been done or said, and what is still open. "
-        "A situation, not only a summary of what the characters now understand."
-    )
+    opposition: str = Field(description=OPPOSITION_DOC)
+    relationships: list[RelationshipD]
+    theme: str = Field(description=THEME_DOC)
+    shape: str = Field(description=SHAPE_DOC)
+    ending: str = Field(description=ENDING_DOC)
     arcs: list[ArcD]
     leave_open: list[str] = Field(
         default_factory=list,
@@ -492,11 +377,11 @@ def finalize_outline(
     """
     Names to ids. `cast` is a list of character cards (or dicts with `id`/`name`); `world` is a WorldBible or dict.
     Chapter numbers come from list order. Nothing here raises for a name that does not match: an unknown main
-    character falls back to someone in the first scene, unknown people in present, shifts or arcs and unknown reveals are dropped, and
+    character falls back to someone in the first scene, unknown people in present, agendas, relationships or arcs and unknown reveals are dropped, and
     all of it is reported in `notes` (people can still appear in the events text). An unknown place is matched
     to a clear near-neighbour, or else added as a new location and returned in `new_locations`.
     The draft holds one beat. It is chapter `start` (1 for the outline itself, later for a rolling next beat); the total
-    is the author's count (`n_chapters`) or else the draft's own, and the stage comes from the fixed spread, never the model.
+    is the author's count (`n_chapters`) or else the draft's own.
     """
     cast = _as_dicts(cast)
     world = world.model_dump() if isinstance(world, BaseModel) else world
@@ -601,12 +486,10 @@ def finalize_outline(
                 max=MAX_CHAPTERS,
             )
         )
-    plan = spread_stages(total)
     protagonist = choose_protagonist()
     beats = []
     for n, b in enumerate(draft.chapter_beats, start):
         data = b.model_dump()
-        data["stage"] = plan[min(n, total) - 1]
         present = list(
             dict.fromkeys(
                 [protagonist]
@@ -630,21 +513,45 @@ def finalize_outline(
             chapter_num=n,
             location=place(b.location, n),
             present=present,
-            shifts=[
-                {"character": r, "movement": sh.movement}
-                for sh in b.shifts
-                if (r := soft(sh.character, n, M("the shifts")))
+            agendas=[
+                {"character": r, "wants": ag.wants}
+                for ag in b.agendas
+                if (r := soft(ag.character, n, M("the agendas")))
             ],
             reveals=list(
                 dict.fromkeys(t for t in (truth(x, n) for x in b.reveals) if t)
             ),
         )
         beats.append(ChapterBeat(**data))
+    relationships = []
+    for rel in draft.relationships:
+        ra, rb = cres.find(rel.a), cres.find(rel.b)
+        if ra is None or rb is None:
+            notes.append(
+                M(
+                    "the relationship between '{a}' and '{b}' was left out because one of them is not in your cast",
+                    a=rel.a,
+                    b=rel.b,
+                )
+            )
+        elif ra == rb:
+            notes.append(
+                M(
+                    "a relationship between '{a}' and '{b}' was left out because they are the same person",
+                    a=rel.a,
+                    b=rel.b,
+                )
+            )
+        else:
+            relationships.append(Relationship(a=ra, b=rb, between=rel.between))
     plot = PlotOutline(
         premise=draft.premise,
         protagonist=protagonist,
+        opposition=draft.opposition,
+        relationships=relationships,
         total_chapters=total,
         theme=draft.theme,
+        shape=draft.shape,
         ending=draft.ending,
         leave_open=draft.leave_open,
         arcs=[
@@ -739,11 +646,11 @@ BEAT_CLASH = (
 
 
 def finalize_next_beat(draft, story: "StoryProject", n: int):
-    """The beat the model wrote for chapter `n`, as a ChapterBeat: names to ids, the stage from the fixed spread, and the
+    """The beat the model wrote for chapter `n`, as a ChapterBeat: names to ids, and the
     picks checked against what is still available (a truth already revealed or a payoff with no open plant is dropped, with a
     note). The draft may be a NextBeatD: its revisions of the setup are checked here and returned, not applied.
     Returns (beat, notes, new_locations, changes); the caller adds the new places to the World card and applies `changes`
-    ({"premise"/"theme"/"ending": text, "leave_open": list, "arcs": [CharacterArc]}) to the plot."""
+    ({"premise"/"opposition"/"theme"/"shape"/"ending": text, "leave_open": list, "arcs": [CharacterArc]}) to the plot."""
     plot = story.plot
     base = BeatD.model_validate(
         {k: v for k, v in draft.model_dump().items() if k in BeatD.model_fields}
@@ -752,7 +659,10 @@ def finalize_next_beat(draft, story: "StoryProject", n: int):
     od = OutlineDraft(
         premise=plot.premise,
         protagonist=story.name_of(plot.protagonist),
+        opposition=plot.opposition,
+        relationships=[],
         theme=plot.theme,
+        shape=plot.shape,
         ending=plot.ending,
         arcs=new_arcs,
         chapter_count=plot.total_chapters,
@@ -790,7 +700,9 @@ def finalize_next_beat(draft, story: "StoryProject", n: int):
     changes, shown = {}, []
     for field, label in (
         ("premise", M("premise")),
+        ("opposition", M("opposition")),
         ("theme", M("theme")),
+        ("shape", M("shape")),
         ("ending", M("ending")),
     ):
         new = (getattr(draft, "revised_" + field, "") or "").strip()

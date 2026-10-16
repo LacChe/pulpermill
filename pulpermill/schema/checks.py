@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from .characters import PORTRAIT_FIELDS, CharacterCard
 from .common import M, _CJK_RE, _TITLES, _related, est_words, similar
-from .outline import LAST_STAGE, PlotOutline
+from .outline import PlotOutline
 from .story import StoryProject
 from .style import StyleCard
 from .world import WORLD_TARGETS, WorldBible
@@ -223,37 +223,48 @@ def check_outline(plot: PlotOutline, cast: set[str], world: WorldBible) -> list[
         if a.character not in cast:
             out.append(M("arc: unknown character '{who}'", who=a.character))
     ordered = sorted(beats, key=lambda b: b.chapter_num)
-    given = [b.stage for b in ordered]
-    if any(x is not None for x in given):
-        if any(x is None for x in given):
-            m = M("some chapters have no story stage (1-6); set one on every chapter")
-            for b in ordered:
-                if b.stage is None:
-                    m.on("outline.chapter_beats.stage", b.chapter_num, None)
-            out.append(m)
-        elif any(a > b for a, b in zip(given, given[1:])):
-            m = M(
-                "story stages go backwards between chapters: {stages}",
-                stages=", ".join(map(str, given)),
+    if not plot.opposition.strip():
+        out.append(
+            M("the setup has no opposition: who or what stands against the main character").on(
+                "outline.opposition", None, ""
             )
-            for prev, b in zip(ordered, ordered[1:]):
-                if prev.stage > b.stage:
-                    m.on("outline.chapter_beats.stage", b.chapter_num, b.stage)
-            out.append(m)
-        elif given[-1] != LAST_STAGE and len(ordered) >= plot.total_chapters:
+        )
+    if not plot.shape.strip():
+        out.append(
+            M("the setup has no shape: where hope, the low point and the peak fall").on(
+                "outline.shape", None, ""
+            )
+        )
+    for r in plot.relationships:
+        for who in (r.a, r.b):
+            if who not in cast:
+                out.append(M("relationship: unknown character '{who}'", who=who))
+        if r.a == r.b:
+            out.append(
+                M("relationship: '{who}' is paired with themselves", who=r.a)
+            )
+    dirs = [b.direction.value for b in ordered]
+    for i in range(2, len(ordered)):
+        run = dirs[i - 2 : i + 1]
+        if run[0] != "mixed" and run[0] == run[1] == run[2]:
             out.append(
                 M(
-                    "the last chapter should be story stage {last} (Aftermath), not {got}",
-                    last=LAST_STAGE,
-                    got=given[-1],
-                ).on("outline.chapter_beats.stage", ordered[-1].chapter_num, given[-1])
+                    "chapters {a} to {b} all go {way} for the main character; a story that only climbs or only falls reads flat",
+                    a=ordered[i - 2].chapter_num,
+                    b=ordered[i].chapter_num,
+                    way=run[0],
+                ).on(
+                    "outline.chapter_beats.direction",
+                    ordered[i].chapter_num,
+                    run[0],
+                )
             )
     revealed: dict[str, list[int]] = {}
     for b in beats:
         n = b.chapter_num
         if b.location not in locs:
             out.append(M("ch{n}: unknown location '{where}'", n=n, where=b.location))
-        for cid in [*b.present, *[s.character for s in b.shifts]]:
+        for cid in [*b.present, *[a.character for a in b.agendas]]:
             if cid not in cast:
                 out.append(M("ch{n}: unknown character '{who}'", n=n, who=cid))
         if plot.protagonist not in b.present:

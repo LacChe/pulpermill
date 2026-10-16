@@ -10,7 +10,6 @@ from .outline import (
     ChapterBeat,
     PlotOutline,
     beat_similarity,
-    stage_lines_for,
 )
 from .style import DIAL_FIELDS, POV, StyleCard, ladder_text
 from .world import WorldBible
@@ -152,11 +151,11 @@ class StoryProject(BaseModel):
             b.goal,
             b.obstacle,
             b.ends_on,
-            b.tone or "",
+            b.opening,
             *b.events,
             *b.plants,
             *b.pays_off,
-            *(sh.movement for sh in b.shifts),
+            *(a.wants for a in b.agendas),
         ]
         return _beat_seq("\n".join(parts))
 
@@ -421,19 +420,6 @@ class StoryProject(BaseModel):
             )
         return "\n\n".join(parts)
 
-    def stage_lines(self, chapter_num: int) -> list[str]:
-        """What story stage(s) this chapter has to portray. Empty for outlines that predate the stage field."""
-        b = self.beat_for(chapter_num)
-        if b.stage is None:
-            return []
-        before = [
-            x for x in self.plot.chapter_beats if x.chapter_num == chapter_num - 1
-        ]
-        prev = (
-            before[0].stage if before else 0
-        )  # 0: the first chapter starts from Setup
-        return stage_lines_for(prev, b.stage)
-
     def render_beat(self, chapter_num: int) -> str:
         """Readable text for the chapter's beat: every line says what it is for, and no ids appear."""
         b = self.beat_for(chapter_num)
@@ -442,7 +428,6 @@ class StoryProject(BaseModel):
         name = self.name_of(self.plot.protagonist)
         lines = [
             self.narration_rule(b),
-            *self.stage_lines(chapter_num),
             f"The chapter opens at {where}, {b.when}, with {', '.join(self.name_of(p) for p in b.present)} on the page.",
             f"{name} is after this: {b.goal} Standing in the way: {b.obstacle}",
             "What happens, in order (write only this; nothing from the next chapter begins here):",
@@ -450,15 +435,8 @@ class StoryProject(BaseModel):
             f"Stop the chapter as soon as this is reached, writing nothing past it -- a situation to arrive at, "
             f"not a line to copy: {b.ends_on}",
         ]
-        if b.tone:
-            lines.append(f"The telling itself: {b.tone}")
-        if b.shifts:
-            lines.append(
-                "Dramatize these in action or dialogue, not just implied consistency:"
-            )
-            lines += [
-                f"  - {self.name_of(s.character)}: {s.movement}" for s in b.shifts
-            ]
+        if b.agendas:
+            lines += [f"{self.name_of(a.character)} is after: {a.wants}" for a in b.agendas]
         if b.plants:
             lines.append(
                 "Place quietly on the page, without resolving it: "

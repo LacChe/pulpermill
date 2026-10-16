@@ -4,7 +4,7 @@ import json
 
 from .characters import CastDraft, CharacterCard
 from .common import POOLS
-from .outline import PlotOutline, STORY_STAGES
+from .outline import PlotOutline
 from .style import DESIGN_ANCHORS, LADDERS, StyleCard
 from .updates import StateUpdate
 from .world import WorldBible, WorldDraft
@@ -25,16 +25,14 @@ REFS = {
     "outline.chapter_beats.location": "location",
     "outline.protagonist": "character",
     "outline.chapter_beats.present": "character",
-    "outline.chapter_beats.shifts.character": "character",
+    "outline.chapter_beats.agendas.character": "character",
+    "outline.relationships.a": "character",
+    "outline.relationships.b": "character",
     "outline.chapter_beats.reveals": "truth",
 }
 
-# Fields that take one of a fixed set of numbered choices: path -> [[value, name], ...] (shown as "3 · Friction").
-CHOICES = {
-    "outline.chapter_beats.stage": [
-        [k, STORY_STAGES[k][0]] for k in sorted(STORY_STAGES)
-    ]
-}
+# Fields that take one of a fixed set of numbered choices: path -> [[value, name], ...]. None now (the page reads SCH.choices).
+CHOICES: dict[str, list] = {}
 
 # Fields the card GENERATOR page hides (live state that starts empty). None now: a character holds no live state.
 GENERATOR_HIDDEN: list[str] = []
