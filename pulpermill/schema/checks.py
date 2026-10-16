@@ -8,7 +8,7 @@ from .common import M, _CJK_RE, _TITLES, _related, est_words, similar
 from .outline import LAST_STAGE, PlotOutline
 from .story import StoryProject
 from .style import StyleCard
-from .world import WorldBible
+from .world import WORLD_TARGETS, WorldBible
 
 
 # ===========================================================================
@@ -160,6 +160,36 @@ def check_world(world: WorldBible, cast: set[str]) -> list[str]:
         for k in t.known_by:
             if k not in cast:
                 out.append(M("{id}: unknown known_by '{who}'", id=t.id, who=k))
+        if not t.stake.strip():
+            out.append(
+                M(
+                    "{id}: the stake is empty. Say who is guarding this secret and what exposure would cost",
+                    id=t.id,
+                ).on("world.hidden_truths.stake", t.id, t.stake)
+            )
+    if not world.pressure.strip():
+        out.append(
+            M(
+                "The world has no pressure. Say in a sentence or two what living here costs, and who feels it"
+            ).on("world.pressure", None, world.pressure)
+        )
+    if not world.locations:
+        out.append(
+            M("The world has no places. The outline needs at least one location").on(
+                "world.locations", None, []
+            )
+        )
+    for field, (_, hi) in WORLD_TARGETS.items():
+        n = len(getattr(world, field))
+        if n > hi:
+            out.append(
+                M(
+                    "The world has {n} {field}; about {hi} is the most the writer can keep in view, so anything more is better left to the scene",
+                    n=n,
+                    field=field.replace("_", " "),
+                    hi=hi,
+                )
+            )
     return out
 
 

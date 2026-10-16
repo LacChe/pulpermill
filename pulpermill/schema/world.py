@@ -11,16 +11,29 @@ from .common import M, Resolver, UsesMap, _as_dicts, _pooled, clean_uses, unique
 # ===========================================================================
 
 
+# How many of each the prompt asks for. Guidance and soft warnings only: never a pydantic limit, so a hand-edited card
+# with more or fewer still loads.
+WORLD_TARGETS = {
+    "rules": (3, 6),
+    "locations": (3, 6),
+    "objects": (2, 5),
+    "groups": (1, 4),
+    "hidden_truths": (2, 4),
+}
+
+
 class LocationDraft(BaseModel):
     name: str
     description: str = Field(
-        description="Two or three concrete sensory details of the place."
+        description="What the place does to people: who belongs there and who does not, what is done or hidden there."
     )
 
 
 class ObjectDraft(BaseModel):
     name: str
-    description: str = Field(description="What it is and why it matters to the story.")
+    description: str = Field(
+        description="Why people want it, fear it, or have paid for it."
+    )
     owner: Optional[str] = Field(
         default=None,
         description="Name of the character who holds it now, exactly as in the cast, or null.",
@@ -32,14 +45,18 @@ class ObjectDraft(BaseModel):
 
 class GroupDraft(BaseModel):
     name: str
-    description: str
-    wants: str = Field(description="What the group wants, only if it affects the plot.")
+    description: str = Field(
+        description="How the group is felt in daily life, by the people who live near it or under it."
+    )
+    wants: str = Field(description="What the group wants.")
 
 
 class TruthDraft(BaseModel):
     fact: str = Field(
-        description="A true thing about the story world that has not yet appeared on the page and should "
-        "steer the story from behind the scenes."
+        description="A true thing about the world that has not yet appeared on the page and steers the story from behind the scenes."
+    )
+    stake: str = Field(
+        description="Who is guarding it, and what exposure would cost them or others."
     )
     known_by: list[str] = Field(
         default_factory=list,
@@ -48,17 +65,20 @@ class TruthDraft(BaseModel):
 
 
 class WorldDraft(BaseModel):
+    # Field order is the order the model writes them: the secrets come last so they can lean on everything before.
     setting: str = Field(
-        description="One paragraph on the time, the place, and what counts as normal there."
+        description="Where and when, and what an ordinary day is like. It may carry one past event that people still live under."
+    )
+    pressure: str = Field(
+        description="One or two sentences on what living here costs: what is scarce, forbidden or owed, and who feels it."
     )
     rules: list[str] = Field(
-        description="Plain statements of how this world works: mechanics, laws, limits. State each as settled fact, "
-        "with no instruction about tone or how to write it."
+        description="Short statements of how this world works. Each gives a mechanic or custom and the price it puts on someone."
     )
-    hidden_truths: list[TruthDraft] = Field(default_factory=list)
     locations: list[LocationDraft]
-    objects: list[ObjectDraft] = Field(default_factory=list)
     groups: list[GroupDraft] = Field(default_factory=list)
+    objects: list[ObjectDraft] = Field(default_factory=list)
+    hidden_truths: list[TruthDraft] = Field(default_factory=list)
 
 
 class Location(BaseModel):
@@ -85,11 +105,13 @@ class Group(BaseModel):
 class HiddenTruth(BaseModel):
     id: str
     fact: str
+    stake: str
     known_by: list[str] = Field(default_factory=list)  # LIVE: character ids
 
 
 class WorldBible(BaseModel):
     setting: str
+    pressure: str
     rules: list[str]
     hidden_truths: list[HiddenTruth] = Field(default_factory=list)
     locations: list[Location]
@@ -190,9 +212,10 @@ def finalize_world(
                     names=names,
                 )
             )
-        truths.append(HiddenTruth(id=f"truth_{n}", fact=t.fact, known_by=known))
+        truths.append(HiddenTruth(id=f"truth_{n}", fact=t.fact, stake=t.stake, known_by=known))
     return WorldBible(
         setting=draft.setting,
+        pressure=draft.pressure,
         rules=draft.rules,
         hidden_truths=truths,
         locations=[
