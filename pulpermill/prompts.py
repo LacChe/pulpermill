@@ -15,6 +15,7 @@ from .schema import (
     PORTRAIT_FIELDS,
     STORY_STAGES,
     StyleCard,
+    WORLD_TARGETS,
     WorldDraft,
     ladder_text,
     ladders_for_prompt,
@@ -538,29 +539,76 @@ def character_prompt(req, cast, target) -> str:
 
 
 # ---------------------------------------------------------------- WORLD
+def world_cast_lines(cast) -> str:
+    """The cast as the world card sees it: name, role, want and armor, so the world's pressure can rub against what each
+    person wants and how they defend themselves. (The outline's cast_lines stays name and role only.)"""
+
+    def one(c):
+        def sent(f):
+            t = str(c.get(f, "")).strip()
+            return t if not t or t[-1] in ".!?" else t + "."
+
+        role = str(c.get("role", "")).strip().rstrip(".")
+        head = f"- {c['name']} is {role}." if role else f"- {c['name']}."
+        return " ".join(x for x in (head, sent("want"), sent("armor")) if x)
+
+    return "\n".join(one(c) for c in cast)
+
+
+WORLD_RULES = (
+    "- Keep every specific the author gave exactly as written. Invent only what is missing, and spend that invention on "
+    "cost, price and secrets rather than scenery.\n"
+    "- The test for every entry: does it create a choice, a cost or a feeling for someone? If not, leave it out. A world "
+    "is not an inventory; do not list things just because the source mentions them.\n"
+    "- `setting` is one short paragraph: where and when, and what an ordinary day is like for the people there. It may "
+    "carry one past event that people still live under. Add no era, country or scale the source does not state.\n"
+    "- `pressure` is one or two sentences on what living here costs: what is scarce, forbidden or owed, and who feels it. "
+    "Let it rub against what the cast want and how they defend themselves, without naming any one person and without "
+    "touching anyone's wound.\n"
+    "- `rules` are short statements, each a mechanic or custom plus what it makes people do or give up. A rule with no "
+    "price attached is not worth stating. Never tell the writer how to write or what tone to use.\n"
+    "- Describe customs and texture concretely, but without praising them or explaining them to an outsider.\n"
+    "- A location says what the place does to people: who belongs there and who does not, what is done or hidden there. "
+    "A sensory detail is welcome only if it carries that. A group is described by how it is felt in daily life, then "
+    "what it wants. An object is described by why people want it, fear it or have paid for it.\n"
+    "- An object's `owner` is the name of a cast member or null. Its `location` is the exact name of one of the "
+    "locations you write, or null when the source does not say where it is.\n"
+    "- A hidden truth is a true fact that has not yet appeared on the page and steers the story from behind the scenes. "
+    "`stake` says who is guarding it and what exposure would cost them or others. `known_by` lists the names of the cast "
+    "members the fact is about or who did the thing, unless the source says nobody knows it, in which case it is empty. "
+    "Write the truths last, so they can lean on everything above.\n"
+    "- Aim for about {rules} rules, {locations} places, {objects} objects, {groups} groups and {truths} hidden truths. "
+    "Anything beyond that is left to the scene to invent. Use every place the source says a scene happens in, folding "
+    "minor ones into a larger place rather than leaving a scene without a setting.\n"
+    "- Shown in other genres (never copy their wording). rule: not 'The tithe is paid at harvest' but 'The tithe is "
+    "paid at harvest in grain, so every family chooses each year which child goes hungry.' location: not 'a dim room with "
+    "a low ceiling and the smell of tallow' but 'the counting-house, where the ones who owe go in by the side door and "
+    "nobody asks who came out with less than they brought.' stake: not 'the ship is haunted' but 'the captain has kept "
+    "the logbook locked since the first death, and if the crew read it they would sail home and he would hang.'\n"
+).format(
+    rules="{}-{}".format(*WORLD_TARGETS["rules"]),
+    locations="{}-{}".format(*WORLD_TARGETS["locations"]),
+    objects="{}-{}".format(*WORLD_TARGETS["objects"]),
+    groups="{}-{}".format(*WORLD_TARGETS["groups"]),
+    truths="{}-{}".format(*WORLD_TARGETS["hidden_truths"]),
+)
+
+
 def world_prompt(req, cast) -> str:
     return (
-        "You are writing the world card for a story-writing engine.\n\n"
-        f"{source_block(req)}\n\nTHE CAST (write people by these names exactly):\n{cast_lines(cast)}\n\n"
+        "You are writing the world card for a story-writing engine. The card is read by the chapter writer as a short page "
+        "about the place, so write each entry as plain prose about what it costs and means to people.\n\n"
+        f"{source_block(req)}\n\nTHE CAST (write people by these names exactly; they are here so that the world can press "
+        f"on what they want, and the card never explains their wounds):\n{world_cast_lines(cast)}\n\n"
         "TASK: Write the world the story happens in.\nRULES:\n"
-        "- The setting is one paragraph of the place and occasion the source describes. Add no era, country, scale "
-        "or popularity the source does not state, and never explain or praise the world's customs.\n"
-        "- Write one rule for every mechanic the source describes, each as a separate settled fact. Never tell the "
-        "writer how to write or what tone to use.\n"
-        "- A hidden truth is a true fact that has not yet appeared on the page and steers the story from behind "
-        "the scenes. `known_by` lists the names of the cast members the fact is about or who did the thing, unless the "
-        "source says nobody knows it, in which case it is empty.\n"
+        + WORLD_RULES
         + (
             "- Read the chapter for facts that some characters know and others do not, or that the story keeps back "
-            "for later. List each as a hidden truth, with `known_by` the people who know it. If there are none, leave "
-            "the list empty.\n"
+            "for later. List each as a hidden truth, with its `stake` and with `known_by` the people who know it. If "
+            "there are none, leave the list empty.\n"
             if req.mode == "chapter"
             else ""
         )
-        + "- An object's `owner` is the name of a cast member or null. Its `location` is the exact name of one of "
-        "the locations you write, or null when the source does not say where it is.\n"
-        "- Write a location for every place the source names or says a scene happens in, without merging or skipping "
-        "any. Include only the objects and groups that matter to the plot.\n"
         + tail(req, WorldDraft)
     )
 

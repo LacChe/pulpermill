@@ -30,7 +30,11 @@ function priorTokens(k) {
     ? tokensEst(
         c.characters
           .map(
-            (x) => (x.id || "") + " " + (x.name || "") + " " + (x.role || ""),
+            (x) =>
+              k === "world"
+                ? /* the world prompt shows name, role, want and armor */
+                  [x.name, x.role, x.want, x.armor].join(" ")
+                : (x.id || "") + " " + (x.name || "") + " " + (x.role || ""),
           )
           .join(" "),
       ) +
@@ -41,7 +45,16 @@ function priorTokens(k) {
   return (
     cast +
     (w
-      ? tokensEst(strings([w.locations, w.rules, w.hidden_truths, w.groups])) +
+      ? tokensEst(
+          strings([
+            w.setting,
+            w.pressure,
+            w.locations,
+            w.rules,
+            w.hidden_truths,
+            w.groups,
+          ]),
+        ) +
         8
       : 700)
   );

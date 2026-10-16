@@ -108,6 +108,7 @@ from .world import (
     Group,
     HiddenTruth,
     WorldBible,
+    WORLD_TARGETS,
     finalize_world,
 )
 from .outline import (

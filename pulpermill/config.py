@@ -34,7 +34,7 @@ MODEL_SIZE_FALLBACK_BYTES = (
 TEMPS = {
     "style": 0.7,
     "characters": 0.6,  # a little warmer than the other cards: the character fields are prose. Lower it if the cards get too wild
-    "world": 0.4,
+    "world": 0.55,  # the world card is mostly prose now (costs, what a place does to people), so it runs warmer than the outline. A starting point: tune on a real run
     "outline": 0.4,
     "beat": 0.5,
 }  # lower = sticks closer to your notes
@@ -53,7 +53,7 @@ MAX_TOKENS = {
 }  # answer budget per stage
 CHARS_PER_TOKEN = 3.5  # conservative, for the length counters in the page
 INSTRUCTION_TOKENS = (
-    1200  # rough size of each stage's instructions, for the page's limits
+    1400  # rough size of each stage's instructions, for the page's limits
 )
 RETRY_RESERVE = 400  # room kept for a retry's error message
 MIN_TOKENS = {
