@@ -34,7 +34,8 @@ function priorTokens(k) {
               k === "world"
                 ? /* the world prompt shows name, role, want and armor */
                   [x.name, x.role, x.want, x.armor].join(" ")
-                : (x.id || "") + " " + (x.name || "") + " " + (x.role || ""),
+                : /* the outline prompt shows name, role, want, armor, with_people, soft_spot and limits */
+                  [x.name, x.role, x.want, x.armor, x.with_people, x.soft_spot, x.limits].join(" "),
           )
           .join(" "),
       ) +

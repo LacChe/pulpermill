@@ -7,7 +7,7 @@ let SCH = (() => {
   } catch (e) {
     return null;
   }
-})() || { enums: {}, nullable: [], hidden: [], refs: {}, choices: {} };
+})() || { enums: {}, nullable: [], hidden: [], refs: {}, choices: {}, lists: {} };
 /* ---------- state ----------
    story.pages[j] is chapter j+1: the cards it starts from (editable), the notes that go with them, and the chapter
    written from them (`result`). Page 1 starts blank; every later page is filled from the chapter before it. */

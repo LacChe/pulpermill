@@ -39,11 +39,6 @@ const ZH = {
     "按你的备注重写第{k}章?新版本会替换当前版本。",
   "Your note: {note}": "你的备注:{note}",
   Setup: "开篇",
-  Spark: "触发",
-  Friction: "阻力",
-  Shift: "转折",
-  Peak: "高潮",
-  Aftermath: "尾声",
   "(none)": "(无)",
   "(choose one)": "(请选择)",
   "{v} (not on the cards)": "{v}(卡片中没有)",
@@ -167,16 +162,12 @@ const ZH = {
     "一次生成全部角色,彼此各不相同。",
   "The place and what living there costs, how things work, places, objects, groups and secrets.":
     "地点及生活在那里的代价、事物如何运转、地点、物品、团体和秘密。",
-  "Premise, ending, arcs and the opening beat. The story continues from here, one chapter at a time.":
-    "故事前提、结局、角色弧线和开篇要点。故事从这里开始,逐章继续写下去。",
   "How should the narration sound? What does the narrator notice and ignore, and what attitude does it take toward events? How plain or ornate are the words? How much metaphor, how funny, how far inside the main character's head? What rhythm, how much dialogue? What would ruin it?":
     "叙述听起来应该是什么样?讲述者会注意什么、忽略什么,对事件抱什么态度?用词是平实还是华丽?比喻多不多,有多幽默,在主角的内心里走多深?节奏如何,对话占多少?什么会毁掉它?",
   "For each person: what they want, how they see themselves versus what they actually do, what they do under pressure, how they talk, and how they treat people. Leave out what happens to them in this story.":
     "对每个人物:他们想要什么,自我认知与实际行为有何差距,压力下的反应,怎么说话,以及待人方式。不要写他们在这个故事里经历了什么。",
   "Where and when, and what living there costs. How things work, and what each rule makes people give up. The places and what they do to people, the objects people want or fear, the groups they live under, and the secrets: what is true, who is guarding it, and what exposure would cost.":
     "时间地点,以及生活在那里的代价。事物如何运转,每条规则让人付出什么。地点对人的影响,人们渴望或畏惧的物品,他们生活其下的团体,以及秘密:真相是什么,谁在守着它,暴露会付出什么代价。",
-  "Chapter by chapter: where, whose point of view, what each person wants and is hiding, what goes wrong, how it ends. What must be planted early and pay off later. What the ending looks like concretely, and what stays unresolved.":
-    "逐章写明:在哪里,谁的视角,每个人想要什么、隐瞒什么,哪里出了问题,如何收尾。哪些要早早埋下、之后回收。结局具体是什么样,哪些事保持悬而未决。",
   "Chapter {k} story": "第{k}章故事",
   "Out of date: an earlier chapter was rewritten":
     "已过期:之前的某一章被重写过",
@@ -346,12 +337,6 @@ const ZH = {
     "前面没有伏笔的回收:{items}。请在前文埋下伏笔,或删掉它们",
   "stray markdown asterisks in output": "输出中混入了多余的 Markdown 星号",
   "no beat for chapter {n}": "第{n}章没有章节要点",
-  "some chapters have no story stage (1-6); set one on every chapter":
-    "有些章节没有故事阶段(1-6);请给每一章都设置一个阶段",
-  "story stages go backwards between chapters: {stages}":
-    "章节之间的故事阶段出现了倒退:{stages}",
-  "the last chapter should be story stage {last} (Aftermath), not {got}":
-    "最后一章应为故事阶段 {last}(尾声),而不是 {got}",
   "{label}: unknown {kind} '{value}'": "{label}:未知的{kind}“{value}”",
   "object_moves: unknown object '{obj}'": "object_moves:未知的物品“{obj}”",
   "{obj} is no longer held by {was}": "{obj}不再由{was}持有",
@@ -411,7 +396,6 @@ const ZH = {
   "{name}'s condition: {text}": "{name}的状态:{text}",
   "the arcs": "角色弧线",
   "{who} now knows: {fact}": "{who}现在知道了:{fact}",
-  "the shifts": "变动",
   "the people present": "在场人物",
   "the model could not produce valid output after {n} tries: {why}":
     "模型尝试 {n} 次后仍未能给出有效输出:{why}",
@@ -563,11 +547,8 @@ const ZH = {
   role: "身份",
   rules: "规则",
   setting: "背景设定",
-  shifts: "变动",
-  stage: "阶段",
   tense: "时态",
   uses: "已用次数",
-  tone: "基调",
   voice: "口吻",
   lens: "观察视角",
   stance: "态度",
@@ -723,23 +704,55 @@ const ZH = {
   "Facts that are true in your world but have not appeared on the page yet. For each, say who is guarding it and what exposure would cost, and choose which characters already know it. Readers learn a secret when a chapter reveals it.":
     "在你的世界里为真、但尚未在文中出现的事实。对每条写明谁在守着它、暴露会付出什么代价,并选择哪些角色已经知道。读者会在某一章揭示它时才得知。",
   "The story's core": "故事的核心",
-  "Premise is the story in one or two sentences: who wants what, and what goes wrong. Protagonist is the one character the story follows. Theme is the idea underneath, a condition that must be met before things can change; no character ever says it aloud. Ending is what is concretely true at the close, not just what people have learned.":
-    "故事前提是用一两句话讲清楚的故事:谁想要什么,哪里出了问题。主角是故事始终跟随的那一个角色。主题是藏在底下的想法,是事情发生改变之前必须满足的条件,没有角色会把它说出口。结局是结尾时具体成立的事实,而不只是人们明白了什么。",
-  "Character arcs and open questions": "角色弧线与悬而未决的问题",
-  'An arc is how a person changes from start to finish, paired with something they do or say that shows it. "Leave open" lists questions you want the story to deliberately never answer.':
-    "弧线是一个人从头到尾的变化,并配上能体现这种变化的一个具体言行。“保持开放”列出你希望故事有意不作回答的问题。",
+  /* Setup card: labels, choices, sections, warnings */
+  opposition: "对立面",
+  relationships: "人物关系",
+  shape: "故事形状",
+  direction: "走向",
+  opening: "开场",
+  agendas: "各方诉求",
+  between: "之间的纠葛",
+  "option better": "变好",
+  "option worse": "变糟",
+  "option mixed": "有得有失",
+  "{a} and {b}": "{a}与{b}",
+  "the agendas": "各方诉求",
+  "Who wants what and what stands in the way, the shape of the story, the ending, and the opening chapter. The story continues from here, one chapter at a time.":
+    "谁想要什么、什么在阻挡,故事的形状、结局和开篇一章。故事从这里开始,逐章继续写下去。",
+  "Who wants what, and what stands in their way: a person with a want of their own is better than a vague threat. What lies between the people, the choice the story forces, and where it rises and falls. For the opening chapter: where it starts, what each person present is after or hiding, who gains or loses the upper hand, and how it ends. What the ending costs, and what stays unresolved.":
+    "谁想要什么、谁在阻挡:有自己诉求的人,比一个模糊的威胁更好。人物之间的纠葛,故事逼人做出的选择,以及故事在哪里起、在哪里落。对开篇一章:从哪里开始,在场每个人在追求或隐瞒什么,谁占上风、谁失势,又如何收尾。结局要付出什么代价,哪些事保持悬而未决。",
+  "Premise is the story in one or two sentences: who wants what, what stands in the way, and what winning or losing would cost. Protagonist is the one character the story follows. Opposition is what stands against them and what it wants; a person with a want of their own works better than a vague force. Theme is the choice the story forces, two good things set against each other; no character ever says it aloud. Ending is the answer to the story's central question and what it cost, as a concrete situation.":
+    "故事前提是用一两句话讲清楚的故事:谁想要什么,什么在阻挡,赢了或输了要付出什么。主角是故事始终跟随的那一个角色。对立面是与主角对抗的力量及其所求;有自己诉求的人,比模糊的力量更好。主题是故事逼人做出的选择,是两件好东西彼此对立,没有角色会把它说出口。结局是故事核心问题的答案及其代价,写成一个具体的局面。",
+  "People and arcs": "人物与弧线",
+  'A relationship pairs two characters and says what lies between them: a debt, a lie, a grievance, a hunger. An arc is how a person ends up, paired with something they do or say that shows it, what forces the change and what it costs them. "Leave open" lists questions you want the story to deliberately never answer.':
+    "人物关系把两个角色配成一对,写明他们之间有什么:一笔债、一个谎言、一桩怨恨、一种渴求。弧线是一个人最终走到哪里,并配上体现它的具体言行、是什么逼他改变、以及这要他付出什么。“保持开放”列出你希望故事有意不作回答的问题。",
+  "How many chapters the whole story has, fixed from the start. Shape says where hope, a false win, the low point, the peak and the coda fall, with chapter numbers, rising and falling rather than climbing steadily. Only the chapter you are working on has a plan; the next is planned after it is written.":
+    "整个故事共有多少章(一开始就定下)。故事形状写明希望、虚假的胜利、低谷、高潮和尾声各落在哪一章,有起有落,而不是一路攀升。只有你正在写的这一章有计划;下一章在这一章写完之后再规划。",
+  "When and where the chapter starts, who is there, and the first thing that happens on the page: someone already doing or saying something.":
+    "这一章在何时何地开始,谁在场,以及落在纸面上的第一件事:有人已经在做事或说话。",
+  "What the main character wants in this chapter, and what runs up against it, best of all another person's competing want. Agendas say what each other person present is after or hiding. Events are the few things that happen in order, each a shift in who has the upper hand. Ends on is the situation the chapter stops on.":
+    "主角这一章想要什么,什么与之相撞,最好是另一个人相互冲突的诉求。各方诉求写明在场的其他人各自在追求或隐瞒什么。事件是按顺序发生的几件事,每件都让谁占上风发生转移。收尾处是这一章停下的局面。",
+  "One sentence on what is true at the end that was not true at the start, and whether the chapter leaves the main character better off, worse off, or both.":
+    "用一句话写出结尾时成立、而开头时不成立的事,以及这一章让主角变好、变糟,还是有得有失。",
+  "the setup has no opposition: who or what stands against the main character":
+    "开篇没有对立面:谁或什么在与主角对抗",
+  "the setup has no shape: where hope, the low point and the peak fall":
+    "开篇没有故事形状:希望、低谷和高潮各落在哪里",
+  "relationship: unknown character '{who}'": "人物关系:未知的角色“{who}”",
+  "relationship: '{who}' is paired with themselves": "人物关系:“{who}”被配成了与自己一对",
+  "chapters {a} to {b} all leave the main character better off; a story that only climbs reads flat":
+    "第{a}到第{b}章都让主角变好;一路上扬的故事读起来很平",
+  "chapters {a} to {b} all leave the main character worse off; a story that only falls reads flat":
+    "第{a}到第{b}章都让主角变糟;一路下坠的故事读起来很平",
+  "the relationship between '{a}' and '{b}' was left out because one of them is not in your cast":
+    "“{a}”与“{b}”之间的关系已略去,因为其中一人不在你的角色表里",
+  "a relationship between '{a}' and '{b}' was left out because they are the same person":
+    "“{a}”与“{b}”之间的关系已略去,因为他们是同一个人",
+
   "Length and chapter plan": "篇幅与章节计划",
-  "How many chapters the whole story has, fixed from the start, and the plan for each one. Only the chapter you are working on has a plan; the next is planned after it is written.":
-    "整个故事共有多少章(一开始就定下),以及每一章的计划。只有你正在写的这一章有计划;下一章在这一章写完之后再规划。",
   Scene: "场景",
-  "When and where the chapter starts, who is there, and what mood it carries.":
-    "这一章在何时何地开始,谁在场,带着什么情绪。",
   "Conflict and action": "冲突与行动",
-  "What the main character wants in this chapter, what stands in the way, the three to five things that happen in order, and the situation the chapter stops on.":
-    "主角这一章想要什么,什么在阻挡他,按顺序发生的三到五件事,以及这一章停在怎样的局面上。",
   "What changes": "发生了什么变化",
-  "One sentence on what is true at the end that was not true at the start, which characters visibly change, and how far along the story's six steps the chapter ends: Setup, Spark, Friction, Shift, Peak, Aftermath.":
-    "用一句话写出结尾时成立、而开头时不成立的事,哪些角色发生了明显变化,以及这一章结束时故事走到六个阶段的哪一步:开篇、触发、阻力、转折、高潮、尾声。",
   "Planting and payoff": "伏笔与回收",
   "A plant is something shown now that a later chapter uses again; a payoff is that later use. Reveals are the secrets from the World card that come out in this chapter.":
     "伏笔是现在展示、之后某一章会再次用到的东西;回收就是后来的那次使用。揭示是世界卡里的秘密在这一章被说出来。",

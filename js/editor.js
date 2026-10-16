@@ -18,7 +18,7 @@ const STAGES = [
   {
     k: "outline",
     t: "Setup",
-    d: "Premise, ending, arcs and the opening beat. The story continues from here, one chapter at a time.",
+    d: "Who wants what and what stands in the way, the shape of the story, the ending, and the opening chapter. The story continues from here, one chapter at a time.",
   },
 ];
 const HINTS = {
@@ -29,7 +29,7 @@ const HINTS = {
   world:
     "Where and when, and what living there costs. How things work, and what each rule makes people give up. The places and what they do to people, the objects people want or fear, the groups they live under, and the secrets: what is true, who is guarding it, and what exposure would cost.",
   outline:
-    "Chapter by chapter: where, whose point of view, what each person wants and is hiding, what goes wrong, how it ends. What must be planted early and pay off later. What the ending looks like concretely, and what stays unresolved.",
+    "Who wants what, and what stands in their way: a person with a want of their own is better than a vague threat. What lies between the people, the choice the story forces, and where it rises and falls. For the opening chapter: where it starts, what each person present is after or hiding, who gains or loses the upper hand, and how it ends. What the ending costs, and what stays unresolved.",
 };
 let HIDE = [];
 const withHide = (list, fn) => {
@@ -232,6 +232,9 @@ function itemTitle(it, i) {
       it.fact ||
       (it.chapter_num ? t("Chapter {k}", { k: it.chapter_num }) : "") ||
       personName(it.character) ||
+      (it.a && it.b
+        ? t("{a} and {b}", { a: personName(it.a), b: personName(it.b) })
+        : "") ||
       t("Item {k}", { k: i + 1 }),
   )
     .replace(/\s+/g, " ")
@@ -633,7 +636,9 @@ function field_(parent, key, en, bp) {
     return lab;
   }
   if (Array.isArray(v)) {
-    const objs = v.length && v.some((x) => x && typeof x === "object");
+    const objs =
+      (v.length && v.some((x) => x && typeof x === "object")) ||
+      (!v.length && (SCH.lists || {})[pathStr]); // an empty list of objects still gets item editors, from the backend's blank item
     if (!objs && isPool(pathStr))
       return withListHint(usedList(parent, key, hasBase, old), pathStr);
     if (!objs) {
@@ -777,7 +782,8 @@ function field_(parent, key, en, bp) {
               {
                 class: "sm",
                 onclick: () => {
-                  v.push(blank(v[0]));
+                  const tpl = (SCH.lists || {})[pathStr];
+                  v.push(tpl ? clone(tpl) : blank(v[0]));
                   render();
                 },
               },
