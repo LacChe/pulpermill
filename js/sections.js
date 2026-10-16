@@ -49,28 +49,23 @@ const SECTIONS = {
   characters: [
     {
       t: "Who they are",
-      keys: ["name", "role", "look"],
-      d: "The basics: what to call them, what job or place they have in the story, and a few physical details a reader would notice.",
+      keys: ["name", "role", "presence"],
+      d: "What to call them, how they would be introduced to a stranger, and how they carry themselves. Write them so they would hold in any story: nothing here should depend on this plot.",
     },
     {
       t: "What drives them",
-      keys: ["want", "blind_spot", "history"],
-      d: "A want is something concrete they are actively chasing. A blind spot is a flaw they cannot see in themselves, such as someone who believes they are honest but keeps lying to themselves. History is past events that still shape how they act today.",
+      keys: ["want", "wound", "blind_spot"],
+      d: "Want is what they chase and the fear underneath it. Wound is what happened to them long ago and the rule about the world it taught them. Blind spot is how they see themselves, set against the thing they do that contradicts it.",
     },
     {
-      t: "How they act and speak",
-      keys: ["habits", "voice", "sample_lines"],
-      d: "What they do again and again, especially when nervous or lying, and how they talk. Give each character a different way of speaking, so the example lines should sound like them and no one else.",
+      t: "Under pressure",
+      keys: ["armor", "tell", "limits"],
+      d: "Armor is how they meet conflict and keep people away. The tell is what pressure does to their body, a repeated motion any setting could supply an object for. Limits are what they will never do, and what it would take to make them.",
     },
     {
-      t: "How they feel about others",
-      keys: ["toward"],
-      d: "One entry for each person they have a stake in: what they want from that person and how they act around them.",
-    },
-    {
-      t: "Where they are now",
-      keys: ["wrap"],
-      d: "This fills in as the story goes. You normally do not need to edit it.",
+      t: "With people and in speech",
+      keys: ["with_people", "soft_spot", "voice"],
+      d: "How they handle others and what they hold back, what gets past their armor, and how they talk. Give each character a different way of speaking.",
     },
   ],
   world: [

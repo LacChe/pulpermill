@@ -361,7 +361,7 @@ function drawStages(root, pg, j) {
   const hide = j === 0 ? SCH.hidden || [] : [],
     P = pages(),
     act = activeStage(pg);
-  refContext(pg.cards); // the live-state fields (wrap) only matter once a story is running
+  refContext(pg.cards);
   root.append(stageTabs(pg, act));
   STAGES.forEach((s, i) => {
     if (i !== act) return;

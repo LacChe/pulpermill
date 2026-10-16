@@ -25,16 +25,13 @@ const HINTS = {
   style:
     "How should the narration sound? What does the narrator notice and ignore, and what attitude does it take toward events? How plain or ornate are the words? How much metaphor, how funny, how far inside the main character's head? What rhythm, how much dialogue? What would ruin it?",
   characters:
-    "For each person: what they want, how they see themselves versus what they actually do, how they talk, their habits, and how they feel about each other person. Say exactly who did what to whom.",
+    "For each person: what they want, how they see themselves versus what they actually do, what they do under pressure, how they talk, and how they treat people. Leave out what happens to them in this story.",
   world:
     "The place and occasion, how it works as plain fact (one line per mechanic), the places, the objects that matter, and the secrets: what is true, who knows it, who does not.",
   outline:
     "Chapter by chapter: where, whose point of view, what each person wants and is hiding, what goes wrong, how it ends. What must be planted early and pay off later. What the ending looks like concretely, and what stays unresolved.",
 };
 let HIDE = [];
-/* true while drawing a character's `wrap`: live state that starts empty and that the model fills in chapter by chapter */
-let LIVE = false;
-const LIVE_HINT = () => t("Starts empty; filled in as the story goes");
 const withHide = (list, fn) => {
   const old = HIDE;
   HIDE = list;
@@ -235,7 +232,6 @@ function itemTitle(it, i) {
       it.fact ||
       (it.chapter_num ? t("Chapter {k}", { k: it.chapter_num }) : "") ||
       personName(it.character) ||
-      personName(it.toward) ||
       t("Item {k}", { k: i + 1 }),
   )
     .replace(/\s+/g, " ")
@@ -249,6 +245,43 @@ function itemTitle(it, i) {
     out += c;
   }
   return { text: raw, full: raw };
+}
+/* One person written again from a note, the rest of the cast kept. The note is kept as a draft per character. */
+function characterRerun(it) {
+  const pg = cur(),
+    k = "char:" + it.id,
+    on = st.busy === "characters" && st.busyChar === it.id;
+  pg.draft = pg.draft || {};
+  const fb = el("textarea", {
+    rows: 1,
+    class: "fbnote",
+    placeholder: t("What should change about this person? (optional)"),
+    "aria-label": t("Note for regenerating this character"),
+  });
+  fb.value = pg.draft[k] || "";
+  fb.addEventListener("input", () => {
+    pg.draft[k] = fb.value;
+  });
+  return el(
+    "div",
+    { class: "rerun" },
+    fb,
+    el(
+      "button",
+      {
+        class: "gen alt",
+        type: "button",
+        disabled: !!st.busy,
+        onclick: () => {
+          pg.openChar = it.id;
+          generate(1, fb.value.trim(), it.id);
+        },
+      },
+      on
+        ? [t("Generating…"), el("span", { class: "timer" })]
+        : t("Regenerate this character"),
+    ),
+  );
 }
 /* Use counts. A list the backend rotates (SCH.pools) shows, beside each item, how many chapters it was handed to the writer in;
    the least-used ones are handed over next. The counts live in the owning card's `uses` ({field: {item text or id: n}}).
@@ -606,15 +639,10 @@ function field_(parent, key, en, bp) {
   }
   if (Array.isArray(v)) {
     const objs = v.length && v.some((x) => x && typeof x === "object");
-    if (!objs && isPool(pathStr) && !LIVE)
+    if (!objs && isPool(pathStr))
       return withListHint(usedList(parent, key, hasBase, old), pathStr);
     if (!objs) {
-      const ta = el(
-        "textarea",
-        LIVE
-          ? { rows: Math.max(2, v.length + 1), placeholder: LIVE_HINT() }
-          : { rows: Math.max(2, v.length + 1) },
-      );
+      const ta = el("textarea", { rows: Math.max(2, v.length + 1) });
       ta.value = v.join("\n");
       ta.addEventListener("input", () => {
         parent[key] = ta.value
@@ -701,7 +729,9 @@ function field_(parent, key, en, bp) {
             );
           const d = el(
             "details",
-            broken ? { class: "item", open: "open" } : { class: "item" },
+            broken || (isCast && cur().openChar === it.id)
+              ? { class: "item", open: "open" }
+              : { class: "item" },
             sum,
           );
           const inner = el("div", { class: "in" });
@@ -715,6 +745,7 @@ function field_(parent, key, en, bp) {
           inner.addEventListener("input", retitle);
           inner.addEventListener("change", retitle);
           groupFields(inner, it, here.join("."), (kk) => field(it, kk, en, bi));
+          if (isCast && it.id) inner.append(characterRerun(it));
           inner.append(
             el(
               "button",
@@ -768,26 +799,15 @@ function field_(parent, key, en, bp) {
     return box;
   }
   if (v && typeof v === "object") {
-    const live = key === "wrap",
-      was = LIVE;
-    const fs = el(
-      "fieldset",
-      {},
-      el("legend", {}, live ? t("Updated after each chapter") : label(key)),
-    );
+    const fs = el("fieldset", {}, el("legend", {}, label(key)));
     const sub = hasBase
       ? old && typeof old === "object" && !Array.isArray(old)
         ? old
         : {}
       : undefined;
-    if (live) LIVE = true;
-    try {
-      for (const kk in v) {
-        const f = field(v, kk, en, sub);
-        if (f) fs.append(f);
-      }
-    } finally {
-      LIVE = was;
+    for (const kk in v) {
+      const f = field(v, kk, en, sub);
+      if (f) fs.append(f);
     }
     return fs;
   }
@@ -797,7 +817,6 @@ function field_(parent, key, en, bp) {
       ? 1
       : Math.min(8, Math.max(1, Math.ceil(String(v || "").length / 90))),
   });
-  if (LIVE && !isNum) ta.placeholder = LIVE_HINT();
   ta.value = v == null ? "" : v;
   ta.addEventListener("input", () => {
     parent[key] = isNum ? Number(ta.value) : ta.value;

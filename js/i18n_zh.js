@@ -65,7 +65,6 @@ const ZH = {
     "此卡片所依据的卡片有 {n} 处链接失效。请先修复标出的字段。",
   "The cards have broken links ({n}). Fix the highlighted fields before writing chapter {k}.":
     "卡片有 {n} 处链接失效。请先修复标出的字段,再撰写第{k}章。",
-  "Updated after each chapter": "每章结束后更新",
   "One shape is handed to each chapter in turn, the least-used first. Empty is fine: the model then decides how each chapter opens and closes.":
     "每章按顺序分到一种结构,优先使用次数最少的。留空也可以:此时由模型自己决定每章如何开头和收尾。",
   "Planning the next chapter": "正在规划下一章",
@@ -86,7 +85,6 @@ const ZH = {
   "A generation writes up to {n} characters. Add as many as you like and choose up to {m} for each chapter.":
     "一次生成最多写 {n} 位角色。你可以添加任意多的角色,每章最多选 {m} 位。",
   "Planning this chapter": "正在规划本章",
-  "Starts empty; filled in as the story goes": "起初为空,随故事推进自动填写",
   Chapters: "章节",
   "Chapter {k}": "第{k}章",
   Ending: "结局",
@@ -175,8 +173,8 @@ const ZH = {
     "故事前提、结局、角色弧线和开篇要点。故事从这里开始,逐章继续写下去。",
   "How should the narration sound? What does the narrator notice and ignore, and what attitude does it take toward events? How plain or ornate are the words? How much metaphor, how funny, how far inside the main character's head? What rhythm, how much dialogue? What would ruin it?":
     "叙述听起来应该是什么样?讲述者会注意什么、忽略什么,对事件抱什么态度?用词是平实还是华丽?比喻多不多,有多幽默,在主角的内心里走多深?节奏如何,对话占多少?什么会毁掉它?",
-  "For each person: what they want, how they see themselves versus what they actually do, how they talk, their habits, and how they feel about each other person. Say exactly who did what to whom.":
-    "对每个人物:他们想要什么,自我认知与实际行为有何差距,说话方式,习惯,以及对其他每个人的感受。请明确写出谁对谁做了什么。",
+  "For each person: what they want, how they see themselves versus what they actually do, what they do under pressure, how they talk, and how they treat people. Leave out what happens to them in this story.":
+    "对每个人物:他们想要什么,自我认知与实际行为有何差距,压力下的反应,怎么说话,以及待人方式。不要写他们在这个故事里经历了什么。",
   "The place and occasion, how it works as plain fact (one line per mechanic), the places, the objects that matter, and the secrets: what is true, who knows it, who does not.":
     "地点与场合,它如何运作的客观事实(每条规则一行),各个地点,重要的物品,以及秘密:真相是什么,谁知道,谁不知道。",
   "Chapter by chapter: where, whose point of view, what each person wants and is hiding, what goes wrong, how it ends. What must be planted early and pay off later. What the ending looks like concretely, and what stays unresolved.":
@@ -516,6 +514,13 @@ const ZH = {
   arcs: "角色弧线",
   attitude: "态度",
   "blind spot": "盲点",
+  armor: "防备",
+  wound: "旧伤",
+  tell: "习惯性小动作",
+  "with people": "待人方式",
+  "soft spot": "软肋",
+  limits: "底线",
+  presence: "气场",
   "chapter beats": "章节要点",
   "chapter num": "章节序号",
   "chapter shapes": "章节结构",
@@ -531,15 +536,12 @@ const ZH = {
   fact: "事实",
   goal: "目标",
   groups: "团体",
-  habits: "习惯",
   "hidden truths": "隐藏真相",
-  history: "过往",
   id: "编号",
   "known by": "知情者",
   label: "标签",
   "leave open": "保持开放",
   locations: "地点列表",
-  look: "外貌",
   list: "列表",
   movement: "变化",
   name: "名称",
@@ -550,19 +552,15 @@ const ZH = {
   plants: "伏笔",
   pov: "视角",
   present: "在场人物",
-  "recent changes": "近期变化",
-  "recent details": "近期细节",
   reveals: "揭示",
   role: "身份",
   rules: "规则",
-  "sample lines": "台词示例",
   setting: "背景设定",
   shifts: "变动",
   stage: "阶段",
   tense: "时态",
   uses: "已用次数",
   tone: "基调",
-  toward: "对待",
   voice: "口吻",
   lens: "观察视角",
   stance: "态度",
@@ -581,7 +579,6 @@ const ZH = {
   want: "渴望",
   wants: "诉求",
   when: "时间",
-  wrap: "实时状态",
   "option first person": "第一人称",
   "option third limited": "第三人称限知",
   "option third omniscient": "第三人称全知",
@@ -591,6 +588,11 @@ const ZH = {
   Presentation: "外在表现",
   Relationships: "人物关系",
   "Export this character": "导出这个角色",
+  "Regenerate this character": "重新生成这个角色",
+  "What should change about this person? (optional)": "这个人要改什么?(可选)",
+  "Note for regenerating this character": "重新生成这个角色的备注",
+  "Write {name} again for chapter {k}? It replaces this character as they stand on this page.":
+    "为第{k}章重新生成{name}?这会替换本页上的这个角色。",
   "Export this card": "导出这张卡",
   added: "已添加",
   'Mixing and matching between stories: each character has its own "Export this character" button on the Characters card. Importing one character file only adds or updates that person — the rest of the cast is left alone.':
@@ -690,20 +692,17 @@ const ZH = {
   "Templates for how a single chapter is built: how it opens, how it closes, how much is dialogue. They describe structure only, never plot.":
     "一章如何搭建的模板:怎样开头、怎样收尾、对话占多少。它们只描述结构,从不涉及情节。",
   "Who they are": "他们是谁",
-  "The basics: what to call them, what job or place they have in the story, and a few physical details a reader would notice.":
-    "基本信息:叫什么名字,在故事里担任什么工作或处于什么位置,以及读者会注意到的几处外貌细节。",
+  "What to call them, how they would be introduced to a stranger, and how they carry themselves. Write them so they would hold in any story: nothing here should depend on this plot.":
+    "他们叫什么,向陌生人怎样介绍他们,以及他们的举止气场。要写成在任何故事里都成立的样子:这里的内容不应依赖这一个情节。",
   "What drives them": "驱动他们的是什么",
-  "A want is something concrete they are actively chasing. A blind spot is a flaw they cannot see in themselves, such as someone who believes they are honest but keeps lying to themselves. History is past events that still shape how they act today.":
-    "渴望是他们正在积极追求的具体目标。盲点是他们自己看不到的缺陷,比如一个自认诚实、却一直在欺骗自己的人。过往是至今仍在影响他们行为的旧事。",
-  "How they act and speak": "他们的行为与说话方式",
-  "What they do again and again, especially when nervous or lying, and how they talk. Give each character a different way of speaking, so the example lines should sound like them and no one else.":
-    "他们反复做的事,尤其是紧张或撒谎时,以及他们怎么说话。每个角色的说话方式要不同,所以台词示例应该只像他们自己。",
-  "How they feel about others": "他们如何看待别人",
-  "One entry for each person they have a stake in: what they want from that person and how they act around them.":
-    "对每一个与他们利害相关的人写一条:他们想从对方那里得到什么,以及在对方面前怎么表现。",
-  "Where they are now": "他们现在的状态",
-  "This fills in as the story goes. You normally do not need to edit it.":
-    "这部分会随着故事推进自动填写,通常不需要你修改。",
+  "Want is what they chase and the fear underneath it. Wound is what happened to them long ago and the rule about the world it taught them. Blind spot is how they see themselves, set against the thing they do that contradicts it.":
+    "渴望是他们所追逐的东西,以及它底下的恐惧。旧伤是他们很久以前遭遇的事,以及它教给他们的处世规则。盲点是他们如何看待自己,与他们做出的自相矛盾之事。",
+  "Under pressure": "压力之下",
+  "Armor is how they meet conflict and keep people away. The tell is what pressure does to their body, a repeated motion any setting could supply an object for. Limits are what they will never do, and what it would take to make them.":
+    "防备是他们面对冲突、拒人于外的方式。习惯性小动作是压力在身体上的反应,一个任何场景都能配上道具的重复动作。底线是他们绝不会做的事,以及什么才能逼他们去做。",
+  "With people and in speech": "待人与说话",
+  "How they handle others and what they hold back, what gets past their armor, and how they talk. Give each character a different way of speaking.":
+    "他们如何对待别人、对别人隐瞒什么,什么能突破他们的防备,以及他们怎么说话。每个角色的说话方式要不同。",
   "Setting and rules": "背景与规则",
   "The time and place, and what counts as normal there. Rules are plain facts about how this world works (laws, limits, mechanics), stated as settled fact, not as writing advice.":
     "时间和地点,以及那里什么算正常。规则是关于这个世界如何运转的朴素事实(法律、限制、机制),按既定事实来写,不是写作建议。",

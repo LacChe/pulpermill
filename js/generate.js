@@ -1,5 +1,6 @@
 /* Pulpermill page: Generating cards and writing chapters: starting jobs, stopping, collecting results. */
-async function generate(i, feedback) {
+/* `who` is a character's id: write that one person again and keep the rest of the cast as it is. */
+async function generate(i, feedback, who) {
   const pg = cur(),
     s = STAGES[i],
     j = st.story.cur;
@@ -38,7 +39,7 @@ async function generate(i, feedback) {
     return draw();
   }
   const ch = chText(s.k).trim();
-  if (!(pg.notes[s.k] || "").trim() && !ch) {
+  if (!who && !(pg.notes[s.k] || "").trim() && !ch) {
     pg.err[s.k] = mk(
       pg.chapter.trim()
         ? "Add notes for this card first, or switch the example chapter on for it."
@@ -50,16 +51,26 @@ async function generate(i, feedback) {
     pg.cards[s.k] &&
     (j > 0 || pg.result) &&
     !confirm(
-      t(
-        "Regenerate the {card} card for chapter {k}? It replaces the card as it stands on this page.",
-        { card: t(s.t).toLowerCase(), k: j + 1 },
-      ),
+      who
+        ? t(
+            "Write {name} again for chapter {k}? It replaces this character as they stand on this page.",
+            { name: personName(who), k: j + 1 },
+          )
+        : t(
+            "Regenerate the {card} card for chapter {k}? It replaces the card as it stands on this page.",
+            { card: t(s.t).toLowerCase(), k: j + 1 },
+          ),
     )
   )
     return;
   const earlier = {};
   STAGES.slice(0, i).forEach((x) => (earlier[x.k] = pg.cards[x.k]));
+  if (who) earlier[s.k] = pg.cards[s.k]; // the whole cast: the others are shown to the model so the new card differs
+  const mine = who
+    ? (pg.cards[s.k] || []).find((c) => c.id === who) || null
+    : null;
   st.busy = s.k;
+  st.busyChar = who || null;
   st.busyPg = pg;
   pg.err[s.k] = "";
   st.prog = null;
@@ -77,7 +88,8 @@ async function generate(i, feedback) {
         chapter_use: ch ? pg.use || "" : "",
         language: LANG,
         feedback: feedback || null,
-        current: feedback ? pg.cards[s.k] || null : null,
+        character: who || null,
+        current: feedback ? (who ? mine : pg.cards[s.k]) || null : null,
         cards: earlier,
       }),
     });
@@ -104,6 +116,7 @@ async function generate(i, feedback) {
     if (r.status === "cancelled") {
       pg.err[s.k] = mk("Stopped before it finished. Nothing was changed.");
       st.busy = null;
+      st.busyChar = null;
       st.busyPg = null;
       st.jobId = null;
       st.stopping = false;
@@ -115,7 +128,7 @@ async function generate(i, feedback) {
           pg.cards.world.locations.push(a);
       });
     }
-    if (pg.draft) pg.draft[s.k] = "";
+    if (pg.draft) pg.draft[who ? "char:" + who : s.k] = "";
     const firstTime = !pg.cards[s.k]; // a card made for the first time moves the view on; regenerating one stays put
     pg.cards[s.k] = r.card;
     if (s.k === "style") stampNarrator(r.card);
@@ -136,6 +149,7 @@ async function generate(i, feedback) {
       : emsg(e);
   }
   st.busy = null;
+  st.busyChar = null;
   st.busyPg = null;
   st.jobId = null;
   st.stopping = false;
