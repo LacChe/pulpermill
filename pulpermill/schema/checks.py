@@ -249,10 +249,11 @@ def check_outline(plot: PlotOutline, cast: set[str], world: WorldBible) -> list[
         if run[0] != "mixed" and run[0] == run[1] == run[2]:
             out.append(
                 M(
-                    "chapters {a} to {b} all go {way} for the main character; a story that only climbs or only falls reads flat",
+                    "chapters {a} to {b} all leave the main character better off; a story that only climbs reads flat"
+                    if run[0] == "better"
+                    else "chapters {a} to {b} all leave the main character worse off; a story that only falls reads flat",
                     a=ordered[i - 2].chapter_num,
                     b=ordered[i].chapter_num,
-                    way=run[0],
                 ).on(
                     "outline.chapter_beats.direction",
                     ordered[i].chapter_num,
