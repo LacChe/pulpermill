@@ -122,12 +122,10 @@ const ZH = {
   "Rewrite chapter {k}? The new version replaces this one.":
     "重写第{k}章?新版本会取代当前版本。",
   "Confirm rewrite": "确认重写",
-  "When it finishes, the cards it ends with can replace the ending cards. Only one version of those cards is kept, so if you want to keep the current ones, export them before you generate.":
-    "完成后,本章结束时的卡片可以替换结局卡片。这些卡片只保留一个版本,所以如果想保留当前这一份,请在生成之前先导出。",
-  "When it finishes, the cards it ends with can replace chapter {n}'s starting cards. Only one version of those cards is kept, so if you want to keep the current ones, export them before you generate.":
-    "完成后,本章结束时的卡片可以替换第{n}章的起始卡片。这些卡片只保留一个版本,所以如果想保留当前这一份,请在生成之前先导出。",
-  "Export the ending cards": "导出结局卡片",
-  "Export chapter {n}'s starting cards": "导出第{n}章的起始卡片",
+  "If you replace them, the cards this chapter ends with will overwrite the ending cards.":
+    "如果选择替换,本章结束时的卡片将覆盖结局卡片。",
+  "If you replace them, the cards this chapter ends with will overwrite chapter {n}'s starting cards.":
+    "如果选择替换,本章结束时的卡片将覆盖第{n}章的起始卡片。",
   "Rewrite and replace them": "重写并替换它们",
   "Rewrite and keep them": "重写并保留它们",
   "Imported: {items}.": "已导入:{items}。",

@@ -685,10 +685,10 @@ function askNode(j) {
         {},
         end
           ? t(
-              "When it finishes, the cards it ends with can replace the ending cards. Only one version of those cards is kept, so if you want to keep the current ones, export them before you generate.",
+              "If you replace them, the cards this chapter ends with will overwrite the ending cards.",
             )
           : t(
-              "When it finishes, the cards it ends with can replace chapter {n}'s starting cards. Only one version of those cards is kept, so if you want to keep the current ones, export them before you generate.",
+              "If you replace them, the cards this chapter ends with will overwrite chapter {n}'s starting cards.",
               { n: k + 1 },
             ),
       ),
@@ -697,17 +697,6 @@ function askNode(j) {
       el(
         "div",
         { class: "row" },
-        el(
-          "button",
-          {
-            id: "askexport",
-            class: "sm",
-            onclick: () => exportPageCards(j + 1),
-          },
-          end
-            ? t("Export the ending cards")
-            : t("Export chapter {n}'s starting cards", { n: k + 1 }),
-        ),
         el(
           "button",
           {
