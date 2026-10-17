@@ -637,6 +637,10 @@ label.useex {
 .castlist .off {
   opacity: 0.55;
 }
+.castflag {
+  color: var(--flag);
+  font-weight: 600;
+}
 .castname {
   font-weight: 600;
 }

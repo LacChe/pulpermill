@@ -748,7 +748,22 @@ function askNode(j) {
     );
   return box;
 }
-/* the people this chapter is written about: tick up to the limit, the main character is fixed */
+/* the people this chapter is written about: tick up to the limit, the main character is fixed. The ticks follow the chapter's
+   beat (who is present, who has an agenda) until the person changes them. */
+/* people the beat names: present, agenda, or their name in the beat's own words */
+function namedInBeat(b, chars) {
+  if (!b) return new Set();
+  const ids = new Set([...(b.present || []), ...(b.agendas || []).map((a) => a.character)]);
+  const text = [b.opening, b.goal, b.obstacle, b.ends_on, b.turn, ...(b.events || [])]
+    .join(" ")
+    .toLowerCase();
+  chars.forEach((c) => {
+    const first = String(c.name || "").trim().split(/\s+/)[0].toLowerCase();
+    if (/[\u3400-\u9fff]/.test(first) ? first.length >= 2 && text.includes(first) : first.length >= 3 && new RegExp("(^|[^\\p{L}])" + first.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^\\p{L}]|$)", "u").test(text))
+      ids.add(c.id);
+  });
+  return ids;
+}
 function castBox(pg, j) {
   const k = j + 1,
     chars = pg.cards.characters || [],
@@ -756,7 +771,7 @@ function castBox(pg, j) {
     sel = castFor(pg, k),
     max = maxCast(),
     b = beatOf(pg, k),
-    inBeat = (b && b.present) || [];
+    inBeat = [...namedInBeat(b, chars)];
   const box = el(
     "div",
     { class: "castbox", id: "castbox" },
@@ -797,10 +812,18 @@ function castBox(pg, j) {
           { class: "ro" },
           (c.role ? " — " + c.role : "") +
             (isLead ? " · " + t("main character") : "") +
-            (inBeat.includes(c.id) && !isLead
+            (inBeat.includes(c.id) && !isLead && on
               ? " · " + t("in the chapter beat")
               : ""),
         ),
+        !on && inBeat.includes(c.id)
+          ? el(
+              "span",
+              { class: "castflag" },
+              " · " +
+                t("named in this chapter's plan, but not ticked, so they will not be written in"),
+            )
+          : null,
       ),
     );
   });
@@ -812,7 +835,23 @@ function castBox(pg, j) {
       t("{n} of {max} chosen", { n: sel.length, max }),
     ),
   );
-  const left = inBeat
+  if (Array.isArray(pg.cast) && inBeat.some((i) => !sel.includes(i)))
+    box.append(
+      el(
+        "button",
+        {
+          class: "sm",
+          type: "button",
+          disabled: !!st.busy,
+          onclick: () => {
+            pg.cast = undefined;
+            draw();
+          },
+        },
+        t("Tick the people the chapter plan names"),
+      ),
+    );
+  const left = ((b && b.present) || [])
     .filter((i) => !sel.includes(i))
     .map((i) => (chars.find((c) => c.id === i) || {}).name || i);
   if (left.length)

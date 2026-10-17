@@ -71,6 +71,8 @@ const ZH = {
   "Choose up to {n}. The model only writes about these people, and the main character is always one of them.":
     "最多选 {n} 位。模型只会写这些人,主角一定在其中。",
   "main character": "主角",
+  "named in this chapter's plan, but not ticked, so they will not be written in": "本章计划中提到了此人,但未勾选,所以不会被写入",
+  "Tick the people the chapter plan names": "勾选本章计划中提到的人物",
   "in the chapter beat": "在本章要点中",
   "{n} of {max} chosen": "已选 {n} / {max}",
   "The beat for this chapter includes {names}, who are not chosen. Writing will plan the beat again for the people you chose.":
@@ -739,6 +741,17 @@ const ZH = {
   "the setup has no shape: where hope, the low point and the peak fall":
     "开篇没有故事形状:希望、低谷和高潮各落在哪里",
   "relationship: unknown character '{who}'": "人物关系:未知的角色“{who}”",
+  "relationship: '{a}' and '{b}' are paired more than once": "人物关系:“{a}”和“{b}”被配成了不止一对",
+  "arc: '{who}' has more than one arc": "角色弧线:“{who}”有不止一条弧线",
+  "ch{n}: '{who}' has more than one agenda": "第{n}章:“{who}”有不止一条诉求",
+  "ch{n}: '{who}' has an agenda but is not in present": "第{n}章:“{who}”有诉求,但不在场",
+  "a {kind} has no name": "有一个{kind}没有名字",
+  "two {kind}s are both called '{name}'": "有两个{kind}都叫“{name}”",
+  "the thread '{text}' matches nothing left open, so it was not closed": "悬而未决的事项里没有“{text}”,所以没有关闭它",
+  "Generate the {card} card first": "请先生成{card}卡",
+  "No earlier chapter plants anything yet": "前面的章节还没有埋下任何伏笔",
+  "object": "物件",
+  "group": "团体",
   "relationship: '{who}' is paired with themselves": "人物关系:“{who}”被配成了与自己一对",
   "chapters {a} to {b} all leave the main character better off; a story that only climbs reads flat":
     "第{a}到第{b}章都让主角变好;一路上扬的故事读起来很平",

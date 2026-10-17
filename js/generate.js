@@ -386,9 +386,8 @@ function commitResult(job, r) {
   if (!nxt) {
     const np = newPage();
     fillPage(np, r.cards_after);
-    np.cast = (job.cast || []).slice();
     P.push(np);
-  } // the next chapter starts with the same people chosen
+  } // no choice is stored: the next chapter is written about the people its own beat puts in the scene
   else if (job.next === "replace") {
     if (r.update_failed)
       res.warnings.push(
@@ -405,7 +404,7 @@ function commitResult(job, r) {
       );
     else {
       fillPage(nxt, r.cards_after);
-      if (!Array.isArray(nxt.cast)) nxt.cast = (job.cast || []).slice();
+      nxt.cast = undefined; // the new beat decides who is in the chapter, unless the person changes it
     }
   }
   pg.result = res;
