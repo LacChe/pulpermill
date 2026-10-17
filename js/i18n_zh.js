@@ -82,11 +82,8 @@ const ZH = {
   "Planning this chapter": "正在规划本章",
   Chapters: "章节",
   "Chapter {k}": "第{k}章",
-  Ending: "结局",
-  "After chapter {k}": "第{k}章之后",
   "Writing…": "撰写中…",
   " · out of date": " · 已过期",
-  " · cards changed": " · 卡片已改动",
   "Ready to write": "可以撰写",
   "Setting up the cards": "正在准备卡片",
   Ready: "就绪",
@@ -98,20 +95,13 @@ const ZH = {
     "这会清除此浏览器中的所有卡片、笔记和章节。如果想保留,请先保存项目。",
   Cancel: "取消",
   "Erase everything": "全部清除",
-  "Chapter {k} cards": "第{k}章卡片",
-  "Ending cards": "结局卡片",
+  "Story cards": "故事卡片",
+  "One shared set of cards for the whole story. The selected chapter determines which beat is used.":
+    "整部故事共用一套卡片。所选章节决定使用哪个章节计划。",
   "Import cards": "导入卡片",
   "Export cards": "导出卡片",
-  "Generate the four cards in order and check each one, or import them. Then write the chapter.":
-    "按顺序生成四张卡片并逐一检查,或直接导入。然后撰写章节。",
-  "The cards as chapter {j} left them. The story has no chapter {k}, so there is nothing more to write. Edit or export them, or raise Total chapters on the Setup card to keep going.":
-    "这是第{j}章结束时的卡片。故事没有第{k}章,所以没有更多内容可写。你可以编辑或导出这些卡片,也可以在“开篇”卡片中调高“章节总数”以继续。",
-  "These are the cards as chapter {j} left them. Edit anything you like before writing chapter {k}; changed fields are marked.":
-    "这是第{j}章结束时的卡片。撰写第{k}章之前可以随意修改;改动过的字段会被标出。",
-  "Chapter {j} is out of date (an earlier chapter was rewritten), so these cards may not match what came before.":
-    "第{j}章已过期(之前的某一章被重写过),因此这些卡片可能与前文不符。",
-  "These cards changed after chapter {k} was written. Rewrite the chapter to apply the changes.":
-    "第{k}章写完之后这些卡片又改动过。重写该章即可应用这些改动。",
+  "Chapter {j} is out of date because an earlier chapter was rewritten.":
+    "第{j}章已过期,因为之前的章节被重写过。",
   "Write chapter {k}": "撰写第{k}章",
   "Rewrite chapter {k}": "重写第{k}章",
   Starting: "正在开始",
@@ -122,16 +112,14 @@ const ZH = {
   "Rewrite chapter {k}? The new version replaces this one.":
     "重写第{k}章?新版本会取代当前版本。",
   "Confirm rewrite": "确认重写",
-  "If you replace them, the cards this chapter ends with will overwrite the ending cards.":
-    "如果选择替换,本章结束时的卡片将覆盖结局卡片。",
-  "If you replace them, the cards this chapter ends with will overwrite chapter {n}'s starting cards.":
-    "如果选择替换,本章结束时的卡片将覆盖第{n}章的起始卡片。",
+  "Replacing adopts this generation's shared cards and overwrites future chapter beats. Keeping preserves the current cards and beats.":
+    "选择替换会采用本次生成的共享卡片并覆盖后续章节计划。选择保留则保留当前卡片和计划。",
   "Rewrite and replace them": "重写并替换它们",
   "Rewrite and keep them": "重写并保留它们",
   "Imported: {items}.": "已导入:{items}。",
   "Nothing was imported.": "没有导入任何内容。",
   "Not imported or changed:": "未导入或未改动的内容:",
-  "Consistency notes on the cards now on this page:": "此页面卡片的一致性提示:",
+  "Consistency notes on the story's shared cards:": "故事共享卡片的一致性提示:",
   "Undo this import": "撤销此次导入",
   Dismiss: "关闭",
   "Example chapter": "示例章节",
@@ -140,7 +128,6 @@ const ZH = {
     "基于前一张卡片的旧版本生成",
   "Narrator written from earlier style settings": "旁白是按旧的风格设置写成的",
   "Ready to check": "待检查",
-  "Changed since the last chapter": "较上一章有改动",
   "Up to {n} chapters.": "最多 {n} 章。",
   "{card} notes": "{card}笔记",
   "Your notes for this card": "这张卡片的笔记",
@@ -171,7 +158,6 @@ const ZH = {
   "Chapter {k} story": "第{k}章故事",
   "Out of date: an earlier chapter was rewritten":
     "已过期:之前的某一章被重写过",
-  "Cards changed since": "此后卡片有改动",
   "Cards not updated": "卡片未更新",
   "The version below is replaced when this finishes.":
     "完成后将替换下面的版本。",
@@ -231,8 +217,8 @@ const ZH = {
     "这张卡片的文本过多:共 {used} 个字符,而模型在这里最多能处理 {limit} 个。请缩短{what}。",
   "example chapter": "示例章节",
   notes: "笔记",
-  "Clear the {card} card for chapter {k}? Your notes for it stay, so you can generate it again from scratch.":
-    "要清空第{k}章的{card}卡片吗?你为它写的备注会保留,之后可以从头重新生成。",
+  "Clear the {card} card for the whole story? Your notes stay, so you can generate it again from scratch.":
+    "要清空整部故事的{card}卡片吗?你的备注会保留,之后可以从头重新生成。",
   "{n}×": "{n}×",
   "How many chapters this was handed to the writer in. The least-used items are handed over next.":
     "已有多少章把它交给了写作模型。下一章会优先交出用得最少的条目。",
@@ -241,16 +227,19 @@ const ZH = {
   "Clear card": "清空卡片",
   "Remove this card so it can be generated again from scratch. Your notes stay.":
     "移除这张卡片,以便从头重新生成。你的备注会保留。",
-  "Regenerate the {card} card for chapter {k}? It replaces the card as it stands on this page.":
-    "要为第{k}章重新生成{card}卡片吗?它会替换此页面上现有的卡片。",
-  "the ending cards": "结局卡片",
-  "chapter {k}'s cards": "第{k}章的卡片",
-  "The cards were not updated, so {what} were left as they were.":
-    "卡片没有更新,因此{what}保持原样。",
-  "You edited {what} while this chapter was being written, so your edits were kept and the new ending cards were not applied.":
-    "本章撰写期间你修改了{what},所以保留了你的修改,没有应用新的结局卡片。",
+  "Regenerate the {card} card? It replaces the story's shared card.":
+    "要重新生成故事共享的{card}卡片吗?新卡片将替换现有卡片。",
+  "Write {name} again? It replaces this character in the story's shared cards.":
+    "要重新生成{name}吗?新角色将替换故事共享卡片中的现有角色。",
+  "The shared cards changed while this chapter was being written, so your edits were kept and the generated cards were not applied.":
+    "撰写本章期间共享卡片发生了变化,因此保留了你的修改,没有应用生成的卡片。",
+  "The cards were not updated, so the shared cards were left unchanged.":
+    "卡片未能更新,因此共享卡片保持不变。",
+  "The chapter response did not include updated cards.":
+    "章节响应中没有包含更新后的卡片。",
+  "This project file version is not supported.":
+    "不支持此项目文件版本。",
   "That is not a Pulpermill project file.": "这不是 Pulpermill 项目文件。",
-  "This project has no pages.": "此项目没有任何页面。",
   "This project file is damaged.": "此项目文件已损坏。",
   "This file does not contain a project.": "此文件不包含项目。",
   "That file is not valid JSON.": "该文件不是有效的 JSON。",
@@ -429,8 +418,8 @@ const ZH = {
     "第{n}章需要 {k} 份之前的章节摘要,实际收到 {got} 份",
   "chapter {n} needs {k} earlier summaries, got {got}":
     "第{n}章需要 {k} 份之前的章节摘要,实际收到 {got} 份",
-  "The cards were NOT updated for this chapter ({why}). Edit the next chapter's starting cards by hand.":
-    "本章没有更新卡片({why})。请手动修改下一章的起始卡片。",
+  "The shared cards were NOT updated for chapter {n} ({why}).":
+    "第{n}章的共享卡片未能更新({why})。",
   "{name}'s sample line: {line}": "{name}的台词示例:{line}",
   "style exemplar: {line}": "文风范例句:{line}",
   "an object": "一个对象",
@@ -579,8 +568,6 @@ const ZH = {
   "Regenerate this character": "重新生成这个角色",
   "What should change about this person? (optional)": "这个人要改什么?(可选)",
   "Note for regenerating this character": "重新生成这个角色的备注",
-  "Write {name} again for chapter {k}? It replaces this character as they stand on this page.":
-    "为第{k}章重新生成{name}?这会替换本页上的这个角色。",
   "Export this card": "导出这张卡",
   added: "已添加",
   'Mixing and matching between stories: each character has its own "Export this character" button on the Characters card. Importing one character file only adds or updates that person — the rest of the cast is left alone.':

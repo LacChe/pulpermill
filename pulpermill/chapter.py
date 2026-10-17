@@ -569,7 +569,8 @@ def run_chapter(req, progress=None):
         story = build_story(before)  # discard any half-applied update
         warnings.append(
             M(
-                "The cards were NOT updated for this chapter ({why}). Edit the next chapter's starting cards by hand.",
+                "The shared cards were NOT updated for chapter {n} ({why}).",
+                n=n,
                 why=_why(e),
             )
         )

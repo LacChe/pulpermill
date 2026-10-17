@@ -11,16 +11,12 @@ function downloadText(name, text, type) {
 }
 
 /* Single-file export for one card (style, world or outline/setup), or one character, so each can be kept or shared on its own. */
-function exportSingleCard(j, key) {
-  const pg = pages()[j],
-    end = isEnding(j),
-    names = { style: "style.json", outline: "setup.json", world: "world.json" };
-  const val = pg.cards[key],
+function exportSingleCard(key) {
+  const names = { style: "style.json", outline: "setup.json", world: "world.json" };
+  const val = st.story.cards[key],
     name = names[key];
   if (!val || !name) return;
   const meta = { format: "pulpermill-cards", version: 1 };
-  if (end) meta.note = "cards after chapter " + j;
-  else meta.chapter = j + 1;
   const text = JSON.stringify(
     Object.assign({}, meta, { [key]: clean(val, key) }),
     null,
@@ -28,8 +24,8 @@ function exportSingleCard(j, key) {
   );
   downloadText(storyFile() + "_" + name, text, "application/json");
 }
-function exportCharacter(j, i) {
-  const c = (pages()[j].cards.characters || [])[i];
+function exportCharacter(i) {
+  const c = (st.story.cards.characters || [])[i];
   if (!c) return;
   const base =
     slugify(c.id || c.name || "character_" + (i + 1)) || "character_" + (i + 1);
@@ -40,7 +36,7 @@ function exportCharacter(j, i) {
   );
 }
 function exportStory() {
-  const md = pages()
+  const md = chapters()
     .map((p, i) =>
       p.result
         ? "## " +

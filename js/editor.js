@@ -700,7 +700,7 @@ function field_(parent, key, en, bp) {
                   onclick: (ev) => {
                     ev.preventDefault();
                     ev.stopPropagation();
-                    exportCharacter(st.story.cur, ii);
+                    exportCharacter(ii);
                   },
                 },
                 t("Export"),

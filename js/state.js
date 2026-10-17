@@ -1,5 +1,5 @@
-/* Pulpermill page: The project in memory: pages, cards, the edited/stale flags, schema copy, who a chapter is about. */
-/* The page keeps no copy of the schema: enums, nullable fields and hidden fields come from the backend's /schema
+/* Pulpermill page: The project in memory: chapters, cards, the edited/stale flags, schema copy, who a chapter is about. */
+/* The app keeps no copy of the schema: enums, nullable fields and hidden fields come from the backend's /schema
    (cached here so saved cards still edit while disconnected). */
 let SCH = (() => {
   try {
@@ -9,8 +9,8 @@ let SCH = (() => {
   }
 })() || { enums: {}, nullable: [], hidden: [], refs: {}, choices: {}, lists: {} };
 /* ---------- state ----------
-   story.pages[j] is chapter j+1: the cards it starts from (editable), the notes that go with them, and the chapter
-   written from them (`result`). Page 1 starts blank; every later page is filled from the chapter before it. */
+   story.cards is the single, current card set for the whole story. story.chapters[j] is chapter j+1 and holds its cast,
+   rewrite notes, and written result. */
 const CARD_KEYS = ["style", "characters", "world", "outline"];
 /* what the example chapter can be for; any number can be ticked (the backend knows the same four words) */
 const EXAMPLE_USES = [
@@ -22,20 +22,28 @@ const EXAMPLE_USES = [
     d: "another story in the same world, running alongside this one",
   },
 ];
-const newPage = () => ({
+const newChapter = () => ({
+  cast: undefined,
+  result: null,
+  msg: "",
+  draft: {},
+});
+const newStory = () => ({
   cards: {},
   stale: {},
   err: {},
   warn: {},
   notes: { style: "", characters: "", world: "", outline: "" },
   notesOpen: {},
+  cardDraft: {},
   chapter: "",
   use: "",
   useEx: { style: true, characters: true, world: true, outline: true },
-  base_hash: null,
-  result: null,
-  msg: "",
   took: {},
+  chapters: [newChapter()],
+  cur: 0,
+  job: null,
+  narrBasis: null,
 });
 const st = {
   limits: null,
@@ -49,15 +57,19 @@ const st = {
   stopping: false,
   step: "",
   conn: null,
-  story: { pages: [newPage()], cur: 0, job: null },
+  story: newStory(),
 };
-const cur = () => st.story.pages[st.story.cur];
-const pages = () => st.story.pages;
+const cur = () => st.story.chapters[st.story.cur];
+const chapters = () => st.story.chapters;
+const ensureChapter = (n) => {
+  while (st.story.chapters.length < n)
+    st.story.chapters.push(newChapter());
+};
 ["cards", "stale", "err", "warn", "notes"].forEach((k) =>
   Object.defineProperty(st, k, {
-    get: () => cur()[k],
+    get: () => st.story[k],
     set: (v) => {
-      cur()[k] = v;
+      st.story[k] = v;
     },
   }),
 );
@@ -68,7 +80,7 @@ const hash = (o) => {
   for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
   return String(h);
 };
-const haveCards = (pg) => CARD_KEYS.every((k) => pg.cards[k]);
+const haveCards = () => CARD_KEYS.every((k) => st.story.cards[k]);
 /* `path` is the dotted route from the card's name with list positions left out ("world.objects.owner"), which is how
    /schema names the fields that may be null. */
 function clean(v, path, noUses) {
@@ -89,21 +101,23 @@ const cleanCards = (c, noUses) => {
   });
   return o;
 };
-/* How often a detail was used is not an edit of the card, so every comparison of cards leaves the use counts out: the hash a
-   chapter remembers of the cards it started from (`startHash`) and the hash of the cards now (`snap`) must be taken the same way,
-   or the page thinks the cards were edited the moment a later chapter has any counts. */
-const startHash = (cards) => hash(cleanCards(cards, true));
-const snap = (pg) => startHash(pg.cards);
-const beatOf = (pg, k) =>
-  pg.cards.outline &&
-  (pg.cards.outline.chapter_beats || []).find(
+const cardsHash = (cards) => hash(cleanCards(cards));
+const cardsForChapter = (cards, n) => {
+  const out = cleanCards(cards);
+  if (out.outline)
+    out.outline.chapter_beats = (out.outline.chapter_beats || []).filter(
+      (b) => Number(b.chapter_num) <= n,
+    );
+  return out;
+};
+const beatOf = (k) =>
+  st.story.cards.outline &&
+  (st.story.cards.outline.chapter_beats || []).find(
     (b) => Number(b.chapter_num) === k,
   );
-/* A written chapter is out of date when the chapter before it was rewritten after it was (or is itself out of date).
-   Only ONE version of the cards between two chapters exists: page j+1's cards are both what chapter j+1 starts from and
-   what chapter j ended with, so editing them edits that single copy. */
+/* A written chapter is out of date when the chapter before it was rewritten after it was (or is itself out of date). */
 function resStale(j) {
-  const P = pages(),
+  const P = chapters(),
     pg = P[j];
   if (!pg || !pg.result || j === 0) return false;
   const prev = P[j - 1].result;
@@ -130,44 +144,29 @@ const stampNarrator = (s) => {
     ? { inputs: narratorInputs(s), narrator: s.narrator }
     : null;
 };
-function narratorStale(pg) {
+function narratorStale() {
   const b = st.story.narrBasis,
-    s = pg && pg.cards && pg.cards.style;
+    s = st.story.cards && st.story.cards.style;
   return !!(b && s && b.narrator === s.narrator && b.inputs !== narratorInputs(s));
 }
-const cardsEdited = (pg) => !!pg.result && pg.result.start_hash !== snap(pg);
-const edited = (pg) => pg.base_hash == null || pg.base_hash !== snap(pg);
-function fillPage(pg, cards) {
-  pg.cards = clone(cards);
-  pg.stale = {};
-  pg.warn = {};
-  pg.err = {};
-  pg.base_hash = snap(pg);
-}
-/* The page after the last chapter in the outline holds the cards the story ended with. It has nothing to write. */
 /* Who a chapter is written about. A project can hold any number of characters; each chapter is written about a chosen few (at most
-   `max_cast`, the main character always one of them), and the model never sees anyone else. `pg.cast` is the choice for the
-   chapter this page's cards start (unset: the people the chapter's beat puts in the scene). */
+   `max_cast`, the main character always one of them), and the model never sees anyone else. `pg.cast` is the chapter-specific
+   choice (unset: the people the chapter's beat puts in the scene). */
 const maxCast = () => (st.limits && st.limits.max_cast) || 6;
-const leadOf = (pg) => pg.cards.outline && pg.cards.outline.protagonist;
+const leadOf = () =>
+  st.story.cards.outline && st.story.cards.outline.protagonist;
 function castFor(pg, k) {
-  const ids = (pg.cards.characters || []).map((c) => c.id),
-    lead = leadOf(pg),
-    b = beatOf(pg, k);
+  const ids = (st.story.cards.characters || []).map((c) => c.id),
+    lead = leadOf(),
+    b = beatOf(k);
   const picked = Array.isArray(pg.cast) ? pg.cast : (b && b.present) || [];
   const sel = [
     ...new Set([lead, ...picked].filter((i) => i && ids.includes(i))),
   ];
   return sel.slice(0, maxCast());
 }
-const totalOf = (pg) => {
-  const o = pg.cards.outline;
+const totalOf = () => {
+  const o = st.story.cards.outline;
   return o ? Number(o.total_chapters) || (o.chapter_beats || []).length : 0;
 }; // fixed up front; beats exist only up to the chapter being worked on
-const isEnding = (j) =>
-  j > 0 &&
-  !!pages()[j] &&
-  !!pages()[j].cards.outline &&
-  j + 1 > totalOf(pages()[j]);
-const pageName = (j) =>
-  isEnding(j) ? t("Ending") : t("Chapter {k}", { k: j + 1 });
+const pageName = (j) => t("Chapter {k}", { k: j + 1 });

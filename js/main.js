@@ -25,7 +25,9 @@ $("#projfile").onchange = async (e) => {
     return drawTop();
   }
   if (
-    pages().some((p) => Object.keys(p.cards).length) &&
+    (Object.keys(st.story.cards).length ||
+      chapters().some((p) => p.result) ||
+      st.story.chapter.trim()) &&
     !confirm(t("Loading replaces everything on the page. Continue?"))
   )
     return;
@@ -61,8 +63,8 @@ document.addEventListener("change", scheduleSave);
   if (!raw && STAGES.some((x) => load("notes_" + x.k) || load("chapter"))) {
     // notes typed in the first version of the page
     const pg = cur();
-    STAGES.forEach((x) => (pg.notes[x.k] = load("notes_" + x.k)));
-    pg.chapter = load("chapter");
+    STAGES.forEach((x) => (st.story.notes[x.k] = load("notes_" + x.k)));
+    st.story.chapter = load("chapter");
   }
 })();
 applyStatic();

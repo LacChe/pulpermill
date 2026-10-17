@@ -30,20 +30,20 @@ function prose(text) {
 function navSub(pg, j) {
   const S = st.story;
   if (S.job && S.job.j === j && st.busy === "chapter") return t("Writing…");
-  if (isEnding(j)) return t("After chapter {k}", { k: j });
   if (pg.result)
     return (
       pg.result.words.toLocaleString() +
       " " +
       unitWord() +
-      (resStale(j) ? t(" · out of date") : "") +
-      (cardsEdited(pg) ? t(" · cards changed") : "")
+      (resStale(j) ? t(" · out of date") : "")
     );
-  return haveCards(pg)
+  return haveCards() && (j === 0 || chapters()[j - 1].result)
     ? t("Ready to write")
     : j === 0
       ? t("Setting up the cards")
-      : t("Ready");
+      : haveCards()
+        ? t("Write chapter {j} first.", { j })
+        : t("Ready");
 }
 function goPage(j) {
   st.story.cur = j;
@@ -67,7 +67,7 @@ function drawNav() {
   });
   nav.append(el("h2", {}, t("Chapters")));
   const ol = el("ol", { class: "navlist" });
-  S.pages.forEach((pg, j) =>
+  S.chapters.forEach((pg, j) =>
     ol.append(
       el(
         "li",
@@ -94,7 +94,7 @@ function drawNav() {
       {
         id: "exportstory",
         class: "alt",
-        disabled: !pages().some((p) => p.result),
+        disabled: !chapters().some((p) => p.result),
         onclick: exportStory,
       },
       t("Export story (.md)"),
@@ -185,7 +185,7 @@ function drawNav() {
 }
 function resetAll() {
   if (st.busy) return;
-  st.story = { pages: [newPage()], cur: 0, job: null };
+  st.story = newStory();
   st.report = null;
   st.armed = false;
   st.ask = null;
@@ -234,9 +234,9 @@ function inputSection(pg) {
     placeholder: t("Paste one chapter here."),
     "aria-label": t("Example chapter"),
   });
-  ta.value = pg.chapter;
+  ta.value = st.story.chapter;
   ta.addEventListener("input", () => {
-    pg.chapter = ta.value;
+    st.story.chapter = ta.value;
     updateCounters();
   });
   body.append(ta, el("div", { class: "count", id: "chcount" }));
@@ -253,10 +253,10 @@ function inputSection(pg) {
       id: "use-" + (u.k || "same"),
       value: u.k,
     });
-    rb.checked = (pg.use || "") === u.k;
+    rb.checked = (st.story.use || "") === u.k;
     rb.addEventListener("change", () => {
       if (rb.checked) {
-        pg.use = u.k;
+        st.story.use = u.k;
         draw();
       }
     });
@@ -276,26 +276,26 @@ function inputSection(pg) {
 }
 /* ---------- one tab per card ----------
    Only the open card is drawn, so the page is never one long column of four cards. Which card is open is remembered per
-   page and not saved with the project. Until someone picks one it is the first card not made yet (Style once all four exist),
+   story and not saved with the project. Until someone picks one it is the first card not made yet (Style once all four exist),
    and generate.js moves on to the next tab after a card is first made. */
 const ACTIVE_STAGE = new WeakMap();
-const firstUnmade = (pg) => {
-  const i = STAGES.findIndex((s) => !pg.cards[s.k]);
+const firstUnmade = () => {
+  const i = STAGES.findIndex((s) => !st.story.cards[s.k]);
   return i < 0 ? 0 : i;
 };
-function activeStage(pg) {
-  const i = ACTIVE_STAGE.get(pg);
+function activeStage() {
+  const i = ACTIVE_STAGE.get(st.story);
   return Number.isInteger(i) && i >= 0 && i < STAGES.length
     ? i
-    : firstUnmade(pg);
+    : firstUnmade();
 }
-function openStage(pg, i) {
-  ACTIVE_STAGE.set(pg, i);
+function openStage(i) {
+  ACTIVE_STAGE.set(st.story, i);
   draw();
   const b = document.querySelector('#mid .tabs [aria-selected="true"]');
   if (b) b.focus(); // a redraw drops focus; keep it on the tabs so the arrow keys keep working
 }
-function stageTabs(pg, act) {
+function stageTabs(act) {
   const bar = el("div", {
       class: "tabs",
       role: "tablist",
@@ -303,9 +303,9 @@ function stageTabs(pg, act) {
     }),
     n = STAGES.length;
   STAGES.forEach((s, i) => {
-    const done = !!pg.cards[s.k],
+    const done = !!st.story.cards[s.k],
       on = i === act,
-      busy = st.busy === s.k && st.busyPg === pg;
+      busy = st.busy === s.k;
     const say =
       t(s.t) +
       (done ? " — " + t("complete") : "") +
@@ -328,7 +328,7 @@ function stageTabs(pg, act) {
           "aria-label": say,
           title: say,
           tabindex: on ? "0" : "-1",
-          onclick: () => openStage(pg, i),
+          onclick: () => openStage(i),
           onkeydown: (ev) => {
             const to =
               ev.key === "ArrowRight"
@@ -342,7 +342,7 @@ function stageTabs(pg, act) {
                       : null;
             if (to != null) {
               ev.preventDefault();
-              openStage(pg, to);
+              openStage(to);
             }
           },
         },
@@ -357,17 +357,16 @@ function stageTabs(pg, act) {
   });
   return bar;
 }
-function drawStages(root, pg, j) {
-  const hide = j === 0 ? SCH.hidden || [] : [],
-    P = pages(),
-    act = activeStage(pg);
-  refContext(pg.cards);
-  root.append(stageTabs(pg, act));
+function drawStages(root) {
+  const hide = SCH.hidden || [],
+    act = activeStage();
+  refContext(st.story.cards);
+  root.append(stageTabs(act));
   STAGES.forEach((s, i) => {
     if (i !== act) return;
-    const has = !!pg.cards[s.k],
-      prev = i === 0 || !!pg.cards[STAGES[i - 1].k],
-      busy = st.busy === s.k && st.busyPg === pg;
+    const has = !!st.story.cards[s.k],
+      prev = i === 0 || !!st.story.cards[STAGES[i - 1].k],
+      busy = st.busy === s.k;
     const sec = el("section", {
       class: "box stage" + (has ? " done" : "") + (!prev ? " locked" : ""),
       "data-card": s.k,
@@ -376,8 +375,7 @@ function drawStages(root, pg, j) {
       "aria-labelledby": "tab-" + s.k,
     });
     const tags = el("span", { class: "tags" });
-    const base = j > 0 ? P[j - 1].cards[s.k] : undefined;
-    if (pg.stale[s.k])
+    if (st.story.stale[s.k])
       tags.append(
         el(
           "span",
@@ -390,28 +388,20 @@ function drawStages(root, pg, j) {
         el(
           "span",
           { class: "tag" },
-          j === 0 ? t("Ready to check") : t("Ready"),
+          t("Ready to check"),
         ),
       );
-    if (s.k === "style" && narratorStale(pg))
+    if (s.k === "style" && narratorStale())
       tags.append(
         el("span", { class: "tag stale" }, t("Narrator written from earlier style settings")),
       );
-    const broken = has ? scanRefs(pg.cards[s.k], [s.k], []) : [];
+    const broken = has ? scanRefs(st.story.cards[s.k], [s.k], []) : [];
     if (broken.length)
       tags.append(
         el(
           "span",
           { class: "tag bad" },
           t("broken links: {n}", { n: broken.length }),
-        ),
-      );
-    if (has && base && !same(pg.cards[s.k], base))
-      tags.append(
-        el(
-          "span",
-          { class: "tag chgtag" },
-          t("Changed since the last chapter"),
         ),
       );
     const extra =
@@ -445,7 +435,7 @@ function drawStages(root, pg, j) {
               class: "sm",
               disabled: !has,
               title: t("Export this card"),
-              onclick: () => exportSingleCard(j, s.k),
+              onclick: () => exportSingleCard(s.k),
             },
             t("Export card"),
           ),
@@ -454,8 +444,8 @@ function drawStages(root, pg, j) {
       el("div", { class: "head" }, el("h2", {}, t(s.t)), tags, cardBtns),
       el("p", { class: "hint" }, t(s.d) + extra),
     );
-    const usingEx = j === 0 && usesExample(s.k) && !!pg.chapter.trim();
-    if (j === 0) {
+    const usingEx = usesExample(s.k) && !!st.story.chapter.trim();
+    if (st.story.cur === 0) {
       const cb = el("input", {
         type: "checkbox",
         id: "ex-" + s.k,
@@ -463,7 +453,7 @@ function drawStages(root, pg, j) {
       });
       cb.checked = usesExample(s.k);
       cb.addEventListener("change", () => {
-        pg.useEx[s.k] = cb.checked;
+        st.story.useEx[s.k] = cb.checked;
         draw();
       });
       sec.append(
@@ -472,7 +462,7 @@ function drawStages(root, pg, j) {
           { class: "chk useex" },
           cb,
           el("span", {}, t("Use the example chapter for this card")),
-          pg.chapter.trim()
+          st.story.chapter.trim()
             ? null
             : el(
                 "span",
@@ -491,13 +481,15 @@ function drawStages(root, pg, j) {
         : t(HINTS[s.k]),
       "aria-label": t("{card} notes", { card: t(s.t) }),
     });
-    nt.value = pg.notes[s.k] || "";
+    nt.value = st.story.notes[s.k] || "";
     nt.addEventListener("input", () => {
-      pg.notes[s.k] = nt.value;
+      st.story.notes[s.k] = nt.value;
       updateCounters();
     });
     const notesOpen =
-      pg.notesOpen && s.k in pg.notesOpen ? pg.notesOpen[s.k] : !has;
+      st.story.notesOpen && s.k in st.story.notesOpen
+        ? st.story.notesOpen[s.k]
+        : !has;
     const det = el(
       "details",
       { class: "notes", open: notesOpen ? "open" : false },
@@ -506,14 +498,13 @@ function drawStages(root, pg, j) {
       el("div", { class: "count nc", "data-k": s.k }),
     );
     det.addEventListener("toggle", () => {
-      if (!pg.notesOpen) pg.notesOpen = {};
-      pg.notesOpen[s.k] = det.open;
+      st.story.notesOpen[s.k] = det.open;
       scheduleSave();
     });
     sec.append(det);
-    if (pg.err[s.k])
+    if (st.story.err[s.k])
       sec.append(
-        el("div", { class: "msg err", role: "alert" }, msg(pg.err[s.k])),
+        el("div", { class: "msg err", role: "alert" }, msg(st.story.err[s.k])),
       );
     if (!has) {
       sec.append(
@@ -530,7 +521,7 @@ function drawStages(root, pg, j) {
             ? [t("Generating…"), el("span", { class: "timer" })]
             : [
                 t("Generate {what}", { what: t(s.t).toLowerCase() }),
-                tookTag(pg.took && pg.took[s.k]),
+                tookTag(st.story.took && st.story.took[s.k]),
               ],
         ),
       );
@@ -546,7 +537,7 @@ function drawStages(root, pg, j) {
           ),
         );
     } else {
-      const w = pg.warn[s.k] || [];
+      const w = st.story.warn[s.k] || [];
       if (w.length)
         sec.append(
           el(
@@ -573,11 +564,11 @@ function drawStages(root, pg, j) {
             ),
           ),
         );
-      FLAGS = flagsOf(pg.warn[s.k]);
+      FLAGS = flagsOf(st.story.warn[s.k]);
       try {
         sec.append(
           withHide(hide, () =>
-            editor(pg.cards[s.k], (SCH.enums || {})[s.k], base, s.k),
+            editor(st.story.cards[s.k], (SCH.enums || {})[s.k], undefined, s.k),
           ),
         );
       } finally {
@@ -593,11 +584,10 @@ function drawStages(root, pg, j) {
         fb.style.height = "auto";
         fb.style.height = Math.min(fb.scrollHeight + 2, 320) + "px";
       };
-      pg.draft = pg.draft || {};
-      fb.value = pg.draft[s.k] || "";
+      fb.value = st.story.cardDraft[s.k] || "";
       if (fb.value) setTimeout(grow, 0);
       fb.addEventListener("input", () => {
-        pg.draft[s.k] = fb.value;
+        st.story.cardDraft[s.k] = fb.value;
         grow();
       });
       sec.append(
@@ -616,7 +606,10 @@ function drawStages(root, pg, j) {
             },
             busy
               ? [t("Generating…"), el("span", { class: "timer" })]
-              : [t("Regenerate with note"), tookTag(pg.took && pg.took[s.k])],
+              : [
+                  t("Regenerate with note"),
+                  tookTag(st.story.took && st.story.took[s.k]),
+                ],
           ),
           el(
             "button",
@@ -639,11 +632,7 @@ function drawStages(root, pg, j) {
   });
 }
 function askNode(j) {
-  const P = pages(),
-    k = j + 1,
-    nxt = P[j + 1],
-    needs = !!nxt && (edited(nxt) || !!nxt.result);
-  const end = !!nxt && isEnding(j + 1);
+  const k = j + 1;
   const box = el("div", {
     class: "pending",
     role: "alertdialog",
@@ -678,63 +667,40 @@ function askNode(j) {
     },
     t("Cancel"),
   );
-  if (needs) {
-    box.append(
-      el(
-        "p",
-        {},
-        end
-          ? t(
-              "If you replace them, the cards this chapter ends with will overwrite the ending cards.",
-            )
-          : t(
-              "If you replace them, the cards this chapter ends with will overwrite chapter {n}'s starting cards.",
-              { n: k + 1 },
-            ),
+  box.append(
+    el(
+      "p",
+      {},
+      t(
+        "Replacing adopts this generation's shared cards and overwrites future chapter beats. Keeping preserves the current cards and beats.",
       ),
-    );
-    box.append(
+    ),
+  );
+  box.append(
+    el(
+      "div",
+      { class: "row" },
       el(
-        "div",
-        { class: "row" },
-        el(
-          "button",
-          {
-            id: "askreplace",
-            class: "go",
-            onclick: () => writeChapter("replace", note),
-          },
-          t("Rewrite and replace them"),
-        ),
-        el(
-          "button",
-          {
-            id: "askkeep",
-            class: "alt",
-            onclick: () => writeChapter("keep", note),
-          },
-          t("Rewrite and keep them"),
-        ),
-        cancel,
+        "button",
+        {
+          id: "askreplace",
+          class: "go",
+          onclick: () => writeChapter("replace", note),
+        },
+        t("Rewrite and replace them"),
       ),
-    );
-  } else
-    box.append(
       el(
-        "div",
-        { class: "row" },
-        el(
-          "button",
-          {
-            id: "askyes",
-            class: "go",
-            onclick: () => writeChapter("replace", note),
-          },
-          t("Rewrite chapter {k}", { k }),
-        ),
-        cancel,
+        "button",
+        {
+          id: "askkeep",
+          class: "alt",
+          onclick: () => writeChapter("keep", note),
+        },
+        t("Rewrite and keep them"),
       ),
-    );
+      cancel,
+    ),
+  );
   return box;
 }
 /* the people this chapter is written about: tick up to the limit, the main character is fixed. The ticks follow the chapter's
@@ -755,11 +721,11 @@ function namedInBeat(b, chars) {
 }
 function castBox(pg, j) {
   const k = j + 1,
-    chars = pg.cards.characters || [],
-    lead = leadOf(pg),
+    chars = st.story.cards.characters || [],
+    lead = leadOf(),
     sel = castFor(pg, k),
     max = maxCast(),
-    b = beatOf(pg, k),
+    b = beatOf(k),
     inBeat = [...namedInBeat(b, chars)];
   const box = el(
     "div",
@@ -862,35 +828,24 @@ function drawMid() {
     j = S.cur,
     pg = cur(),
     k = j + 1,
-    P = S.pages,
-    prev = j > 0 ? P[j - 1] : null,
-    ending = isEnding(j);
+    P = chapters(),
+    prev = j > 0 ? P[j - 1] : null;
   root.innerHTML = "";
   const head = el("section", { class: "box" });
   head.append(
     el(
       "div",
       { class: "head" },
-      el("h2", {}, ending ? t("Ending cards") : t("Chapter {k} cards", { k })),
+      el("h2", {}, t("Story cards")),
     ),
   );
   head.append(
     el(
       "p",
       { class: "hint" },
-      j === 0
-        ? t(
-            "Generate the four cards in order and check each one, or import them. Then write the chapter.",
-          )
-        : ending
-          ? t(
-              "The cards as chapter {j} left them. The story has no chapter {k}, so there is nothing more to write. Edit or export them, or raise Total chapters on the Setup card to keep going.",
-              { j, k },
-            )
-          : t(
-              "These are the cards as chapter {j} left them. Edit anything you like before writing chapter {k}; changed fields are marked.",
-              { j, k },
-            ),
+      t(
+        "One shared set of cards for the whole story. The selected chapter determines which beat is used.",
+      ),
     ),
   );
   if (j > 0 && resStale(j - 1))
@@ -899,28 +854,17 @@ function drawMid() {
         "div",
         { class: "msg warn" },
         t(
-          "Chapter {j} is out of date (an earlier chapter was rewritten), so these cards may not match what came before.",
+          "Chapter {j} is out of date because an earlier chapter was rewritten.",
           { j },
-        ),
-      ),
-    );
-  if (pg.result && cardsEdited(pg))
-    head.append(
-      el(
-        "div",
-        { class: "msg warn" },
-        t(
-          "These cards changed after chapter {k} was written. Rewrite the chapter to apply the changes.",
-          { k },
         ),
       ),
     );
   if (pg.msg)
     head.append(el("div", { class: "msg err", role: "alert" }, msg(pg.msg)));
-  if (!ending) {
-    const okWrite = haveCards(pg) && (j === 0 || !!(prev && prev.result));
+  {
+    const okWrite = haveCards() && (j === 0 || !!(prev && prev.result));
     const writing = st.busy === "chapter" && st.busyPg === pg;
-    if (haveCards(pg) && (pg.cards.characters || []).length)
+    if (haveCards() && (st.story.cards.characters || []).length)
       head.append(castBox(pg, j));
     head.append(
       el(
@@ -996,7 +940,7 @@ function drawMid() {
         ),
       );
     }
-    const allBroken = brokenIn(pg.cards);
+    const allBroken = brokenIn(st.story.cards);
     if (allBroken.length)
       head.append(
         el(
@@ -1019,11 +963,11 @@ function drawMid() {
         ),
       );
     if (st.ask && st.ask.j === j && !st.busy) head.append(askNode(j));
-    const beat = beatOf(pg, k);
+    const beat = beatOf(k);
     if (beat) {
       const loc =
         (
-          ((pg.cards.world && pg.cards.world.locations) || []).find(
+          ((st.story.cards.world && st.story.cards.world.locations) || []).find(
             (l) => l.id === beat.location,
           ) || {}
         ).name || beat.location;
@@ -1050,7 +994,7 @@ function drawMid() {
   const rep = reportNode();
   if (rep) root.append(rep);
   if (j === 0) root.append(inputSection(pg));
-  drawStages(root, pg, j);
+  drawStages(root);
 }
 
 function drawRight() {
@@ -1061,20 +1005,6 @@ function drawRight() {
     k = j + 1,
     r = pg.result;
   root.innerHTML = "";
-  if (isEnding(j)) {
-    root.append(
-      el("div", { class: "head" }, el("h2", {}, t("Ending"))),
-      el(
-        "p",
-        { class: "hint" },
-        t(
-          "Chapter {j} was the last chapter of the story, so there is no more story to write. The cards on the left are how it ended.",
-          { j },
-        ),
-      ),
-    );
-    return;
-  }
   const tags = el("span", { class: "row", style: "margin:0" });
   if (r)
     tags.append(
@@ -1088,12 +1018,10 @@ function drawRight() {
         t("Out of date: an earlier chapter was rewritten"),
       ),
     );
-  if (narratorStale(pg))
+  if (narratorStale())
     tags.append(
       el("span", { class: "tag stale" }, t("Narrator written from earlier style settings")),
     );
-  if (r && cardsEdited(pg))
-    tags.append(el("span", { class: "tag stale" }, t("Cards changed since")));
   if (r && r.update_failed)
     tags.append(el("span", { class: "tag stale" }, t("Cards not updated")));
   root.append(

@@ -1,6 +1,6 @@
-/* Pulpermill page: Importing card files into a chapter page. */
+/* Pulpermill page: Importing card files into the story's shared cards. */
 async function importFiles(files) {
-  const pg = cur(),
+  const story = st.story,
     j = st.story.cur,
     warn = [],
     items = [];
@@ -64,7 +64,7 @@ async function importFiles(files) {
     try {
       res = await api("/import", {
         method: "POST",
-        body: JSON.stringify({ items, existing: cleanCards(pg.cards) }),
+        body: JSON.stringify({ items, existing: cleanCards(story.cards) }),
       });
     } catch (e) {
       warn.push(
@@ -75,15 +75,24 @@ async function importFiles(files) {
       );
     }
   }
-  const undo = clone(pg.cards),
+  const undo = clone(story.cards),
     got = res.cards || {};
   Object.keys(got).forEach((k) => {
     if (CARD_KEYS.includes(k)) {
-      pg.cards[k] = got[k];
+      story.cards[k] = got[k];
       if (k === "style") stampNarrator(got[k]);
-      delete pg.stale[k];
-      delete pg.err[k];
-      delete pg.warn[k];
+      delete story.stale[k];
+      delete story.err[k];
+      delete story.warn[k];
+      if (k === "outline")
+        ensureChapter(
+          Math.max(
+            1,
+            ...(got[k].chapter_beats || []).map(
+              (b) => Number(b.chapter_num) || 1,
+            ),
+          ),
+        );
     }
   });
   st.report = {
@@ -126,7 +135,7 @@ function reportNode() {
       el(
         "div",
         { class: "msg warn" },
-        t("Consistency notes on the cards now on this page:"),
+        t("Consistency notes on the story's shared cards:"),
         el(
           "ul",
           {},
@@ -144,7 +153,7 @@ function reportNode() {
             {
               class: "sm",
               onclick: () => {
-                cur().cards = r.undo;
+                st.story.cards = r.undo;
                 st.report = null;
                 draw();
               },

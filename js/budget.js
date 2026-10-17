@@ -78,10 +78,9 @@ function limitChars(tokens, sample) {
 }
 /* the example chapter's text as far as card k is concerned: nothing when it is switched off for that card */
 const usesExample = (k) => {
-  const pg = cur();
-  return !pg.useEx || pg.useEx[k] !== false;
+  return !st.story.useEx || st.story.useEx[k] !== false;
 };
-const chText = (k) => (usesExample(k) ? cur().chapter || "" : "");
+const chText = (k) => (usesExample(k) ? st.story.chapter || "" : "");
 const over = (k) => {
   const b = budgetTokens(k);
   return b != null && tokensEst(chText(k) + " " + (st.notes[k] || "")) > b;
@@ -109,7 +108,7 @@ function setCount(n, len, limit) {
 function updateCounters() {
   const L = st.limits,
     cc = $("#chcount"),
-    ch = cur().chapter;
+    ch = st.story.chapter;
   const using = STAGES.filter((s) => usesExample(s.k)),
     pool = using.length ? using : STAGES; // the tightest of the cards that use it
   if (cc)
