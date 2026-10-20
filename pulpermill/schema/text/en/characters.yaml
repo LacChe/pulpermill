@@ -1,0 +1,123 @@
+# English text for the Characters card. Keys match schema/characters.py.
+# label, help, summary -> human only. expand, lead_in, item_template -> the only text the model sees.
+# Templates may use {name} (this character's name), {value}, {items}.
+card:
+  label: "Character"
+  summary: "One individual: who they are, what they want, how they contradict themselves and behave under pressure. It names no other people, places or objects, so it can move between projects."
+groups:
+  identity: {label: "Identity", help: "The facts the story must never change, plus a short sketch."}
+  drive: {label: "Drive", help: "What they want and what they avoid."}
+  inner_conflict: {label: "Inner conflict", help: "What gets in their own way, and what they will not betray."}
+  texture: {label: "Texture", help: "Skills, soft spots and how they talk."}
+  past: {label: "Past", help: "Formative background."}
+fields:
+  name:
+    label: "Name"
+    help: "What the narration calls them."
+    lead_in: "The character's name is {value}."
+  age:
+    label: "Age"
+    help: "A concrete number, so the story never drifts."
+    lead_in: "{name} is {value} years old."
+  sex:
+    label: "Sex"
+    help: "Fixes pronouns and avoids contradictions."
+    options:
+      female: {label: "Female", expand: "{name} is a woman, referred to as she and her."}
+      male: {label: "Male", expand: "{name} is a man, referred to as he and him."}
+      other: {label: "Other", expand: "{name} is referred to as they and them."}
+  appearance:
+    label: "Appearance"
+    help: "Concrete, checkable details: build, hair, face, distinguishing marks, usual dress. State facts, not impressions."
+    lead_in: "{name}'s appearance: {value}"
+  sketch:
+    label: "Sketch"
+    help: "One or two sentences on what this person is like. Describe the person, not just a role, and if you can, include one contradiction that doesn't fit the type (a brutal enforcer who keeps bees)."
+  wants:
+    label: "Wants"
+    help: "Two to five abstract desires that can't all be satisfied at once (succeed at school, be left alone). Nothing concrete and nobody else: aims toward a particular person live in Entanglements. The conflict between them is what drives the character."
+    lead_in: "{name} wants several things that cannot all be satisfied at once: {items}."
+    item_template: "{text}"
+    item_join: "; "
+    item_fields:
+      text: {label: "Want", help: "One desire, in a few words."}
+  fear:
+    label: "Fear"
+    help: "What they avoid or protect themselves from."
+    lead_in: "{name} avoids and protects themselves from: {value}"
+  flaw:
+    label: "Flaw"
+    help: "A false belief or blind spot that sabotages what they want."
+    lead_in: "{name} holds a false belief or blind spot that sabotages what they want: {value}"
+  values:
+    label: "Values"
+    help: "What they hold sacred or will not betray, phrased positively ('keeps their word even when it ruins them')."
+    lead_in: "{name} holds sacred, and keeps faith with: {items}."
+    item_template: "{text}"
+    item_join: "; "
+    item_fields:
+      text: {label: "Value", help: "One thing they protect, phrased positively."}
+  behaviors:
+    label: "Behaviors"
+    help: "How they act in different inner states. Include at least one calm or happy state."
+    lead_in: "{name} has these dispositions: {items}."
+    item_template: "when {state}, they {tendency}"
+    item_join: "; "
+    item_fields:
+      state: {label: "When", help: "An inner or broad social state, like 'feels watched', 'is being praised' or 'is out of their depth'. Not a specific situation."}
+      tendency: {label: "They", help: "A leaning or habit, like 'go quiet' or 'busy their hands'. Not one particular act."}
+  competence:
+    label: "Competence"
+    help: "What they're good at."
+    lead_in: "{name} is good at: {value}"
+  vulnerability:
+    label: "Vulnerability"
+    help: "Where they can be hurt or caught out, including shame that shapes behavior."
+    lead_in: "{name} can be hurt or caught out by: {value}"
+  speech:
+    label: "Speech"
+    help: "How they talk: rhythm, vocabulary, what they never say."
+    lead_in: "{name} speaks like this: {value}"
+  history:
+    label: "History"
+    help: "Short, formative background that explains the flaw and the wants. No named people, places or objects from any story."
+    lead_in: "Formative background: {value}"
+rules:
+  char_other_names:
+    message: "This mentions {names}. A character has to work in any project, so it should not name other people, places or objects."
+    fix: "Rephrase as a trait (for example 'distrusts family'). Ties go in Entanglements and shared history in World."
+  char_no_relationships:
+    message: "This describes a relationship to someone else. A character has to stand alone."
+    fix: "Rephrase as a trait of this person, like 'distrusts family'. Ties between people are recorded in Entanglements."
+    judge_prompt: "Does this text mention a relationship to another person, such as a sibling, partner, boss or friend? Answer yes or no. If yes, rewrite it as a trait of this person alone."
+  sketch_describes_person:
+    message: "This reads as a role, not a person."
+    fix: "Say what this person is like. A role gives the model a stereotype to fall back on."
+    judge_prompt: "Does this sketch describe what the person is like, beyond naming a role or occupation? Answer yes or no. If no, suggest a rewrite that describes the person."
+  appearance_concrete:
+    message: "This gives impressions. Appearance works best as concrete details."
+    fix: "List what could be checked: build, hair, face, marks, usual dress."
+    judge_prompt: "Does this text give concrete, checkable details of appearance, with impressions kept to a minimum? Answer yes or no. If no, suggest a rewrite as concrete details."
+  wants_count:
+    message: "Wants needs at least two items so they can pull against each other."
+    fix: "Add a second want that pulls against the first."
+  wants_conflict:
+    message: "These wants don't clearly pull against each other."
+    fix: "Add a want that conflicts with the others. A suggestion can be offered for you to accept or reject."
+    judge_prompt: "Can all of these wants be fully satisfied at the same time? Answer yes or no. If yes, propose one opposing want that cannot be satisfied alongside the others."
+  values_positive:
+    message: "A value reads as a rule against something."
+    fix: "Phrase it as what they protect, like 'keeps their word even when it ruins them'."
+    judge_prompt: "Is each value phrased as something the character protects or keeps faith with? Answer yes or no for each. Rewrite any that fail."
+  behavior_state_is_inner:
+    message: "A 'When' box describes a specific situation."
+    fix: "Use an inner or broad social state, like 'feels watched' or 'is being praised'."
+    judge_prompt: "Is each 'when' an inner or broad social state rather than a specific situation? Answer yes or no for each. Rewrite any that fail."
+  behaviors_include_calm:
+    message: "Every state is stressful. Add a calm or happy one."
+    fix: "Add a state like 'feels at ease' or 'is among people they trust'."
+    judge_prompt: "Is at least one 'when' state calm or happy? Answer yes or no. If no, suggest one."
+  behavior_is_tendency:
+    message: "A 'They' box describes one specific act."
+    fix: "Use a habit or leaning, so a fresh version can be written each time."
+    judge_prompt: "Is each 'they' a tendency or habit rather than one specific act? Answer yes or no for each. Rewrite any that fail."

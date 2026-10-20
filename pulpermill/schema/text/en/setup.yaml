@@ -1,0 +1,65 @@
+# English text for the Setup card. Keys match schema/setup.py.
+# The protagonist is shown by name, never by id.
+card:
+  label: "Setup"
+  summary: "The springboard: who we follow, what just broke their normal, and what pushes them forward. It holds no plan and no ending, and it never changes during the story."
+groups:
+  opening: {label: "Opening", help: "Who we follow and what just broke."}
+  push: {label: "Push", help: "What pushes them forward, and why they can't stop."}
+fields:
+  protagonist:
+    label: "Protagonist"
+    help: "Whose eyes we follow. Exactly one, fixed for the whole story. This is the only place a character is marked as the lead."
+    lead_in: "The story follows {value}."
+  normal:
+    label: "Normal"
+    help: "An ordinary day for the protagonist before the story, drawn from World's everyday life. Say what that normal gave them (safety, status, a routine that kept a want or fear quiet), so the disruption has something to threaten. Only the first chapter uses this; later chapters carry it forward through what happened."
+    lead_in: "Before the story, the protagonist's ordinary life: {value}"
+  disruption:
+    label: "Disruption"
+    help: "What just broke the normal. An event, not a condition: 'the ledger went missing', not 'things are tense'. Only the first chapter uses this."
+    lead_in: "What just broke that normal: {value}"
+  goal:
+    label: "Goal"
+    help: "What the protagonist is concretely trying to do, narrowing one of their wants into this story. It can be acted on in scenes, a reader could tell whether it succeeded, failed or stopped mattering, and it costs something. During the story the current goal is worked out from this and from any redefinitions in the beats; once it is achieved or abandoned the story winds down."
+    lead_in: "The protagonist is now trying to: {value}"
+  stakes:
+    label: "What's at stake"
+    help: "What happens if they do nothing or quit. This is why they can't walk away. Tie it to a want, a value or a pressure already on the cards. It can be a friendship, a reputation or a chance at happiness, not only a loss."
+    lead_in: "If the protagonist does nothing or quits: {value}"
+  chapter_count:
+    label: "Chapter count"
+    help: "A budget, not a fixed route. If the goal resolves early, the remaining chapters carry the aftermath."
+    lead_in: "The story runs for {value} chapters."
+rules:
+  protagonist_link_broken:
+    message: "The protagonist no longer exists in Characters."
+    fix: "Pick a character."
+  normal_is_concrete:
+    message: "This doesn't name concrete people, places or routines, or what that normal gave the protagonist."
+    fix: "Describe an ordinary day, and what it gave them: safety, status, or a routine that kept a want or fear quiet."
+    judge_prompt: "Does this text describe a concrete ordinary day with specific routines, people or places, and say what that normal gave the protagonist? Answer yes or no. If no, suggest a rewrite."
+  disruption_is_event:
+    message: "This describes a condition, not an event."
+    fix: "Say what happened, like 'the ledger went missing', not 'things are tense'."
+    judge_prompt: "Does this text describe something that happened, an event, rather than a standing condition? Answer yes or no. If no, suggest a rewrite as an event."
+  goal_is_action:
+    message: "This reads like a feeling or a theme, not something to act on."
+    fix: "Say what they are concretely trying to do, like 'get the ledger back before the audit'."
+    judge_prompt: "Is this something a person can act on in scenes, such as getting, finding, stopping or reaching something? Answer yes or no. If no, suggest a rewrite as an action."
+  goal_checkable:
+    message: "A reader couldn't tell whether this succeeded, failed or stopped mattering."
+    fix: "Make it something with a clear outcome."
+    judge_prompt: "Could a reader tell whether this goal succeeded, failed or stopped mattering? Answer yes or no. If no, suggest a sharper version."
+  goal_touches_cards:
+    message: "This goal doesn't connect to anything on the other cards."
+    fix: "Narrow one of the protagonist's wants into it, or add a pressure or tie that bears on it. A goal that touches nothing has nothing to collide with."
+    judge_prompt: "Does this goal narrow one of the protagonist's wants, and bear on at least one pressure or tie? Answer yes or no for each. If no, suggest the closest connection, or a new pressure for the writer to accept or reject."
+  stakes_has_cost:
+    message: "This doesn't name a cost or a gain."
+    fix: "Say what is lost or gained if they do nothing or quit. It can be a friendship, a reputation or a chance at happiness."
+    judge_prompt: "Does this text name something the protagonist would lose or miss out on if they did nothing or quit? Answer yes or no. If no, suggest one."
+  stakes_tie_to_cards:
+    message: "This isn't tied to a want, value or pressure already on the cards."
+    fix: "Tie it to something the protagonist wants or protects, or to a pressure."
+    judge_prompt: "Does this text tie to one of the protagonist's wants or values, or to a pressure? Answer yes or no. If no, suggest the closest tie."

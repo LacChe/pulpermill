@@ -1,0 +1,94 @@
+# English text for the Entanglements card. Keys match schema/entanglements.py.
+# In templates, link fields (people, things, places, rules) are shown by name, never by id.
+card:
+  label: "Entanglements"
+  summary: "The live connections in this story: ties between people, who holds what, who knows what, and what is pressing on them. It changes as the story moves."
+groups:
+  ties: {label: "Ties", help: "Directed connections between people and groups."}
+  holdings: {label: "Holdings", help: "Who holds or controls which thing or place."}
+  knowledge: {label: "Knowledge", help: "Who knows, suspects or has been misled about a fact."}
+  pressures: {label: "Pressures", help: "Circumstances and agents pushing on the story."}
+fields:
+  ties:
+    label: "Ties"
+    help: "How people and groups are connected. A tie points one way: how 'from' stands toward 'to'."
+    lead_in: "Ties between people and groups:\n{items}"
+    item_template: "{tie_from} toward {tie_to}: {bond}. Right now, {edge}"
+    item_join: "\n"
+    item_fields:
+      tie_from: {label: "From", help: "A character or a group."}
+      tie_to: {label: "To", help: "A character or a group."}
+      bond: {label: "Bond", help: "A standing label for the connection, which may carry a clause of shared past ('owes her since the fire')."}
+      edge: {label: "Edge", help: "A concrete aim between these two people right now: what 'from' wants from, or hides from, 'to' (wants to pass her test, hides the missing key). Abstract desires belong on the character."}
+  holdings:
+    label: "Holdings"
+    help: "Who holds or controls which thing or place. Moves as things change hands."
+    lead_in: "Who holds or controls what:\n{items}"
+    item_template: "{held_by} holds or controls {holdee}"
+    item_join: "\n"
+    item_fields:
+      holdee: {label: "Thing or place", help: "A thing or a place from World."}
+      held_by: {label: "Held by", help: "Who holds it now. The choices depend on what it is."}
+  knowledge:
+    label: "Knowledge"
+    help: "Who knows, suspects or has been misled about a fact or world rule. It is measured against what is true in the story, which cannot be wrong. Someone who is simply unaware is left out."
+    lead_in: "What each person can and cannot act on, given what they know:\n{items}"
+    item_template: "{person} {status} {rule}{fact}"
+    item_join: "\n"
+    item_fields:
+      rule: {label: "World rule", help: "A rule from World this is about."}
+      fact: {label: "Other fact", help: "Or a short fact of your own, when it isn't a world rule."}
+      person: {label: "Who", help: "A character or a group."}
+      status:
+        label: "Status"
+        help: "Knows it, suspects it, or has been misled about it."
+        options:
+          knows: {label: "Knows", expand: "knows"}
+          suspects: {label: "Suspects", expand: "suspects"}
+          misled: {label: "Misled", expand: "has been misled about"}
+  pressures:
+    label: "Pressures"
+    help: "What is pressing on people, from a circumstance or from someone with their own wants."
+    lead_in: "Pressures on the story:\n{items}"
+    item_template: "{what} (from {source_agent}{source_circumstance}; bears on {bears_on}). Next move: {next_move}"
+    item_join: "\n"
+    item_fields:
+      what: {label: "What", help: "What is pressing, and what happens if it is ignored."}
+      source_agent: {label: "Agent", help: "A character or group behind it."}
+      source_circumstance: {label: "Circumstance", help: "Or a circumstance with no one behind it, like a storm or a deadline."}
+      next_move: {label: "Agent's next move", help: "Only when an agent is behind it: what they want in this situation, not their general wants."}
+      bears_on: {label: "Bears on", help: "Who it falls on: characters or groups."}
+rules:
+  tie_not_self:
+    message: "A tie goes from someone to themselves."
+    fix: "Pick a different person or group for one end."
+  holding_pair_allowed:
+    message: "That holder isn't allowed for this kind of thing."
+    fix: "Pick a holder from the list offered for it."
+  knowledge_one_fact:
+    message: "Give either a world rule or a fact of your own, not both or neither."
+    fix: "Fill in one of the two."
+  pressure_one_source:
+    message: "Give either an agent or a circumstance, not both or neither."
+    fix: "Fill in one of the two."
+  next_move_for_agents:
+    message: "A pressure with an agent needs the agent's next move."
+    fix: "Say what the agent wants to do next in this situation."
+  link_broken:
+    message: "This points to something that no longer exists."
+    fix: "Pick a replacement, or remove the entry."
+  tie_edge_is_live:
+    message: "This edge doesn't say what one side wants from, or hides from, the other right now."
+    fix: "Say what 'from' is after or keeping back, not just how they feel."
+    judge_prompt: "For each tie, does the edge say what one side wants from, or hides from, the other right now? Answer yes or no for each. Rewrite any that fail."
+  pressure_has_consequence:
+    message: "A pressure doesn't say what happens if it's ignored."
+    fix: "Add the cost of doing nothing."
+    judge_prompt: "For each pressure, does the text say what happens if it is ignored? Answer yes or no for each. Suggest a consequence for any that fail."
+  pressure_next_move_in_situation:
+    message: "A next move reads as the agent's general wants."
+    fix: "Say what they want to do in this situation."
+    judge_prompt: "For each agent's next move, does it describe what the agent wants in this situation, not their wants in general? Answer yes or no for each. Rewrite any that fail."
+  pressures_active_count:
+    message: "More than three pressures are active."
+    fix: "Let the weakest one fade or end, so the others get room."

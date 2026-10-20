@@ -1,0 +1,135 @@
+# English text for the World card. Keys match schema/world.py.
+# label, help, summary -> human only. expand, lead_in, item_template -> the only text the model sees.
+# Templates may use {name} (the world's name), {value}, {items}. A choice inside an item renders as its expand text.
+card:
+  label: "World"
+  summary: "What exists and what is true: places, things, groups and rules. It names no characters and never says who holds, knows or wants something, so any cast can live in it."
+groups:
+  overview: {label: "Overview", help: "The basics of the setting."}
+  places: {label: "Places", help: "Locations that act on the people in them."}
+  things: {label: "Things", help: "Objects that matter. No owner and no location."}
+  powers: {label: "Groups", help: "Institutions, organisations, nations and crowds."}
+  truths: {label: "Rules", help: "What is true here, what it costs, and who knows."}
+  vocabulary: {label: "Vocabulary", help: "Invented or local words."}
+fields:
+  name:
+    label: "Name"
+    help: "What the world or setting is called."
+    lead_in: "The setting is called {value}."
+  era_and_technology:
+    label: "Era and technology"
+    help: "When it is, what people can and can't do, and the scale (a block, a city, a continent). State facts, not mood; mood belongs to Style."
+    lead_in: "Era and technology in {name}: {value}"
+  everyday_life:
+    label: "Everyday life"
+    help: "What a normal day looks like for most people, and what is scarce, expensive or contested. This is the normal that Setup's disruption will break."
+    lead_in: "Everyday life in {name}: {value}"
+  history:
+    label: "History"
+    help: "What happened before the story that people still live with (a war, a fire, a treaty). Name no characters; anything involving specific people goes in Entanglements."
+    lead_in: "History that people still live with: {value}"
+  places:
+    label: "Places"
+    help: "A handful of places. Each needs a name, a concrete description, and what the place does to the people in it."
+    lead_in: "Places in {name}, each shaping the people in it:\n{items}"
+    item_template: "{name}: {description} What it does to people there: {effect}"
+    item_join: "\n"
+    item_fields:
+      name: {label: "Name", help: "What the place is called."}
+      description: {label: "Description", help: "A concrete description you could picture."}
+      effect: {label: "What it does to people", help: "How the place changes the people in it ('everyone here lowers their voice'). A place that is only scenery gives the story nothing to work with."}
+  objects:
+    label: "Things"
+    help: "A handful of objects that matter."
+    lead_in: "Things that matter in {name}:\n{items}"
+    item_template: "{name}: {description} Why it matters: {significance}"
+    item_join: "\n"
+    item_fields:
+      name: {label: "Name", help: "What the thing is called."}
+      description: {label: "Description", help: "A concrete description."}
+      significance: {label: "Why it matters", help: "What it can do, or what it means to whoever wants it. No owner and no location; those are tracked in Entanglements."}
+  powers:
+    label: "Groups"
+    help: "Institutions, organisations, nations and crowds. Say how an ordinary person meets them day to day (a tax, a curfew, a whisper)."
+    lead_in: "Groups with power in {name}:\n{items}"
+    item_template: "{name}: {nature} It holds power by {hold} Ordinary people feel it as {felt}"
+    item_join: "\n"
+    item_fields:
+      name: {label: "Name", help: "What the group is called."}
+      nature: {label: "What it is", help: "An institution, an organisation, a nation, a crowd."}
+      hold: {label: "How it holds power", help: "Force, money, law, belief, numbers."}
+      felt: {label: "How people feel it", help: "How an ordinary person meets it day to day. Leave out what the group wants right now; that goes in Entanglements."}
+  rules:
+    label: "Rules"
+    help: "Things that are true here. Give each a price and a consequence for breaking it; a rule with no price is just a fact."
+    lead_in: "What is true in {name}:\n{items}"
+    item_template: "{statement} ({status}). Cost: {cost} When broken: {when_broken}"
+    item_join: "\n"
+    item_fields:
+      statement: {label: "Statement", help: "What is true."}
+      cost: {label: "Cost", help: "What using or living by this rule costs."}
+      status:
+        label: "Status"
+        help: "Common knowledge: everyone knows it, and it is true. Hidden: true, but known to few. Myth: widely believed, but false. Who exactly knows is recorded in Entanglements."
+        options:
+          common: {label: "Common knowledge", expand: "common knowledge"}
+          uncommon: {label: "Hidden", expand: "known only to a few"}
+          false_belief: {label: "Myth", expand: "widely believed but false; the truth is: {truth}"}
+      when_broken: {label: "When broken", help: "Whether breaking it is impossible, punished, shameful, or has a side effect. A hard limit and a priced choice work differently."}
+      truth: {label: "The truth", help: "Only for a Myth: what is actually true."}
+  terms:
+    label: "Vocabulary"
+    help: "Invented or local words and names, each with a one-line meaning, so the story stays consistent."
+    lead_in: "Words and names used in {name}: {items}"
+    item_template: "{term}: {meaning}"
+    item_join: "; "
+    item_fields:
+      term: {label: "Term", help: "The word or name."}
+      meaning: {label: "Meaning", help: "One line."}
+rules:
+  world_names_people:
+    message: "This mentions {names}. A world has to work with any cast, so it should not name characters."
+    fix: "Rephrase as a general fact. Anything involving specific people goes in Entanglements."
+  history_no_people:
+    message: "This history involves specific individuals."
+    fix: "Describe events and forces, and put anything tied to particular people in Entanglements."
+    judge_prompt: "Does this history describe events and forces that stand on their own, with no specific individuals? Answer yes or no. If no, rewrite it without the individuals."
+  era_is_fact_not_mood:
+    message: "This reads as mood. Era and technology works best as facts."
+    fix: "Say what people can and can't do, and the scale. Mood belongs to Style."
+    judge_prompt: "Does this text state facts about the era, technology and scale, with mood left out? Answer yes or no. If no, rewrite it as facts."
+  everyday_has_friction:
+    message: "Nothing here is scarce, expensive or contested."
+    fix: "Say what people struggle for or fight over. This is the normal the story will break."
+    judge_prompt: "Does this text say what is scarce, expensive or contested in ordinary life? Answer yes or no. If no, suggest one."
+  place_acts_on_people:
+    message: "A place only describes scenery."
+    fix: "Say what the place does to the people in it, like 'everyone here lowers their voice'."
+    judge_prompt: "For each place, does the effect say what the place does to the people in it? Answer yes or no for each. Rewrite any that fail."
+  object_has_stakes:
+    message: "A thing doesn't say why it matters."
+    fix: "Say what it can do, or what it means to whoever wants it."
+    judge_prompt: "For each thing, does the significance say what it can do or what it means to whoever wants it? Answer yes or no for each. Rewrite any that fail."
+  object_unowned:
+    message: "A thing names an owner or a location."
+    fix: "Remove it. Who holds a thing and where it is get tracked in Entanglements."
+    judge_prompt: "Does any thing's text say who owns it or where it currently is? Answer yes or no for each. Rewrite any that do so that they describe only the thing."
+  power_felt_daily:
+    message: "A group isn't felt in daily life."
+    fix: "Say how an ordinary person meets it: a tax, a curfew, a whisper."
+    judge_prompt: "For each group, does the text say how an ordinary person meets it day to day? Answer yes or no for each. Rewrite any that fail."
+  power_no_current_goals:
+    message: "A group states what it wants right now."
+    fix: "Remove it. A group's present wants are tracked in Entanglements."
+    judge_prompt: "Does any group's text state what it currently wants or is about to do? Answer yes or no for each. Rewrite any that do so that they describe only what the group is."
+  rule_has_cost:
+    message: "A rule has no real price."
+    fix: "Add what it costs. A rule with a price gives people a choice."
+    judge_prompt: "For each rule, does the cost name something real that is lost or risked? Answer yes or no for each. Suggest a cost for any that fail."
+  rule_when_broken_clear:
+    message: "'When broken' doesn't say what happens."
+    fix: "Say whether breaking it is impossible, punished, shameful, or has a side effect."
+    judge_prompt: "For each rule, does 'when broken' say whether breaking it is impossible, punished, shameful, or has a side effect? Answer yes or no for each. Rewrite any that fail."
+  rule_false_needs_truth:
+    message: "A rule marked 'Myth' has no truth stated."
+    fix: "Add what is actually true. The story needs it to tell the difference."

@@ -1,0 +1,107 @@
+# English text for the Outline card. Keys match schema/outline.py.
+# Links (place, cast, rule, pressure) are shown by name, never by id.
+card:
+  label: "Outline"
+  summary: "One springboard beat per chapter, planned one at a time from where the story stands. A beat is frozen while its chapter is written, and you can see the next chapter's plan before generating it."
+groups:
+  beats: {label: "Beats", help: "One per chapter."}
+fields:
+  beats:
+    label: "Beats"
+    help: "Each beat sets up a chapter: where it opens, what the protagonist is after, what stands in the way, and what they must decide."
+    lead_in: "Chapter beats:\n{items}"
+    item_template: "Chapter {chapter}. We open at {where}, {when_time}{when_gap}. Present: {cast}. The protagonist is after {collision_goal}, but {collision_block}. They must choose between {choice_a} and {choice_b}. By the end, {turn}. This chapter is {shift}. It ends on {ends_on}. {reveal_rule} {reveal_learners} Set up for later: {plant} Pays off: {payoff} {offstage_did} {offstage_reach} {goal_change} {goal_now}"
+    item_join: "\n"
+    item_fields:
+      chapter: {label: "Chapter", help: "Which chapter this beat is for. Set by the system."}
+      stale: {label: "May no longer fit", help: "Set when an earlier chapter was regenerated after this beat was planned, so this beat, its chapter and its records may be out of step. Cleared when the chapter is generated again."}
+      where: {label: "Where", help: "Where the chapter opens. A place from World."}
+      when_time: {label: "When", help: "The day and time the chapter opens. The scene is already in motion."}
+      when_gap: {label: "Time since last chapter", help: "How long it has been. Leave blank for chapter 1."}
+      cast: {label: "Cast", help: "Who is on stage. You pick it before planning, and the system suggests the least-used characters. The protagonist is always included."}
+      collision_goal: {label: "The protagonist is after", help: "What the protagonist is trying to get in this chapter."}
+      collision_block: {label: "What blocks it", help: "What stands in the way. It should follow from the previous chapter's choice."}
+      choice_a: {label: "Option A", help: "One side of the choice. Each option is a want or a value, and picking one costs the other."}
+      choice_b: {label: "Option B", help: "The other side of the choice."}
+      turn: {label: "Turn", help: "What is different by the end of the chapter. It is best when it pays off something set up earlier."}
+      shift:
+        label: "Shift"
+        help: "Whether this chapter makes things harder or easier. Easier is a breath, never a pause: it still changes something, and the next chapter is harder. Choices that aren't allowed right now are disabled."
+        options:
+          harder: {label: "Harder", expand: "harder for the protagonist: the pressure rises"}
+          easier: {label: "Easier", expand: "a breath: things ease a little, though something still changes"}
+      ends_on: {label: "Ends on", help: "A conceptual stopping point that leaves a question open."}
+      reveal_rule: {label: "Reveal", help: "A Hidden rule or a Myth from World that comes to light this chapter. A rule that has already come to light in a written chapter can't be chosen again; one that was planned but did not land can."}
+      plant: {label: "Plant", help: "One thing this chapter should set up for later. Optional. It counts as open only once the chapter has actually planted it."}
+      payoff: {label: "Pay off", help: "Open plants this chapter should resolve, up to two. Optional. A plant that was planned but not written is not open."}
+      reveal_learners: {label: "Who learns it", help: "Which characters learn the revealed rule."}
+      offstage_did: {label: "Offstage move", help: "Only when the spotlighted pressure has an agent who is not in the cast: what they did since the last chapter. The offstage pass writes it."}
+      offstage_reach: {label: "How it reaches the protagonist", help: "How the offstage move's effects reach the protagonist this chapter."}
+      goal_change:
+        label: "Goal change"
+        help: "Only when the goal moves. Achieved and abandoned both end the goal, and the remaining chapters wind down with no new goal. A change that did not land in the text stays pending and is tried again."
+        options:
+          achieved: {label: "Achieved", expand: "the protagonist's goal has been achieved"}
+          redefined: {label: "Redefined", expand: "the protagonist's goal has changed to:"}
+          abandoned: {label: "Abandoned", expand: "the protagonist has abandoned the goal"}
+      goal_now: {label: "The goal now", help: "What the goal has become. Only for a redefined goal. It follows the same advice as Setup's goal: something to act on, with a clear outcome, that narrows a want."}
+      spotlight: {label: "Spotlight", help: "The pressure this chapter puts in focus. The system picks it so planning stays consistent, and you can change it."}
+      planned_from: {label: "Planned from", help: "A fingerprint of the live state this beat was planned from. Set by the system. If the live state changes afterward, the beat is flagged as planned from older state."}
+rules:
+  outline_link_broken:
+    message: "A beat points to something that no longer exists."
+    fix: "Pick a replacement, or ask for the beat to be regenerated."
+  cast_has_protagonist:
+    message: "The cast doesn't include the protagonist."
+    fix: "Add the protagonist. They are in every chapter."
+  when_gap_after_first:
+    message: "A chapter after the first needs the time since the last one."
+    fix: "Say how long it has been."
+  reveal_learners_needed:
+    message: "A reveal needs the characters who learn it."
+    fix: "Pick who learns it."
+  reveal_not_repeated:
+    message: "This rule has already come to light in a written chapter."
+    fix: "Pick a different rule, or leave the reveal empty."
+  payoff_is_open_plant:
+    message: "A payoff points at something that wasn't planted, isn't earlier, or was already paid off."
+    fix: "Pick only plants that were set up in an earlier chapter and are still open."
+  offstage_both_or_neither:
+    message: "An offstage move needs both what happened and how it reaches the protagonist."
+    fix: "Fill in both, or clear both."
+  goal_now_for_redefined:
+    message: "A redefined goal needs the new goal."
+    fix: "Say what the goal is now."
+  shift_legal:
+    message: "This shift isn't allowed here."
+    fix: "Pick the other one. Pacing limits come from the chapter number and what is still open."
+  goal_now_is_action:
+    message: "The new goal reads like a feeling or a theme, not something to act on."
+    fix: "Say what the protagonist is now concretely trying to do."
+    judge_prompt: "Is this something a person can act on in scenes, such as getting, finding, stopping or reaching something? Answer yes or no. If no, suggest a rewrite as an action."
+  goal_now_checkable:
+    message: "A reader couldn't tell whether the new goal succeeded, failed or stopped mattering."
+    fix: "Make it something with a clear outcome."
+    judge_prompt: "Could a reader tell whether this goal succeeded, failed or stopped mattering? Answer yes or no. If no, suggest a sharper version."
+  goal_now_touches_cards:
+    message: "The new goal doesn't connect to anything on the other cards."
+    fix: "Narrow one of the protagonist's wants into it, or tie it to a pressure or tie. A goal that touches nothing has nothing to collide with."
+    judge_prompt: "Does this goal narrow one of the protagonist's wants, and bear on at least one pressure or tie? Answer yes or no for each. If no, suggest the closest connection."
+  offstage_needs_agent:
+    message: "An offstage move needs a pressure with an agent behind it."
+    fix: "Change the spotlight to a pressure with an agent, or clear the offstage move."
+  turn_not_repeated:
+    message: "This turn is too close to an earlier one."
+    fix: "Make something different happen."
+  turn_is_a_change:
+    message: "The turn doesn't say what is different by the end."
+    fix: "State what has changed."
+    judge_prompt: "Does this text say what is different by the end of the chapter? Answer yes or no. If no, suggest a rewrite."
+  choice_is_costly:
+    message: "These options aren't a real choice."
+    fix: "Make each a want or a value, so picking one costs the other."
+    judge_prompt: "Is each option a want or a value of the protagonist, and does picking one cost the other? Answer yes or no. If no, suggest a rewrite."
+  ends_on_open_question:
+    message: "This stopping point doesn't leave a question open."
+    fix: "End on a moment that makes the reader ask what comes next."
+    judge_prompt: "Does this stopping point leave a question open for the reader? Answer yes or no. If no, suggest a rewrite."

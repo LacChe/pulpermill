@@ -1,100 +1,99 @@
-from __future__ import annotations
+"""Characters card: one individual. Root, portable, static. A project holds any number of these.
+Names no other person, place or object, and holds no ties (those live in Entanglements)."""
+from typing import Literal
+from .common import spec, Rule, Item, TextItem
 
-from pydantic import BaseModel, Field
+CARD = {
+    "id": "characters",
+    "type": "root",
+    "reads": [],
+    "portable": True,
+    "between_chapters": "static",
+    "many_per_project": True,
+}
 
-from .common import MAX_CHARACTERS, unique_ids
+GROUPS = [
+    {"id": "identity", "collapsed": False},
+    {"id": "drive", "collapsed": False},
+    {"id": "inner_conflict", "collapsed": False},
+    {"id": "texture", "collapsed": True},
+    {"id": "past", "collapsed": True},
+]
 
+# Prose assembly: a short description of the person, in three paragraphs.
+RENDER_ORDER = [
+    ["name", "age", "sex", "appearance", "sketch"],
+    ["wants", "fear", "flaw", "values", "behaviors"],
+    ["competence", "vulnerability", "speech", "history"],
+]
 
-# ===========================================================================
-# CHARACTERS
-# A character is a portrait of a person that holds in any story: who they are, never what has happened to them.
-# Pulpermill never edits a card after it is reviewed, so a card can be taken out of one project and dropped into another.
-# ===========================================================================
-
-
-# The prose fields in the order they are read: this is the order the writer is given them.
-PORTRAIT_FIELDS = (
-    "role",
-    "want",
-    "wound",
-    "armor",
-    "tell",
-    "with_people",
-    "soft_spot",
-    "limits",
-    "blind_spot",
-    "voice",
-    "presence",
-)
-
-
-class CharacterDraft(BaseModel):
-    """One person, written as a portrait that would hold in any story. Every text field is plain prose: one or two full
-    sentences in the third person, naming nothing that belongs to a single story (no plot, no places, no objects, no other
-    characters), and reading naturally when the fields are joined in order."""
-
-    name: str
-    role: str = Field(
-        description="How this person would be introduced to a stranger: the trade, station or bearing they would carry "
-        "into any story. Never a one-word title, and nothing about what happens to them in this story."
-    )
-    want: str = Field(
-        description="What they chase and what they are running from, as lasting traits of the person and not as a goal "
-        "belonging to any one story. Name the fear underneath the want."
-    )
-    wound: str = Field(
-        description="What happened to them long ago and the rule about the world it taught them, in setting-neutral "
-        "terms: no named people, places or institutions."
-    )
-    armor: str = Field(
-        description="Their default stance when cornered or threatened, and how they keep people at a distance: how they "
-        "meet conflict, not what any particular conflict is."
-    )
-    tell: str = Field(
-        description="What pressure does to their body: a repeated motion and the kind of thing they do it with, described "
-        "so that any setting could supply the object. Never a named prop."
-    )
-    with_people: str = Field(
-        description="How they handle other people and what people hold back: what they hide, how they dig for what others "
-        "hide, and how they treat someone who can do nothing for them."
-    )
-    soft_spot: str = Field(
-        description="What gets past the armor: what they love, what makes them laugh, and how they are when they stop "
-        "defending themselves."
-    )
-    limits: str = Field(
-        description="What they will never do, and what it would take to make them do it."
-    )
-    blind_spot: str = Field(
-        description="How they see themselves, and the specific thing they do that contradicts it. "
-        "A nervous tic is not a blind spot."
-    )
-    voice: str = Field(
-        description="How they talk: vocabulary, rhythm, what they never say, with one or two lines of them speaking about "
-        "something outside any story. Different from the narrator's voice. Never a line from the source."
-    )
-    presence: str = Field(
-        description="How they carry themselves and take up space, with the one physical detail a person would remember."
-    )
+Sex = Literal["female", "male", "other"]
 
 
-class CastDraft(BaseModel):
-    characters: list[CharacterDraft] = Field(
-        min_length=1,
-        max_length=MAX_CHARACTERS,
-        description="The whole cast, written together. Compare them as you write: no two characters may share "
-        "a want, a wound, a stance, a tell, a way with people, a limit, a blind spot, or a manner of speaking.",
-    )
+class Behavior(Item):
+    state: str = spec("text", None, "note")      # "When ..." an inner or broad social state
+    tendency: str = spec("text", None, "note")   # "they ..." a tendency, not a specific act
 
 
-class CharacterCard(CharacterDraft):
-    id: str
+# Everything is required for now. Comments note what the source doc marked optional.
+class Characters(Item):
+    # Identity
+    name: str = spec("text", "identity", "free", fixed=True)
+    age: int = spec("number", "identity", "free", fixed=True)
+    sex: Sex = spec("select", "identity", "axis", fixed=True)
+    appearance: str = spec("textarea", "identity", "free", fixed=True)
+    sketch: str = spec("textarea", "identity", "note")
+
+    # Drive
+    wants: list[TextItem] = spec(None, "drive", "items", repeat=True)
+    fear: str = spec("textarea", "drive", "free")                       # source doc: optional
+
+    # Inner conflict
+    flaw: str = spec("textarea", "inner_conflict", "free")
+    values: list[TextItem] = spec(None, "inner_conflict", "items", repeat=True)   # source doc: optional
+    behaviors: list[Behavior] = spec(None, "inner_conflict", "pairs", repeat=True, counted=True)  # source doc: optional
+
+    # Texture
+    competence: str = spec("textarea", "texture", "free")               # source doc: optional
+    vulnerability: str = spec("textarea", "texture", "free")            # source doc: optional
+    speech: str = spec("textarea", "texture", "free")                   # source doc: optional
+
+    # Past
+    history: str = spec("textarea", "past", "free")                     # source doc: optional
 
 
-def finalize_cast(draft: CastDraft) -> list[CharacterCard]:
-    """Assign ids from names. A character holds no reference to another card, so nothing else needs resolving."""
-    ids = unique_ids([c.name for c in draft.characters])
-    return [
-        CharacterCard(id=cid, **c.model_dump())
-        for c, cid in zip(draft.characters, ids)
-    ]
+PORTABLE_TEXT = ["appearance", "sketch", "wants", "fear", "flaw", "values", "behaviors",
+                 "competence", "vulnerability", "speech", "history"]
+
+RULES = [
+    Rule(id="char_other_names", severity="warn", fields=PORTABLE_TEXT,
+         when="text names another character, place or object that exists in this project (a character must work in any project)",
+         check="mentions_known_names", context=["character_names", "world_names"]),
+    Rule(id="char_no_relationships", severity="warn", fields=PORTABLE_TEXT,
+         when="text describes a relationship to someone else (brother, former partner, boss) instead of a trait of this person",
+         needs_model=True),
+    Rule(id="sketch_describes_person", severity="warn", fields=["sketch"],
+         when="the sketch only names a role or occupation ('thief', 'detective') and does not describe what the person is like",
+         needs_model=True),
+    Rule(id="appearance_concrete", severity="warn", fields=["appearance"],
+         when="appearance gives impressions instead of concrete, checkable details",
+         needs_model=True),
+    Rule(id="wants_count", severity="warn", fields=["wants"],
+         when="wants has fewer than two items, so there is nothing for a want to pull against",
+         check="item_count", params={"min": 2}),
+    Rule(id="wants_conflict", severity="warn", fields=["wants"],
+         when="all the wants could be fully satisfied at the same time, so there is no internal conflict (a suggested opposing want may be offered, never added silently)",
+         needs_model=True),
+    Rule(id="values_positive", severity="warn", fields=["values"],
+         when="a value is phrased as a prohibition instead of something the character protects",
+         needs_model=True),
+    Rule(id="behavior_state_is_inner", severity="warn", fields=["behaviors"],
+         when="a 'when' box holds a concrete situation instead of an inner or broad social state",
+         needs_model=True),
+    Rule(id="behaviors_include_calm", severity="warn", fields=["behaviors"],
+         when="none of the 'when' states is calm or happy",
+         needs_model=True),
+    Rule(id="behavior_is_tendency", severity="warn", fields=["behaviors"],
+         when="a 'they' box holds one specific act instead of a tendency",
+         needs_model=True),
+]

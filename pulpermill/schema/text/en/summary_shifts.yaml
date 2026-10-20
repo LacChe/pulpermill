@@ -1,0 +1,38 @@
+# English text for the Inner shifts record. Pipeline-only: hidden from the user, but sent to the writer model.
+card:
+  label: "Summary: Inner shifts"
+  summary: "How people changed in each chapter: what each character who moved now believes, fears or wants differently, refuses to do or has decided. Without this the next chapter remembers plot but not people."
+groups:
+  entries: {label: "Entries", help: "One per character who moved, per chapter."}
+fields:
+  shifts:
+    label: "Shifts"
+    help: "One entry per character who moved in a chapter. Only characters who moved, only changes that matter."
+    lead_in: "How people have changed so far (the latest entry for each person is where they stand now, and it wins over the cards where they disagree):\n{items}"
+    item_template: "Chapter {beat}, {character}: now believes {believes}; now fears {fears}; now wants {wants}; refuses to {refuses}; has decided {decided}"
+    item_join: "\n"
+    item_fields:
+      beat: {label: "Chapter", help: "Which chapter, shown as its number. Set by the system."}
+      character: {label: "Character", help: "Who moved."}
+      believes: {label: "Now believes", help: "A personal conviction that changed, one the story could prove wrong. A belief about a fact that is already tracked as Knowledge goes there instead."}
+      fears: {label: "Now fears", help: "A fear that changed."}
+      wants: {label: "Now wants", help: "An abstract desire that changed (succeed at school). A concrete aim toward a particular person lives on a tie's edge instead."}
+      refuses: {label: "Refuses to", help: "Something they now refuse to do."}
+      decided: {label: "Has decided", help: "A decision they have made."}
+rules:
+  shift_not_empty:
+    message: "A character entry records no change."
+    fix: "Fill in at least one change, or leave the character out."
+  shift_unique_per_chapter:
+    message: "The same character appears twice in one chapter."
+    fix: "Merge them into one entry."
+  shifts_per_chapter_max:
+    message: "More than five characters are recorded for one chapter."
+    fix: "Keep the five who changed most."
+  shifts_link_broken:
+    message: "A character pointed to no longer exists."
+    fix: "Remove the entry."
+  shift_is_a_change:
+    message: "This states a standing trait, not something that changed this chapter."
+    fix: "Record only what is different now."
+    judge_prompt: "Does each entry state something that changed in this chapter, rather than a standing trait? Answer yes or no for each. Rewrite any that fail."

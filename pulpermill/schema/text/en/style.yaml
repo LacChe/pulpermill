@@ -1,0 +1,153 @@
+# English text for the Style card. Keys match schema/style.py.
+# label, help, summary  -> human only, never sent to the model
+# expand, lead_in       -> the only text that reaches the model (positive phrasing)
+card:
+  label: "Style"
+  summary: "How the story is told: voice, attitude and the narrator's habit of attention. It names no people, places or plot, so it can be used with any story."
+groups:
+  narration: {label: "Narration", help: "Fixed rules for the whole story."}
+  narrator: {label: "Narrator", help: "How close, how funny and how fast the telling is."}
+  sentences: {label: "Sentences and words", help: "How the prose sounds on the page."}
+  stance: {label: "Stance", help: "The narrator's attitude toward the story."}
+  dialogue: {label: "Dialogue", help: "How people talk to each other."}
+  free: {label: "Genre and lens", help: "Two free-text levers with a big effect."}
+fields:
+  person:
+    label: "Person"
+    help: "Whose voice tells the story. This is a rule for every chapter, and the protagonist you pick in Setup must fit it."
+    options:
+      first: {label: "First person", expand: "Narrate in the first person, from inside the protagonist's own voice, knowing only what they know."}
+      third: {label: "Third person", expand: "Narrate in the third person, staying with the protagonist's point of view and knowing only what they could know."}
+  tense:
+    label: "Tense"
+    help: "Past reads like a story being told. Present feels immediate. Applies to every chapter."
+    options:
+      past: {label: "Past", expand: "Tell the story in the past tense."}
+      present: {label: "Present", expand: "Tell the story in the present tense, as it unfolds."}
+  distance:
+    label: "Distance"
+    help: "How far the narrator stands from the protagonist's thoughts. Leave blank to let the model decide."
+    options:
+      external: {label: "External", expand: "The narrator watches from outside: actions, speech and surfaces are shown, and the reader infers what goes on within."}
+      close: {label: "Close", expand: "The narrator stays close to the protagonist, sharing what they notice, think and feel in plain terms."}
+      deep: {label: "Deep", expand: "The narrator sinks fully into the protagonist's mind, so perception, memory and feeling colour every line."}
+  humor:
+    label: "Humor"
+    help: "How much the telling jokes, and what kind."
+    options:
+      none: {label: "None", expand: "The tone stays serious, with levity rare and never at the moment's expense."}
+      dry: {label: "Dry", expand: "Humor is dry: understated, deadpan, found in precise observation."}
+      absurd: {label: "Absurd", expand: "Humor is absurd: logic bends playfully and ridiculous situations are met with a straight face."}
+      dark: {label: "Dark", expand: "Humor is dark: jokes grow out of grim situations, and laughter sits close to unease."}
+  pacing:
+    label: "Pacing"
+    help: "How quickly the telling moves. Faster is generally easier to enjoy."
+    options:
+      lingering: {label: "Lingering", expand: "Linger on moments: scenes breathe, with room for detail, atmosphere and reflection."}
+      balanced: {label: "Balanced", expand: "Balance action and reflection, slowing for what matters and moving on quickly otherwise."}
+      brisk: {label: "Brisk", expand: "Move briskly: scenes start late and end early, and momentum carries the reader forward."}
+  narrator_note:
+    label: "Narrator note"
+    help: "Anything else about the narrator. Passed to the model exactly as you write it."
+  rhythm:
+    label: "Rhythm"
+    help: "How sentences sound. Leave blank to let the model decide."
+    options:
+      terse: {label: "Terse", expand: "Sentences are short and clipped, and each one carries weight."}
+      varied: {label: "Varied", expand: "Sentence length follows the moment: short in action, longer when thought wanders."}
+      flowing: {label: "Flowing", expand: "Sentences run long and connect, carrying the reader along."}
+  diction:
+    label: "Diction"
+    help: "Word choice: everyday or elaborate."
+    options:
+      plain: {label: "Plain", expand: "Word choice is plain and concrete: everyday words, strong verbs, precise nouns."}
+      ornate: {label: "Ornate", expand: "Word choice is rich and elaborate, with unusual words and layered phrasing."}
+  formality:
+    label: "Register"
+    help: "How formal the narration sounds."
+    options:
+      formal: {label: "Formal", expand: "The register is formal: composed and grammatical, with a measured distance."}
+      casual: {label: "Casual", expand: "The register is casual: conversational, with contractions, idiom and an easy tone."}
+  imagery:
+    label: "Imagery"
+    help: "How much figurative language the prose uses."
+    options:
+      literal: {label: "Literal", expand: "Description is direct: things are named as they are."}
+      occasional: {label: "Occasional", expand: "Figurative language appears occasionally, placed where it lands hardest."}
+      lush: {label: "Lush", expand: "Imagery is lush: metaphor and sensory detail are frequent and vivid."}
+  edge:
+    label: "Edge"
+    help: "Language strength: swearing, bluntness, roughness."
+    options:
+      clean: {label: "Clean", expand: "Language stays clean: gentle in vocabulary even when events are rough."}
+      coarse: {label: "Coarse", expand: "Language is coarse where it fits: characters swear and the narration is blunt and earthy."}
+  explicitness:
+    label: "Explicitness"
+    help: "Whether intense moments (violence, intimacy) happen on the page or just off it."
+    options:
+      implied: {label: "Implied", expand: "Intense moments are implied: the narration cuts away, suggests and lets the reader fill in the rest."}
+      shown: {label: "Shown", expand: "Intense moments are shown on the page, with physical and emotional detail rendered plainly."}
+  sentences_note:
+    label: "Sentences and words note"
+    help: "Anything else about the prose. Passed to the model exactly as you write it."
+  attitude:
+    label: "Attitude"
+    help: "The narrator's feeling toward the story and its people."
+    options:
+      earnest: {label: "Earnest", expand: "The narrator is earnest: sincere, invested, and takes the characters' stakes seriously."}
+      warm: {label: "Warm", expand: "The narrator is warm: affectionate toward the characters and generous with their flaws."}
+      wry: {label: "Wry", expand: "The narrator is wry: amused, observant, with a sideways view of events."}
+      sardonic: {label: "Sardonic", expand: "The narrator is sardonic: sharp, quick to puncture pretence."}
+      clinical: {label: "Clinical", expand: "The narrator is clinical: detached and precise, recording events like an observer taking notes."}
+      melancholic: {label: "Melancholic", expand: "The narrator is melancholic: tinged with loss and the passing of things."}
+      wondering: {label: "Wondering", expand: "The narrator is wondering: curious and open, finding the strange and beautiful in what it sees."}
+  stance_note:
+    label: "Stance note"
+    help: "Anything else about the narrator's attitude. Passed to the model exactly as you write it."
+  amount:
+    label: "Amount"
+    help: "How much of the story is carried by conversation."
+    options:
+      sparse: {label: "Sparse", expand: "Dialogue is sparse: characters say little and narration carries most of each scene."}
+      abundant: {label: "Abundant", expand: "Dialogue is abundant: scenes move through conversation."}
+  directness:
+    label: "Directness"
+    help: "Whether people say what they mean."
+    options:
+      direct: {label: "Direct", expand: "Characters say what they mean and speak plainly to each other."}
+      subtext: {label: "Subtext", expand: "Characters rarely say what they mean: feeling shows through action, deflection and what goes unsaid."}
+  polish:
+    label: "Polish"
+    help: "Real-sounding speech or crafted lines."
+    options:
+      naturalistic: {label: "Naturalistic", expand: "Dialogue is naturalistic: halting, interrupted and overlapping, as people really speak."}
+      stylised: {label: "Stylised", expand: "Dialogue is stylised: crafted lines with rhythm and wit."}
+  voice_difference:
+    label: "Voice difference"
+    help: "Whether characters sound different from each other."
+    options:
+      distinct: {label: "Distinct", expand: "Each character has a recognisably distinct way of speaking."}
+      uniform: {label: "Uniform", expand: "Characters share one speaking style, which keeps the voice consistent across the cast."}
+  dialogue_note:
+    label: "Dialogue note"
+    help: "Anything else about dialogue. Passed to the model exactly as you write it."
+  lens:
+    label: "Lens"
+    help: "A habit of attention, not a subject. Write 'notices who owes whom and what things cost', not 'a story about debt'. Theme grows from what the narrator notices."
+    lead_in: "The narrator's habit of attention: {value}. Meaning emerges from what the narrator notices and how it is weighed, and themes stay implicit in the telling."
+  genre:
+    label: "Genre"
+    help: "A tradition or a feeling (noir, cozy mystery, space opera). It sets mood and conventions and does not require particular events."
+    lead_in: "The genre and feeling of this story: {value}. Let it shape mood, conventions and texture, while events follow from the characters and situation."
+rules:
+  style_agnostic:
+    message: "This mentions {names}. Style travels between stories, so it should not name story people, places or objects."
+    fix: "Rephrase as a general trait of the narration, and put story-specific detail in Characters or World."
+  lens_is_habit:
+    message: "This reads like a subject or theme. A lens works best as a habit of attention."
+    fix: "Try something like 'notices who owes whom and what things cost'."
+    judge_prompt: "Does this text describe a habit of attention, meaning what a narrator notices and how it weighs things? Answer yes or no. If no, suggest a rewrite as a habit of attention."
+  genre_not_plot:
+    message: "This asks for specific events. Genre should set mood and conventions."
+    fix: "Name a tradition or a feeling instead, like 'noir' or 'cozy mystery'."
+    judge_prompt: "Does this text name a genre, tradition or feeling, with no specific events required? Answer yes or no. If no, suggest a rewrite as a tradition or feeling."

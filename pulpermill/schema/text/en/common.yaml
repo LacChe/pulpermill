@@ -1,0 +1,13 @@
+# Messages for the built-in rules every field gets. Human-facing only.
+missing:
+  message: "{label} is empty."
+  fix: "Fill it in, or ask for a suggestion. You can save a draft, but the story can't be generated until it is filled."
+not_allowed:
+  message: "{label} has a value that isn't one of the choices."
+  fix: "Pick one of the listed choices."
+too_many:
+  message: "{label} can hold at most {max} items."
+  fix: "Remove an item or merge similar ones."
+invalid:
+  message: "{label} has a value that can't be used."
+  fix: "Check the entry and try again."

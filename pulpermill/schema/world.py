@@ -1,232 +1,128 @@
-from __future__ import annotations
+"""World card: what exists and what is true. Root, portable, static.
+Names no characters and never says who holds, knows or wants something (that is Entanglements)."""
+from typing import Literal
+from .common import spec, Rule, Item
 
-from pydantic import BaseModel, Field, model_validator
-from typing import Optional
-
-from .common import M, Resolver, UsesMap, _as_dicts, _pooled, clean_uses, unique_ids
-
-
-# ===========================================================================
-# WORLD
-# ===========================================================================
-
-
-# How many of each the prompt asks for. Guidance and soft warnings only: never a pydantic limit, so a hand-edited card
-# with more or fewer still loads.
-WORLD_TARGETS = {
-    "rules": (3, 6),
-    "locations": (3, 6),
-    "objects": (2, 5),
-    "groups": (1, 4),
-    "hidden_truths": (2, 4),
+CARD = {
+    "id": "world",
+    "type": "root",
+    "reads": [],
+    "portable": True,
+    "between_chapters": "static",
 }
 
+GROUPS = [
+    {"id": "overview", "collapsed": False},
+    {"id": "places", "collapsed": False},
+    {"id": "things", "collapsed": True},
+    {"id": "powers", "collapsed": True},
+    {"id": "truths", "collapsed": False},
+    {"id": "vocabulary", "collapsed": True},
+]
 
-class LocationDraft(BaseModel):
-    name: str
-    description: str = Field(
-        description="What the place does to people: who belongs there and who does not, what is done or hidden there."
-    )
+RENDER_ORDER = [
+    ["name", "era_and_technology", "everyday_life", "history"],
+    ["places", "objects", "powers"],
+    ["rules", "terms"],
+]
 
-
-class ObjectDraft(BaseModel):
-    name: str
-    description: str = Field(
-        description="Why people want it, fear it, or have paid for it."
-    )
-    owner: Optional[str] = Field(
-        default=None,
-        description="Name of the character who holds it now, exactly as in the cast, or null.",
-    )
-    location: Optional[str] = Field(
-        default=None, description="Name of the place it sits, or null."
-    )
+RuleStatus = Literal["common", "uncommon", "false_belief"]
 
 
-class GroupDraft(BaseModel):
-    name: str
-    description: str = Field(
-        description="How the group is felt in daily life, by the people who live near it or under it."
-    )
-    wants: str = Field(description="What the group wants.")
+class Place(Item):
+    name: str = spec("text", None, "note")
+    description: str = spec("textarea", None, "note")
+    effect: str = spec("textarea", None, "note")          # what the place does to the people in it
 
 
-class TruthDraft(BaseModel):
-    fact: str = Field(
-        description="A true thing about the world that has not yet appeared on the page and steers the story from behind the scenes."
-    )
-    stake: str = Field(
-        description="Who is guarding it, and what exposure would cost them or others."
-    )
-    known_by: list[str] = Field(
-        default_factory=list,
-        description="Names of the characters who already know it, exactly as in the cast.",
-    )
+class Thing(Item):
+    name: str = spec("text", None, "note")
+    description: str = spec("textarea", None, "note")
+    significance: str = spec("textarea", None, "note")    # what it can do, or what it means to whoever wants it
 
 
-class WorldDraft(BaseModel):
-    # Field order is the order the model writes them: the secrets come last so they can lean on everything before.
-    setting: str = Field(
-        description="Where and when, and what an ordinary day is like. It may carry one past event that people still live under."
-    )
-    pressure: str = Field(
-        description="One or two sentences on what living here costs: what is scarce, forbidden or owed, and who feels it."
-    )
-    rules: list[str] = Field(
-        description="Short statements of how this world works. Each gives a mechanic or custom and the price it puts on someone."
-    )
-    locations: list[LocationDraft]
-    groups: list[GroupDraft] = Field(default_factory=list)
-    objects: list[ObjectDraft] = Field(default_factory=list)
-    hidden_truths: list[TruthDraft] = Field(default_factory=list)
+class Power(Item):
+    name: str = spec("text", None, "note")
+    nature: str = spec("textarea", None, "note")          # what it is
+    hold: str = spec("textarea", None, "note")            # how it holds power
+    felt: str = spec("textarea", None, "note")            # how ordinary people feel it day to day
 
 
-class Location(BaseModel):
-    id: str
-    name: str
-    description: str
+class WorldRule(Item):
+    statement: str = spec("textarea", None, "note")
+    cost: str = spec("textarea", None, "note")
+    status: RuleStatus = spec("select", None, "axis")
+    when_broken: str = spec("textarea", None, "note")
+    truth: str | None = spec("textarea", None, "note", required=False)   # only for 'false_belief' rules
 
 
-class WorldObject(BaseModel):
-    id: str
-    name: str
-    description: str
-    owner: Optional[str] = None  # LIVE: character id
-    location: Optional[str] = None  # LIVE: location id
+class Term(Item):
+    term: str = spec("text", None, "note")
+    meaning: str = spec("text", None, "note")
 
 
-class Group(BaseModel):
-    id: str
-    name: str
-    description: str
-    wants: str = ""
+# Everything is required for now. Comments note what the source doc marked optional.
+class World(Item):
+    # Overview
+    name: str = spec("text", "overview", "free")
+    era_and_technology: str = spec("textarea", "overview", "free")
+    everyday_life: str = spec("textarea", "overview", "free")
+    history: str = spec("textarea", "overview", "free")                       # source doc: optional
+
+    # Places
+    places: list[Place] = spec(None, "places", "pairs", repeat=True, counted=True)
+
+    # Things
+    objects: list[Thing] = spec(None, "things", "pairs", repeat=True, counted=True)   # source doc: optional
+
+    # Powers (labelled "Groups" in the UI)
+    powers: list[Power] = spec(None, "powers", "pairs", repeat=True)          # source doc: optional
+
+    # Truths (labelled "Rules" in the UI)
+    rules: list[WorldRule] = spec(None, "truths", "pairs", repeat=True)
+
+    # Vocabulary
+    terms: list[Term] = spec(None, "vocabulary", "pairs", repeat=True)        # source doc: optional
 
 
-class HiddenTruth(BaseModel):
-    id: str
-    fact: str
-    stake: str
-    known_by: list[str] = Field(default_factory=list)  # LIVE: character ids
+ALL_TEXT = ["era_and_technology", "everyday_life", "history", "places", "objects", "powers", "rules", "terms"]
 
-
-class WorldBible(BaseModel):
-    setting: str
-    pressure: str
-    rules: list[str]
-    hidden_truths: list[HiddenTruth] = Field(default_factory=list)
-    locations: list[Location]
-    objects: list[WorldObject] = Field(default_factory=list)
-    groups: list[Group] = Field(default_factory=list)
-    uses: UsesMap = Field(default_factory=dict)
-
-    @model_validator(mode="after")
-    def _tidy_uses(self):
-        self.uses = clean_uses(
-            self.uses,
-            _pooled(
-                "world",
-                {
-                    "locations": [x.id for x in self.locations],
-                    "objects": [x.id for x in self.objects],
-                    "groups": [x.id for x in self.groups],
-                },
-            ),
-        )
-        return self
-
-
-def finalize_world(
-    draft: WorldDraft,
-    cast_ids: set[str],
-    cast: Optional[list] = None,
-    notes: Optional[list[str]] = None,
-) -> WorldBible:
-    """
-    Names to ids. `cast` is the list of cast cards (dicts with id and name) so owners and `known_by` can be written as names;
-    without it only ids match. A reference that matches nobody is dropped (owner/location left empty, the person left out
-    of known_by) and reported in `notes`; nothing here makes the model regenerate.
-    """
-    notes = notes if notes is not None else []
-    people = Resolver(
-        _as_dicts(cast) if cast else [{"id": i, "name": i} for i in sorted(cast_ids)]
-    )
-    loc_ids = unique_ids([l.name for l in draft.locations], "loc_")
-    places = Resolver(
-        [{"id": i, "name": l.name} for l, i in zip(draft.locations, loc_ids)]
-    )
-    obj_ids = unique_ids([o.name for o in draft.objects], "obj_")
-    objects = []
-    for o, oid in zip(draft.objects, obj_ids):
-        owner = None
-        if o.owner is not None:
-            owner = people.find(o.owner)
-            if owner is None:
-                notes.append(
-                    M(
-                        "object '{obj}': the owner '{who}' is not in the cast, so its owner was left empty",
-                        obj=o.name,
-                        who=o.owner,
-                    )
-                )
-        lid = None
-        if o.location is not None:
-            lid = places.find(o.location)
-            if lid is None:
-                notes.append(
-                    M(
-                        "object '{obj}': the place '{place}' is not one of your locations, so its location was left empty",
-                        obj=o.name,
-                        place=o.location,
-                    )
-                )
-        objects.append(
-            WorldObject(
-                id=oid,
-                name=o.name,
-                description=o.description,
-                owner=owner,
-                location=lid,
-            )
-        )
-    truths = []
-    for n, t in enumerate(draft.hidden_truths, 1):
-        known, lost = [], []
-        for k in t.known_by:
-            r = people.find(k)
-            if r is None:
-                lost.append(k)
-            elif r not in known:
-                known.append(r)
-        if lost:
-            names = ", ".join(repr(x) for x in lost)
-            notes.append(
-                M(
-                    "hidden truth {n}: {names} is not in the cast, so left out of who knows it",
-                    n=n,
-                    names=names,
-                )
-                if len(lost) == 1
-                else M(
-                    "hidden truth {n}: {names} are not in the cast, so left out of who knows it",
-                    n=n,
-                    names=names,
-                )
-            )
-        truths.append(HiddenTruth(id=f"truth_{n}", fact=t.fact, stake=t.stake, known_by=known))
-    return WorldBible(
-        setting=draft.setting,
-        pressure=draft.pressure,
-        rules=draft.rules,
-        hidden_truths=truths,
-        locations=[
-            Location(id=i, name=l.name, description=l.description)
-            for l, i in zip(draft.locations, loc_ids)
-        ],
-        objects=objects,
-        groups=[
-            Group(id=i, **g.model_dump())
-            for g, i in zip(
-                draft.groups, unique_ids([g.name for g in draft.groups], "grp_")
-            )
-        ],
-    )
+# Rules that guard fields meant to cause trouble for people (friction, cost, pressure) are marked [drives story].
+RULES = [
+    Rule(id="world_names_people", severity="warn", fields=ALL_TEXT,
+         when="text names a character that exists in this project (a world must work with any cast)",
+         check="mentions_known_names", context=["character_names"]),
+    Rule(id="history_no_people", severity="warn", fields=["history"],
+         when="history involves specific individuals instead of events and forces (that belongs in Entanglements)",
+         needs_model=True),
+    Rule(id="era_is_fact_not_mood", severity="warn", fields=["era_and_technology"],
+         when="era and technology describe mood instead of facts (mood belongs to Style)",
+         needs_model=True),
+    Rule(id="everyday_has_friction", severity="warn", fields=["everyday_life"],   # drives story
+         when="everyday life says nothing is scarce, expensive or contested, so there is no normal for the story to break",
+         needs_model=True),
+    Rule(id="place_acts_on_people", severity="warn", fields=["places"],           # drives story
+         when="a place's effect only describes scenery and does nothing to the people in it",
+         needs_model=True),
+    Rule(id="object_has_stakes", severity="warn", fields=["objects"],             # drives story
+         when="an object's significance does not say what it can do or what it means to whoever wants it",
+         needs_model=True),
+    Rule(id="object_unowned", severity="warn", fields=["objects"],
+         when="an object names an owner or a location (ownership is state and belongs in Entanglements)",
+         needs_model=True),
+    Rule(id="power_felt_daily", severity="warn", fields=["powers"],               # drives story
+         when="a group is not felt by ordinary people in daily life (a tax, a curfew, a whisper)",
+         needs_model=True),
+    Rule(id="power_no_current_goals", severity="warn", fields=["powers"],
+         when="a group states what it wants right now (present wants are state and belong in Entanglements)",
+         needs_model=True),
+    Rule(id="rule_has_cost", severity="warn", fields=["rules"],                   # drives story
+         when="a rule has no real price, so it is only a fact and gives nobody a choice",
+         needs_model=True),
+    Rule(id="rule_when_broken_clear", severity="warn", fields=["rules"],
+         when="'when broken' does not say whether breaking the rule is impossible, punished, shameful or has a side effect",
+         needs_model=True),
+    Rule(id="rule_false_needs_truth", severity="block", fields=["rules"],
+         when="a rule marked as a Myth has no truth stated",
+         check="required_if", params={"field": "truth", "when": {"status": "false_belief"}}),
+]

@@ -1,0 +1,41 @@
+# English text for the Events record. Pipeline-only: hidden from the user, but sent to the writer model.
+# Help text is for people reading the schema. Links are shown by name.
+card:
+  label: "Summary: Events"
+  summary: "What happened in each chapter, in order: the outer story. One entry per chapter, written after the chapter and replaced as a whole if that chapter is regenerated."
+groups:
+  entries: {label: "Entries", help: "One per chapter."}
+fields:
+  entries:
+    label: "Entries"
+    help: "One entry per chapter."
+    lead_in: "What has happened so far (this is the record of the story; where it disagrees with the cards above, it wins):\n{items}"
+    item_template: "Chapter {beat}: {happened} What changed for the protagonist: {changed} Set up: {planted} Paid off: {paid_off} Came to light: {reveals_landed}"
+    item_join: "\n"
+    item_fields:
+      beat: {label: "Chapter", help: "Which chapter, shown as its number. Set by the system."}
+      happened: {label: "What happened", help: "The chapter's events in order, one sentence per event (usually 4 to 8 sentences). An event changes who knows what, who holds what or where people stand. Blunt and compact, written for the model."}
+      changed: {label: "Changed line", help: "What is different for the protagonist, in one short sentence. Empty if nothing changed."}
+      planted: {label: "Planted", help: "One thing this chapter actually introduced that matters later, checked against the beat's planned plant. At most one per chapter, and at most two plants stay open at once. It stays open until a later chapter pays it off."}
+      paid_off: {label: "Paid off", help: "Earlier chapters whose plant this chapter resolved. Recorded here, so the earlier entry does not have to change."}
+      reveals_landed: {label: "Reveals landed", help: "Hidden rules that actually came to light this chapter, checked against the beat's planned reveal. Only these count as revealed."}
+      behaviors_seen: {label: "Behaviors seen", help: "Which character behaviors actually appeared. Used to tally use counts."}
+      things_seen: {label: "Things seen", help: "Which world things actually appeared. Used to tally use counts."}
+      goal_landed: {label: "Goal change landed", help: "Whether the goal change planned in this chapter's beat actually happened in the text. A change that did not land stays pending."}
+rules:
+  events_beat_unique:
+    message: "Two entries are for the same chapter."
+    fix: "Keep one entry per chapter."
+  open_plants_max:
+    message: "More than two plants are open at once."
+    fix: "Pay one off before planting another."
+  paid_off_valid:
+    message: "A payoff points at something that wasn't planted, isn't earlier, or was already paid off."
+    fix: "Point only at an earlier, still-open plant."
+  events_link_broken:
+    message: "This points to something that no longer exists."
+    fix: "Remove the link."
+  changed_is_one_sentence:
+    message: "The changed line is longer than one short sentence."
+    fix: "Shorten it to what is different for the protagonist."
+    judge_prompt: "Is this one short sentence saying what is different for the protagonist? Answer yes or no. If no, rewrite it as one short sentence."
