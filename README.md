@@ -29,6 +29,3 @@
 - Order to build in, with testing between steps
 - A shared single copy of the schema
 - Definition of “done” for the first usable version
-
-[[Usage Flow]]
-[[Schema Design]]
