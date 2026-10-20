@@ -1,0 +1,2610 @@
+{
+ "schema_version": 1,
+ "lang": "en",
+ "max_items": 5,
+ "common": {
+  "missing": {
+   "message": "{label} is empty.",
+   "fix": "Fill it in, or ask for a suggestion. You can save a draft, but the story can't be generated until it is filled."
+  },
+  "not_allowed": {
+   "message": "{label} has a value that isn't one of the choices.",
+   "fix": "Pick one of the listed choices."
+  },
+  "too_many": {
+   "message": "{label} can hold at most {max} items.",
+   "fix": "Remove an item or merge similar ones."
+  },
+  "invalid": {
+   "message": "{label} has a value that can't be used.",
+   "fix": "Check the entry and try again."
+  }
+ },
+ "order": [
+  "style",
+  "characters",
+  "world",
+  "entanglements",
+  "setup",
+  "outline"
+ ],
+ "cards": {
+  "style": {
+   "id": "style",
+   "type": "root",
+   "reads": [],
+   "portable": true,
+   "between_chapters": "static",
+   "label": "Style",
+   "summary": "How the story is told: voice, attitude and the narrator's habit of attention. It names no people, places or plot, so it can be used with any story.",
+   "groups": [
+    {
+     "id": "narration",
+     "collapsed": false,
+     "label": "Narration",
+     "help": "Fixed rules for the whole story."
+    },
+    {
+     "id": "narrator",
+     "collapsed": true,
+     "label": "Narrator",
+     "help": "How close, how funny and how fast the telling is."
+    },
+    {
+     "id": "sentences",
+     "collapsed": true,
+     "label": "Sentences and words",
+     "help": "How the prose sounds on the page."
+    },
+    {
+     "id": "stance",
+     "collapsed": false,
+     "label": "Stance",
+     "help": "The narrator's attitude toward the story."
+    },
+    {
+     "id": "dialogue",
+     "collapsed": true,
+     "label": "Dialogue",
+     "help": "How people talk to each other."
+    },
+    {
+     "id": "free",
+     "collapsed": false,
+     "label": "Genre and lens",
+     "help": "Two free-text levers with a big effect."
+    }
+   ],
+   "fields": [
+    {
+     "key": "person",
+     "label": "Person",
+     "help": "Whose voice tells the story. This is a rule for every chapter, and the protagonist you pick in Setup must fit it.",
+     "input": "select",
+     "kind": "rule",
+     "group": "narration",
+     "required": true,
+     "options": [
+      {
+       "value": "first",
+       "label": "First person"
+      },
+      {
+       "value": "third",
+       "label": "Third person"
+      }
+     ]
+    },
+    {
+     "key": "tense",
+     "label": "Tense",
+     "help": "Past reads like a story being told. Present feels immediate. Applies to every chapter.",
+     "input": "select",
+     "kind": "rule",
+     "group": "narration",
+     "required": true,
+     "options": [
+      {
+       "value": "past",
+       "label": "Past"
+      },
+      {
+       "value": "present",
+       "label": "Present"
+      }
+     ]
+    },
+    {
+     "key": "distance",
+     "label": "Distance",
+     "help": "How far the narrator stands from the protagonist's thoughts. Leave blank to let the model decide.",
+     "input": "select",
+     "kind": "axis",
+     "group": "narrator",
+     "required": true,
+     "options": [
+      {
+       "value": "external",
+       "label": "External"
+      },
+      {
+       "value": "close",
+       "label": "Close"
+      },
+      {
+       "value": "deep",
+       "label": "Deep"
+      }
+     ]
+    },
+    {
+     "key": "humor",
+     "label": "Humor",
+     "help": "How much the telling jokes, and what kind.",
+     "input": "select",
+     "kind": "axis",
+     "group": "narrator",
+     "required": true,
+     "options": [
+      {
+       "value": "none",
+       "label": "None"
+      },
+      {
+       "value": "dry",
+       "label": "Dry"
+      },
+      {
+       "value": "absurd",
+       "label": "Absurd"
+      },
+      {
+       "value": "dark",
+       "label": "Dark"
+      }
+     ]
+    },
+    {
+     "key": "pacing",
+     "label": "Pacing",
+     "help": "How quickly the telling moves. Faster is generally easier to enjoy.",
+     "input": "select",
+     "kind": "axis",
+     "group": "narrator",
+     "required": true,
+     "options": [
+      {
+       "value": "lingering",
+       "label": "Lingering"
+      },
+      {
+       "value": "balanced",
+       "label": "Balanced"
+      },
+      {
+       "value": "brisk",
+       "label": "Brisk"
+      }
+     ]
+    },
+    {
+     "key": "narrator_note",
+     "label": "Narrator note",
+     "help": "Anything else about the narrator. Passed to the model exactly as you write it.",
+     "input": "textarea",
+     "kind": "note",
+     "group": "narrator",
+     "required": true
+    },
+    {
+     "key": "rhythm",
+     "label": "Rhythm",
+     "help": "How sentences sound. Leave blank to let the model decide.",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "options": [
+      {
+       "value": "terse",
+       "label": "Terse"
+      },
+      {
+       "value": "varied",
+       "label": "Varied"
+      },
+      {
+       "value": "flowing",
+       "label": "Flowing"
+      }
+     ]
+    },
+    {
+     "key": "diction",
+     "label": "Diction",
+     "help": "Word choice: everyday or elaborate.",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "options": [
+      {
+       "value": "plain",
+       "label": "Plain"
+      },
+      {
+       "value": "ornate",
+       "label": "Ornate"
+      }
+     ]
+    },
+    {
+     "key": "formality",
+     "label": "Register",
+     "help": "How formal the narration sounds.",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "options": [
+      {
+       "value": "formal",
+       "label": "Formal"
+      },
+      {
+       "value": "casual",
+       "label": "Casual"
+      }
+     ]
+    },
+    {
+     "key": "imagery",
+     "label": "Imagery",
+     "help": "How much figurative language the prose uses.",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "options": [
+      {
+       "value": "literal",
+       "label": "Literal"
+      },
+      {
+       "value": "occasional",
+       "label": "Occasional"
+      },
+      {
+       "value": "lush",
+       "label": "Lush"
+      }
+     ]
+    },
+    {
+     "key": "edge",
+     "label": "Edge",
+     "help": "Language strength: swearing, bluntness, roughness.",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "options": [
+      {
+       "value": "clean",
+       "label": "Clean"
+      },
+      {
+       "value": "coarse",
+       "label": "Coarse"
+      }
+     ]
+    },
+    {
+     "key": "explicitness",
+     "label": "Explicitness",
+     "help": "Whether intense moments (violence, intimacy) happen on the page or just off it.",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "options": [
+      {
+       "value": "implied",
+       "label": "Implied"
+      },
+      {
+       "value": "shown",
+       "label": "Shown"
+      }
+     ]
+    },
+    {
+     "key": "sentences_note",
+     "label": "Sentences and words note",
+     "help": "Anything else about the prose. Passed to the model exactly as you write it.",
+     "input": "textarea",
+     "kind": "note",
+     "group": "sentences",
+     "required": true
+    },
+    {
+     "key": "attitude",
+     "label": "Attitude",
+     "help": "The narrator's feeling toward the story and its people.",
+     "input": "select",
+     "kind": "axis",
+     "group": "stance",
+     "required": true,
+     "options": [
+      {
+       "value": "earnest",
+       "label": "Earnest"
+      },
+      {
+       "value": "warm",
+       "label": "Warm"
+      },
+      {
+       "value": "wry",
+       "label": "Wry"
+      },
+      {
+       "value": "sardonic",
+       "label": "Sardonic"
+      },
+      {
+       "value": "clinical",
+       "label": "Clinical"
+      },
+      {
+       "value": "melancholic",
+       "label": "Melancholic"
+      },
+      {
+       "value": "wondering",
+       "label": "Wondering"
+      }
+     ]
+    },
+    {
+     "key": "stance_note",
+     "label": "Stance note",
+     "help": "Anything else about the narrator's attitude. Passed to the model exactly as you write it.",
+     "input": "textarea",
+     "kind": "note",
+     "group": "stance",
+     "required": true
+    },
+    {
+     "key": "amount",
+     "label": "Amount",
+     "help": "How much of the story is carried by conversation.",
+     "input": "select",
+     "kind": "axis",
+     "group": "dialogue",
+     "required": true,
+     "options": [
+      {
+       "value": "sparse",
+       "label": "Sparse"
+      },
+      {
+       "value": "abundant",
+       "label": "Abundant"
+      }
+     ]
+    },
+    {
+     "key": "directness",
+     "label": "Directness",
+     "help": "Whether people say what they mean.",
+     "input": "select",
+     "kind": "axis",
+     "group": "dialogue",
+     "required": true,
+     "options": [
+      {
+       "value": "direct",
+       "label": "Direct"
+      },
+      {
+       "value": "subtext",
+       "label": "Subtext"
+      }
+     ]
+    },
+    {
+     "key": "polish",
+     "label": "Polish",
+     "help": "Real-sounding speech or crafted lines.",
+     "input": "select",
+     "kind": "axis",
+     "group": "dialogue",
+     "required": true,
+     "options": [
+      {
+       "value": "naturalistic",
+       "label": "Naturalistic"
+      },
+      {
+       "value": "stylised",
+       "label": "Stylised"
+      }
+     ]
+    },
+    {
+     "key": "voice_difference",
+     "label": "Voice difference",
+     "help": "Whether characters sound different from each other.",
+     "input": "select",
+     "kind": "axis",
+     "group": "dialogue",
+     "required": true,
+     "options": [
+      {
+       "value": "distinct",
+       "label": "Distinct"
+      },
+      {
+       "value": "uniform",
+       "label": "Uniform"
+      }
+     ]
+    },
+    {
+     "key": "dialogue_note",
+     "label": "Dialogue note",
+     "help": "Anything else about dialogue. Passed to the model exactly as you write it.",
+     "input": "textarea",
+     "kind": "note",
+     "group": "dialogue",
+     "required": true
+    },
+    {
+     "key": "lens",
+     "label": "Lens",
+     "help": "A habit of attention, not a subject. Write 'notices who owes whom and what things cost', not 'a story about debt'. Theme grows from what the narrator notices.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "free",
+     "required": true
+    },
+    {
+     "key": "genre",
+     "label": "Genre",
+     "help": "A tradition or a feeling (noir, cozy mystery, space opera). It sets mood and conventions and does not require particular events.",
+     "input": "text",
+     "kind": "free",
+     "group": "free",
+     "required": true
+    }
+   ],
+   "rules": [
+    {
+     "id": "style_agnostic",
+     "severity": "warn",
+     "fields": [
+      "narrator_note",
+      "sentences_note",
+      "stance_note",
+      "dialogue_note",
+      "lens",
+      "genre"
+     ],
+     "check": "mentions_known_names",
+     "params": {},
+     "context": [
+      "character_names",
+      "world_names"
+     ],
+     "needs_model": false,
+     "message": "This mentions {names}. Style travels between stories, so it should not name story people, places or objects.",
+     "fix": "Rephrase as a general trait of the narration, and put story-specific detail in Characters or World."
+    },
+    {
+     "id": "lens_is_habit",
+     "severity": "warn",
+     "fields": [
+      "lens"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This reads like a subject or theme. A lens works best as a habit of attention.",
+     "fix": "Try something like 'notices who owes whom and what things cost'."
+    },
+    {
+     "id": "genre_not_plot",
+     "severity": "warn",
+     "fields": [
+      "genre"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This asks for specific events. Genre should set mood and conventions.",
+     "fix": "Name a tradition or a feeling instead, like 'noir' or 'cozy mystery'."
+    }
+   ]
+  },
+  "characters": {
+   "id": "characters",
+   "type": "root",
+   "reads": [],
+   "portable": true,
+   "between_chapters": "static",
+   "many_per_project": true,
+   "label": "Character",
+   "summary": "One individual: who they are, what they want, how they contradict themselves and behave under pressure. It names no other people, places or objects, so it can move between projects.",
+   "groups": [
+    {
+     "id": "identity",
+     "collapsed": false,
+     "label": "Identity",
+     "help": "The facts the story must never change, plus a short sketch."
+    },
+    {
+     "id": "drive",
+     "collapsed": false,
+     "label": "Drive",
+     "help": "What they want and what they avoid."
+    },
+    {
+     "id": "inner_conflict",
+     "collapsed": false,
+     "label": "Inner conflict",
+     "help": "What gets in their own way, and what they will not betray."
+    },
+    {
+     "id": "texture",
+     "collapsed": true,
+     "label": "Texture",
+     "help": "Skills, soft spots and how they talk."
+    },
+    {
+     "id": "past",
+     "collapsed": true,
+     "label": "Past",
+     "help": "Formative background."
+    }
+   ],
+   "fields": [
+    {
+     "key": "name",
+     "label": "Name",
+     "help": "What the narration calls them.",
+     "input": "text",
+     "kind": "free",
+     "group": "identity",
+     "required": true,
+     "fixed": true
+    },
+    {
+     "key": "age",
+     "label": "Age",
+     "help": "A concrete number, so the story never drifts.",
+     "input": "number",
+     "kind": "free",
+     "group": "identity",
+     "required": true,
+     "fixed": true
+    },
+    {
+     "key": "sex",
+     "label": "Sex",
+     "help": "Fixes pronouns and avoids contradictions.",
+     "input": "select",
+     "kind": "axis",
+     "group": "identity",
+     "required": true,
+     "fixed": true,
+     "options": [
+      {
+       "value": "female",
+       "label": "Female"
+      },
+      {
+       "value": "male",
+       "label": "Male"
+      },
+      {
+       "value": "other",
+       "label": "Other"
+      }
+     ]
+    },
+    {
+     "key": "appearance",
+     "label": "Appearance",
+     "help": "Concrete, checkable details: build, hair, face, distinguishing marks, usual dress. State facts, not impressions.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "identity",
+     "required": true,
+     "fixed": true
+    },
+    {
+     "key": "sketch",
+     "label": "Sketch",
+     "help": "One or two sentences on what this person is like. Describe the person, not just a role, and if you can, include one contradiction that doesn't fit the type (a brutal enforcer who keeps bees).",
+     "input": "textarea",
+     "kind": "note",
+     "group": "identity",
+     "required": true
+    },
+    {
+     "key": "wants",
+     "label": "Wants",
+     "help": "Two to five abstract desires that can't all be satisfied at once (succeed at school, be left alone). Nothing concrete and nobody else: aims toward a particular person live in Entanglements. The conflict between them is what drives the character.",
+     "input": null,
+     "kind": "items",
+     "group": "drive",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "text",
+       "label": "Want",
+       "help": "One desire, in a few words.",
+       "input": "text",
+       "kind": "note",
+       "required": true
+      }
+     ]
+    },
+    {
+     "key": "fear",
+     "label": "Fear",
+     "help": "What they avoid or protect themselves from.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "drive",
+     "required": true
+    },
+    {
+     "key": "flaw",
+     "label": "Flaw",
+     "help": "A false belief or blind spot that sabotages what they want.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "inner_conflict",
+     "required": true
+    },
+    {
+     "key": "values",
+     "label": "Values",
+     "help": "What they hold sacred or will not betray, phrased positively ('keeps their word even when it ruins them').",
+     "input": null,
+     "kind": "items",
+     "group": "inner_conflict",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "text",
+       "label": "Value",
+       "help": "One thing they protect, phrased positively.",
+       "input": "text",
+       "kind": "note",
+       "required": true
+      }
+     ]
+    },
+    {
+     "key": "behaviors",
+     "label": "Behaviors",
+     "help": "How they act in different inner states. Include at least one calm or happy state.",
+     "input": null,
+     "kind": "pairs",
+     "group": "inner_conflict",
+     "required": true,
+     "counted": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "state",
+       "label": "When",
+       "help": "An inner or broad social state, like 'feels watched', 'is being praised' or 'is out of their depth'. Not a specific situation.",
+       "input": "text",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "tendency",
+       "label": "They",
+       "help": "A leaning or habit, like 'go quiet' or 'busy their hands'. Not one particular act.",
+       "input": "text",
+       "kind": "note",
+       "required": true
+      }
+     ]
+    },
+    {
+     "key": "competence",
+     "label": "Competence",
+     "help": "What they're good at.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "texture",
+     "required": true
+    },
+    {
+     "key": "vulnerability",
+     "label": "Vulnerability",
+     "help": "Where they can be hurt or caught out, including shame that shapes behavior.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "texture",
+     "required": true
+    },
+    {
+     "key": "speech",
+     "label": "Speech",
+     "help": "How they talk: rhythm, vocabulary, what they never say.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "texture",
+     "required": true
+    },
+    {
+     "key": "history",
+     "label": "History",
+     "help": "Short, formative background that explains the flaw and the wants. No named people, places or objects from any story.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "past",
+     "required": true
+    }
+   ],
+   "rules": [
+    {
+     "id": "char_other_names",
+     "severity": "warn",
+     "fields": [
+      "appearance",
+      "sketch",
+      "wants",
+      "fear",
+      "flaw",
+      "values",
+      "behaviors",
+      "competence",
+      "vulnerability",
+      "speech",
+      "history"
+     ],
+     "check": "mentions_known_names",
+     "params": {},
+     "context": [
+      "character_names",
+      "world_names"
+     ],
+     "needs_model": false,
+     "message": "This mentions {names}. A character has to work in any project, so it should not name other people, places or objects.",
+     "fix": "Rephrase as a trait (for example 'distrusts family'). Ties go in Entanglements and shared history in World."
+    },
+    {
+     "id": "char_no_relationships",
+     "severity": "warn",
+     "fields": [
+      "appearance",
+      "sketch",
+      "wants",
+      "fear",
+      "flaw",
+      "values",
+      "behaviors",
+      "competence",
+      "vulnerability",
+      "speech",
+      "history"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This describes a relationship to someone else. A character has to stand alone.",
+     "fix": "Rephrase as a trait of this person, like 'distrusts family'. Ties between people are recorded in Entanglements."
+    },
+    {
+     "id": "sketch_describes_person",
+     "severity": "warn",
+     "fields": [
+      "sketch"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This reads as a role, not a person.",
+     "fix": "Say what this person is like. A role gives the model a stereotype to fall back on."
+    },
+    {
+     "id": "appearance_concrete",
+     "severity": "warn",
+     "fields": [
+      "appearance"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This gives impressions. Appearance works best as concrete details.",
+     "fix": "List what could be checked: build, hair, face, marks, usual dress."
+    },
+    {
+     "id": "wants_count",
+     "severity": "warn",
+     "fields": [
+      "wants"
+     ],
+     "check": "item_count",
+     "params": {
+      "min": 2
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "Wants needs at least two items so they can pull against each other.",
+     "fix": "Add a second want that pulls against the first."
+    },
+    {
+     "id": "wants_conflict",
+     "severity": "warn",
+     "fields": [
+      "wants"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "These wants don't clearly pull against each other.",
+     "fix": "Add a want that conflicts with the others. A suggestion can be offered for you to accept or reject."
+    },
+    {
+     "id": "values_positive",
+     "severity": "warn",
+     "fields": [
+      "values"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A value reads as a rule against something.",
+     "fix": "Phrase it as what they protect, like 'keeps their word even when it ruins them'."
+    },
+    {
+     "id": "behavior_state_is_inner",
+     "severity": "warn",
+     "fields": [
+      "behaviors"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A 'When' box describes a specific situation.",
+     "fix": "Use an inner or broad social state, like 'feels watched' or 'is being praised'."
+    },
+    {
+     "id": "behaviors_include_calm",
+     "severity": "warn",
+     "fields": [
+      "behaviors"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "Every state is stressful. Add a calm or happy one.",
+     "fix": "Add a state like 'feels at ease' or 'is among people they trust'."
+    },
+    {
+     "id": "behavior_is_tendency",
+     "severity": "warn",
+     "fields": [
+      "behaviors"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A 'They' box describes one specific act.",
+     "fix": "Use a habit or leaning, so a fresh version can be written each time."
+    }
+   ]
+  },
+  "world": {
+   "id": "world",
+   "type": "root",
+   "reads": [],
+   "portable": true,
+   "between_chapters": "static",
+   "label": "World",
+   "summary": "What exists and what is true: places, things, groups and rules. It names no characters and never says who holds, knows or wants something, so any cast can live in it.",
+   "groups": [
+    {
+     "id": "overview",
+     "collapsed": false,
+     "label": "Overview",
+     "help": "The basics of the setting."
+    },
+    {
+     "id": "places",
+     "collapsed": false,
+     "label": "Places",
+     "help": "Locations that act on the people in them."
+    },
+    {
+     "id": "things",
+     "collapsed": true,
+     "label": "Things",
+     "help": "Objects that matter. No owner and no location."
+    },
+    {
+     "id": "powers",
+     "collapsed": true,
+     "label": "Groups",
+     "help": "Institutions, organisations, nations and crowds."
+    },
+    {
+     "id": "truths",
+     "collapsed": false,
+     "label": "Rules",
+     "help": "What is true here, what it costs, and who knows."
+    },
+    {
+     "id": "vocabulary",
+     "collapsed": true,
+     "label": "Vocabulary",
+     "help": "Invented or local words."
+    }
+   ],
+   "fields": [
+    {
+     "key": "name",
+     "label": "Name",
+     "help": "What the world or setting is called.",
+     "input": "text",
+     "kind": "free",
+     "group": "overview",
+     "required": true
+    },
+    {
+     "key": "era_and_technology",
+     "label": "Era and technology",
+     "help": "When it is, what people can and can't do, and the scale (a block, a city, a continent). State facts, not mood; mood belongs to Style.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "overview",
+     "required": true
+    },
+    {
+     "key": "everyday_life",
+     "label": "Everyday life",
+     "help": "What a normal day looks like for most people, and what is scarce, expensive or contested. This is the normal that Setup's disruption will break.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "overview",
+     "required": true
+    },
+    {
+     "key": "history",
+     "label": "History",
+     "help": "What happened before the story that people still live with (a war, a fire, a treaty). Name no characters; anything involving specific people goes in Entanglements.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "overview",
+     "required": true
+    },
+    {
+     "key": "places",
+     "label": "Places",
+     "help": "A handful of places. Each needs a name, a concrete description, and what the place does to the people in it.",
+     "input": null,
+     "kind": "pairs",
+     "group": "places",
+     "required": true,
+     "counted": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "name",
+       "label": "Name",
+       "help": "What the place is called.",
+       "input": "text",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "description",
+       "label": "Description",
+       "help": "A concrete description you could picture.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "effect",
+       "label": "What it does to people",
+       "help": "How the place changes the people in it ('everyone here lowers their voice'). A place that is only scenery gives the story nothing to work with.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true
+      }
+     ]
+    },
+    {
+     "key": "objects",
+     "label": "Things",
+     "help": "A handful of objects that matter.",
+     "input": null,
+     "kind": "pairs",
+     "group": "things",
+     "required": true,
+     "counted": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "name",
+       "label": "Name",
+       "help": "What the thing is called.",
+       "input": "text",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "description",
+       "label": "Description",
+       "help": "A concrete description.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "significance",
+       "label": "Why it matters",
+       "help": "What it can do, or what it means to whoever wants it. No owner and no location; those are tracked in Entanglements.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true
+      }
+     ]
+    },
+    {
+     "key": "powers",
+     "label": "Groups",
+     "help": "Institutions, organisations, nations and crowds. Say how an ordinary person meets them day to day (a tax, a curfew, a whisper).",
+     "input": null,
+     "kind": "pairs",
+     "group": "powers",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "name",
+       "label": "Name",
+       "help": "What the group is called.",
+       "input": "text",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "nature",
+       "label": "What it is",
+       "help": "An institution, an organisation, a nation, a crowd.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "hold",
+       "label": "How it holds power",
+       "help": "Force, money, law, belief, numbers.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "felt",
+       "label": "How people feel it",
+       "help": "How an ordinary person meets it day to day. Leave out what the group wants right now; that goes in Entanglements.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true
+      }
+     ]
+    },
+    {
+     "key": "rules",
+     "label": "Rules",
+     "help": "Things that are true here. Give each a price and a consequence for breaking it; a rule with no price is just a fact.",
+     "input": null,
+     "kind": "pairs",
+     "group": "truths",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "statement",
+       "label": "Statement",
+       "help": "What is true.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "cost",
+       "label": "Cost",
+       "help": "What using or living by this rule costs.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "status",
+       "label": "Status",
+       "help": "Common knowledge: everyone knows it, and it is true. Hidden: true, but known to few. Myth: widely believed, but false. Who exactly knows is recorded in Entanglements.",
+       "input": "select",
+       "kind": "axis",
+       "required": true,
+       "options": [
+        {
+         "value": "common",
+         "label": "Common knowledge"
+        },
+        {
+         "value": "uncommon",
+         "label": "Hidden"
+        },
+        {
+         "value": "false_belief",
+         "label": "Myth"
+        }
+       ]
+      },
+      {
+       "key": "when_broken",
+       "label": "When broken",
+       "help": "Whether breaking it is impossible, punished, shameful, or has a side effect. A hard limit and a priced choice work differently.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "truth",
+       "label": "The truth",
+       "help": "Only for a Myth: what is actually true.",
+       "input": "textarea",
+       "kind": "note",
+       "required": false
+      }
+     ]
+    },
+    {
+     "key": "terms",
+     "label": "Vocabulary",
+     "help": "Invented or local words and names, each with a one-line meaning, so the story stays consistent.",
+     "input": null,
+     "kind": "pairs",
+     "group": "vocabulary",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "term",
+       "label": "Term",
+       "help": "The word or name.",
+       "input": "text",
+       "kind": "note",
+       "required": true
+      },
+      {
+       "key": "meaning",
+       "label": "Meaning",
+       "help": "One line.",
+       "input": "text",
+       "kind": "note",
+       "required": true
+      }
+     ]
+    }
+   ],
+   "rules": [
+    {
+     "id": "world_names_people",
+     "severity": "warn",
+     "fields": [
+      "era_and_technology",
+      "everyday_life",
+      "history",
+      "places",
+      "objects",
+      "powers",
+      "rules",
+      "terms"
+     ],
+     "check": "mentions_known_names",
+     "params": {},
+     "context": [
+      "character_names"
+     ],
+     "needs_model": false,
+     "message": "This mentions {names}. A world has to work with any cast, so it should not name characters.",
+     "fix": "Rephrase as a general fact. Anything involving specific people goes in Entanglements."
+    },
+    {
+     "id": "history_no_people",
+     "severity": "warn",
+     "fields": [
+      "history"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This history involves specific individuals.",
+     "fix": "Describe events and forces, and put anything tied to particular people in Entanglements."
+    },
+    {
+     "id": "era_is_fact_not_mood",
+     "severity": "warn",
+     "fields": [
+      "era_and_technology"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This reads as mood. Era and technology works best as facts.",
+     "fix": "Say what people can and can't do, and the scale. Mood belongs to Style."
+    },
+    {
+     "id": "everyday_has_friction",
+     "severity": "warn",
+     "fields": [
+      "everyday_life"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "Nothing here is scarce, expensive or contested.",
+     "fix": "Say what people struggle for or fight over. This is the normal the story will break."
+    },
+    {
+     "id": "place_acts_on_people",
+     "severity": "warn",
+     "fields": [
+      "places"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A place only describes scenery.",
+     "fix": "Say what the place does to the people in it, like 'everyone here lowers their voice'."
+    },
+    {
+     "id": "object_has_stakes",
+     "severity": "warn",
+     "fields": [
+      "objects"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A thing doesn't say why it matters.",
+     "fix": "Say what it can do, or what it means to whoever wants it."
+    },
+    {
+     "id": "object_unowned",
+     "severity": "warn",
+     "fields": [
+      "objects"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A thing names an owner or a location.",
+     "fix": "Remove it. Who holds a thing and where it is get tracked in Entanglements."
+    },
+    {
+     "id": "power_felt_daily",
+     "severity": "warn",
+     "fields": [
+      "powers"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A group isn't felt in daily life.",
+     "fix": "Say how an ordinary person meets it: a tax, a curfew, a whisper."
+    },
+    {
+     "id": "power_no_current_goals",
+     "severity": "warn",
+     "fields": [
+      "powers"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A group states what it wants right now.",
+     "fix": "Remove it. A group's present wants are tracked in Entanglements."
+    },
+    {
+     "id": "rule_has_cost",
+     "severity": "warn",
+     "fields": [
+      "rules"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A rule has no real price.",
+     "fix": "Add what it costs. A rule with a price gives people a choice."
+    },
+    {
+     "id": "rule_when_broken_clear",
+     "severity": "warn",
+     "fields": [
+      "rules"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "'When broken' doesn't say what happens.",
+     "fix": "Say whether breaking it is impossible, punished, shameful, or has a side effect."
+    },
+    {
+     "id": "rule_false_needs_truth",
+     "severity": "block",
+     "fields": [
+      "rules"
+     ],
+     "check": "required_if",
+     "params": {
+      "field": "truth",
+      "when": {
+       "status": "false_belief"
+      }
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "A rule marked 'Myth' has no truth stated.",
+     "fix": "Add what is actually true. The story needs it to tell the difference."
+    }
+   ]
+  },
+  "entanglements": {
+   "id": "entanglements",
+   "type": "glue",
+   "reads": [
+    "characters",
+    "world"
+   ],
+   "portable": false,
+   "between_chapters": "mutable",
+   "label": "Entanglements",
+   "summary": "The live connections in this story: ties between people, who holds what, who knows what, and what is pressing on them. It changes as the story moves.",
+   "groups": [
+    {
+     "id": "ties",
+     "collapsed": false,
+     "label": "Ties",
+     "help": "Directed connections between people and groups."
+    },
+    {
+     "id": "holdings",
+     "collapsed": false,
+     "label": "Holdings",
+     "help": "Who holds or controls which thing or place."
+    },
+    {
+     "id": "knowledge",
+     "collapsed": false,
+     "label": "Knowledge",
+     "help": "Who knows, suspects or has been misled about a fact."
+    },
+    {
+     "id": "pressures",
+     "collapsed": false,
+     "label": "Pressures",
+     "help": "Circumstances and agents pushing on the story."
+    }
+   ],
+   "fields": [
+    {
+     "key": "ties",
+     "label": "Ties",
+     "help": "How people and groups are connected. A tie points one way: how 'from' stands toward 'to'.",
+     "input": null,
+     "kind": "pairs",
+     "group": "ties",
+     "required": true,
+     "uncapped": true,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "tie_from",
+       "label": "From",
+       "help": "A character or a group.",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "characters",
+        "world.powers"
+       ]
+      },
+      {
+       "key": "tie_to",
+       "label": "To",
+       "help": "A character or a group.",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "characters",
+        "world.powers"
+       ]
+      },
+      {
+       "key": "bond",
+       "label": "Bond",
+       "help": "A standing label for the connection, which may carry a clause of shared past ('owes her since the fire').",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "changes": true
+      },
+      {
+       "key": "edge",
+       "label": "Edge",
+       "help": "A concrete aim between these two people right now: what 'from' wants from, or hides from, 'to' (wants to pass her test, hides the missing key). Abstract desires belong on the character.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "changes": true
+      }
+     ]
+    },
+    {
+     "key": "holdings",
+     "label": "Holdings",
+     "help": "Who holds or controls which thing or place. Moves as things change hands.",
+     "input": null,
+     "kind": "pairs",
+     "group": "holdings",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "holdee",
+       "label": "Thing or place",
+       "help": "A thing or a place from World.",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "world.objects",
+        "world.places"
+       ]
+      },
+      {
+       "key": "held_by",
+       "label": "Held by",
+       "help": "Who holds it now. The choices depend on what it is.",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "characters",
+        "world.powers",
+        "world.places"
+       ],
+       "ref_filter_by": "holdee",
+       "changes": true
+      }
+     ]
+    },
+    {
+     "key": "knowledge",
+     "label": "Knowledge",
+     "help": "Who knows, suspects or has been misled about a fact or world rule. It is measured against what is true in the story, which cannot be wrong. Someone who is simply unaware is left out.",
+     "input": null,
+     "kind": "pairs",
+     "group": "knowledge",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "rule",
+       "label": "World rule",
+       "help": "A rule from World this is about.",
+       "input": "select",
+       "kind": "note",
+       "required": false,
+       "ref": [
+        "world.rules"
+       ]
+      },
+      {
+       "key": "fact",
+       "label": "Other fact",
+       "help": "Or a short fact of your own, when it isn't a world rule.",
+       "input": "text",
+       "kind": "note",
+       "required": false
+      },
+      {
+       "key": "person",
+       "label": "Who",
+       "help": "A character or a group.",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "characters",
+        "world.powers"
+       ]
+      },
+      {
+       "key": "status",
+       "label": "Status",
+       "help": "Knows it, suspects it, or has been misled about it.",
+       "input": "select",
+       "kind": "axis",
+       "required": true,
+       "changes": true,
+       "options": [
+        {
+         "value": "knows",
+         "label": "Knows"
+        },
+        {
+         "value": "suspects",
+         "label": "Suspects"
+        },
+        {
+         "value": "misled",
+         "label": "Misled"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "key": "pressures",
+     "label": "Pressures",
+     "help": "What is pressing on people, from a circumstance or from someone with their own wants.",
+     "input": null,
+     "kind": "pairs",
+     "group": "pressures",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "what",
+       "label": "What",
+       "help": "What is pressing, and what happens if it is ignored.",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "changes": true
+      },
+      {
+       "key": "source_agent",
+       "label": "Agent",
+       "help": "A character or group behind it.",
+       "input": "select",
+       "kind": "note",
+       "required": false,
+       "ref": [
+        "characters",
+        "world.powers"
+       ]
+      },
+      {
+       "key": "source_circumstance",
+       "label": "Circumstance",
+       "help": "Or a circumstance with no one behind it, like a storm or a deadline.",
+       "input": "text",
+       "kind": "note",
+       "required": false
+      },
+      {
+       "key": "next_move",
+       "label": "Agent's next move",
+       "help": "Only when an agent is behind it: what they want in this situation, not their general wants.",
+       "input": "text",
+       "kind": "note",
+       "required": false,
+       "changes": true
+      },
+      {
+       "key": "bears_on",
+       "label": "Bears on",
+       "help": "Who it falls on: characters or groups.",
+       "input": "select-multiple",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "characters",
+        "world.powers"
+       ],
+       "changes": true
+      }
+     ]
+    }
+   ],
+   "rules": [
+    {
+     "id": "tie_not_self",
+     "severity": "block",
+     "fields": [
+      "ties"
+     ],
+     "check": "fields_differ",
+     "params": {
+      "fields": [
+       "tie_from",
+       "tie_to"
+      ]
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "A tie goes from someone to themselves.",
+     "fix": "Pick a different person or group for one end."
+    },
+    {
+     "id": "holding_pair_allowed",
+     "severity": "block",
+     "fields": [
+      "holdings"
+     ],
+     "check": "holding_pairs_allowed",
+     "params": {
+      "table": "HOLDING_PAIRS"
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "That holder isn't allowed for this kind of thing.",
+     "fix": "Pick a holder from the list offered for it."
+    },
+    {
+     "id": "knowledge_one_fact",
+     "severity": "block",
+     "fields": [
+      "knowledge"
+     ],
+     "check": "exactly_one",
+     "params": {
+      "fields": [
+       "rule",
+       "fact"
+      ]
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "Give either a world rule or a fact of your own, not both or neither.",
+     "fix": "Fill in one of the two."
+    },
+    {
+     "id": "pressure_one_source",
+     "severity": "block",
+     "fields": [
+      "pressures"
+     ],
+     "check": "exactly_one",
+     "params": {
+      "fields": [
+       "source_agent",
+       "source_circumstance"
+      ]
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "Give either an agent or a circumstance, not both or neither.",
+     "fix": "Fill in one of the two."
+    },
+    {
+     "id": "next_move_for_agents",
+     "severity": "block",
+     "fields": [
+      "pressures"
+     ],
+     "check": "required_if",
+     "params": {
+      "field": "next_move",
+      "when_present": "source_agent"
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "A pressure with an agent needs the agent's next move.",
+     "fix": "Say what the agent wants to do next in this situation."
+    },
+    {
+     "id": "link_broken",
+     "severity": "block",
+     "fields": [
+      "ties",
+      "holdings",
+      "knowledge",
+      "pressures"
+     ],
+     "check": "ref_exists",
+     "params": {},
+     "context": [
+      "character_ids",
+      "world_item_ids"
+     ],
+     "needs_model": false,
+     "message": "This points to something that no longer exists.",
+     "fix": "Pick a replacement, or remove the entry."
+    },
+    {
+     "id": "tie_edge_is_live",
+     "severity": "warn",
+     "fields": [
+      "ties"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This edge doesn't say what one side wants from, or hides from, the other right now.",
+     "fix": "Say what 'from' is after or keeping back, not just how they feel."
+    },
+    {
+     "id": "pressure_has_consequence",
+     "severity": "warn",
+     "fields": [
+      "pressures"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A pressure doesn't say what happens if it's ignored.",
+     "fix": "Add the cost of doing nothing."
+    },
+    {
+     "id": "pressure_next_move_in_situation",
+     "severity": "warn",
+     "fields": [
+      "pressures"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A next move reads as the agent's general wants.",
+     "fix": "Say what they want to do in this situation."
+    },
+    {
+     "id": "pressures_active_count",
+     "severity": "warn",
+     "fields": [
+      "pressures"
+     ],
+     "check": "item_count",
+     "params": {
+      "max": 3
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "More than three pressures are active.",
+     "fix": "Let the weakest one fade or end, so the others get room."
+    }
+   ],
+   "holding_pairs": {
+    "world.objects": [
+     "characters",
+     "world.powers",
+     "world.places"
+    ],
+    "world.places": [
+     "characters",
+     "world.powers"
+    ]
+   }
+  },
+  "setup": {
+   "id": "setup",
+   "type": "launch",
+   "reads": [
+    "style",
+    "characters",
+    "world",
+    "entanglements"
+   ],
+   "portable": false,
+   "between_chapters": "static",
+   "label": "Setup",
+   "summary": "The springboard: who we follow, what just broke their normal, and what pushes them forward. It holds no plan and no ending, and it never changes during the story.",
+   "groups": [
+    {
+     "id": "opening",
+     "collapsed": false,
+     "label": "Opening",
+     "help": "Who we follow and what just broke."
+    },
+    {
+     "id": "push",
+     "collapsed": false,
+     "label": "Push",
+     "help": "What pushes them forward, and why they can't stop."
+    }
+   ],
+   "fields": [
+    {
+     "key": "protagonist",
+     "label": "Protagonist",
+     "help": "Whose eyes we follow. Exactly one, fixed for the whole story. This is the only place a character is marked as the lead.",
+     "input": "select",
+     "kind": "free",
+     "group": "opening",
+     "required": true,
+     "ref": [
+      "characters"
+     ]
+    },
+    {
+     "key": "normal",
+     "label": "Normal",
+     "help": "An ordinary day for the protagonist before the story, drawn from World's everyday life. Say what that normal gave them (safety, status, a routine that kept a want or fear quiet), so the disruption has something to threaten. Only the first chapter uses this; later chapters carry it forward through what happened.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "opening",
+     "required": true
+    },
+    {
+     "key": "disruption",
+     "label": "Disruption",
+     "help": "What just broke the normal. An event, not a condition: 'the ledger went missing', not 'things are tense'. Only the first chapter uses this.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "opening",
+     "required": true
+    },
+    {
+     "key": "goal",
+     "label": "Goal",
+     "help": "What the protagonist is concretely trying to do, narrowing one of their wants into this story. It can be acted on in scenes, a reader could tell whether it succeeded, failed or stopped mattering, and it costs something. During the story the current goal is worked out from this and from any redefinitions in the beats; once it is achieved or abandoned the story winds down.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "push",
+     "required": true
+    },
+    {
+     "key": "stakes",
+     "label": "What's at stake",
+     "help": "What happens if they do nothing or quit. This is why they can't walk away. Tie it to a want, a value or a pressure already on the cards. It can be a friendship, a reputation or a chance at happiness, not only a loss.",
+     "input": "textarea",
+     "kind": "free",
+     "group": "push",
+     "required": true
+    },
+    {
+     "key": "chapter_count",
+     "label": "Chapter count",
+     "help": "A budget, not a fixed route. If the goal resolves early, the remaining chapters carry the aftermath.",
+     "input": "number",
+     "kind": "free",
+     "group": "push",
+     "required": true
+    }
+   ],
+   "rules": [
+    {
+     "id": "protagonist_link_broken",
+     "severity": "block",
+     "fields": [
+      "protagonist"
+     ],
+     "check": "ref_exists",
+     "params": {},
+     "context": [
+      "character_ids"
+     ],
+     "needs_model": false,
+     "message": "The protagonist no longer exists in Characters.",
+     "fix": "Pick a character."
+    },
+    {
+     "id": "normal_is_concrete",
+     "severity": "warn",
+     "fields": [
+      "normal"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This doesn't name concrete people, places or routines, or what that normal gave the protagonist.",
+     "fix": "Describe an ordinary day, and what it gave them: safety, status, or a routine that kept a want or fear quiet."
+    },
+    {
+     "id": "disruption_is_event",
+     "severity": "warn",
+     "fields": [
+      "disruption"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This describes a condition, not an event.",
+     "fix": "Say what happened, like 'the ledger went missing', not 'things are tense'."
+    },
+    {
+     "id": "goal_is_action",
+     "severity": "warn",
+     "fields": [
+      "goal"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This reads like a feeling or a theme, not something to act on.",
+     "fix": "Say what they are concretely trying to do, like 'get the ledger back before the audit'."
+    },
+    {
+     "id": "goal_checkable",
+     "severity": "warn",
+     "fields": [
+      "goal"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A reader couldn't tell whether this succeeded, failed or stopped mattering.",
+     "fix": "Make it something with a clear outcome."
+    },
+    {
+     "id": "goal_touches_cards",
+     "severity": "warn",
+     "fields": [
+      "goal"
+     ],
+     "check": "",
+     "params": {},
+     "context": [
+      "protagonist_wants",
+      "pressures",
+      "ties"
+     ],
+     "needs_model": true,
+     "message": "This goal doesn't connect to anything on the other cards.",
+     "fix": "Narrow one of the protagonist's wants into it, or add a pressure or tie that bears on it. A goal that touches nothing has nothing to collide with."
+    },
+    {
+     "id": "stakes_has_cost",
+     "severity": "warn",
+     "fields": [
+      "stakes"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This doesn't name a cost or a gain.",
+     "fix": "Say what is lost or gained if they do nothing or quit. It can be a friendship, a reputation or a chance at happiness."
+    },
+    {
+     "id": "stakes_tie_to_cards",
+     "severity": "warn",
+     "fields": [
+      "stakes"
+     ],
+     "check": "",
+     "params": {},
+     "context": [
+      "protagonist_wants",
+      "protagonist_values",
+      "pressures"
+     ],
+     "needs_model": true,
+     "message": "This isn't tied to a want, value or pressure already on the cards.",
+     "fix": "Tie it to something the protagonist wants or protects, or to a pressure."
+    }
+   ]
+  },
+  "outline": {
+   "id": "outline",
+   "type": "growing",
+   "reads": [
+    "style",
+    "characters",
+    "world",
+    "entanglements",
+    "setup",
+    "summary_events",
+    "summary_shifts"
+   ],
+   "portable": false,
+   "between_chapters": "append",
+   "label": "Outline",
+   "summary": "One springboard beat per chapter, planned one at a time from where the story stands. A beat is frozen while its chapter is written, and you can see the next chapter's plan before generating it.",
+   "groups": [
+    {
+     "id": "beats",
+     "collapsed": false,
+     "label": "Beats",
+     "help": "One per chapter."
+    }
+   ],
+   "fields": [
+    {
+     "key": "beats",
+     "label": "Beats",
+     "help": "Each beat sets up a chapter: where it opens, what the protagonist is after, what stands in the way, and what they must decide.",
+     "input": null,
+     "kind": "pairs",
+     "group": "beats",
+     "required": true,
+     "uncapped": true,
+     "repeat": true,
+     "item_fields": [
+      {
+       "key": "chapter",
+       "label": "Chapter",
+       "help": "Which chapter this beat is for. Set by the system.",
+       "input": "number",
+       "kind": "note",
+       "required": true,
+       "filled_by": "code"
+      },
+      {
+       "key": "stale",
+       "label": "May no longer fit",
+       "help": "Set when an earlier chapter was regenerated after this beat was planned, so this beat, its chapter and its records may be out of step. Cleared when the chapter is generated again.",
+       "input": "checkbox",
+       "kind": "note",
+       "required": false,
+       "default": false,
+       "filled_by": "code"
+      },
+      {
+       "key": "where",
+       "label": "Where",
+       "help": "Where the chapter opens. A place from World.",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "world.places"
+       ],
+       "filled_by": "planner"
+      },
+      {
+       "key": "when_time",
+       "label": "When",
+       "help": "The day and time the chapter opens. The scene is already in motion.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner"
+      },
+      {
+       "key": "when_gap",
+       "label": "Time since last chapter",
+       "help": "How long it has been. Leave blank for chapter 1.",
+       "input": "text",
+       "kind": "note",
+       "required": false,
+       "filled_by": "planner"
+      },
+      {
+       "key": "cast",
+       "label": "Cast",
+       "help": "Who is on stage. You pick it before planning, and the system suggests the least-used characters. The protagonist is always included.",
+       "input": "select-multiple",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "characters"
+       ],
+       "filled_by": "human",
+       "max_selected": 5
+      },
+      {
+       "key": "collision_goal",
+       "label": "The protagonist is after",
+       "help": "What the protagonist is trying to get in this chapter.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner"
+      },
+      {
+       "key": "collision_block",
+       "label": "What blocks it",
+       "help": "What stands in the way. It should follow from the previous chapter's choice.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner"
+      },
+      {
+       "key": "choice_a",
+       "label": "Option A",
+       "help": "One side of the choice. Each option is a want or a value, and picking one costs the other.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner"
+      },
+      {
+       "key": "choice_b",
+       "label": "Option B",
+       "help": "The other side of the choice.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner"
+      },
+      {
+       "key": "turn",
+       "label": "Turn",
+       "help": "What is different by the end of the chapter. It is best when it pays off something set up earlier.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner"
+      },
+      {
+       "key": "shift",
+       "label": "Shift",
+       "help": "Whether this chapter makes things harder or easier. Easier is a breath, never a pause: it still changes something, and the next chapter is harder. Choices that aren't allowed right now are disabled.",
+       "input": "select",
+       "kind": "axis",
+       "required": true,
+       "filled_by": "planner",
+       "limited_by": "code",
+       "options": [
+        {
+         "value": "harder",
+         "label": "Harder"
+        },
+        {
+         "value": "easier",
+         "label": "Easier"
+        }
+       ]
+      },
+      {
+       "key": "ends_on",
+       "label": "Ends on",
+       "help": "A conceptual stopping point that leaves a question open.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner"
+      },
+      {
+       "key": "reveal_rule",
+       "label": "Reveal",
+       "help": "A Hidden rule or a Myth from World that comes to light this chapter. A rule that has already come to light in a written chapter can't be chosen again; one that was planned but did not land can.",
+       "input": "select",
+       "kind": "note",
+       "required": false,
+       "ref": [
+        "world.rules"
+       ],
+       "ref_where": {
+        "status": [
+         "uncommon",
+         "false_belief"
+        ]
+       },
+       "filled_by": "planner"
+      },
+      {
+       "key": "reveal_learners",
+       "label": "Who learns it",
+       "help": "Which characters learn the revealed rule.",
+       "input": "select-multiple",
+       "kind": "note",
+       "required": false,
+       "ref": [
+        "characters"
+       ],
+       "filled_by": "planner"
+      },
+      {
+       "key": "plant",
+       "label": "Plant",
+       "help": "One thing this chapter should set up for later. Optional. It counts as open only once the chapter has actually planted it.",
+       "input": "text",
+       "kind": "note",
+       "required": false,
+       "filled_by": "planner"
+      },
+      {
+       "key": "payoff",
+       "label": "Pay off",
+       "help": "Open plants this chapter should resolve, up to two. Optional. A plant that was planned but not written is not open.",
+       "input": "select-multiple",
+       "kind": "note",
+       "required": false,
+       "ref": [
+        "summary_events.entries"
+       ],
+       "filled_by": "planner",
+       "max_selected": 2
+      },
+      {
+       "key": "offstage_did",
+       "label": "Offstage move",
+       "help": "Only when the spotlighted pressure has an agent who is not in the cast: what they did since the last chapter. The offstage pass writes it.",
+       "input": "text",
+       "kind": "note",
+       "required": false,
+       "filled_by": "planner"
+      },
+      {
+       "key": "offstage_reach",
+       "label": "How it reaches the protagonist",
+       "help": "How the offstage move's effects reach the protagonist this chapter.",
+       "input": "text",
+       "kind": "note",
+       "required": false,
+       "filled_by": "planner"
+      },
+      {
+       "key": "goal_change",
+       "label": "Goal change",
+       "help": "Only when the goal moves. Achieved and abandoned both end the goal, and the remaining chapters wind down with no new goal. A change that did not land in the text stays pending and is tried again.",
+       "input": "select",
+       "kind": "axis",
+       "required": false,
+       "filled_by": "planner",
+       "options": [
+        {
+         "value": "achieved",
+         "label": "Achieved"
+        },
+        {
+         "value": "redefined",
+         "label": "Redefined"
+        },
+        {
+         "value": "abandoned",
+         "label": "Abandoned"
+        }
+       ]
+      },
+      {
+       "key": "goal_now",
+       "label": "The goal now",
+       "help": "What the goal has become. Only for a redefined goal. It follows the same advice as Setup's goal: something to act on, with a clear outcome, that narrows a want.",
+       "input": "text",
+       "kind": "note",
+       "required": false,
+       "filled_by": "planner"
+      },
+      {
+       "key": "spotlight",
+       "label": "Spotlight",
+       "help": "The pressure this chapter puts in focus. The system picks it so planning stays consistent, and you can change it.",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "entanglements.pressures"
+       ],
+       "filled_by": "code"
+      },
+      {
+       "key": "planned_from",
+       "label": "Planned from",
+       "help": "A fingerprint of the live state this beat was planned from. Set by the system. If the live state changes afterward, the beat is flagged as planned from older state.",
+       "input": "text",
+       "kind": "note",
+       "required": false,
+       "filled_by": "code"
+      }
+     ]
+    }
+   ],
+   "rules": [
+    {
+     "id": "outline_link_broken",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "ref_exists",
+     "params": {},
+     "context": [
+      "character_ids",
+      "world_item_ids",
+      "pressure_ids"
+     ],
+     "needs_model": false,
+     "message": "A beat points to something that no longer exists.",
+     "fix": "Pick a replacement, or ask for the beat to be regenerated."
+    },
+    {
+     "id": "cast_has_protagonist",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "includes_value",
+     "params": {
+      "field": "cast",
+      "value_from": "setup.protagonist"
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "The cast doesn't include the protagonist.",
+     "fix": "Add the protagonist. They are in every chapter."
+    },
+    {
+     "id": "when_gap_after_first",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "required_if",
+     "params": {
+      "field": "when_gap",
+      "unless": {
+       "chapter": 1
+      }
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "A chapter after the first needs the time since the last one.",
+     "fix": "Say how long it has been."
+    },
+    {
+     "id": "reveal_learners_needed",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "required_if",
+     "params": {
+      "field": "reveal_learners",
+      "when_present": "reveal_rule"
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "A reveal needs the characters who learn it.",
+     "fix": "Pick who learns it."
+    },
+    {
+     "id": "reveal_not_repeated",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "not_already_landed",
+     "params": {
+      "field": "reveal_rule",
+      "landed_in": "summary_events.reveals_landed"
+     },
+     "context": [
+      "landed_reveals"
+     ],
+     "needs_model": false,
+     "message": "This rule has already come to light in a written chapter.",
+     "fix": "Pick a different rule, or leave the reveal empty."
+    },
+    {
+     "id": "payoff_is_open_plant",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "paid_off_valid",
+     "params": {
+      "field": "payoff"
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "A payoff points at something that wasn't planted, isn't earlier, or was already paid off.",
+     "fix": "Pick only plants that were set up in an earlier chapter and are still open."
+    },
+    {
+     "id": "offstage_both_or_neither",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "all_or_none",
+     "params": {
+      "fields": [
+       "offstage_did",
+       "offstage_reach"
+      ]
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "An offstage move needs both what happened and how it reaches the protagonist.",
+     "fix": "Fill in both, or clear both."
+    },
+    {
+     "id": "goal_now_for_redefined",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "required_if",
+     "params": {
+      "field": "goal_now",
+      "when": {
+       "goal_change": "redefined"
+      }
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "A redefined goal needs the new goal.",
+     "fix": "Say what the goal is now."
+    },
+    {
+     "id": "shift_legal",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "legal_shift",
+     "params": {},
+     "context": [
+      "chapter",
+      "chapter_count",
+      "earlier_shifts"
+     ],
+     "needs_model": false,
+     "message": "This shift isn't allowed here.",
+     "fix": "Pick the other one. Pacing limits come from the chapter number and what is still open."
+    },
+    {
+     "id": "goal_now_is_action",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "The new goal reads like a feeling or a theme, not something to act on.",
+     "fix": "Say what the protagonist is now concretely trying to do."
+    },
+    {
+     "id": "goal_now_checkable",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A reader couldn't tell whether the new goal succeeded, failed or stopped mattering.",
+     "fix": "Make it something with a clear outcome."
+    },
+    {
+     "id": "goal_now_touches_cards",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [
+      "protagonist_wants",
+      "pressures",
+      "ties"
+     ],
+     "needs_model": true,
+     "message": "The new goal doesn't connect to anything on the other cards.",
+     "fix": "Narrow one of the protagonist's wants into it, or tie it to a pressure or tie. A goal that touches nothing has nothing to collide with."
+    },
+    {
+     "id": "offstage_needs_agent",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "spotlight_has_agent",
+     "params": {
+      "field": "spotlight",
+      "needs": "source_agent"
+     },
+     "context": [
+      "pressures"
+     ],
+     "needs_model": false,
+     "message": "An offstage move needs a pressure with an agent behind it.",
+     "fix": "Change the spotlight to a pressure with an agent, or clear the offstage move."
+    },
+    {
+     "id": "turn_not_repeated",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "similar_to_earlier",
+     "params": {},
+     "context": [
+      "earlier_turns",
+      "changed_lines"
+     ],
+     "needs_model": false,
+     "message": "This turn is too close to an earlier one.",
+     "fix": "Make something different happen."
+    },
+    {
+     "id": "turn_is_a_change",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "The turn doesn't say what is different by the end.",
+     "fix": "State what has changed."
+    },
+    {
+     "id": "choice_is_costly",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [
+      "protagonist_wants",
+      "protagonist_values"
+     ],
+     "needs_model": true,
+     "message": "These options aren't a real choice.",
+     "fix": "Make each a want or a value, so picking one costs the other."
+    },
+    {
+     "id": "ends_on_open_question",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "This stopping point doesn't leave a question open.",
+     "fix": "End on a moment that makes the reader ask what comes next."
+    }
+   ]
+  }
+ }
+}

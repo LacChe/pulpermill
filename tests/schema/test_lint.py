@@ -2,7 +2,7 @@
 those are pinned separately in test_decisions.py."""
 import pytest
 from helpers import *
-from schema.common import Item, MAX_ITEMS
+from pulpermill.schema.common import Item, MAX_ITEMS
 
 
 # ---------------------------------------------------------------- structure only
@@ -171,6 +171,6 @@ def test_other_languages_match_english_keys_and_tokens():
         elif isinstance(a, str):
             assert tokens(a) == tokens(b), path
     for lang in [l for l in LANGS if l != "en"]:
-        walk(load_common("en"), load_common(lang), f"{lang}/_common")
+        walk(load_common("en"), load_common(lang), f"{lang}/common")
         for cid in CARD_IDS:
             walk(load_text(cid, "en"), load_text(cid, lang), f"{lang}/{cid}")

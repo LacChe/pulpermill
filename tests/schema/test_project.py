@@ -3,8 +3,8 @@ import pytest
 from pydantic import ValidationError
 from helpers import *
 from typing import get_args
-from schema.project import Project, AfterStory, Chapter, CardNote, Lock, UserCard, CARD_FIELDS, PROJECT_RULES, SCHEMA_VERSION
-from schema.common import MAX_ITEMS
+from pulpermill.schema.project import Project, AfterStory, Chapter, CardNote, Lock, UserCard, CARD_FIELDS, PROJECT_RULES, SCHEMA_VERSION
+from pulpermill.schema.common import MAX_ITEMS
 
 PROJECT_CHECKS = {"chapter_sequence", "chapter_markers", "links_resolve",
                   "after_story_ready", "ids_match", "required_if", "unique_across_items", "lock_target_exists"}

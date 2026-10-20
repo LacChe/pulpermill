@@ -1,4 +1,4 @@
-"""Shared vocabulary for every card. Conventions are recorded in conventions.md."""
+"""Shared vocabulary for every card. Conventions are recorded in CONVENTIONS.md."""
 from typing import Any, Literal
 from uuid import uuid4
 from pydantic import BaseModel, Field
@@ -67,7 +67,7 @@ class TextItem(Item):
 #   reject : the value cannot be stored (not an allowed option, wrong type, too long)
 #   block  : can be saved as a draft, but generation cannot start until fixed (a required field is empty)
 #   warn   : advice only; the human may ignore it
-# reject and block are built in for every field (see checks/engine.py), so cards only declare 'warn' rules.
+# reject and block are built in for every field (enforced by the checks engine, which is not in this repo yet), so cards only declare 'warn' rules.
 Severity = Literal["reject", "block", "warn"]
 
 
@@ -76,7 +76,7 @@ class Rule(BaseModel):
     severity: Severity
     fields: list[str]                # fields the rule looks at
     when: str                        # plain-English description of when it fires (for the spec reader)
-    check: str = ""                  # name of a code check in checks/engine.py CHECKS; empty if needs_model
+    check: str = ""                  # name of a code check in the checks engine (not in this repo yet); empty if needs_model
     params: dict[str, Any] = {}      # settings for the code check (e.g. min / max item counts)
     context: list[str] = []          # outside data the check needs, supplied by the project
     needs_model: bool = False        # judgment call: a model pass answers it (judge_prompt in the text file)

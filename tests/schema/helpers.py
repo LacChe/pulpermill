@@ -1,11 +1,12 @@
-"""Shared helpers for the schema tests. Imports nothing from pipeline_draft."""
+"""Shared helpers for the schema tests. Imports nothing from the pipeline."""
 import pathlib, string, sys, yaml
 from typing import get_args
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-from schema import CARDS
-from schema.common import InputType
+REPO = pathlib.Path(__file__).resolve().parents[2]
+ROOT = REPO / "pulpermill" / "schema"
+sys.path.insert(0, str(REPO))
+from pulpermill.schema import CARDS
+from pulpermill.schema.common import InputType
 
 ALLOWED_INPUTS = set(get_args(InputType))
 CARD_IDS = list(CARDS)
@@ -30,7 +31,7 @@ def load_text(cid, lang):
 
 
 def load_common(lang):
-    return yaml.safe_load(open(ROOT / "text" / lang / "_common.yaml"))
+    return yaml.safe_load(open(ROOT / "text" / lang / "common.yaml"))
 
 
 def card(cid):

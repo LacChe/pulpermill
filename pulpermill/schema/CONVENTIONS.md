@@ -3,25 +3,25 @@
 Decided while writing cards, in chain order. Anything marked TEST is not yet exercised and may change when a later card needs it.
 
 ## Package contents
-`schema/` (structure and declared rules, including `project.py`, the save-and-load file), `text/en/` (all wording), `tests/` and this file. The throwaway pipeline draft is not included; wherever this file mentions it, the pipeline is built from scratch.
-- `tests/test_lint.py` checks structure and text for every card and every language folder under `text/` (a new language is linted automatically). It holds no design decisions.
-- `tests/test_project.py` checks the project file: every card has a home, a full save/load round trip keeps ids, and its integrity rules are well formed.
-- `tests/test_decisions.py` pins the decisions made so far (the 5-item cap and its exceptions, the pairing table, plants, the card chain) plus sample cards. Update it on purpose when a decision changes.
-- `tests/helpers.py` holds shared helpers and two policy lists (`UNCAPPED`, `BLOCK_CHECKS`).
+`pulpermill/schema/` (structure and declared rules, including `project.py`, the save-and-load file), `pulpermill/schema/text/en/` (all wording) and this file, plus `tests/schema/` at the repo root. The throwaway pipeline draft is not included; wherever this file mentions it, the pipeline is built from scratch.
+- `tests/schema/test_lint.py` checks structure and text for every card and every language folder under `text/` (a new language is linted automatically). It holds no design decisions.
+- `tests/schema/test_project.py` checks the project file: every card has a home, a full save/load round trip keeps ids, and its integrity rules are well formed.
+- `tests/schema/test_decisions.py` pins the decisions made so far (the 5-item cap and its exceptions, the pairing table, plants, the card chain) plus sample cards. Update it on purpose when a decision changes.
+- `tests/schema/helpers.py` holds shared helpers and two policy lists (`UNCAPPED`, `BLOCK_CHECKS`).
 Run from the project root: `python -m pytest tests`.
 
 ## Translation
 Translation is deferred until the English text is final, so wording changes are made once. To add a language: copy `text/en/` to `text/<lang>/` with identical keys, translate every value (labels and help for the human, and expansions, lead-ins, item templates and judge prompts for the model), leave every `{token}` unchanged, and run the tests: the lint and the parity test (same keys, same tokens in every template) already cover every folder under `text/`. The output language of the story is the same setting as the UI language, passed to the writer; it is never stored on a card. DECIDED (data-flow review): the writer is told the target language in English and model-facing text (expansions, lead-ins, item templates, judge prompts) is not translated; only the human-facing text (labels, help, rule messages and fixes) is. Code checks the output language and retries once if it drifted. When the second language is written, the parity test should cover the human-facing keys only; the procedure above is then reduced to those keys.
 
 ## Separation
-The schema is data: `schema/` (structure and declared rules) and `text/` (all wording). Anything that runs, renders or checks lives in `pipeline_draft/` until the pipeline is designed. The UI is not wired yet.
+The schema is data: `schema/` (structure and declared rules) and `text/` (all wording). Anything that runs, renders or checks lives outside `schema/` (the throwaway `pipeline_draft/` is not in this repo; the real pipeline and the UI are built from scratch). The UI is not wired yet.
 
 ## Files (per card)
-- `schema/<card>.py`: structure only (Pydantic). Types, required, options, input type, group, render kind.
-- `text/<lang>/<card>.yaml`: all words. Labels, help, option expansions, lead-ins. One file per language, same keys.
-- `schema/__init__.py`: registry of cards in chain order. `tests/test_schema_lint.py` runs the same lint over every registered card.
-- `tests/`: schema and text lint only. Imports nothing from `pipeline_draft/`.
-- `pipeline_draft/`: throwaway code proving the schema works (prose rendering, rule checking). Not part of the schema, and the schema never imports it.
+- `pulpermill/schema/<card>.py`: structure only (Pydantic). Types, required, options, input type, group, render kind.
+- `pulpermill/schema/text/<lang>/<card>.yaml`: all words. Labels, help, option expansions, lead-ins. One file per language, same keys.
+- `pulpermill/schema/__init__.py`: registry of cards in chain order. `tests/schema/test_lint.py` runs the same lint over every registered card.
+- `tests/schema/`: schema and text lint only. Imports nothing from the pipeline.
+- `pipeline_draft/` (not in this repo): throwaway code that proved the schema works (prose rendering, rule checking). Not part of the schema, and the schema never imports it.
 
 ## Established by Style
 1. **Everything is human editable, and everything is required by default** (the human will loosen this after review). A field is optional only if declared `required=False`. There is no read-only input type.
@@ -54,9 +54,9 @@ Three severities, one meaning each:
 - **warn**: advice only; the human may ignore it. Cards declare these as `Rule` objects in `RULES`.
 
 A `Rule` has: `id`, `severity`, `fields`, `when` (plain-English description), `check` (name of a code check), `context` (outside data the check needs, e.g. character and place names, supplied by the project), and `needs_model` (judgment call answered by a model pass instead of code).
-- All wording lives in the text file: built-in messages in `text/<lang>/_common.yaml`; card rules under `rules:` in the card's text file (`message`, `fix`, and `judge_prompt` for model checks).
+- All wording lives in the text file: built-in messages in `text/<lang>/common.yaml`; card rules under `rules:` in the card's text file (`message`, `fix`, and `judge_prompt` for model checks).
 - A warning may propose a fix but never applies one.
-- The draft checker (`pipeline_draft/checks`) returns issues, the pending model checks, and `can_generate`.
+- The checker (the earlier draft is not in this repo) returns issues, the pending model checks, and `can_generate`.
 
 ## Input types
 Real HTML only: `text` (<input type=text>), `textarea`, `number` (<input type=number>), `select`, `select-multiple` (<select multiple>). Lists, paired lists and options fed by another card are not single HTML controls; they get separate attributes when Characters first needs them.
