@@ -179,7 +179,7 @@ def test_other_languages_match_english_keys_and_tokens():
 # ---------------------------------------------------------------- UI wording (human-only, never sent to the model)
 # Cards whose UI wording is finished. A card listed here must give every option a description and every free-text
 # field a placeholder. Add a card to this set when its wording is written.
-UI_DONE = {"style", "characters", "world", "entanglements"}
+UI_DONE = {"style", "characters", "world", "entanglements", "setup"}
 FIELD_UI = {"placeholder", "why", "examples", "empty", "add", "delete_confirm", "item_title", "visible_if",
             "no_options", "filtered_note", "disabled_reason", "one_of"}
 FIELD_KEYS = FIELD_UI | {"label", "help", "options", "item_fields", "expand", "lead_in", "item_template", "item_join"}

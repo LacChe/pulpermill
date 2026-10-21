@@ -2314,7 +2314,10 @@
      "required": true,
      "ref": [
       "characters"
-     ]
+     ],
+     "placeholder": "Choose the lead character",
+     "why": "The model narrates from this person's point of view, in the person and tense you set in Style.",
+     "no_options": "No characters yet. Add your lead in Characters first."
     },
     {
      "key": "normal",
@@ -2323,7 +2326,18 @@
      "input": "textarea",
      "kind": "free",
      "group": "opening",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Ines opens the print shop at six, sweeps, and does the neighbours' books. The routine keeps her safe, and keeps her from asking about her father.",
+     "why": "Gives the disruption something to break.",
+     "examples": {
+      "good": [
+       "Opens the print shop at six and does the neighbours' books; the routine keeps her safe and keeps her from asking about her father"
+      ],
+      "avoid": [
+       "a normal, happy life",
+       "she was bored"
+      ]
+     }
     },
     {
      "key": "disruption",
@@ -2332,7 +2346,19 @@
      "input": "textarea",
      "kind": "free",
      "group": "opening",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. A customer leaves a ledger on the counter and never comes back.",
+     "why": "Chapter 1 opens on something that has already happened, so the model has a spark to start from.",
+     "examples": {
+      "good": [
+       "The ledger went missing",
+       "A stranger arrives carrying a letter in her mother's hand"
+      ],
+      "avoid": [
+       "things are tense",
+       "her life falls apart"
+      ]
+     }
     },
     {
      "key": "goal",
@@ -2341,7 +2367,19 @@
      "input": "textarea",
      "kind": "free",
      "group": "push",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Get the ledger back before Friday's audit.",
+     "why": "Every chapter's plan is checked against this, so make it something you can watch happen.",
+     "examples": {
+      "good": [
+       "Get the ledger back before the audit",
+       "Win the apprenticeship before the guild votes"
+      ],
+      "avoid": [
+       "find peace",
+       "become a better person"
+      ]
+     }
     },
     {
      "key": "stakes",
@@ -2350,7 +2388,19 @@
      "input": "textarea",
      "kind": "free",
      "group": "push",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. If the audit finds the books short, she loses the shop and the neighbours who trust her.",
+     "why": "This is what keeps the protagonist from walking away when the goal gets hard.",
+     "examples": {
+      "good": [
+       "She loses the shop her mother left her",
+       "Her brother never forgives her"
+      ],
+      "avoid": [
+       "bad things happen",
+       "everything is lost"
+      ]
+     }
     },
     {
      "key": "chapter_count",
@@ -2359,7 +2409,9 @@
      "input": "number",
      "kind": "free",
      "group": "push",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. 12",
+     "why": "The model plans toward this number and knows when it is writing the last chapter."
     }
    ],
    "rules": [

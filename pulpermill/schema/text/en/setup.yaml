@@ -10,26 +10,51 @@ fields:
   protagonist:
     label: "Protagonist"
     help: "Whose eyes we follow. Exactly one, fixed for the whole story. This is the only place a character is marked as the lead."
+    placeholder: "Choose the lead character"
+    why: "The model narrates from this person's point of view, in the person and tense you set in Style."
+    no_options: "No characters yet. Add your lead in Characters first."
     lead_in: "The story follows {value}."
   normal:
     label: "Normal"
     help: "An ordinary day for the protagonist before the story, drawn from World's everyday life. Say what that normal gave them (safety, status, a routine that kept a want or fear quiet), so the disruption has something to threaten. Only the first chapter uses this; later chapters carry it forward through what happened."
+    placeholder: "e.g. Ines opens the print shop at six, sweeps, and does the neighbours' books. The routine keeps her safe, and keeps her from asking about her father."
+    why: "Gives the disruption something to break."
+    examples:
+      good: ["Opens the print shop at six and does the neighbours' books; the routine keeps her safe and keeps her from asking about her father"]
+      avoid: ["a normal, happy life", "she was bored"]
     lead_in: "Before the story, the protagonist's ordinary life: {value}"
   disruption:
     label: "Disruption"
     help: "What just broke the normal. An event, not a condition: 'the ledger went missing', not 'things are tense'. Only the first chapter uses this."
+    placeholder: "e.g. A customer leaves a ledger on the counter and never comes back."
+    why: "Chapter 1 opens on something that has already happened, so the model has a spark to start from."
+    examples:
+      good: ["The ledger went missing", "A stranger arrives carrying a letter in her mother's hand"]
+      avoid: ["things are tense", "her life falls apart"]
     lead_in: "What just broke that normal: {value}"
   goal:
     label: "Goal"
     help: "What the protagonist is concretely trying to do, narrowing one of their wants into this story. It can be acted on in scenes, a reader could tell whether it succeeded, failed or stopped mattering, and it costs something. During the story the current goal is worked out from this and from any redefinitions in the beats; once it is achieved or abandoned the story winds down."
+    placeholder: "e.g. Get the ledger back before Friday's audit."
+    why: "Every chapter's plan is checked against this, so make it something you can watch happen."
+    examples:
+      good: ["Get the ledger back before the audit", "Win the apprenticeship before the guild votes"]
+      avoid: ["find peace", "become a better person"]
     lead_in: "The protagonist is now trying to: {value}"
   stakes:
     label: "What's at stake"
     help: "What happens if they do nothing or quit. This is why they can't walk away. Tie it to a want, a value or a pressure already on the cards. It can be a friendship, a reputation or a chance at happiness, not only a loss."
+    placeholder: "e.g. If the audit finds the books short, she loses the shop and the neighbours who trust her."
+    why: "This is what keeps the protagonist from walking away when the goal gets hard."
+    examples:
+      good: ["She loses the shop her mother left her", "Her brother never forgives her"]
+      avoid: ["bad things happen", "everything is lost"]
     lead_in: "If the protagonist does nothing or quits: {value}"
   chapter_count:
     label: "Chapter count"
     help: "A budget, not a fixed route. If the goal resolves early, the remaining chapters carry the aftermath."
+    placeholder: "e.g. 12"
+    why: "The model plans toward this number and knows when it is writing the last chapter."
     lead_in: "The story runs for {value} chapters."
 rules:
   protagonist_link_broken:
