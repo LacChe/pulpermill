@@ -179,8 +179,9 @@ def test_other_languages_match_english_keys_and_tokens():
 # ---------------------------------------------------------------- UI wording (human-only, never sent to the model)
 # Cards whose UI wording is finished. A card listed here must give every option a description and every free-text
 # field a placeholder. Add a card to this set when its wording is written.
-UI_DONE = {"style", "characters", "world"}
-FIELD_UI = {"placeholder", "why", "examples", "empty", "add", "delete_confirm", "item_title", "visible_if"}
+UI_DONE = {"style", "characters", "world", "entanglements"}
+FIELD_UI = {"placeholder", "why", "examples", "empty", "add", "delete_confirm", "item_title", "visible_if",
+            "no_options", "filtered_note", "disabled_reason", "one_of"}
 FIELD_KEYS = FIELD_UI | {"label", "help", "options", "item_fields", "expand", "lead_in", "item_template", "item_join"}
 OPTION_KEYS = {"label", "expand", "description"}
 
@@ -202,12 +203,24 @@ def test_ui_wording_uses_known_keys_and_sensible_values(cid, lang):
         unknown = set(t) - FIELD_KEYS
         assert not unknown, (n, unknown)
         meta = f.json_schema_extra
-        for key in ("placeholder", "why", "empty", "add", "delete_confirm"):
+        for key in ("placeholder", "why", "empty", "add", "delete_confirm", "no_options", "filtered_note", "disabled_reason"):
             if key in t:
                 assert isinstance(t[key], str) and t[key].strip(), (n, key)
                 assert not tokens(t[key]), (n, key, "no tokens in plain UI text")
         if "placeholder" in t:
-            assert meta["input"] in ("text", "textarea", "number"), (n, "placeholder only on typed fields")
+            assert meta["input"] in ("text", "textarea", "number") or "ref" in meta, (n, "placeholder only on typed fields and pickers")
+        for key in ("no_options", "disabled_reason"):
+            if key in t:
+                assert "ref" in meta, (n, key, "only on reference pickers")
+        if "filtered_note" in t:
+            assert "ref_filter_by" in meta, n
+        if "one_of" in t:
+            assert is_list_field(f), n
+            names = set(item_fields(f))
+            for group in t["one_of"]:
+                assert set(group) == {"fields", "label", "options"} and group["label"].strip(), n
+                assert len(group["fields"]) >= 2 and set(group["fields"]) <= names, (n, group)
+                assert set(group["options"]) == set(group["fields"]) and all(group["options"].values()), (n, group)
         for key in ("empty", "add", "delete_confirm", "item_title"):
             if key in t:
                 assert is_list_field(f), (n, key, "list wording only on repeating lists")
@@ -247,6 +260,10 @@ def test_finished_cards_describe_every_option_and_typed_field(cid, lang):
                 assert t.get(key), (n, key)
         if meta["input"] in ("text", "textarea", "number") and meta["kind"] in ("note", "free"):
             assert t.get("placeholder"), n
+        if "ref" in meta:
+            assert t.get("placeholder") and t.get("no_options"), n
+        if "ref_filter_by" in meta:
+            assert t.get("filtered_note"), n
 
 
 @pytest.mark.parametrize("cid,lang", CASES, ids=CASE_IDS)
@@ -259,7 +276,7 @@ def test_ui_wording_never_repeats_model_text(cid, lang):
         model_text |= {o["expand"] for v, o in t.get("options", {}).items() if o["expand"] != v}
     shown = []
     for _, _, t in _targets(card(cid)[0], text):
-        shown += [t[k] for k in ("placeholder", "why", "empty", "add", "delete_confirm") if k in t]
+        shown += [t[k] for k in ("placeholder", "why", "empty", "add", "delete_confirm", "no_options", "filtered_note", "disabled_reason") if k in t]
         shown += [o["description"] for o in t.get("options", {}).values() if "description" in o]
     assert not set(shown) & model_text
 
@@ -284,7 +301,7 @@ def test_visible_if_points_at_sibling_fields_and_real_options(cid, lang):
         for item_name, t in text_items.items():
             for key, wanted in (t.get("visible_if") or {}).items():
                 assert key in schema_items and key != item_name, (list_name, item_name, key)
-                allowed = set(options_of(schema_items[key]))
+                allowed = set(options_of(schema_items[key])) | {"filled"}
                 wanted = wanted if isinstance(wanted, list) else [wanted]
                 assert allowed and set(wanted) <= allowed, (list_name, item_name, key)
 
@@ -297,9 +314,29 @@ def test_a_field_shown_only_sometimes_matches_the_block_rule_that_requires_it(ci
     model, _, _, rules, _ = card(cid)
     text = load_text(cid, lang)
     for r in rules:
-        if r.check != "required_if":
+        if r.check != "required_if" or "when" not in r.params:
             continue
         for list_name, _, text_items in _siblings(model, text):
             target = text_items.get(r.params["field"])
             if target is not None:
                 assert target.get("visible_if") == r.params["when"], r.id
+
+
+@pytest.mark.parametrize("cid,lang", CASES, ids=CASE_IDS)
+def test_either_or_and_present_only_fields_match_their_block_rules(cid, lang):
+    """exactly_one rules need a toggle in the form; required_if with when_present needs the field shown only then."""
+    if cid not in UI_DONE:
+        pytest.skip("UI wording not written yet")
+    model, _, _, rules, _ = card(cid)
+    text = load_text(cid, lang)
+    for r in rules:
+        if r.check == "exactly_one":
+            wanted = set(r.params["fields"])
+            lists = [t for n, f in fields_of(model).items() if is_list_field(f) and wanted <= set(item_fields(f))
+                     for t in [text["fields"][n]]]
+            assert lists and any(set(g["fields"]) == wanted for t in lists for g in t.get("one_of", [])), r.id
+        if r.check == "required_if" and "when_present" in r.params:
+            for _, _, text_items in _siblings(model, text):
+                target = text_items.get(r.params["field"])
+                if target is not None:
+                    assert target.get("visible_if") == {r.params["when_present"]: "filled"}, r.id

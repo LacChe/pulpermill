@@ -12,52 +12,76 @@ fields:
   ties:
     label: "Ties"
     help: "How people and groups are connected. A tie points one way: how 'from' stands toward 'to'."
+    why: "Ties tell the model how people stand toward each other before anyone speaks."
+    empty: "No ties yet. Add how two people or groups are connected."
+    add: "Add a tie"
+    delete_confirm: "Delete this tie?"
+    item_title: "{tie_from} → {tie_to}"
     lead_in: "Ties between people and groups:\n{items}"
     item_template: "{tie_from} toward {tie_to}: {bond}. Right now, {edge}"
     item_join: "\n"
     item_fields:
-      tie_from: {label: "From", help: "A character or a group."}
-      tie_to: {label: "To", help: "A character or a group."}
-      bond: {label: "Bond", help: "A standing label for the connection, which may carry a clause of shared past ('owes her since the fire')."}
-      edge: {label: "Edge", help: "A concrete aim between these two people right now: what 'from' wants from, or hides from, 'to' (wants to pass her test, hides the missing key). Abstract desires belong on the character."}
+      tie_from: {label: "From", help: "A character or a group.", placeholder: "Choose a character or group", no_options: "No characters or groups yet. Add some in Characters or World first.", disabled_reason: "Already the other end of this tie. A tie can't point at itself."}
+      tie_to: {label: "To", help: "A character or a group.", placeholder: "Choose a character or group", no_options: "No characters or groups yet. Add some in Characters or World first.", disabled_reason: "Already the other end of this tie. A tie can't point at itself."}
+      bond: {label: "Bond", help: "A standing label for the connection, which may carry a clause of shared past ('owes her since the fire').", placeholder: "e.g. owes her since the fire", examples: {good: ["owes her since the fire", "rivals since school"], avoid: ["wants to pass her test"]}}
+      edge: {label: "Edge", help: "A concrete aim between these two people right now: what 'from' wants from, or hides from, 'to' (wants to pass her test, hides the missing key). Abstract desires belong on the character.", placeholder: "e.g. hides the missing key", why: "The edge is what makes a tie do something in this chapter.", examples: {good: ["wants to pass her test", "hides the missing key"], avoid: ["resents her", "they are close"]}}
   holdings:
     label: "Holdings"
     help: "Who holds or controls which thing or place. Moves as things change hands."
+    why: "Who holds what moves the plot: things change hands and places get controlled."
+    empty: "No holdings yet. Add who holds or controls a thing or place."
+    add: "Add a holding"
+    delete_confirm: "Delete this holding?"
+    item_title: "{held_by} holds {holdee}"
     lead_in: "Who holds or controls what:\n{items}"
     item_template: "{held_by} holds or controls {holdee}"
     item_join: "\n"
     item_fields:
-      holdee: {label: "Thing or place", help: "A thing or a place from World."}
-      held_by: {label: "Held by", help: "Who holds it now. The choices depend on what it is."}
+      holdee: {label: "Thing or place", help: "A thing or a place from World.", placeholder: "Choose a thing or place", no_options: "No things or places yet. Add some in World first."}
+      held_by: {label: "Held by", help: "Who holds it now. The choices depend on what it is.", placeholder: "Choose who holds it", why: "Moves as things change hands, and the model updates it after each chapter.", no_options: "Nobody can hold this yet. Add characters, groups or places first.", filtered_note: "Only holders that make sense for this kind of thing are listed."}
   knowledge:
     label: "Knowledge"
     help: "Who knows, suspects or has been misled about a fact or world rule. It is measured against what is true in the story, which cannot be wrong. Someone who is simply unaware is left out."
+    why: "A secret only matters if someone can act on what they know, or fail to."
+    empty: "No knowledge entries yet. Add who knows, suspects or was misled about something."
+    add: "Add what someone knows"
+    delete_confirm: "Delete this entry?"
+    item_title: "{person}: {status} {rule}{fact}"
+    one_of:
+      - {fields: [rule, fact], label: "This is about", options: {rule: "A rule of the world", fact: "Something else"}}
     lead_in: "What each person can and cannot act on, given what they know:\n{items}"
     item_template: "{person} {status} {rule}{fact}"
     item_join: "\n"
     item_fields:
-      rule: {label: "World rule", help: "A rule from World this is about."}
-      fact: {label: "Other fact", help: "Or a short fact of your own, when it isn't a world rule."}
-      person: {label: "Who", help: "A character or a group."}
+      rule: {label: "World rule", help: "A rule from World this is about.", placeholder: "Choose a rule from World", no_options: "No rules yet. Add some in World first."}
+      fact: {label: "Other fact", help: "Or a short fact of your own, when it isn't a world rule.", placeholder: "e.g. The key is hidden in the well"}
+      person: {label: "Who", help: "A character or a group.", placeholder: "Choose a character or group", no_options: "No characters or groups yet. Add some in Characters or World first."}
       status:
         label: "Status"
         help: "Knows it, suspects it, or has been misled about it."
         options:
-          knows: {label: "Knows", expand: "knows"}
-          suspects: {label: "Suspects", expand: "suspects"}
-          misled: {label: "Misled", expand: "has been misled about"}
+          knows: {label: "Knows", expand: "knows", description: "Has the true story: knows the key is in the well."}
+          suspects: {label: "Suspects", expand: "suspects", description: "Has a hunch and could act on it, but isn't sure: suspects the key is in the well."}
+          misled: {label: "Misled", expand: "has been misled about", description: "Believes something false: thinks the key is in the attic."}
   pressures:
     label: "Pressures"
     help: "What is pressing on people, from a circumstance or from someone with their own wants."
+    why: "Pressure is what gets the next chapter moving. Three or fewer at once keeps each one felt."
+    empty: "No pressures yet. Add what is pushing on people right now."
+    add: "Add a pressure"
+    delete_confirm: "Delete this pressure?"
+    item_title: "{what}"
+    one_of:
+      - {fields: [source_agent, source_circumstance], label: "Pushed by", options: {source_agent: "Someone", source_circumstance: "A circumstance"}}
     lead_in: "Pressures on the story:\n{items}"
     item_template: "{what} (from {source_agent}{source_circumstance}; bears on {bears_on}). Next move: {next_move}"
     item_join: "\n"
     item_fields:
-      what: {label: "What", help: "What is pressing, and what happens if it is ignored."}
-      source_agent: {label: "Agent", help: "A character or group behind it."}
-      source_circumstance: {label: "Circumstance", help: "Or a circumstance with no one behind it, like a storm or a deadline."}
-      next_move: {label: "Agent's next move", help: "Only when an agent is behind it: what they want in this situation, not their general wants."}
-      bears_on: {label: "Bears on", help: "Who it falls on: characters or groups."}
+      what: {label: "What", help: "What is pressing, and what happens if it is ignored.", placeholder: "e.g. The Guild audits the wells by month's end, and any well found short is shut down.", examples: {good: ["The Guild audits the wells by month's end, and any well found short is shut down"], avoid: ["tension is rising"]}}
+      source_agent: {label: "Agent", help: "A character or group behind it.", placeholder: "Choose a character or group", no_options: "No characters or groups yet. Add some in Characters or World first."}
+      source_circumstance: {label: "Circumstance", help: "Or a circumstance with no one behind it, like a storm or a deadline.", placeholder: "e.g. a drought, or a deadline"}
+      next_move: {label: "Agent's next move", help: "Only when an agent is behind it: what they want in this situation, not their general wants.", placeholder: "e.g. Plans to call in the loan before the audit", examples: {good: ["Plans to call in the loan before the audit"], avoid: ["Wants power", "Wants to be loved"]}, visible_if: {source_agent: "filled"}}
+      bears_on: {label: "Bears on", help: "Who it falls on: characters or groups.", placeholder: "Choose who it falls on", no_options: "No characters or groups yet. Add some in Characters or World first."}
 rules:
   tie_not_self:
     message: "A tie goes from someone to themselves."

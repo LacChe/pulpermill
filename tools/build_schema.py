@@ -36,7 +36,7 @@ MODEL_ONLY = {"expand", "lead_in", "item_template", "item_join", "judge_prompt"}
 
 # Optional UI wording the text files may add (phase 3). Copied through when present, so adding
 # a key to the yaml needs no change here. The page must treat every one of them as optional.
-FIELD_UI_KEYS = ["placeholder", "why", "examples", "empty", "add", "delete_confirm", "item_title", "visible_if"]
+FIELD_UI_KEYS = ["placeholder", "why", "examples", "no_options", "filtered_note", "disabled_reason", "one_of", "empty", "add", "delete_confirm", "item_title", "visible_if"]
 OPTION_UI_KEYS = ["description"]
 
 # Structure flags copied from the field's declaration when set.
