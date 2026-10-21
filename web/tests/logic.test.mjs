@@ -329,3 +329,13 @@ test("a title for an either-or pair shows whichever half is used", () => {
     "Ines: Suspects the key is in the well");
   assert.equal(itemTitle(entList("knowledge"), { person: "c1", status: "", rule: "", fact: "" }, lookup), "Ines: …");
 });
+
+test("Setup: every field is supported, starts blank, and the protagonist picker has its empty message", () => {
+  const setup = schema.cards.setup;
+  for (const f of setup.fields) assert.ok(isSupported(f), f.key);
+  const blank = blankCard(setup);
+  assert.equal(blank.protagonist, "");
+  assert.equal(blank.chapter_count, null);
+  const lead = setup.fields.find((f) => f.key === "protagonist");
+  assert.ok(lead.no_options && lead.placeholder);
+});
