@@ -48,7 +48,7 @@ The fill needs an example chapter or a note for that card. There is no revise-ca
 | --- | --- | --- |
 | Pick the cast (up to 5, protagonist always in) | H | C pre-selects the least-used characters as a suggestion. |
 | Compute chapter number, spotlight, legal shifts, least-used places, current goal, available reveals, open plants | C | Spotlight rotation and shift legality are code. Available reveals are those that have not landed. |
-| Offstage move (only when due) | C, O (M, grammar) | C decides a move is due when the spotlight pressure has an agent who is not in the cast. O reads that agent's card, the pressure and this chapter's Events, and writes `offstage_did` and `offstage_reach`. The agent's new `next_move` is updated after the chapter, by X2. |
+| Offstage change (only when due) | C, O (M, free text) | C decides occasionally that a change is due. It is about background groups or places, never the spotlight, which always involves someone in the cast. O reads the groups, places and this chapter's Events, and writes `offstage_did` and `offstage_reach`. |
 | Think | M (free text) | Reads open pressures and their next moves, ties, latest shifts, open plants, available reveals, use counts, summaries, and any offstage move. Proposes 2 or 3 directions, picks one with a reason, says how the chapter should be written, and decides whether to plant something or pay off an open plant. |
 | Fill the beat | M (grammar) | Includes the optional `plant` and `payoff`. The thinking text is in context. Code discards it afterward. |
 | Block rules, then model-judged beat warnings | C, M | turn is a change, choice is costly, ends on an open question. |
@@ -66,7 +66,7 @@ The fill needs an example chapter or a note for that card. There is no revise-ca
 | Token count check against the context size | C |  | clear error if too long |
 | Write the chapter | M (free text) | context plus the beat | chapter text |
 | Events pass | M (grammar) | chapter text plus the beat's planned reveal, plant, payoff and goal change | happened, changed, planted, paid off, reveals landed, behaviors seen, things seen, goal landed; each planned item marked landed or not |
-| Shifts and Entanglements pass | M (grammar) | chapter, Characters, Entanglements | per-character shifts (believes, fears, wants, refuses, decided); proposed changes to live fields, including knowledge status and the next move of an agent who acted offstage |
+| Shifts and Entanglements pass | M (grammar) | chapter, Characters, Entanglements | per-character shifts (believes, fears, wants, refuses, decided); proposed changes to live fields, including knowledge status |
 | Map names to ids; check block rules (for example no more than two open plants) | C |  |  |
 | Apply X2's proposed changes to live fields; warn if a reveal landed but nobody's knowledge changed; list any locked values the changes would overwrite and ask H to confirm; compute diffs; tally counts | C, H |  | new Entanglements |
 | Commit chapter, records, history and new Entanglements as one unit | C |  | project file |
@@ -102,7 +102,7 @@ H exports the story as markdown (required), the cards as a zip, and the project 
 - `Shifts.hides` is dropped.
 - A small project-file field for the hash a beat was planned from.
 - The resume-point rule is no longer needed because commits are atomic.
-- Knowledge changes and the offstage agent's next move are proposed by X2, so they need no new fields.
+- Knowledge changes are proposed by X2, so they need no new fields.
 - The full list for the schema pass is at the end of the data-flow doc.
 
 ## Open or parked

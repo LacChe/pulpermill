@@ -13,9 +13,9 @@
 3. **Code-derived.** Counts, last appeared, spotlight, legal shifts, chapter n of N, open plants, available reveals, current goal, and rotation picks (behaviors, things in the scene, least-used places) fed to the model as prose.
 4. **Human only.** Labels, help text, locks, notes, the stale flag.
 
-**Scope rule.** W, X1 and X2 see only the chosen cast and what is in play for the beat (their ties, holdings, knowledge, the beat's place, objects in the scene). Unchosen characters are invisible. P gets the same, plus the open-pressure lines. The one exception is O, which also reads the card of the agent it moves.
+**Scope rule.** W, X1 and X2 see only the chosen cast and what is in play for the beat (their ties, holdings, knowledge, the beat's place, objects in the scene). Unchosen characters are invisible. P gets the same, plus the open-pressure lines. The one exception is O, which also reads the background groups and places it changes.
 
-**Offstage pass (O).** Runs inside Plan, only when code says a move is due (the spotlight pressure has an agent who is not in the cast). It reads the agent's card, the pressure, the groups and ties involved, and this chapter's Events. It writes `offstage_did` and `offstage_reach`. It does not rewrite `next_move`: X2 updates the agent's `next_move` after the chapter, from what actually happened. P then plans around the offstage move.
+**Offstage pass (O).** Runs inside Plan, only occasionally, when code says a change is due. The spotlight pressure always involves someone in the cast, so offstage changes are not about it: they are background groups acting or places changing. It reads the groups, places and ties involved, and this chapter's Events. It writes `offstage_did` and `offstage_reach` as free text. P then plans around the offstage change.
 
 ## Style
 
@@ -62,7 +62,7 @@
 | ties (bond, edge) | W, P, X2 | `bond` is the relationship. `edge` is a concrete aim between two people (wants to pass the teacher's test). X2 proposes changes to both. |
 | holdings | W, P, X2 | X2 proposes changes to `held_by`. |
 | knowledge | W (per person), P, X2, C | Measured against canon, which cannot be wrong: knows, suspects or misled. X2 proposes the status changes and C applies them. If a reveal landed but nobody's status changed, C warns. |
-| pressures | W, P, X2, O | X2 proposes changes to `what`, `next_move` and `bears_on`, including the next move of an agent who acted offstage. O reads `next_move` but does not rewrite it. |
+| pressures | W, P, X2 | X2 proposes changes to `what`, `next_move` and `bears_on`. |
 
 **One-sided links.** A tie is shown when the on-stage person is `tie_from`, labeled offstage and not present: a name only, never a description. It is skipped when the offstage person is `tie_from`, because that edge may be something the on-stage person does not know. Holdings and knowledge follow the same rule. The writer is told offstage people may be mentioned or thought of but do not appear.
 
@@ -92,9 +92,9 @@
 | reveal\_rule, reveal\_learners | W, X1, X2, C | X1 confirms it landed. Only landed reveals leave the available list. X2 proposes who actually learned it. |
 | plant (new, optional) | W, X1, C | What this chapter plants. X1 confirms it landed (Events `planted`). It is open once landed. |
 | payoff (new, optional) | W, X1, C | Picked from the open plants. X1 confirms it landed (Events `paid_off`). A payoff that did not land stays open. |
-| offstage\_did, offstage\_reach | W | Written by the offstage pass (O), only when a move is due. It does not write `next_move`. |
+| offstage\_did, offstage\_reach | W | Written by the offstage pass (O), only when a change is due. Free text about background groups and places, never about the spotlight. |
 | goal\_change, goal\_now | W, P, X1, C | X1 confirms it landed (Events `goal_landed`). A change that did not land stays pending and is tried again. `goal_now` gets the same warnings as Setup's goal. |
-| spotlight | W, P | C picks it. |
+| spotlight | W, P | C picks it, always a pressure that involves someone in the cast. |
 
 ## Records and project data
 
@@ -123,7 +123,7 @@
 1. **Plants (settled).** The planner plans them with new optional `Beat.plant` and `Beat.payoff` (picked from the open plants). X1 confirms each landed against the beat. C computes the status: planned, open (landed, not yet paid off) or resolved.
 2. **Reveals (settled).** X1 confirms the planned reveal landed. Only landed reveals leave the available list. X2 proposes who actually learned it and C applies that, warning if nobody's knowledge changed. `reveal_not_repeated` counts landed reveals plus the beat being planned.
 3. **Current goal (settled).** C derives it: Setup's goal, replaced by each landed `redefined` beat. A landed `achieved` or `abandoned` ends the goal and the remaining chapters wind down, with no next goal. A new Events field, `goal_landed`, records whether the beat's change happened. A change that did not land stays pending and is tried again; forcing it to land is deferred. `goal_now` gets Setup's goal warnings.
-4. **Pressure agents outside the cast (settled).** The offstage pass sees the agent, so P never needs the agent's card. X2 updates the agent's `next_move` after the chapter.
+4. **Offstage changes (settled).** The spotlight always involves someone in the cast, so agents outside the cast are never moved offstage. The offstage pass only changes background groups and places, and P never needs their cards.
 5. **One-sided links (settled).** See the rule under Entanglements.
 6. **Setup's normal and disruption (intended).** Used only for chapter 1.
 7. **Entanglements and Shifts overlap (settled).** `edge` is a concrete aim between two people. Shifts `wants` are abstract, and nothing concrete or relational sits on a character. Knowledge is measured against canon, which cannot be wrong. `believes` is a personal conviction that can be proven wrong; a belief about a canon fact goes in Knowledge instead. `hides` is dropped from Shifts.
@@ -131,7 +131,7 @@
 
 ## Decided and still open
 
-**Folded in above:** the offstage pass, precedence, the plant, payoff and goal fields, landed checks for reveals, plants and goals, the one-sided link rule, `hides` dropped, the writer seeing all canon, X2 proposing knowledge changes and the offstage agent's next move, confirmation before overwriting locked values, English-only model text, and one sentence per event in Events.
+**Folded in above:** the offstage pass, precedence, the plant, payoff and goal fields, landed checks for reveals, plants and goals, the one-sided link rule, `hides` dropped, the writer seeing all canon, X2 proposing knowledge changes, confirmation before overwriting locked values, English-only model text, and one sentence per event in Events.
 
 **Still open:**
 

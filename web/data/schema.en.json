@@ -2839,23 +2839,23 @@
       {
        "key": "offstage_did",
        "label": "Offstage move",
-       "help": "Only when the spotlighted pressure has an agent who is not in the cast: what they did since the last chapter. The offstage pass writes it.",
+       "help": "Optional. Something that changed in the background since the last chapter, away from the cast: a group acting, a place changing. It is never about the spotlighted pressure, which always involves someone on stage. The offstage pass writes it.",
        "input": "text",
        "kind": "note",
        "required": false,
        "filled_by": "planner",
-       "placeholder": "e.g. The auditor visited the shop while Ines was out",
-       "why": "Pressure keeps moving while the protagonist isn't looking, and this records what moved."
+       "placeholder": "e.g. The guild closed the east market gate",
+       "why": "The world keeps changing while the protagonist isn't looking, and this records what changed."
       },
       {
        "key": "offstage_reach",
        "label": "How it reaches the protagonist",
-       "help": "How the offstage move's effects reach the protagonist this chapter.",
+       "help": "How the offstage change reaches the protagonist this chapter.",
        "input": "text",
        "kind": "note",
        "required": false,
        "filled_by": "planner",
-       "placeholder": "e.g. A note from the auditor is waiting under the door"
+       "placeholder": "e.g. Ines finds the long way round to the print shop"
       },
       {
        "key": "goal_change",
@@ -2900,7 +2900,7 @@
       {
        "key": "spotlight",
        "label": "Spotlight",
-       "help": "The pressure this chapter puts in focus. The system picks it so planning stays consistent, and you can change it.",
+       "help": "The pressure this chapter puts in focus. It always involves someone in the cast: its agent, or a character or group it bears on. The system picks it so planning stays consistent, and you can change it.",
        "input": "select",
        "kind": "note",
        "required": true,
@@ -3041,7 +3041,7 @@
      },
      "context": [],
      "needs_model": false,
-     "message": "An offstage move needs both what happened and how it reaches the protagonist.",
+     "message": "An offstage change needs both what changed and how it reaches the protagonist.",
      "fix": "Fill in both, or clear both."
     },
     {
@@ -3123,22 +3123,22 @@
      "fix": "Narrow one of the protagonist's wants into it, or tie it to a pressure or tie. A goal that touches nothing has nothing to collide with."
     },
     {
-     "id": "offstage_needs_agent",
+     "id": "spotlight_in_cast",
      "severity": "warn",
      "fields": [
       "beats"
      ],
-     "check": "spotlight_has_agent",
+     "check": "pressure_touches_cast",
      "params": {
       "field": "spotlight",
-      "needs": "source_agent"
+      "cast": "cast"
      },
      "context": [
       "pressures"
      ],
      "needs_model": false,
-     "message": "An offstage move needs a pressure with an agent behind it.",
-     "fix": "Change the spotlight to a pressure with an agent, or clear the offstage move."
+     "message": "The spotlighted pressure doesn't involve anyone in the cast.",
+     "fix": "Pick a pressure that bears on someone on stage, or change the cast."
     },
     {
      "id": "turn_not_repeated",

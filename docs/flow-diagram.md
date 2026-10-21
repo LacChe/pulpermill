@@ -36,8 +36,8 @@ flowchart TD
   subgraph S2["2 · Plan (button; chapter 1 and every later chapter)"]
     P1["H · pick the cast<br/>(C suggests the least-used)"]:::human
     P2["C · spotlight, legal shifts, current goal,<br/>open plants, available reveals, counts"]:::code
-    P3{"C · offstage move due?"}:::code
-    P4["M · offstage pass:<br/>reads the agent's card,<br/>writes did and reach"]:::model
+    P3{"C · offstage change due?"}:::code
+    P4["M · offstage pass:<br/>background groups and places,<br/>writes did and reach"]:::model
     P5["M · think (free text):<br/>2 or 3 directions, pick one"]:::model
     P6["M · fill the beat<br/>(grammar JSON, incl. plant and payoff)"]:::model
     P7["C · block rules<br/>M · beat warnings"]:::code

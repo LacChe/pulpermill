@@ -85,7 +85,7 @@ RULES = [
          when="a payoff points at an entry that planted nothing, is not earlier, or was already paid off",
          check="paid_off_valid", params={"field": "payoff"}),
     Rule(id="offstage_both_or_neither", severity="block", fields=["beats"],
-         when="an offstage move gives what the agent did but not how it reaches the protagonist, or the reverse",
+         when="an offstage move gives what changed but not how it reaches the protagonist, or the reverse",
          check="all_or_none", params={"fields": ["offstage_did", "offstage_reach"]}),
     Rule(id="goal_now_for_redefined", severity="block", fields=["beats"],
          when="the goal is redefined but the new goal is not stated",
@@ -102,9 +102,9 @@ RULES = [
     Rule(id="goal_now_touches_cards", severity="warn", fields=["beats"],           # drives story
          when="the new goal does not narrow one of the protagonist's wants, or bears on no pressure or tie in Entanglements",
          needs_model=True, context=["protagonist_wants", "pressures", "ties"]),
-    Rule(id="offstage_needs_agent", severity="warn", fields=["beats"],
-         when="an offstage move is given but the spotlighted pressure has no agent",
-         check="spotlight_has_agent", params={"field": "spotlight", "needs": "source_agent"}, context=["pressures"]),
+    Rule(id="spotlight_in_cast", severity="warn", fields=["beats"],
+         when="the spotlighted pressure involves nobody in the cast: its agent is not in the cast and nothing in its bears_on is",
+         check="pressure_touches_cast", params={"field": "spotlight", "cast": "cast"}, context=["pressures"]),
     Rule(id="turn_not_repeated", severity="warn", fields=["beats"],                # drives story
          when="the turn is too similar to an earlier turn or to the changed lines",
          check="similar_to_earlier", context=["earlier_turns", "changed_lines"]),

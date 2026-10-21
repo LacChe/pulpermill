@@ -41,8 +41,8 @@ fields:
       plant: {label: "Plant", help: "One thing this chapter should set up for later. Optional. It counts as open only once the chapter has actually planted it.", placeholder: "e.g. The landlord keeps a locked back room", why: "Something small set up now can pay off in a later chapter.", examples: {"good": ["The landlord keeps a locked back room"], "avoid": ["Something important", "A clue"]}}
       payoff: {label: "Pay off", help: "Open plants this chapter should resolve, up to two. Optional. A plant that was planned but not written is not open.", placeholder: "Choose a plant to pay off", why: "Resolving an earlier plant makes the chapters before it feel like they mattered.", no_options: "No open plants yet. A plant is open once a written chapter has set it up and nothing has paid it off."}
       reveal_learners: {label: "Who learns it", help: "Which characters learn the revealed rule.", placeholder: "Choose who learns it", why: "Sets who the model expects to be in the know after this chapter.", no_options: "No characters yet. Add some in Characters first.", visible_if: {"reveal_rule": "filled"}}
-      offstage_did: {label: "Offstage move", help: "Only when the spotlighted pressure has an agent who is not in the cast: what they did since the last chapter. The offstage pass writes it.", placeholder: "e.g. The auditor visited the shop while Ines was out", why: "Pressure keeps moving while the protagonist isn't looking, and this records what moved."}
-      offstage_reach: {label: "How it reaches the protagonist", help: "How the offstage move's effects reach the protagonist this chapter.", placeholder: "e.g. A note from the auditor is waiting under the door"}
+      offstage_did: {label: "Offstage move", help: "Optional. Something that changed in the background since the last chapter, away from the cast: a group acting, a place changing. It is never about the spotlighted pressure, which always involves someone on stage. The offstage pass writes it.", placeholder: "e.g. The guild closed the east market gate", why: "The world keeps changing while the protagonist isn't looking, and this records what changed."}
+      offstage_reach: {label: "How it reaches the protagonist", help: "How the offstage change reaches the protagonist this chapter.", placeholder: "e.g. Ines finds the long way round to the print shop"}
       goal_change:
         label: "Goal change"
         help: "Only when the goal moves. Achieved and abandoned both end the goal, and the remaining chapters wind down with no new goal. A change that did not land in the text stays pending and is tried again."
@@ -52,7 +52,7 @@ fields:
           redefined: {label: "Redefined", expand: "the protagonist's goal has changed to:", description: "Ines stops wanting the ledger and starts wanting whoever forged it."}
           abandoned: {label: "Abandoned", expand: "the protagonist has abandoned the goal", description: "Ines lets the audit take the shop and walks away."}
       goal_now: {label: "The goal now", help: "What the goal has become. Only for a redefined goal. It follows the same advice as Setup's goal: something to act on, with a clear outcome, that narrows a want.", placeholder: "e.g. Prove the ledger was forged before the guild meets", visible_if: {"goal_change": "redefined"}}
-      spotlight: {label: "Spotlight", help: "The pressure this chapter puts in focus. The system picks it so planning stays consistent, and you can change it.", placeholder: "Choose a pressure", why: "Rotates attention across the pressures, so one thread doesn't take over every chapter.", no_options: "No pressures yet. Add some in Entanglements first."}
+      spotlight: {label: "Spotlight", help: "The pressure this chapter puts in focus. It always involves someone in the cast: its agent, or a character or group it bears on. The system picks it so planning stays consistent, and you can change it.", placeholder: "Choose a pressure", why: "Rotates attention across the pressures, so one thread doesn't take over every chapter.", no_options: "No pressures yet. Add some in Entanglements first."}
       planned_from: {label: "Planned from", help: "A fingerprint of the live state this beat was planned from. Set by the system. If the live state changes afterward, the beat is flagged as planned from older state.", placeholder: "Set when the beat is planned"}
 rules:
   outline_link_broken:
@@ -74,7 +74,7 @@ rules:
     message: "A payoff points at something that wasn't planted, isn't earlier, or was already paid off."
     fix: "Pick only plants that were set up in an earlier chapter and are still open."
   offstage_both_or_neither:
-    message: "An offstage move needs both what happened and how it reaches the protagonist."
+    message: "An offstage change needs both what changed and how it reaches the protagonist."
     fix: "Fill in both, or clear both."
   goal_now_for_redefined:
     message: "A redefined goal needs the new goal."
@@ -94,9 +94,9 @@ rules:
     message: "The new goal doesn't connect to anything on the other cards."
     fix: "Narrow one of the protagonist's wants into it, or tie it to a pressure or tie. A goal that touches nothing has nothing to collide with."
     judge_prompt: "Does this goal narrow one of the protagonist's wants, and bear on at least one pressure or tie? Answer yes or no for each. If no, suggest the closest connection."
-  offstage_needs_agent:
-    message: "An offstage move needs a pressure with an agent behind it."
-    fix: "Change the spotlight to a pressure with an agent, or clear the offstage move."
+  spotlight_in_cast:
+    message: "The spotlighted pressure doesn't involve anyone in the cast."
+    fix: "Pick a pressure that bears on someone on stage, or change the cast."
   turn_not_repeated:
     message: "This turn is too close to an earlier one."
     fix: "Make something different happen."
