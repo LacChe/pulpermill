@@ -8,7 +8,7 @@ import {
   inOneOf, showsOptionalTag,
 } from "../logic.js";
 import { isSupported } from "../render.js";
-import { validate, ruleKind, modelRules, problemsFor, CHECKS, PENDING_CHECKS } from "../logic.js";
+import { validate, ruleKind, modelRules, problemsFor, CHECKS, PENDING_CHECKS, legalShifts, similarity, SIMILARITY_LIMIT } from "../logic.js";
 
 const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
 const style = schema.cards.style;
@@ -417,7 +417,7 @@ test("an empty required field is reported as missing, at the field", () => {
   assert.equal(problems[0].rule, "missing");
   assert.match(problems.find((p) => p.field === "goal").message, /^Goal is empty\./);
   const filled = { ...blankCard(setup), protagonist: "c1", normal: "a", disruption: "b", goal: "c", stakes: "d", chapter_count: 12 };
-  assert.deepEqual(validate(setup, filled, {}, schema.common).problems, []);
+  assert.deepEqual(validate(setup, filled, { characters: [{ id: "c1", name: "Ines" }] }, schema.common).problems, []);
 });
 
 test("problems inside a list item name the list, the item and the field", () => {
@@ -442,8 +442,132 @@ test("a value that is not one of the options, and too many chosen, are reported"
   assert.equal(problemsFor(problems, "beats", beat.id, "cast").find((p) => p.rule === "too_many").message, "Cast can hold at most 5 items.");
 });
 
-test("code rules this page cannot run yet are reported as unchecked, never skipped silently", () => {
-  const { unchecked } = validate(outline, { beats: [] }, {}, schema.common);
-  assert.ok(unchecked.includes("shift_legal"));
-  assert.ok(!unchecked.includes("goal_now_is_action"));   // a model rule, not a code rule
+test("every code rule on every card can be run by the page", () => {
+  assert.deepEqual(PENDING_CHECKS, []);
+  for (const card of Object.values(schema.cards)) {
+    const values = card.many_per_project ? blankCard(card) : ensureCard({}, card);
+    assert.deepEqual(validate(card, values, {}, schema.common).unchecked, [], card.id);
+  }
+});
+
+// ---- The checks, one at a time. `run` runs one rule of a card and returns where it was broken. ----
+const run = (cardId, ruleId, values, project = {}) => {
+  const card = schema.cards[cardId];
+  const rule = card.rules.find((r) => r.id === ruleId);
+  const { problems } = validate(card, values, project, schema.common);
+  return problems.filter((p) => p.rule === ruleId).map((p) => [p.field, p.item, p.key]);
+};
+const beat = (extra) => ({ ...blankItem(beatsField), id: "b1", chapter: 1, ...extra });
+
+test("either-or and all-or-none", () => {
+  const pressures = (item) => ({ pressures: [{ id: "p1", what: "x", ...item }] });
+  assert.deepEqual(run("entanglements", "pressure_one_source", pressures({ source_agent: "c1" })), []);
+  assert.deepEqual(run("entanglements", "pressure_one_source", pressures({})), [["pressures", "p1", "source_agent"]]);
+  assert.deepEqual(run("entanglements", "pressure_one_source", pressures({ source_agent: "c1", source_circumstance: "a storm" })), [["pressures", "p1", "source_agent"]]);
+  assert.deepEqual(run("outline", "offstage_both_or_neither", { beats: [beat({ offstage_did: "x" })] }), [["beats", "b1", "offstage_reach"]]);
+  assert.deepEqual(run("outline", "offstage_both_or_neither", { beats: [beat({})] }), []);
+  assert.deepEqual(run("outline", "offstage_both_or_neither", { beats: [beat({ offstage_did: "x", offstage_reach: "y" })] }), []);
+});
+
+test("a tie may not go from a person to themselves", () => {
+  assert.deepEqual(run("entanglements", "tie_not_self", { ties: [{ id: "t1", tie_from: "c1", tie_to: "c1" }] }), [["ties", "t1", "tie_to"]]);
+  assert.deepEqual(run("entanglements", "tie_not_self", { ties: [{ id: "t1", tie_from: "c1", tie_to: "c2" }, { id: "t2", tie_from: "", tie_to: "" }] }), []);
+});
+
+test("required_if: when, when_present and unless", () => {
+  assert.deepEqual(run("world", "rule_false_needs_truth", { rules: [{ id: "r1", status: "false_belief", truth: "" }, { id: "r2", status: "common", truth: "" }] }), [["rules", "r1", "truth"]]);
+  assert.deepEqual(run("entanglements", "next_move_for_agents", { pressures: [{ id: "p1", source_agent: "c1", next_move: "" }, { id: "p2", source_circumstance: "storm", next_move: "" }] }), [["pressures", "p1", "next_move"]]);
+  assert.deepEqual(run("outline", "when_gap_after_first", { beats: [beat({ id: "b1", chapter: 1 }), beat({ id: "b2", chapter: 2 })] }), [["beats", "b2", "when_gap"]]);
+  assert.deepEqual(run("outline", "goal_now_for_redefined", { beats: [beat({ goal_change: "redefined" })] }), [["beats", "b1", "goal_now"]]);
+  assert.deepEqual(run("outline", "goal_now_for_redefined", { beats: [beat({ goal_change: "achieved" })] }), []);
+});
+
+test("links that no longer exist are reported, in a card and in its lists", () => {
+  const project = { characters: [{ id: "c1", name: "Ines" }], world: { powers: [] } };
+  assert.deepEqual(run("setup", "protagonist_link_broken", { protagonist: "gone" }, project), [["protagonist", null, null]]);
+  assert.deepEqual(run("setup", "protagonist_link_broken", { protagonist: "c1" }, project), []);
+  assert.deepEqual(run("setup", "protagonist_link_broken", { protagonist: "" }, project), []);
+  assert.deepEqual(run("entanglements", "link_broken", { ties: [{ id: "t1", tie_from: "c1", tie_to: "gone" }] }, project), [["ties", "t1", "tie_to"]]);
+  assert.deepEqual(run("outline", "outline_link_broken", { beats: [beat({ cast: ["c1", "gone"] })] }, project), [["beats", "b1", "cast"]]);
+});
+
+test("a holder must be allowed for the kind of thing", () => {
+  const project = { characters: [{ id: "c1", name: "Ines" }], world: { objects: [{ id: "o1", name: "Ledger" }], places: [{ id: "pl1", name: "Shop" }], powers: [] } };
+  const hold = (holdee, held_by) => run("entanglements", "holding_pair_allowed", { holdings: [{ id: "h1", holdee, held_by }] }, project);
+  assert.deepEqual(hold("o1", "c1"), []);
+  assert.deepEqual(hold("pl1", "pl1"), [["holdings", "h1", "held_by"]]);
+  assert.deepEqual(hold("o1", ""), []);
+});
+
+test("item counts ignore empty items", () => {
+  assert.deepEqual(run("characters", "wants_count", { wants: [] }), [["wants", null, null]]);
+  assert.deepEqual(run("characters", "wants_count", { wants: [{ id: "a", text: "one" }, { id: "b", text: "" }] }).length, 1);
+  assert.deepEqual(run("characters", "wants_count", { wants: [{ id: "a", text: "one" }, { id: "b", text: "two" }] }).length, 0);
+  const four = ["a", "b", "c", "d"].map((id) => ({ id, what: id }));
+  assert.deepEqual(run("entanglements", "pressures_active_count", { pressures: four }), [["pressures", null, null]]);
+});
+
+test("the cast must include the protagonist, and the spotlight must touch the cast", () => {
+  const project = { setup: { protagonist: "c1" }, entanglements: { pressures: [{ id: "x1", what: "audit", source_agent: "g1", bears_on: ["c2"] }] } };
+  assert.deepEqual(run("outline", "cast_has_protagonist", { beats: [beat({ cast: ["c2"] })] }, project), [["beats", "b1", "cast"]]);
+  assert.deepEqual(run("outline", "cast_has_protagonist", { beats: [beat({ cast: ["c1"] })] }, project), []);
+  assert.deepEqual(run("outline", "cast_has_protagonist", { beats: [beat({ cast: ["c2"] })] }, {}), []);
+  assert.deepEqual(run("outline", "spotlight_in_cast", { beats: [beat({ cast: ["c1"], spotlight: "x1" })] }, project), [["beats", "b1", "spotlight"]]);
+  assert.deepEqual(run("outline", "spotlight_in_cast", { beats: [beat({ cast: ["c1", "c2"], spotlight: "x1" })] }, project), []);
+});
+
+test("pacing: at most 2 harder in a row, at most 1 easier in a row", () => {
+  const seq = (...shifts) => shifts.map((shift, i) => beat({ id: `b${i + 1}`, chapter: i + 1, shift }));
+  assert.deepEqual(legalShifts(seq("", ""), seq("", "")[1]), ["harder", "easier"]);
+  const beats = seq("harder", "harder", "");
+  assert.deepEqual(legalShifts(beats, beats[2]), ["easier"]);
+  const after = seq("harder", "easier", "");
+  assert.deepEqual(legalShifts(after, after[2]), ["harder"]);
+  const mixed = seq("harder", "easier", "harder", "harder", "");
+  assert.deepEqual(legalShifts(mixed, mixed[4]), ["easier"]);
+  assert.deepEqual(run("outline", "shift_legal", { beats: seq("harder", "harder", "harder") }), [["beats", "b3", "shift"]]);
+  assert.deepEqual(run("outline", "shift_legal", { beats: seq("easier", "easier") }), [["beats", "b2", "shift"]]);
+  assert.deepEqual(run("outline", "shift_legal", { beats: seq("harder", "easier", "harder", "harder", "easier") }), []);
+});
+
+test("names: a world may not name characters; a character may not name others or the world", () => {
+  const project = {
+    characters: [{ id: "c1", name: "Ines" }, { id: "c2", name: "Tomas" }],
+    world: { places: [{ id: "pl1", name: "The print shop" }], objects: [], powers: [{ id: "g1", name: "The Guild" }] },
+  };
+  const world = { era_and_technology: "", everyday_life: "Ines would never go there.", history: "", places: [{ id: "pl1", name: "The print shop", description: "Tomas sweeps it." }], objects: [], powers: [], rules: [], terms: [] };
+  const hits = run("world", "world_names_people", world, project);
+  assert.deepEqual(hits, [["everyday_life", null, null], ["places", "pl1", "description"]]);
+  const ines = { id: "c1", name: "Ines", sketch: "Friends with Tomas, works at the print shop.", appearance: "Ines is tall", fear: "", wants: [], behaviors: [] };
+  const found = validate(schema.cards.characters, ines, project, schema.common).problems.filter((p) => p.rule === "char_other_names");
+  assert.deepEqual(found.map((p) => p.field), ["sketch"]);   // her own name in "appearance" is fine
+  assert.match(found[0].message, /Tomas, The print shop|The print shop, Tomas/);
+  assert.deepEqual(run("world", "world_names_people", { ...world, everyday_life: "Inesa is a word, Ines.x" }, project).length, 2);
+});
+
+test("a reveal may not repeat, and a payoff must be an earlier, still-open plant", () => {
+  const project = { summary_events: { entries: [
+    { id: "e1", beat: "b1", planted: "A locked room", reveals_landed: ["r1"] },
+    { id: "e2", beat: "b2", planted: "A letter", paid_off: [] },
+    { id: "e3", beat: "b3", paid_off: ["e1"] },
+  ] } };
+  const beats = [beat({ id: "b1", chapter: 1 }), beat({ id: "b2", chapter: 2 }), beat({ id: "b3", chapter: 3 }), beat({ id: "b4", chapter: 4 })];
+  const withBeat = (id, extra) => ({ beats: beats.map((b) => (b.id === id ? { ...b, ...extra } : b)) });
+  assert.deepEqual(run("outline", "reveal_not_repeated", withBeat("b4", { reveal_rule: "r1" }), project), [["beats", "b4", "reveal_rule"]]);
+  assert.deepEqual(run("outline", "reveal_not_repeated", withBeat("b1", { reveal_rule: "r1" }), project), []);   // its own chapter
+  assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b4", { payoff: ["e2"] }), project), []);
+  assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b4", { payoff: ["e1"] }), project), [["beats", "b4", "payoff"]]);   // already paid off
+  assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b2", { payoff: ["e2"] }), project), [["beats", "b2", "payoff"]]);   // not earlier
+  assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b4", { payoff: ["e3"] }), project), [["beats", "b4", "payoff"]]);   // planted nothing
+});
+
+test("a turn too close to an earlier turn or changed line is flagged", () => {
+  assert.equal(similarity("Ines learns the customer's name", "Ines learns the customers name!") >= SIMILARITY_LIMIT, true);
+  assert.equal(similarity("Ines learns the customer's name", "The guild burns the east market") < SIMILARITY_LIMIT, true);
+  assert.equal(similarity("", "anything at all here"), 0);
+  const project = { summary_events: { entries: [{ id: "e1", beat: "b1", changed: "The landlord now knows Ines is asking questions" }] } };
+  const beats = [beat({ id: "b2", chapter: 2, turn: "The landlord knows that Ines is asking questions" })];
+  assert.deepEqual(run("outline", "turn_not_repeated", { beats }, project), [["beats", "b2", "turn"]]);
+  const two = [beat({ id: "b1", chapter: 1, turn: "A stranger arrives with a sealed letter" }), beat({ id: "b2", chapter: 2, turn: "A stranger arrives with the sealed letter" })];
+  assert.deepEqual(run("outline", "turn_not_repeated", { beats: two }), [["beats", "b2", "turn"]]);
 });

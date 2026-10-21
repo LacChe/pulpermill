@@ -2,7 +2,7 @@
 // except the few page labels in STRINGS below, which move into the text files when languages are added.
 import {
   addItem, blockedValues, canAdd, chooseOneOf, fieldShown, groupedFields, isFilled, isItemEmpty, itemTitle,
-  lookupLabel, oneOfChoice, pickerSources, refOptions, removeItem, showsOptionalTag,
+  legalShifts, lookupLabel, oneOfChoice, pickerSources, refOptions, removeItem, showsOptionalTag,
 } from "./logic.js";
 
 export const STRINGS = {
@@ -254,6 +254,24 @@ function fieldBlock(field, values, path, ctx, scope) {
     let sync = () => {};
     const cards = radioCards(path, field.label, field.options || [], values[field.key], (next) => { onInput(next); sync(); });
     block.append(cards);
+    if (field.limited_by === "code" && field.key === "shift" && ctx.list) {
+      // Pacing: the choices the earlier chapters leave open. A choice already made stays selectable so it can be seen and fixed.
+      const reason = el("p", { class: "note" });
+      const update = () => {
+        const legal = legalShifts(ctx.list, values);
+        let any = false;
+        for (const input of cards.querySelectorAll("input")) {
+          input.disabled = !legal.includes(input.value) && values[field.key] !== input.value;
+          any = any || !legal.includes(input.value);
+        }
+        reason.textContent = any ? field.disabled_reason : "";
+        reason.hidden = !any;
+      };
+      // One chapter's shift limits the next ones, so every beat's choices follow a change in any beat.
+      scope.live.push(update);
+      ctx.siblings?.add(update);
+      block.append(reason);
+    }
     if (field.required === false) {
       const clear = el("button", { type: "button", class: "clear", text: STRINGS.clear });
       sync = () => { clear.hidden = !isFilled(values[field.key]); };
@@ -336,7 +354,7 @@ function itemRow(field, item, list, ctx, redraw) {
   const body = el("div", { class: "item-body" });
   row.append(body);
   fieldsInto(body, field.item_fields, item, `${field.key}.${item.id}.`, {
-    ...ctx, changed: () => { setTitle(); ctx.changed(); },
+    ...ctx, list, changed: () => { setTitle(); for (const fn of ctx.siblings ?? []) fn(); ctx.changed(); },
   }, field);
   return row;
 }
@@ -349,8 +367,12 @@ function listControl(field, values, path, ctx) {
   const add = el("button", { type: "button", class: "add", text: field.add });
   const limit = el("p", { class: "limit" });
 
+  const siblings = new Set();
+  const rowCtx = { ...ctx, siblings };
   function redraw() {
-    rows.replaceChildren(...list.map((item) => itemRow(field, item, list, ctx, redraw)));
+    siblings.clear();
+    rows.replaceChildren(...list.map((item) => itemRow(field, item, list, rowCtx, redraw)));
+    for (const fn of siblings) fn();
     empty.hidden = list.length > 0;
     const full = !canAdd(field, list);
     add.disabled = full;

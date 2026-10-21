@@ -316,16 +316,12 @@ export function modelRules(card) {
 }
 
 // check name -> function({rule, card, values, project}) returning the places that break the rule:
-//   [{field, item?, key?, tokens?}]. Filled in one check at a time.
+//   [{field, item?, key?, tokens?}].
 export const CHECKS = {};
 
-// Code rules whose check is named in the schema but not written yet. A test keeps this list honest:
-// every named check has a function here or is listed in PENDING_CHECKS, so none can be forgotten.
-export const PENDING_CHECKS = [
-  "all_or_none", "exactly_one", "fields_differ", "holding_pairs_allowed", "includes_value", "item_count",
-  "legal_shift", "mentions_known_names", "not_already_landed", "paid_off_valid", "pressure_touches_cast",
-  "ref_exists", "required_if", "similar_to_earlier",
-];
+// Checks named in the schema that this page does not run yet. Empty means every code rule is written. A test keeps
+// this honest: every named check has a function in CHECKS or is listed here, so a new rule cannot be forgotten.
+export const PENDING_CHECKS = [];
 
 function fillTokens(text, tokens) {
   return (text ?? "").replace(/\{(\w+)\}/g, (whole, key) => (key in tokens ? String(tokens[key]) : whole));
@@ -400,3 +396,254 @@ export function validate(card, values, project, common = {}) {
 export function problemsFor(problems, field, item = null, key = null) {
   return problems.filter((p) => p.field === field && p.item === item && p.key === key);
 }
+
+// ---- The code checks -------------------------------------------------------
+// Each takes {rule, card, values, project} and returns where the rule is broken: [{field, item?, key?, tokens?}].
+
+// Every item of the list fields a rule names, as {field, item (the object), fields (its field definitions)}.
+// A rule that names a plain field (not a list) gets the card's own values.
+function targets(card, rule, values) {
+  const out = [];
+  for (const key of rule.fields ?? []) {
+    const field = card.fields.find((f) => f.key === key);
+    if (!field) continue;
+    if (field.repeat) for (const item of values[key] ?? []) out.push({ field: key, item, defs: field.item_fields ?? [], list: values[key] });
+    else out.push({ field: key, item: null, defs: [field], list: null, own: values });
+  }
+  return out;
+}
+
+const place = (target, key) => (target.item ? { field: target.field, item: target.item.id, key } : { field: key, item: null, key: null });
+const valueOf = (target, key) => (target.item ?? target.own)[key];
+const asList = (value) => (Array.isArray(value) ? value : isFilled(value) ? [value] : []);
+
+// {key: value | [values] | "filled"} holds for these values (the same meaning as visible_if).
+function conditionHolds(cond, values) {
+  return isVisible({ visible_if: cond }, values);
+}
+
+// A link must still point at something that exists. Which fields hold links is read from each field's `ref`.
+CHECKS.ref_exists = ({ card, rule, values, project }) => {
+  const hits = [];
+  for (const target of targets(card, rule, values)) {
+    for (const def of target.defs) {
+      if (!def.ref) continue;
+      const have = new Set(refOptions(project, def.ref).map((o) => o.value));
+      if (asList(valueOf(target, def.key)).some((id) => !have.has(id))) hits.push(place(target, def.key));
+    }
+  }
+  return hits;
+};
+
+// Exactly one of two fields is filled. Reported on the first.
+CHECKS.exactly_one = ({ card, rule, values }) => {
+  const [a, b] = rule.params.fields;
+  const hits = [];
+  for (const target of targets(card, rule, values)) {
+    const count = [a, b].filter((key) => isFilled(valueOf(target, key))).length;
+    if (count !== 1) hits.push(place(target, a));
+  }
+  return hits;
+};
+
+// Both fields filled or both empty.
+CHECKS.all_or_none = ({ card, rule, values }) => {
+  const [a, b] = rule.params.fields;
+  const hits = [];
+  for (const target of targets(card, rule, values)) {
+    const filledA = isFilled(valueOf(target, a));
+    const filledB = isFilled(valueOf(target, b));
+    if (filledA !== filledB) hits.push(place(target, filledA ? b : a));
+  }
+  return hits;
+};
+
+CHECKS.fields_differ = ({ card, rule, values }) => {
+  const [a, b] = rule.params.fields;
+  const hits = [];
+  for (const target of targets(card, rule, values)) {
+    const x = valueOf(target, a);
+    if (isFilled(x) && x === valueOf(target, b)) hits.push(place(target, b));
+  }
+  return hits;
+};
+
+// A holder must be a kind the held thing allows (the card's holding_pairs table).
+CHECKS.holding_pairs_allowed = ({ card, rule, values, project }) => {
+  const hits = [];
+  for (const target of targets(card, rule, values)) {
+    const thing = target.defs.find((d) => d.ref_filter_by == null && d.ref && d.key === "holdee");
+    const holder = target.defs.find((d) => d.ref_filter_by);
+    if (!thing || !holder) continue;
+    const kind = sourceOfId(project, thing.ref, target.item[thing.key]);
+    const holderKind = sourceOfId(project, holder.ref, target.item[holder.key]);
+    if (kind && holderKind && !(card.holding_pairs?.[kind] ?? []).includes(holderKind)) hits.push(place(target, holder.key));
+  }
+  return hits;
+};
+
+// A list is too short or too long. Items with nothing typed do not count.
+CHECKS.item_count = ({ card, rule, values }) => {
+  const { min, max } = rule.params;
+  const hits = [];
+  for (const key of rule.fields ?? []) {
+    const count = (values[key] ?? []).filter((item) => !isItemEmpty(item)).length;
+    if ((min != null && count < min) || (max != null && count > max)) hits.push({ field: key });
+  }
+  return hits;
+};
+
+// params: {field, when: cond} | {field, when_present: key} | {field, unless: cond}. Items only.
+CHECKS.required_if = ({ card, rule, values }) => {
+  const { field, when, when_present: present, unless } = rule.params;
+  const hits = [];
+  for (const target of targets(card, rule, values)) {
+    if (!target.item) continue;
+    let needed = true;
+    if (when) needed = needed && conditionHolds(when, target.item);
+    if (present) needed = needed && isFilled(target.item[present]);
+    if (unless) needed = needed && !conditionHolds(unless, target.item);
+    if (needed && !isFilled(target.item[field])) hits.push(place(target, field));
+  }
+  return hits;
+};
+
+// The protagonist from Setup is on stage in every beat that has a cast. With no protagonist yet, nothing to check.
+CHECKS.includes_value = ({ card, rule, values, project }) => {
+  const [cardId, key] = rule.params.value_from.split(".");
+  const wanted = project[cardId]?.[key];
+  if (!isFilled(wanted)) return [];
+  return targets(card, rule, values)
+    .filter((t) => t.item && isFilled(t.item[rule.params.field]) && !asList(t.item[rule.params.field]).includes(wanted))
+    .map((t) => place(t, rule.params.field));
+};
+
+// Pacing, from the earlier beats only: at most two Harder in a row, and never two Easier in a row. A beat with no
+// shift chosen breaks a run, and so does a missing chapter number. legalShifts is also what the page uses to grey out choices.
+export const MAX_HARDER_IN_A_ROW = 2;
+export const MAX_EASIER_IN_A_ROW = 1;
+
+function shiftRun(beats, chapter, value) {
+  const byChapter = new Map(beats.map((b) => [Number(b.chapter), b.shift]));
+  let run = 0;
+  for (let n = Number(chapter) - 1; n >= 1 && byChapter.get(n) === value; n--) run++;
+  return run;
+}
+
+export function legalShifts(beats, beat) {
+  if (!isFilled(beat.chapter)) return ["harder", "easier"];
+  const others = beats.filter((b) => b !== beat);
+  return ["harder", "easier"].filter((value) =>
+    shiftRun(others, beat.chapter, value) < (value === "harder" ? MAX_HARDER_IN_A_ROW : MAX_EASIER_IN_A_ROW));
+}
+
+CHECKS.legal_shift = ({ card, rule, values }) =>
+  targets(card, rule, values)
+    .filter((t) => t.item && isFilled(t.item.shift) && !legalShifts(t.list, t.item).includes(t.item.shift))
+    .map((t) => place(t, "shift"));
+
+// Names of the characters and of the world's places, things and groups, to spot a card that names them when it should not.
+function knownNames(project, sources, skipId) {
+  return refOptions(project, sources, "")
+    .filter((o) => o.label && o.label.length > 1 && o.value !== skipId)
+    .map((o) => o.label);
+}
+
+function mentions(text, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (/[\u3040-\u30ff\u3400-\u9fff]/.test(name)) return text.toLowerCase().includes(name.toLowerCase());
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "iu").test(text);
+}
+
+// Which context names a rule looks for: character_names, world_names. A character's own name is not counted against it.
+CHECKS.mentions_known_names = ({ card, rule, values, project }) => {
+  const sources = [];
+  if (rule.context?.includes("character_names")) sources.push("characters");
+  if (rule.context?.includes("world_names")) sources.push("world.places", "world.objects", "world.powers");
+  const names = knownNames(project, sources, card.many_per_project ? values.id : null);
+  const hits = [];
+  for (const target of targets(card, rule, values)) {
+    for (const def of target.defs) {
+      if (def.input !== "text" && def.input !== "textarea") continue;
+      const text = valueOf(target, def.key);
+      if (typeof text !== "string" || !text.trim()) continue;
+      const found = names.filter((name) => mentions(text, name));
+      if (found.length) hits.push({ ...place(target, def.key), tokens: { names: [...new Set(found)].join(", ") } });
+    }
+  }
+  return hits;
+};
+
+// A reveal that already came to light in another chapter cannot be planned again. This beat's own chapter does not count,
+// because writing it again replaces that record.
+CHECKS.not_already_landed = ({ card, rule, values, project }) => {
+  const field = rule.params.field;
+  return targets(card, rule, values)
+    .filter((t) => t.item && isFilled(t.item[field]) &&
+      (project.summary_events?.entries ?? []).some((e) => e.beat !== t.item.id && (e.reveals_landed ?? []).includes(t.item[field])))
+    .map((t) => place(t, field));
+};
+
+// A payoff must point at an earlier chapter's plant that nothing else has paid off.
+CHECKS.paid_off_valid = ({ card, rule, values, project }) => {
+  const field = rule.params.field;
+  const entries = project.summary_events?.entries ?? [];
+  const hits = [];
+  for (const t of targets(card, rule, values)) {
+    if (!t.item) continue;
+    const bad = asList(t.item[field]).some((id) => {
+      const entry = entries.find((e) => e.id === id);
+      if (!entry || !isFilled(entry.planted)) return true;
+      if (entries.some((e) => e.beat !== t.item.id && (e.paid_off ?? []).includes(id))) return true;
+      const planted = (t.list ?? []).find((b) => b.id === entry.beat);
+      return Boolean(planted && isFilled(planted.chapter) && isFilled(t.item.chapter) && Number(planted.chapter) >= Number(t.item.chapter));
+    });
+    if (bad) hits.push(place(t, field));
+  }
+  return hits;
+};
+
+// The spotlighted pressure must involve someone on stage: its agent, or something it bears on.
+CHECKS.pressure_touches_cast = ({ card, rule, values, project }) => {
+  const { field, cast } = rule.params;
+  const pressures = project.entanglements?.pressures ?? [];
+  const hits = [];
+  for (const t of targets(card, rule, values)) {
+    const pressure = t.item && pressures.find((p) => p.id === t.item[field]);
+    const onStage = asList(t.item?.[cast]);
+    if (!pressure || !onStage.length) continue;
+    const involved = [pressure.source_agent, ...asList(pressure.bears_on)].filter(isFilled);
+    if (!involved.some((id) => onStage.includes(id))) hits.push(place(t, field));
+  }
+  return hits;
+};
+
+// Two lines are "too similar" when most of their meaningful words are shared. A rough measure, tuned by this one number.
+export const SIMILARITY_LIMIT = 0.6;
+const STOP = new Set("the a an and or but of to in on at for with by from as is are was were be been it its this that these those he she they his her their them then than so not no".split(" "));
+
+function words(text) {
+  return new Set((String(text).toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length > 2 && !STOP.has(w)));
+}
+
+export function similarity(a, b) {
+  const x = words(a);
+  const y = words(b);
+  if (x.size < 3 || y.size < 3) return 0;
+  let shared = 0;
+  for (const w of x) if (y.has(w)) shared++;
+  return shared / Math.min(x.size, y.size);
+}
+
+// The turn against the turns of earlier beats and against the "changed" lines of written chapters.
+CHECKS.similar_to_earlier = ({ card, rule, values, project }) => {
+  const changed = (project.summary_events?.entries ?? []).filter((e) => isFilled(e.changed)).map((e) => ({ beat: e.beat, text: e.changed }));
+  return targets(card, rule, values)
+    .filter((t) => t.item && isFilled(t.item.turn))
+    .filter((t) => {
+      const earlier = t.list.filter((b) => b !== t.item && isFilled(b.turn) && Number(b.chapter) < Number(t.item.chapter)).map((b) => b.turn);
+      const lines = changed.filter((c) => c.beat !== t.item.id).map((c) => c.text);
+      return [...earlier, ...lines].some((text) => similarity(t.item.turn, text) >= SIMILARITY_LIMIT);
+    })
+    .map((t) => place(t, "turn"));
+};
