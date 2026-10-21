@@ -94,3 +94,22 @@ textarea.text-control { resize: vertical; }
 .why summary { cursor: pointer; }
 .why p { margin: 4px 0 0; }
 .unsupported { color: var(--bad); font-size: 0.9rem; }
+
+.tabs { max-width: 820px; margin: 16px auto 0; padding: 0 24px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tabs button[aria-current] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.people { margin-top: 8px; }
+.people button.add, .people .remove-person { border-style: dashed; color: var(--muted); }
+.people .remove-person { margin-left: auto; }
+
+.list .items { display: grid; gap: 8px; }
+.item { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.item-compact { display: flex; gap: 8px; align-items: center; padding: 6px; border: 0; }
+.item-compact .text-control { flex: 1; }
+.item-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.item-title { font-weight: 600; }
+.item-body .field:first-child { border-top: 0; padding-top: 4px; }
+.remove { padding: 2px 10px; color: var(--muted); }
+.add { margin-top: 8px; }
+.add:disabled { opacity: 0.5; cursor: default; }
+.empty, .limit { margin: 4px 0; color: var(--muted); font-size: 0.9rem; }
+.empty[hidden], .limit[hidden] { display: none; }

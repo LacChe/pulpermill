@@ -2,12 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  isFilled, isVisible, blankCard, groupedFields, ensureCard, setField, cardValues, newProject,
+  isFilled, isVisible, blankCard, groupedFields, ensureCard, newProject, newId, blankItem, canAdd, addItem,
+  removeItem, isItemEmpty, fillTemplate, itemTitle, addInstance, removeInstance, findInstance, instanceName,
 } from "../logic.js";
-import { SUPPORTED_INPUTS } from "../render.js";
+import { isSupported } from "../render.js";
 
 const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
 const style = schema.cards.style;
+const characters = schema.cards.characters;
 
 test("isFilled treats empty strings, nulls and empty lists as empty", () => {
   for (const empty of [undefined, null, "", []]) assert.equal(isFilled(empty), false);
@@ -79,17 +81,103 @@ test("ensureCard fills missing keys and never overwrites a value", () => {
   assert.equal(project.style.tense, "");
 });
 
-test("setField writes one value and leaves the rest", () => {
-  const project = newProject(schema);
-  ensureCard(project, style);
-  setField(project, "style", "tense", "past");
-  assert.equal(cardValues(project, "style").tense, "past");
-  assert.equal(cardValues(project, "style").person, "");
+test("the renderer can draw every Style and Characters field, and every option has a description", () => {
+  for (const card of [style, characters]) {
+    for (const f of card.fields) {
+      assert.ok(isSupported(f), `${card.id}.${f.key}`);
+      for (const o of f.options || []) assert.ok(o.description, `${card.id}.${f.key}.${o.value}`);
+    }
+  }
 });
 
-test("the renderer can draw every Style field type, and every option has a description", () => {
-  for (const f of style.fields) {
-    assert.ok(SUPPORTED_INPUTS.has(f.input), `${f.key}: ${f.input}`);
-    for (const o of f.options || []) assert.ok(o.description, `${f.key}.${o.value}`);
-  }
+test("newId makes eight hex characters and never repeats a taken id", () => {
+  assert.match(newId(), /^[0-9a-f]{8}$/);
+  let calls = 0;
+  const random = () => (calls++ < 8 ? 0 : 0.5);   // first id "00000000", then "88888888"
+  assert.equal(newId(["00000000"], random), "88888888");
+});
+
+test("blankCard for Characters: lists start empty, number starts null", () => {
+  const blank = blankCard(characters);
+  assert.deepEqual(blank.wants, []);
+  assert.deepEqual(blank.behaviors, []);
+  assert.equal(blank.age, null);
+  assert.equal(blank.name, "");
+});
+
+test("blankItem has an id and an empty box for each item field", () => {
+  const behaviors = characters.fields.find((f) => f.key === "behaviors");
+  const item = blankItem(behaviors);
+  assert.match(item.id, /^[0-9a-f]{8}$/);
+  assert.equal(item.state, "");
+  assert.equal(item.tendency, "");
+});
+
+test("lists are capped by max_items unless uncapped", () => {
+  const wants = characters.fields.find((f) => f.key === "wants");
+  assert.equal(wants.max_items, 5);
+  const list = [];
+  for (let i = 0; i < 5; i++) assert.ok(addItem(wants, list));
+  assert.equal(canAdd(wants, list), false);
+  assert.equal(addItem(wants, list), null);
+  assert.equal(list.length, 5);
+  assert.equal(canAdd({ uncapped: true }, list), true);
+});
+
+test("removeItem removes by id and leaves the others in order", () => {
+  const list = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  removeItem(list, "b");
+  assert.deepEqual(list.map((i) => i.id), ["a", "c"]);
+  removeItem(list, "zzz");
+  assert.equal(list.length, 2);
+});
+
+test("isItemEmpty ignores the id", () => {
+  assert.equal(isItemEmpty({ id: "a", text: "" }), true);
+  assert.equal(isItemEmpty({ id: "a", text: "x" }), false);
+});
+
+test("fillTemplate: all filled, partly filled, none filled", () => {
+  const t = "when {state}, they {tendency}";
+  assert.equal(fillTemplate(t, { state: "tired", tendency: "snap" }), "when tired, they snap");
+  assert.equal(fillTemplate(t, { state: "tired", tendency: "" }), "when tired, they …");
+  assert.equal(fillTemplate(t, { state: "", tendency: "" }), "");
+});
+
+test("fillTemplate resolves values through the lookup, lists joined with commas", () => {
+  const names = { a: "Ines", b: "Tomas" };
+  const resolve = (v) => names[v] ?? v;
+  assert.equal(fillTemplate("{who} → {others}", { who: "a", others: ["a", "b"] }, resolve), "Ines → Ines, Tomas");
+});
+
+test("itemTitle uses the field's item_title", () => {
+  const behaviors = characters.fields.find((f) => f.key === "behaviors");
+  assert.equal(itemTitle(behaviors, { state: "calm", tendency: "hums" }), "when calm, they hums");
+});
+
+test("a card held many times is a list; instances can be added, found and removed", () => {
+  const project = newProject(schema);
+  ensureCard(project, characters);
+  assert.deepEqual(project.characters, []);
+  const a = addInstance(project, characters);
+  const b = addInstance(project, characters);
+  assert.notEqual(a.id, b.id);
+  assert.equal(findInstance(project, characters, a.id), a);
+  a.name = "  Ines ";
+  assert.equal(instanceName(a), "Ines");
+  assert.equal(instanceName(b), "");
+  removeInstance(project, characters, a.id);
+  assert.deepEqual(project.characters.map((i) => i.id), [b.id]);
+});
+
+test("ensureCard fills blanks inside saved instances and list items without overwriting", () => {
+  const project = newProject(schema);
+  project.characters = [{ id: "c1", name: "Ines", wants: [{ id: "w1", text: "be left alone" }], behaviors: [{ id: "b1", state: "calm" }] }];
+  ensureCard(project, characters);
+  const c = project.characters[0];
+  assert.equal(c.name, "Ines");
+  assert.equal(c.age, null);
+  assert.equal(c.wants[0].text, "be left alone");
+  assert.equal(c.behaviors[0].state, "calm");
+  assert.equal(c.behaviors[0].tendency, "");
 });
