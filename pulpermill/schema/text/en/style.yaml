@@ -15,129 +15,159 @@ fields:
   person:
     label: "Person"
     help: "Whose voice tells the story. This is a rule for every chapter, and the protagonist you pick in Setup must fit it."
+    why: "It changes every sentence, so it is fixed for the whole story and Setup checks your protagonist against it."
     options:
-      first: {label: "First person", expand: "Narrate in the first person, from inside the protagonist's own voice, knowing only what they know."}
-      third: {label: "Third person", expand: "Narrate in the third person, staying with the protagonist's point of view and knowing only what they could know."}
+      first: {label: "First person", expand: "Narrate in the first person, from inside the protagonist's own voice, knowing only what they know.", description: "“I walked in and the room went quiet.”"}
+      third: {label: "Third person", expand: "Narrate in the third person, staying with the protagonist's point of view and knowing only what they could know.", description: "“She walked in and the room went quiet.”"}
   tense:
     label: "Tense"
     help: "Past reads like a story being told. Present feels immediate. Applies to every chapter."
+    why: "Fixed for every chapter, so pick the one you can live with for the whole story."
     options:
-      past: {label: "Past", expand: "Tell the story in the past tense."}
-      present: {label: "Present", expand: "Tell the story in the present tense, as it unfolds."}
+      past: {label: "Past", expand: "Tell the story in the past tense.", description: "“He opened the door.”"}
+      present: {label: "Present", expand: "Tell the story in the present tense, as it unfolds.", description: "“He opens the door.”"}
   distance:
     label: "Distance"
     help: "How far the narrator stands from the protagonist's thoughts. Leave blank to let the model decide."
+    why: "Decides how much of the protagonist's inner life the reader gets."
     options:
-      external: {label: "External", expand: "The narrator watches from outside: actions, speech and surfaces are shown, and the reader infers what goes on within."}
-      close: {label: "Close", expand: "The narrator stays close to the protagonist, sharing what they notice, think and feel in plain terms."}
-      deep: {label: "Deep", expand: "The narrator sinks fully into the protagonist's mind, so perception, memory and feeling colour every line."}
+      external: {label: "External", expand: "The narrator watches from outside: actions, speech and surfaces are shown, and the reader infers what goes on within.", description: "“She read the letter twice. She folded it and put it on the table.”"}
+      close: {label: "Close", expand: "The narrator stays close to the protagonist, sharing what they notice, think and feel in plain terms.", description: "“She read the letter twice. It couldn't be true, and she knew it was.”"}
+      deep: {label: "Deep", expand: "The narrator sinks fully into the protagonist's mind, so perception, memory and feeling colour every line.", description: "“Twice through, and the words would not settle. His handwriting. His coat still on the chair. It could not be true.”"}
   humor:
     label: "Humor"
     help: "How much the telling jokes, and what kind."
+    why: "Sets whether the reader is invited to laugh at what happens."
     options:
-      none: {label: "None", expand: "The tone stays serious, with levity rare and never at the moment's expense."}
-      dry: {label: "Dry", expand: "Humor is dry: understated, deadpan, found in precise observation."}
-      absurd: {label: "Absurd", expand: "Humor is absurd: logic bends playfully and ridiculous situations are met with a straight face."}
-      dark: {label: "Dark", expand: "Humor is dark: jokes grow out of grim situations, and laughter sits close to unease."}
+      none: {label: "None", expand: "The tone stays serious, with levity rare and never at the moment's expense.", description: "No jokes. The tone stays serious."}
+      dry: {label: "Dry", expand: "Humor is dry: understated, deadpan, found in precise observation.", description: "“The meeting ran long, in the way the Ice Age ran long.”"}
+      absurd: {label: "Absurd", expand: "Humor is absurd: logic bends playfully and ridiculous situations are met with a straight face.", description: "“The goat had been appointed treasurer, and nobody saw reason to object.”"}
+      dark: {label: "Dark", expand: "Humor is dark: jokes grow out of grim situations, and laughter sits close to unease.", description: "“The funeral was well attended, which was more than he had managed in life.”"}
   pacing:
     label: "Pacing"
     help: "How quickly the telling moves. Faster is generally easier to enjoy."
+    why: "Decides how much page each moment gets, so it also shapes how long chapters run."
     options:
-      lingering: {label: "Lingering", expand: "Linger on moments: scenes breathe, with room for detail, atmosphere and reflection."}
-      balanced: {label: "Balanced", expand: "Balance action and reflection, slowing for what matters and moving on quickly otherwise."}
-      brisk: {label: "Brisk", expand: "Move briskly: scenes start late and end early, and momentum carries the reader forward."}
+      lingering: {label: "Lingering", expand: "Linger on moments: scenes breathe, with room for detail, atmosphere and reflection.", description: "A scene can spend a page on a doorway."}
+      balanced: {label: "Balanced", expand: "Balance action and reflection, slowing for what matters and moving on quickly otherwise.", description: "Slows down for what matters and skips the rest."}
+      brisk: {label: "Brisk", expand: "Move briskly: scenes start late and end early, and momentum carries the reader forward.", description: "Scenes start late, end early and rarely stop to look around."}
   narrator_note:
     label: "Narrator note"
     help: "Anything else about the narrator. Passed to the model exactly as you write it."
+    placeholder: "e.g. Knows more than it tells; sometimes speaks to the reader."
   rhythm:
     label: "Rhythm"
     help: "How sentences sound. Leave blank to let the model decide."
+    why: "Sentence length sets the pace of reading, line by line."
     options:
-      terse: {label: "Terse", expand: "Sentences are short and clipped, and each one carries weight."}
-      varied: {label: "Varied", expand: "Sentence length follows the moment: short in action, longer when thought wanders."}
-      flowing: {label: "Flowing", expand: "Sentences run long and connect, carrying the reader along."}
+      terse: {label: "Terse", expand: "Sentences are short and clipped, and each one carries weight.", description: "“She ran. The door slammed. Nothing.”"}
+      varied: {label: "Varied", expand: "Sentence length follows the moment: short in action, longer when thought wanders.", description: "“She ran. Down the stairs, past the landing where the light always failed, and out before the door finished closing.”"}
+      flowing: {label: "Flowing", expand: "Sentences run long and connect, carrying the reader along.", description: "“She ran down the stairs and past the landing where the light always failed and out through the door that was still swinging closed behind her.”"}
   diction:
     label: "Diction"
     help: "Word choice: everyday or elaborate."
+    why: "Plain words keep the reader moving; ornate ones make them slow down and notice the language."
     options:
-      plain: {label: "Plain", expand: "Word choice is plain and concrete: everyday words, strong verbs, precise nouns."}
-      ornate: {label: "Ornate", expand: "Word choice is rich and elaborate, with unusual words and layered phrasing."}
+      plain: {label: "Plain", expand: "Word choice is plain and concrete: everyday words, strong verbs, precise nouns.", description: "“The room was cold and smelled of damp.”"}
+      ornate: {label: "Ornate", expand: "Word choice is rich and elaborate, with unusual words and layered phrasing.", description: "“The chamber held a cold older than the house, and the damp breathed from the plaster like a held grievance.”"}
   formality:
     label: "Register"
     help: "How formal the narration sounds."
+    why: "Sets whether the narrator sounds like a person talking to you or a record being kept."
     options:
-      formal: {label: "Formal", expand: "The register is formal: composed and grammatical, with a measured distance."}
-      casual: {label: "Casual", expand: "The register is casual: conversational, with contractions, idiom and an easy tone."}
+      formal: {label: "Formal", expand: "The register is formal: composed and grammatical, with a measured distance.", description: "“He declined the offer, as the circumstances required.”"}
+      casual: {label: "Casual", expand: "The register is casual: conversational, with contractions, idiom and an easy tone.", description: "“He turned it down. Didn't really have a choice.”"}
   imagery:
     label: "Imagery"
     help: "How much figurative language the prose uses."
+    why: "More figurative language means more texture and slower reading."
     options:
-      literal: {label: "Literal", expand: "Description is direct: things are named as they are."}
-      occasional: {label: "Occasional", expand: "Figurative language appears occasionally, placed where it lands hardest."}
-      lush: {label: "Lush", expand: "Imagery is lush: metaphor and sensory detail are frequent and vivid."}
+      literal: {label: "Literal", expand: "Description is direct: things are named as they are.", description: "“The wind was strong and cold.”"}
+      occasional: {label: "Occasional", expand: "Figurative language appears occasionally, placed where it lands hardest.", description: "“The wind was cold, and it pushed at her as if it wanted something.”"}
+      lush: {label: "Lush", expand: "Imagery is lush: metaphor and sensory detail are frequent and vivid.", description: "“The wind came off the water in long silver sheets, cold as a knife laid flat against the skin.”"}
   edge:
     label: "Edge"
     help: "Language strength: swearing, bluntness, roughness."
+    why: "Decides whether rough events are narrated in rough language."
     options:
-      clean: {label: "Clean", expand: "Language stays clean: gentle in vocabulary even when events are rough."}
-      coarse: {label: "Coarse", expand: "Language is coarse where it fits: characters swear and the narration is blunt and earthy."}
+      clean: {label: "Clean", expand: "Language stays clean: gentle in vocabulary even when events are rough.", description: "“Get out,” she said. “I mean it.”"}
+      coarse: {label: "Coarse", expand: "Language is coarse where it fits: characters swear and the narration is blunt and earthy.", description: "“Get the hell out,” she said. “I mean it, damn you.”"}
   explicitness:
     label: "Explicitness"
     help: "Whether intense moments (violence, intimacy) happen on the page or just off it."
+    why: "Decides what the reader sees directly and what they have to imagine."
     options:
-      implied: {label: "Implied", expand: "Intense moments are implied: the narration cuts away, suggests and lets the reader fill in the rest."}
-      shown: {label: "Shown", expand: "Intense moments are shown on the page, with physical and emotional detail rendered plainly."}
+      implied: {label: "Implied", expand: "Intense moments are implied: the narration cuts away, suggests and lets the reader fill in the rest.", description: "The door closes on the worst of it, and the next scene starts after."}
+      shown: {label: "Shown", expand: "Intense moments are shown on the page, with physical and emotional detail rendered plainly.", description: "The worst of it happens in front of the reader, in plain detail."}
   sentences_note:
     label: "Sentences and words note"
     help: "Anything else about the prose. Passed to the model exactly as you write it."
+    placeholder: "e.g. Avoid semicolons; favour concrete nouns."
   attitude:
     label: "Attitude"
     help: "The narrator's feeling toward the story and its people."
+    why: "The narrator's feeling shows in what it notices and how it words the same event."
     options:
-      earnest: {label: "Earnest", expand: "The narrator is earnest: sincere, invested, and takes the characters' stakes seriously."}
-      warm: {label: "Warm", expand: "The narrator is warm: affectionate toward the characters and generous with their flaws."}
-      wry: {label: "Wry", expand: "The narrator is wry: amused, observant, with a sideways view of events."}
-      sardonic: {label: "Sardonic", expand: "The narrator is sardonic: sharp, quick to puncture pretence."}
-      clinical: {label: "Clinical", expand: "The narrator is clinical: detached and precise, recording events like an observer taking notes."}
-      melancholic: {label: "Melancholic", expand: "The narrator is melancholic: tinged with loss and the passing of things."}
-      wondering: {label: "Wondering", expand: "The narrator is wondering: curious and open, finding the strange and beautiful in what it sees."}
+      earnest: {label: "Earnest", expand: "The narrator is earnest: sincere, invested, and takes the characters' stakes seriously.", description: "“He missed the train, and it mattered: she would be waiting.”"}
+      warm: {label: "Warm", expand: "The narrator is warm: affectionate toward the characters and generous with their flaws.", description: "“He missed the train, poor man, and went on being kind about it.”"}
+      wry: {label: "Wry", expand: "The narrator is wry: amused, observant, with a sideways view of events.", description: "“He missed the train with the ease of a man who had practised.”"}
+      sardonic: {label: "Sardonic", expand: "The narrator is sardonic: sharp, quick to puncture pretence.", description: "“He missed the train, naturally. The universe has a sense of occasion.”"}
+      clinical: {label: "Clinical", expand: "The narrator is clinical: detached and precise, recording events like an observer taking notes.", description: "“At 8:14 he reached the platform. The train had left at 8:12.”"}
+      melancholic: {label: "Melancholic", expand: "The narrator is melancholic: tinged with loss and the passing of things.", description: "“He missed the train, as he had missed so many things, and stood a while in the quiet.”"}
+      wondering: {label: "Wondering", expand: "The narrator is wondering: curious and open, finding the strange and beautiful in what it sees.", description: "“He missed the train, and in the emptied station the light fell in a way he had never stopped to see.”"}
   stance_note:
     label: "Stance note"
     help: "Anything else about the narrator's attitude. Passed to the model exactly as you write it."
+    placeholder: "e.g. Fond of the characters, never sentimental."
   amount:
     label: "Amount"
     help: "How much of the story is carried by conversation."
+    why: "More dialogue makes scenes quicker to read; less leaves room for the narrator."
     options:
-      sparse: {label: "Sparse", expand: "Dialogue is sparse: characters say little and narration carries most of each scene."}
-      abundant: {label: "Abundant", expand: "Dialogue is abundant: scenes move through conversation."}
+      sparse: {label: "Sparse", expand: "Dialogue is sparse: characters say little and narration carries most of each scene.", description: "Two lines of talk, then a paragraph of narration."}
+      abundant: {label: "Abundant", expand: "Dialogue is abundant: scenes move through conversation.", description: "Scenes run on back-and-forth talk."}
   directness:
     label: "Directness"
     help: "Whether people say what they mean."
+    why: "Subtext makes characters feel less scripted, but asks more of the reader."
     options:
-      direct: {label: "Direct", expand: "Characters say what they mean and speak plainly to each other."}
-      subtext: {label: "Subtext", expand: "Characters rarely say what they mean: feeling shows through action, deflection and what goes unsaid."}
+      direct: {label: "Direct", expand: "Characters say what they mean and speak plainly to each other.", description: "“I'm angry that you didn't tell me.”"}
+      subtext: {label: "Subtext", expand: "Characters rarely say what they mean: feeling shows through action, deflection and what goes unsaid.", description: "“How nice of you to finally show up.”"}
   polish:
     label: "Polish"
     help: "Real-sounding speech or crafted lines."
+    why: "Naturalistic speech sounds real; crafted lines stay with the reader."
     options:
-      naturalistic: {label: "Naturalistic", expand: "Dialogue is naturalistic: halting, interrupted and overlapping, as people really speak."}
-      stylised: {label: "Stylised", expand: "Dialogue is stylised: crafted lines with rhythm and wit."}
+      naturalistic: {label: "Naturalistic", expand: "Dialogue is naturalistic: halting, interrupted and overlapping, as people really speak.", description: "“I— no, listen— what I meant was—”"}
+      stylised: {label: "Stylised", expand: "Dialogue is stylised: crafted lines with rhythm and wit.", description: "“You mistake me for a man who needs your forgiveness.”"}
   voice_difference:
     label: "Voice difference"
     help: "Whether characters sound different from each other."
+    why: "Distinct voices help the reader know who is talking without tags."
     options:
-      distinct: {label: "Distinct", expand: "Each character has a recognisably distinct way of speaking."}
-      uniform: {label: "Uniform", expand: "Characters share one speaking style, which keeps the voice consistent across the cast."}
+      distinct: {label: "Distinct", expand: "Each character has a recognisably distinct way of speaking.", description: "One character is clipped and formal; another rambles and jokes."}
+      uniform: {label: "Uniform", expand: "Characters share one speaking style, which keeps the voice consistent across the cast.", description: "Everyone talks in the story's own voice."}
   dialogue_note:
     label: "Dialogue note"
     help: "Anything else about dialogue. Passed to the model exactly as you write it."
+    placeholder: "e.g. People interrupt each other; no speeches."
   lens:
     label: "Lens"
     help: "A habit of attention, not a subject. Write 'notices who owes whom and what things cost', not 'a story about debt'. Theme grows from what the narrator notices."
+    placeholder: "e.g. notices who owes whom and what things cost"
+    why: "A lens makes the narrator keep noticing the same kind of thing, and theme grows from that."
+    examples:
+      good: ["notices who owes whom and what things cost", "keeps track of exits and who stands near them", "notices what people avoid looking at"]
+      avoid: ["a story about debt", "betrayal and redemption"]
     lead_in: "The narrator's habit of attention: {value}. Meaning emerges from what the narrator notices and how it is weighed, and themes stay implicit in the telling."
   genre:
     label: "Genre"
     help: "A tradition or a feeling (noir, cozy mystery, space opera). It sets mood and conventions and does not require particular events."
+    placeholder: "e.g. noir, cozy mystery, space opera"
+    why: "A named tradition tells the writer which conventions to use and which to leave out."
+    examples:
+      good: ["noir", "cozy mystery", "melancholy space opera"]
+      avoid: ["a detective finds a body in chapter one", "a heist with a double-cross"]
     lead_in: "The genre and feeling of this story: {value}. Let it shape mood, conventions and texture, while events follow from the characters and situation."
 rules:
   style_agnostic:

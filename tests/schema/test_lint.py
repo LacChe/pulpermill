@@ -174,3 +174,83 @@ def test_other_languages_match_english_keys_and_tokens():
         walk(load_common("en"), load_common(lang), f"{lang}/common")
         for cid in CARD_IDS:
             walk(load_text(cid, "en"), load_text(cid, lang), f"{lang}/{cid}")
+
+
+# ---------------------------------------------------------------- UI wording (human-only, never sent to the model)
+# Cards whose UI wording is finished. A card listed here must give every option a description and every free-text
+# field a placeholder. Add a card to this set when its wording is written.
+UI_DONE = {"style"}
+FIELD_UI = {"placeholder", "why", "examples", "empty", "add", "delete_confirm", "item_title", "visible_if"}
+FIELD_KEYS = FIELD_UI | {"label", "help", "options", "item_fields", "expand", "lead_in", "item_template", "item_join"}
+OPTION_KEYS = {"label", "expand", "description"}
+
+
+def _targets(model, text):
+    """Every (name, schema field, text entry), list item fields included."""
+    for n, f in fields_of(model).items():
+        yield n, f, text["fields"][n]
+        if is_list_field(f):
+            for sn, sf in item_fields(f).items():
+                yield sn, sf, text["fields"][n]["item_fields"][sn]
+
+
+@pytest.mark.parametrize("cid,lang", CASES, ids=CASE_IDS)
+def test_ui_wording_uses_known_keys_and_sensible_values(cid, lang):
+    model = card(cid)[0]
+    text = load_text(cid, lang)
+    for n, f, t in _targets(model, text):
+        unknown = set(t) - FIELD_KEYS
+        assert not unknown, (n, unknown)
+        meta = f.json_schema_extra
+        for key in ("placeholder", "why", "empty", "add", "delete_confirm"):
+            if key in t:
+                assert isinstance(t[key], str) and t[key].strip(), (n, key)
+                assert not tokens(t[key]), (n, key, "no tokens in plain UI text")
+        if "placeholder" in t:
+            assert meta["input"] in ("text", "textarea"), (n, "placeholder only on typed fields")
+        if "examples" in t:
+            ex = t["examples"]
+            assert set(ex) == {"good", "avoid"}, n
+            assert all(isinstance(v, list) and v and all(isinstance(s, str) and s for s in v) for v in ex.values()), n
+        for value, o in t.get("options", {}).items():
+            assert not set(o) - OPTION_KEYS, (n, value)
+            if "description" in o:
+                assert o["description"].strip() and o["description"] != o["label"] and o["description"] != o["expand"], (n, value)
+
+
+@pytest.mark.parametrize("cid,lang", CASES, ids=CASE_IDS)
+def test_why_lines_are_not_repeated_or_copies_of_help(cid, lang):
+    text = load_text(cid, lang)
+    whys = [(n, t["why"]) for n, _, t in _targets(card(cid)[0], text) if "why" in t]
+    assert len({w for _, w in whys}) == len(whys), "two fields share one 'why' line"
+    for n, f, t in _targets(card(cid)[0], text):
+        if "why" in t:
+            assert t["why"] != t["help"], n
+
+
+@pytest.mark.parametrize("cid,lang", CASES, ids=CASE_IDS)
+def test_finished_cards_describe_every_option_and_typed_field(cid, lang):
+    if cid not in UI_DONE:
+        pytest.skip("UI wording not written yet")
+    text = load_text(cid, lang)
+    for n, f, t in _targets(card(cid)[0], text):
+        meta = f.json_schema_extra
+        for value, o in t.get("options", {}).items():
+            assert o.get("description"), (n, value)
+        if meta["input"] in ("text", "textarea") and meta["kind"] in ("note", "free"):
+            assert t.get("placeholder"), n
+
+
+@pytest.mark.parametrize("cid,lang", CASES, ids=CASE_IDS)
+def test_ui_wording_never_repeats_model_text(cid, lang):
+    """Nothing shown to the user may repeat text that is written for the model."""
+    text = load_text(cid, lang)
+    model_text = set()
+    for _, _, t in _targets(card(cid)[0], text):
+        model_text |= {t[k] for k in ("lead_in", "item_template") if k in t}
+        model_text |= {o["expand"] for v, o in t.get("options", {}).items() if o["expand"] != v}
+    shown = []
+    for _, _, t in _targets(card(cid)[0], text):
+        shown += [t[k] for k in ("placeholder", "why", "empty", "add", "delete_confirm") if k in t]
+        shown += [o["description"] for o in t.get("options", {}).values() if "description" in o]
+    assert not set(shown) & model_text

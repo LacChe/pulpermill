@@ -84,14 +84,17 @@
      "kind": "rule",
      "group": "narration",
      "required": true,
+     "why": "It changes every sentence, so it is fixed for the whole story and Setup checks your protagonist against it.",
      "options": [
       {
        "value": "first",
-       "label": "First person"
+       "label": "First person",
+       "description": "“I walked in and the room went quiet.”"
       },
       {
        "value": "third",
-       "label": "Third person"
+       "label": "Third person",
+       "description": "“She walked in and the room went quiet.”"
       }
      ]
     },
@@ -103,14 +106,17 @@
      "kind": "rule",
      "group": "narration",
      "required": true,
+     "why": "Fixed for every chapter, so pick the one you can live with for the whole story.",
      "options": [
       {
        "value": "past",
-       "label": "Past"
+       "label": "Past",
+       "description": "“He opened the door.”"
       },
       {
        "value": "present",
-       "label": "Present"
+       "label": "Present",
+       "description": "“He opens the door.”"
       }
      ]
     },
@@ -122,18 +128,22 @@
      "kind": "axis",
      "group": "narrator",
      "required": true,
+     "why": "Decides how much of the protagonist's inner life the reader gets.",
      "options": [
       {
        "value": "external",
-       "label": "External"
+       "label": "External",
+       "description": "“She read the letter twice. She folded it and put it on the table.”"
       },
       {
        "value": "close",
-       "label": "Close"
+       "label": "Close",
+       "description": "“She read the letter twice. It couldn't be true, and she knew it was.”"
       },
       {
        "value": "deep",
-       "label": "Deep"
+       "label": "Deep",
+       "description": "“Twice through, and the words would not settle. His handwriting. His coat still on the chair. It could not be true.”"
       }
      ]
     },
@@ -145,22 +155,27 @@
      "kind": "axis",
      "group": "narrator",
      "required": true,
+     "why": "Sets whether the reader is invited to laugh at what happens.",
      "options": [
       {
        "value": "none",
-       "label": "None"
+       "label": "None",
+       "description": "No jokes. The tone stays serious."
       },
       {
        "value": "dry",
-       "label": "Dry"
+       "label": "Dry",
+       "description": "“The meeting ran long, in the way the Ice Age ran long.”"
       },
       {
        "value": "absurd",
-       "label": "Absurd"
+       "label": "Absurd",
+       "description": "“The goat had been appointed treasurer, and nobody saw reason to object.”"
       },
       {
        "value": "dark",
-       "label": "Dark"
+       "label": "Dark",
+       "description": "“The funeral was well attended, which was more than he had managed in life.”"
       }
      ]
     },
@@ -172,18 +187,22 @@
      "kind": "axis",
      "group": "narrator",
      "required": true,
+     "why": "Decides how much page each moment gets, so it also shapes how long chapters run.",
      "options": [
       {
        "value": "lingering",
-       "label": "Lingering"
+       "label": "Lingering",
+       "description": "A scene can spend a page on a doorway."
       },
       {
        "value": "balanced",
-       "label": "Balanced"
+       "label": "Balanced",
+       "description": "Slows down for what matters and skips the rest."
       },
       {
        "value": "brisk",
-       "label": "Brisk"
+       "label": "Brisk",
+       "description": "Scenes start late, end early and rarely stop to look around."
       }
      ]
     },
@@ -194,7 +213,8 @@
      "input": "textarea",
      "kind": "note",
      "group": "narrator",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Knows more than it tells; sometimes speaks to the reader."
     },
     {
      "key": "rhythm",
@@ -204,18 +224,22 @@
      "kind": "axis",
      "group": "sentences",
      "required": true,
+     "why": "Sentence length sets the pace of reading, line by line.",
      "options": [
       {
        "value": "terse",
-       "label": "Terse"
+       "label": "Terse",
+       "description": "“She ran. The door slammed. Nothing.”"
       },
       {
        "value": "varied",
-       "label": "Varied"
+       "label": "Varied",
+       "description": "“She ran. Down the stairs, past the landing where the light always failed, and out before the door finished closing.”"
       },
       {
        "value": "flowing",
-       "label": "Flowing"
+       "label": "Flowing",
+       "description": "“She ran down the stairs and past the landing where the light always failed and out through the door that was still swinging closed behind her.”"
       }
      ]
     },
@@ -227,14 +251,17 @@
      "kind": "axis",
      "group": "sentences",
      "required": true,
+     "why": "Plain words keep the reader moving; ornate ones make them slow down and notice the language.",
      "options": [
       {
        "value": "plain",
-       "label": "Plain"
+       "label": "Plain",
+       "description": "“The room was cold and smelled of damp.”"
       },
       {
        "value": "ornate",
-       "label": "Ornate"
+       "label": "Ornate",
+       "description": "“The chamber held a cold older than the house, and the damp breathed from the plaster like a held grievance.”"
       }
      ]
     },
@@ -246,14 +273,17 @@
      "kind": "axis",
      "group": "sentences",
      "required": true,
+     "why": "Sets whether the narrator sounds like a person talking to you or a record being kept.",
      "options": [
       {
        "value": "formal",
-       "label": "Formal"
+       "label": "Formal",
+       "description": "“He declined the offer, as the circumstances required.”"
       },
       {
        "value": "casual",
-       "label": "Casual"
+       "label": "Casual",
+       "description": "“He turned it down. Didn't really have a choice.”"
       }
      ]
     },
@@ -265,18 +295,22 @@
      "kind": "axis",
      "group": "sentences",
      "required": true,
+     "why": "More figurative language means more texture and slower reading.",
      "options": [
       {
        "value": "literal",
-       "label": "Literal"
+       "label": "Literal",
+       "description": "“The wind was strong and cold.”"
       },
       {
        "value": "occasional",
-       "label": "Occasional"
+       "label": "Occasional",
+       "description": "“The wind was cold, and it pushed at her as if it wanted something.”"
       },
       {
        "value": "lush",
-       "label": "Lush"
+       "label": "Lush",
+       "description": "“The wind came off the water in long silver sheets, cold as a knife laid flat against the skin.”"
       }
      ]
     },
@@ -288,14 +322,17 @@
      "kind": "axis",
      "group": "sentences",
      "required": true,
+     "why": "Decides whether rough events are narrated in rough language.",
      "options": [
       {
        "value": "clean",
-       "label": "Clean"
+       "label": "Clean",
+       "description": "“Get out,” she said. “I mean it.”"
       },
       {
        "value": "coarse",
-       "label": "Coarse"
+       "label": "Coarse",
+       "description": "“Get the hell out,” she said. “I mean it, damn you.”"
       }
      ]
     },
@@ -307,14 +344,17 @@
      "kind": "axis",
      "group": "sentences",
      "required": true,
+     "why": "Decides what the reader sees directly and what they have to imagine.",
      "options": [
       {
        "value": "implied",
-       "label": "Implied"
+       "label": "Implied",
+       "description": "The door closes on the worst of it, and the next scene starts after."
       },
       {
        "value": "shown",
-       "label": "Shown"
+       "label": "Shown",
+       "description": "The worst of it happens in front of the reader, in plain detail."
       }
      ]
     },
@@ -325,7 +365,8 @@
      "input": "textarea",
      "kind": "note",
      "group": "sentences",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Avoid semicolons; favour concrete nouns."
     },
     {
      "key": "attitude",
@@ -335,34 +376,42 @@
      "kind": "axis",
      "group": "stance",
      "required": true,
+     "why": "The narrator's feeling shows in what it notices and how it words the same event.",
      "options": [
       {
        "value": "earnest",
-       "label": "Earnest"
+       "label": "Earnest",
+       "description": "“He missed the train, and it mattered: she would be waiting.”"
       },
       {
        "value": "warm",
-       "label": "Warm"
+       "label": "Warm",
+       "description": "“He missed the train, poor man, and went on being kind about it.”"
       },
       {
        "value": "wry",
-       "label": "Wry"
+       "label": "Wry",
+       "description": "“He missed the train with the ease of a man who had practised.”"
       },
       {
        "value": "sardonic",
-       "label": "Sardonic"
+       "label": "Sardonic",
+       "description": "“He missed the train, naturally. The universe has a sense of occasion.”"
       },
       {
        "value": "clinical",
-       "label": "Clinical"
+       "label": "Clinical",
+       "description": "“At 8:14 he reached the platform. The train had left at 8:12.”"
       },
       {
        "value": "melancholic",
-       "label": "Melancholic"
+       "label": "Melancholic",
+       "description": "“He missed the train, as he had missed so many things, and stood a while in the quiet.”"
       },
       {
        "value": "wondering",
-       "label": "Wondering"
+       "label": "Wondering",
+       "description": "“He missed the train, and in the emptied station the light fell in a way he had never stopped to see.”"
       }
      ]
     },
@@ -373,7 +422,8 @@
      "input": "textarea",
      "kind": "note",
      "group": "stance",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Fond of the characters, never sentimental."
     },
     {
      "key": "amount",
@@ -383,14 +433,17 @@
      "kind": "axis",
      "group": "dialogue",
      "required": true,
+     "why": "More dialogue makes scenes quicker to read; less leaves room for the narrator.",
      "options": [
       {
        "value": "sparse",
-       "label": "Sparse"
+       "label": "Sparse",
+       "description": "Two lines of talk, then a paragraph of narration."
       },
       {
        "value": "abundant",
-       "label": "Abundant"
+       "label": "Abundant",
+       "description": "Scenes run on back-and-forth talk."
       }
      ]
     },
@@ -402,14 +455,17 @@
      "kind": "axis",
      "group": "dialogue",
      "required": true,
+     "why": "Subtext makes characters feel less scripted, but asks more of the reader.",
      "options": [
       {
        "value": "direct",
-       "label": "Direct"
+       "label": "Direct",
+       "description": "“I'm angry that you didn't tell me.”"
       },
       {
        "value": "subtext",
-       "label": "Subtext"
+       "label": "Subtext",
+       "description": "“How nice of you to finally show up.”"
       }
      ]
     },
@@ -421,14 +477,17 @@
      "kind": "axis",
      "group": "dialogue",
      "required": true,
+     "why": "Naturalistic speech sounds real; crafted lines stay with the reader.",
      "options": [
       {
        "value": "naturalistic",
-       "label": "Naturalistic"
+       "label": "Naturalistic",
+       "description": "“I— no, listen— what I meant was—”"
       },
       {
        "value": "stylised",
-       "label": "Stylised"
+       "label": "Stylised",
+       "description": "“You mistake me for a man who needs your forgiveness.”"
       }
      ]
     },
@@ -440,14 +499,17 @@
      "kind": "axis",
      "group": "dialogue",
      "required": true,
+     "why": "Distinct voices help the reader know who is talking without tags.",
      "options": [
       {
        "value": "distinct",
-       "label": "Distinct"
+       "label": "Distinct",
+       "description": "One character is clipped and formal; another rambles and jokes."
       },
       {
        "value": "uniform",
-       "label": "Uniform"
+       "label": "Uniform",
+       "description": "Everyone talks in the story's own voice."
       }
      ]
     },
@@ -458,7 +520,8 @@
      "input": "textarea",
      "kind": "note",
      "group": "dialogue",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. People interrupt each other; no speeches."
     },
     {
      "key": "lens",
@@ -467,7 +530,20 @@
      "input": "textarea",
      "kind": "free",
      "group": "free",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. notices who owes whom and what things cost",
+     "why": "A lens makes the narrator keep noticing the same kind of thing, and theme grows from that.",
+     "examples": {
+      "good": [
+       "notices who owes whom and what things cost",
+       "keeps track of exits and who stands near them",
+       "notices what people avoid looking at"
+      ],
+      "avoid": [
+       "a story about debt",
+       "betrayal and redemption"
+      ]
+     }
     },
     {
      "key": "genre",
@@ -476,7 +552,20 @@
      "input": "text",
      "kind": "free",
      "group": "free",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. noir, cozy mystery, space opera",
+     "why": "A named tradition tells the writer which conventions to use and which to leave out.",
+     "examples": {
+      "good": [
+       "noir",
+       "cozy mystery",
+       "melancholy space opera"
+      ],
+      "avoid": [
+       "a detective finds a body in chapter one",
+       "a heist with a double-cross"
+      ]
+     }
     }
    ],
    "rules": [
