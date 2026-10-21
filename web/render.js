@@ -15,6 +15,8 @@ export const STRINGS = {
   unnamed: "Unnamed",
   missing: "(no longer exists)",
   characters: "Characters",
+  clear: "Clear choice",
+  setByCode: "Set by the system",
   unsupported: "This field type isn't built yet.",
 };
 
@@ -23,7 +25,7 @@ const TEXT_INPUTS = new Set(["text", "textarea", "number"]);
 // Input types the renderer can draw. The Node test checks that every field on a finished card passes.
 export function isSupported(field) {
   if (field.repeat) return (field.item_fields || []).every(isSupported);
-  return field.input === "select" || field.input === "select-multiple" || TEXT_INPUTS.has(field.input);
+  return field.input === "select" || field.input === "select-multiple" || field.input === "checkbox" || TEXT_INPUTS.has(field.input);
 }
 
 function el(tag, attrs = {}, ...children) {
@@ -70,6 +72,20 @@ function radioCards(name, label, options, current, onPick) {
   return wrap;
 }
 
+// A value only the system sets (a chapter number, a fingerprint): shown, not edited. A code-filled box that is also
+// a picker (the spotlight) stays editable, because the writer may change what the system chose.
+function isCodeFilled(field) {
+  return field.filled_by === "code" && !field.ref && !field.options;
+}
+
+function checkControl(field, values, scope, ctx) {
+  const box = el("input", { type: "checkbox", disabled: isCodeFilled(field) });
+  box.checked = Boolean(values[field.key]);
+  box.addEventListener("change", () => { values[field.key] = box.checked; ctx.changed(); });
+  scope.live.push(() => { box.checked = Boolean(values[field.key]); });
+  return el("label", { class: "check" }, box, el("span", { text: field.label }));
+}
+
 function textControl(field, value, onInput) {
   const isArea = field.input === "textarea";
   const control = el(isArea ? "textarea" : "input", {
@@ -79,6 +95,7 @@ function textControl(field, value, onInput) {
     type: isArea ? false : field.input === "number" ? "number" : "text",
     step: field.input === "number" ? "1" : false,
     "aria-label": field.label,
+    readonly: isCodeFilled(field),
   });
   control.value = value ?? "";
   control.addEventListener("input", () => {
@@ -96,7 +113,9 @@ function groupLabel(source, ctx) {
 // Options for a link field, in the order of its sources, with a heading per source when there are several.
 function pickerOptions(field, values, scope, ctx) {
   const sources = pickerSources(field, values, scope.fields, ctx.project, ctx.card);
-  return { sources, entries: refOptions(ctx.project, sources, STRINGS.unnamed) };
+  const chosen = values[field.key];
+  const keep = Array.isArray(chosen) ? chosen : isFilled(chosen) ? [chosen] : [];
+  return { sources, entries: refOptions(ctx.project, sources, STRINGS.unnamed, { where: field.ref_where, keep }) };
 }
 
 // A dropdown over entries of other cards. Rebuilds itself when a sibling changes.
@@ -115,7 +134,7 @@ function pickerControl(field, values, path, ctx, scope) {
     if (field.ref_filter_by && isFilled(values[field.key]) && !entries.some((e) => e.value === values[field.key])) {
       values[field.key] = "";
     }
-    select.replaceChildren(el("option", { value: "", disabled: true, text: field.placeholder || "" }));
+    select.replaceChildren(el("option", { value: "", disabled: field.required !== false, text: field.placeholder || "" }));
     const bySource = new Map();
     for (const entry of entries) {
       if (!bySource.has(entry.source)) bySource.set(entry.source, []);
@@ -226,7 +245,27 @@ function fieldBlock(field, values, path, ctx, scope) {
   const onInput = (next) => { values[field.key] = next; ctx.changed(); };
   if (field.input === "select" && field.ref) block.append(pickerControl(field, values, path, ctx, scope));
   else if (field.input === "select-multiple") block.append(multiPickerControl(field, values, path, ctx, scope));
-  else if (field.input === "select") block.append(radioCards(path, field.label, field.options || [], values[field.key], onInput));
+  else if (field.input === "checkbox") {
+    heading.hidden = true;
+    block.append(checkControl(field, values, scope, ctx));
+    // A flag the system sets is only worth showing when it is on.
+    if (isCodeFilled(field)) scope.live.push(() => { if (!values[field.key]) block.hidden = true; });
+  } else if (field.input === "select") {
+    let sync = () => {};
+    const cards = radioCards(path, field.label, field.options || [], values[field.key], (next) => { onInput(next); sync(); });
+    block.append(cards);
+    if (field.required === false) {
+      const clear = el("button", { type: "button", class: "clear", text: STRINGS.clear });
+      sync = () => { clear.hidden = !isFilled(values[field.key]); };
+      clear.addEventListener("click", () => {
+        for (const input of cards.querySelectorAll("input")) input.checked = false;
+        onInput("");
+        sync();
+      });
+      sync();
+      block.append(clear);
+    }
+  }
   else {
     const control = textControl(field, values[field.key], onInput);
     // A value cleared elsewhere (an either-or switch) must show as cleared if the box comes back.

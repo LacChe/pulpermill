@@ -5,7 +5,7 @@ import {
 } from "./logic.js";
 import { renderCard } from "./render.js";
 
-const BUILT = ["style", "characters", "world", "entanglements", "setup"];
+const BUILT = ["style", "characters", "world", "entanglements", "setup", "outline"];
 const LABELS = { addCharacter: "Add a character", deleteCharacter: "Delete this character?", remove: "Delete", unnamed: "Unnamed character", noCharacters: "No characters yet." };
 
 const cardsNav = document.getElementById("cards");

@@ -339,3 +339,53 @@ test("Setup: every field is supported, starts blank, and the protagonist picker 
   const lead = setup.fields.find((f) => f.key === "protagonist");
   assert.ok(lead.no_options && lead.placeholder);
 });
+
+const outline = schema.cards.outline;
+const beatsField = outline.fields.find((f) => f.key === "beats");
+
+test("Outline: every field is supported and every link field has an empty message", () => {
+  assert.ok(isSupported(beatsField));
+  for (const f of beatsField.item_fields) {
+    if (f.ref) assert.ok(f.no_options, f.key);
+  }
+});
+
+test("a beat added by hand takes the next chapter number", () => {
+  const list = [];
+  assert.equal(addItem(beatsField, list).chapter, 1);
+  assert.equal(addItem(beatsField, list).chapter, 2);
+  list[1].chapter = 7;
+  assert.equal(addItem(beatsField, list).chapter, 8);
+  assert.equal(itemTitle(beatsField, list[0]), "Chapter 1");
+});
+
+test("ref_where keeps only rules with the wanted status, and drops rules that already came to light", () => {
+  const project = {
+    world: { rules: [
+      { id: "r1", statement: "Open secret", status: "common" },
+      { id: "r2", statement: "Hidden", status: "uncommon" },
+      { id: "r3", statement: "A myth", status: "false_belief" },
+      { id: "r4", statement: "Already out", status: "uncommon" },
+    ] },
+    summary_events: { entries: [{ id: "e1", reveals_landed: ["r4"] }] },
+  };
+  const where = { status: ["uncommon", "false_belief"] };
+  assert.deepEqual(refOptions(project, ["world.rules"], "Unnamed", { where }).map((o) => o.value), ["r2", "r3"]);
+  assert.deepEqual(refOptions(project, ["world.rules"], "Unnamed", { where, keep: ["r4"] }).map((o) => o.value), ["r2", "r3", "r4"]);
+  assert.equal(refOptions(project, ["world.rules"]).length, 4);
+});
+
+test("payoff offers only open plants, named by what was planted", () => {
+  const project = { summary_events: { entries: [
+    { id: "e1", planted: "A locked back room" },
+    { id: "e2", planted: "A stranger's letter", paid_off: [] },
+    { id: "e3", planted: "", paid_off: ["e1"] },
+    { id: "e4", happened: "nothing planted" },
+  ] } };
+  assert.deepEqual(refOptions(project, ["summary_events.entries"]).map((o) => [o.value, o.label]), [["e2", "A stranger's letter"]]);
+});
+
+test("pressures are named by what they are", () => {
+  const project = { entanglements: { pressures: [{ id: "p1", what: "The audit" }] } };
+  assert.equal(refOptions(project, ["entanglements.pressures"])[0].label, "The audit");
+});

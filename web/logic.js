@@ -91,6 +91,10 @@ export function canAdd(field, list) {
 export function addItem(field, list) {
   if (!canAdd(field, list)) return null;
   const item = blankItem(field, list.map((i) => i.id));
+  // A beat added by hand takes the next chapter number, so the system-set number is never left empty.
+  if ((field.item_fields || []).some((f) => f.key === "chapter" && f.filled_by === "code")) {
+    item.chapter = Math.max(0, ...list.map((i) => Number(i.chapter) || 0)) + 1;
+  }
   list.push(item);
   return item;
 }
@@ -185,7 +189,7 @@ export function newProject(schema) {
 
 // ---- Links to other cards ------------------------------------------------
 // A field with `ref` picks from lists elsewhere in the project. A source is "characters" or "<card>.<list>".
-const NAME_KEYS = ["name", "statement", "term"];
+const NAME_KEYS = ["name", "statement", "term", "what", "planted"];
 
 function sourceList(project, source) {
   if (source === "characters") return project.characters ?? [];
@@ -201,10 +205,23 @@ function entryLabel(item, unnamed) {
 }
 
 // Every entry of the given sources as {value: id, label, source}. `unnamed` is shown for entries with no name yet.
-export function refOptions(project, sources, unnamed = "Unnamed") {
+// `options.where` ({key: [values]}) keeps only entries whose key holds one of the values (ref_where).
+// `options.keep` lists ids that stay in the list even when the filters would drop them, so a saved choice is not lost.
+// Two sources are narrowed by what the story has already done:
+//   summary_events.entries  only entries that planted something and have not been paid off yet (an open plant)
+//   world.rules, when a filter is given  rules that have not already come to light (reveals_landed)
+export function refOptions(project, sources, unnamed = "Unnamed", options = {}) {
+  const { where, keep = [] } = options;
+  const paidOff = new Set((project.summary_events?.entries ?? []).flatMap((e) => e.paid_off ?? []));
+  const landed = new Set((project.summary_events?.entries ?? []).flatMap((e) => e.reveals_landed ?? []));
   const out = [];
   for (const source of sources) {
     for (const item of sourceList(project, source)) {
+      if (!keep.includes(item.id)) {
+        if (source === "summary_events.entries" && (!isFilled(item.planted) || paidOff.has(item.id))) continue;
+        if (where && source === "world.rules" && landed.has(item.id)) continue;
+        if (where && !Object.entries(where).every(([key, allowed]) => allowed.includes(item[key]))) continue;
+      }
       out.push({ value: item.id, label: entryLabel(item, unnamed), source });
     }
   }
