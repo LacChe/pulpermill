@@ -8,6 +8,7 @@ import {
   inOneOf, showsOptionalTag,
 } from "../logic.js";
 import { isSupported } from "../render.js";
+import { validate, ruleKind, modelRules, problemsFor, CHECKS, PENDING_CHECKS } from "../logic.js";
 
 const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
 const style = schema.cards.style;
@@ -388,4 +389,61 @@ test("payoff offers only open plants, named by what was planted", () => {
 test("pressures are named by what they are", () => {
   const project = { entanglements: { pressures: [{ id: "p1", what: "The audit" }] } };
   assert.equal(refOptions(project, ["entanglements.pressures"])[0].label, "The audit");
+});
+
+// ---- Validation ----
+
+test("rules split into code rules (a named check) and model rules (needs_model), never both", () => {
+  for (const card of Object.values(schema.cards)) {
+    for (const rule of card.rules) {
+      assert.equal(ruleKind(rule) === "model", Boolean(rule.needs_model), rule.id);
+      assert.equal(Boolean(rule.check), !rule.needs_model, rule.id);
+    }
+  }
+  assert.ok(modelRules(schema.cards.outline).every((r) => r.needs_model));
+  assert.ok(modelRules(schema.cards.outline).length > 0);
+});
+
+test("every check named in the schema has a function or is listed as pending, and nothing is listed twice", () => {
+  const named = new Set(Object.values(schema.cards).flatMap((c) => c.rules.map((r) => r.check).filter(Boolean)));
+  for (const name of named) assert.ok(name in CHECKS || PENDING_CHECKS.includes(name), name);
+  for (const name of PENDING_CHECKS) assert.ok(named.has(name) && !(name in CHECKS), name);
+});
+
+test("an empty required field is reported as missing, at the field", () => {
+  const setup = schema.cards.setup;
+  const { problems } = validate(setup, blankCard(setup), {}, schema.common);
+  assert.deepEqual(problems.map((p) => p.field).sort(), ["chapter_count", "disruption", "goal", "normal", "protagonist", "stakes"]);
+  assert.equal(problems[0].rule, "missing");
+  assert.match(problems.find((p) => p.field === "goal").message, /^Goal is empty\./);
+  const filled = { ...blankCard(setup), protagonist: "c1", normal: "a", disruption: "b", goal: "c", stakes: "d", chapter_count: 12 };
+  assert.deepEqual(validate(setup, filled, {}, schema.common).problems, []);
+});
+
+test("problems inside a list item name the list, the item and the field", () => {
+  const list = [];
+  const beat = addItem(beatsField, list);
+  const values = { beats: list };
+  const { problems } = validate(outline, values, {}, schema.common);
+  const goal = problemsFor(problems, "beats", beat.id, "collision_goal");
+  assert.equal(goal.length, 1);
+  assert.equal(goal[0].rule, "missing");
+  assert.equal(problemsFor(problems, "beats", beat.id, "reveal_rule").length, 0);   // optional
+  assert.equal(problemsFor(problems, "beats", beat.id, "goal_now").length, 0);       // not required by itself: a rule asks for it
+});
+
+test("a value that is not one of the options, and too many chosen, are reported", () => {
+  const list = [];
+  const beat = addItem(beatsField, list);
+  beat.shift = "sideways";
+  beat.cast = ["a", "b", "c", "d", "e", "f"];
+  const { problems } = validate(outline, { beats: list }, {}, schema.common);
+  assert.equal(problemsFor(problems, "beats", beat.id, "shift")[0].rule, "not_allowed");
+  assert.equal(problemsFor(problems, "beats", beat.id, "cast").find((p) => p.rule === "too_many").message, "Cast can hold at most 5 items.");
+});
+
+test("code rules this page cannot run yet are reported as unchecked, never skipped silently", () => {
+  const { unchecked } = validate(outline, { beats: [] }, {}, schema.common);
+  assert.ok(unchecked.includes("shift_legal"));
+  assert.ok(!unchecked.includes("goal_now_is_action"));   // a model rule, not a code rule
 });

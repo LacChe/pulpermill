@@ -294,3 +294,109 @@ export function inOneOf(owner, field) {
 export function showsOptionalTag(owner, field) {
   return field.required === false && !field.visible_if && !inOneOf(owner, field);
 }
+
+// ---- Validation ----------------------------------------------------------
+// Two kinds of rule come with every card. A "code" rule has a named `check` that the page can run itself, the
+// moment the writer leaves a field. A "model" rule (needs_model) is a judgement the page cannot make; those run
+// only when the writer presses Validate, through the backend. This file runs the code rules and the common
+// field checks (empty, not a listed choice, too many); it never judges wording.
+//
+// A problem is {rule, kind, severity, field, item, key, message, fix}:
+//   field  the card's own field (a list's key, for a problem inside one of its items)
+//   item   the id of the list item, or null
+//   key    the field inside that item, or null
+// Blocking problems only stop generating; the writer can always keep editing and saving a draft.
+
+export function ruleKind(rule) {
+  return rule.needs_model ? "model" : "code";
+}
+
+export function modelRules(card) {
+  return (card.rules ?? []).filter((rule) => ruleKind(rule) === "model");
+}
+
+// check name -> function({rule, card, values, project}) returning the places that break the rule:
+//   [{field, item?, key?, tokens?}]. Filled in one check at a time.
+export const CHECKS = {};
+
+// Code rules whose check is named in the schema but not written yet. A test keeps this list honest:
+// every named check has a function here or is listed in PENDING_CHECKS, so none can be forgotten.
+export const PENDING_CHECKS = [
+  "all_or_none", "exactly_one", "fields_differ", "holding_pairs_allowed", "includes_value", "item_count",
+  "legal_shift", "mentions_known_names", "not_already_landed", "paid_off_valid", "pressure_touches_cast",
+  "ref_exists", "required_if", "similar_to_earlier",
+];
+
+function fillTokens(text, tokens) {
+  return (text ?? "").replace(/\{(\w+)\}/g, (whole, key) => (key in tokens ? String(tokens[key]) : whole));
+}
+
+function problem(card, rule, hit, extra = {}) {
+  return {
+    rule: rule.id,
+    kind: ruleKind(rule),
+    severity: rule.severity,
+    field: hit.field,
+    item: hit.item ?? null,
+    key: hit.key ?? null,
+    message: fillTokens(rule.message, { ...extra, ...(hit.tokens ?? {}) }),
+    fix: fillTokens(rule.fix, { ...extra, ...(hit.tokens ?? {}) }),
+  };
+}
+
+function commonProblem(common, kind, hit, label, extra = {}) {
+  const text = common?.[kind] ?? {};
+  const tokens = { label, ...extra };
+  return {
+    rule: kind, kind: "code", severity: "block", field: hit.field, item: hit.item ?? null, key: hit.key ?? null,
+    message: fillTokens(text.message, tokens), fix: fillTokens(text.fix, tokens),
+  };
+}
+
+// The checks every field gets without a rule: required and empty, a value that is not one of the options, too many.
+function fieldProblems(field, values, scope, common, out) {
+  const hit = scope.item ? { field: scope.field, item: scope.item, key: field.key } : { field: field.key, item: null, key: null };
+  const value = values[field.key];
+  if (!isVisible(field, values)) return;
+  if (field.repeat) {
+    if (field.required && !isFilled(value)) out.push(commonProblem(common, "missing", { field: field.key }, field.label));
+    if (!field.uncapped && field.max_items != null && (value ?? []).length > field.max_items) {
+      out.push(commonProblem(common, "too_many", { field: field.key }, field.label, { max: field.max_items }));
+    }
+    for (const item of value ?? []) {
+      for (const sub of field.item_fields ?? []) {
+        fieldProblems(sub, item, { field: field.key, item: item.id, group: field }, common, out);
+      }
+    }
+    return;
+  }
+  const inOne = (scope.group?.one_of ?? []).some((g) => g.fields.includes(field.key));
+  if (field.required && !isFilled(value) && !inOne) out.push(commonProblem(common, "missing", hit, field.label));
+  if (field.options && isFilled(value)) {
+    const wanted = Array.isArray(value) ? value : [value];
+    if (wanted.some((v) => !field.options.some((o) => o.value === v))) out.push(commonProblem(common, "not_allowed", hit, field.label));
+  }
+  if (field.max_selected && Array.isArray(value) && value.length > field.max_selected) {
+    out.push(commonProblem(common, "too_many", hit, field.label, { max: field.max_selected }));
+  }
+}
+
+// All code problems for one card. `values` is the card's values (one instance for a card held many times).
+// Returns {problems, unchecked}: unchecked names the code rules this page cannot run yet.
+export function validate(card, values, project, common = {}) {
+  const problems = [];
+  const unchecked = [];
+  for (const field of card.fields) fieldProblems(field, values, { field: null, item: null }, common, problems);
+  for (const rule of card.rules ?? []) {
+    if (ruleKind(rule) !== "code") continue;
+    const check = CHECKS[rule.check];
+    if (!check) { unchecked.push(rule.id); continue; }
+    for (const hit of check({ rule, card, values, project })) problems.push(problem(card, rule, hit));
+  }
+  return { problems, unchecked };
+}
+
+// The problems that belong to one field (or one field of one item), for showing under it.
+export function problemsFor(problems, field, item = null, key = null) {
+  return problems.filter((p) => p.field === field && p.item === item && p.key === key);
+}
