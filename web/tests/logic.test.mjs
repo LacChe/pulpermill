@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import {
   isFilled, isVisible, blankCard, groupedFields, ensureCard, newProject, newId, blankItem, canAdd, addItem,
   removeItem, isItemEmpty, fillTemplate, itemTitle, addInstance, removeInstance, findInstance, instanceName,
+  refOptions, sourceOfId, pickerSources, blockedValues, lookupLabel, oneOfChoice, chooseOneOf, fieldShown,
+  inOneOf, showsOptionalTag,
 } from "../logic.js";
 import { isSupported } from "../render.js";
 
@@ -11,6 +13,9 @@ const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.
 const style = schema.cards.style;
 const characters = schema.cards.characters;
 const world = schema.cards.world;
+const ent = schema.cards.entanglements;
+const entList = (key) => ent.fields.find((f) => f.key === key);
+const entItem = (list, key) => entList(list).item_fields.find((f) => f.key === key);
 
 test("isFilled treats empty strings, nulls and empty lists as empty", () => {
   for (const empty of [undefined, null, "", []]) assert.equal(isFilled(empty), false);
@@ -82,8 +87,8 @@ test("ensureCard fills missing keys and never overwrites a value", () => {
   assert.equal(project.style.tense, "");
 });
 
-test("the renderer can draw every Style, Characters and World field, and every option has a description", () => {
-  for (const card of [style, characters, world]) {
+test("the renderer can draw every Style, Characters, World and Entanglements field, and every option has a description", () => {
+  for (const card of [style, characters, world, ent]) {
     const check = (fields, where) => {
       for (const f of fields) {
         assert.ok(isSupported(f), `${where}.${f.key}`);
@@ -207,4 +212,120 @@ test("World: list items get a title from item_title", () => {
   const places = world.fields.find((f) => f.key === "places");
   assert.equal(itemTitle(places, { name: "The print shop" }), "The print shop");
   assert.equal(itemTitle(places, { name: "" }), "");
+});
+
+const sample = () => ({
+  characters: [{ id: "c1", name: "Ines" }, { id: "c2", name: "" }],
+  world: {
+    powers: [{ id: "p1", name: "The Guild" }],
+    objects: [{ id: "o1", name: "The ledger" }],
+    places: [{ id: "pl1", name: "The print shop" }],
+    rules: [{ id: "r1", statement: "Ink never dries in the east wing" }],
+  },
+});
+
+test("refOptions lists entries of each source in order, with names or the unnamed word", () => {
+  const options = refOptions(sample(), ["characters", "world.powers"], "Unnamed");
+  assert.deepEqual(options.map((o) => [o.value, o.label, o.source]), [
+    ["c1", "Ines", "characters"], ["c2", "Unnamed", "characters"], ["p1", "The Guild", "world.powers"],
+  ]);
+  assert.equal(refOptions(sample(), ["world.rules"])[0].label, "Ink never dries in the east wing");
+  assert.deepEqual(refOptions({}, ["characters", "world.places"]), []);
+});
+
+test("sourceOfId finds which list an id is in", () => {
+  assert.equal(sourceOfId(sample(), ["world.objects", "world.places"], "pl1"), "world.places");
+  assert.equal(sourceOfId(sample(), ["world.objects", "world.places"], "nope"), null);
+});
+
+test("holders are filtered by what is being held", () => {
+  const heldBy = entItem("holdings", "held_by");
+  const siblings = entList("holdings").item_fields;
+  const project = sample();
+  assert.deepEqual(pickerSources(heldBy, { holdee: "o1" }, siblings, project, ent), ["characters", "world.powers", "world.places"]);
+  assert.deepEqual(pickerSources(heldBy, { holdee: "pl1" }, siblings, project, ent), ["characters", "world.powers"]);
+  assert.deepEqual(pickerSources(heldBy, { holdee: "" }, siblings, project, ent), heldBy.ref);
+});
+
+test("a tie's two ends block each other's choice", () => {
+  const ties = entList("ties");
+  const from = entItem("ties", "tie_from");
+  const to = entItem("ties", "tie_to");
+  assert.deepEqual(blockedValues(ent, ties, from, { tie_from: "", tie_to: "c1" }), ["c1"]);
+  assert.deepEqual(blockedValues(ent, ties, to, { tie_from: "c1", tie_to: "" }), ["c1"]);
+  assert.deepEqual(blockedValues(ent, ties, from, { tie_from: "", tie_to: "" }), []);
+  assert.deepEqual(blockedValues(ent, entList("holdings"), entItem("holdings", "held_by"), { holdee: "o1" }), []);
+});
+
+test("lookupLabel: option label, linked name, or the stored value", () => {
+  const project = sample();
+  assert.equal(lookupLabel(project, entItem("knowledge", "status"), "misled"), "Misled");
+  assert.equal(lookupLabel(project, entItem("ties", "tie_from"), "p1"), "The Guild");
+  assert.equal(lookupLabel(project, entItem("ties", "bond"), "rivals"), "rivals");
+});
+
+test("item titles show names, not ids", () => {
+  const project = sample();
+  const lookup = (f, v) => lookupLabel(project, f, v);
+  assert.equal(itemTitle(entList("ties"), { tie_from: "c1", tie_to: "p1" }, lookup), "Ines → The Guild");
+  assert.equal(itemTitle(entList("holdings"), { holdee: "o1", held_by: "c1" }, lookup), "Ines holds The ledger");
+  assert.equal(itemTitle(entList("knowledge"), { person: "c1", status: "knows", rule: "r1", fact: "" }, lookup),
+    "Ines: Knows Ink never dries in the east wing");
+});
+
+test("either-or: the filled field is the choice; switching clears the other", () => {
+  const owner = entList("pressures");
+  const group = owner.one_of[0];
+  const values = { source_agent: "", source_circumstance: "" };
+  const memory = {};
+  assert.equal(oneOfChoice(group, 0, values, memory), null);
+  chooseOneOf(group, 0, values, memory, "source_agent");
+  assert.equal(oneOfChoice(group, 0, values, memory), "source_agent");
+  values.source_agent = "c1";
+  chooseOneOf(group, 0, values, memory, "source_circumstance");
+  assert.equal(values.source_agent, "");
+  assert.equal(oneOfChoice(group, 0, values, memory), "source_circumstance");
+});
+
+test("either-or: only the chosen field is shown, and next move needs an agent", () => {
+  const owner = entList("pressures");
+  const agent = entItem("pressures", "source_agent");
+  const circumstance = entItem("pressures", "source_circumstance");
+  const nextMove = entItem("pressures", "next_move");
+  const values = { source_agent: "", source_circumstance: "" };
+  const memory = {};
+  assert.equal(fieldShown(owner, agent, values, memory), false);
+  assert.equal(fieldShown(owner, circumstance, values, memory), false);
+  memory[0] = "source_agent";
+  assert.equal(fieldShown(owner, agent, values, memory), true);
+  assert.equal(fieldShown(owner, circumstance, values, memory), false);
+  assert.equal(fieldShown(owner, nextMove, values, memory), false);
+  values.source_agent = "c1";
+  assert.equal(fieldShown(owner, nextMove, values, memory), true);
+});
+
+test("the Optional tag is not shown for either-or or conditional fields", () => {
+  const owner = entList("pressures");
+  assert.equal(inOneOf(owner, entItem("pressures", "source_agent")), true);
+  assert.equal(showsOptionalTag(owner, entItem("pressures", "source_agent")), false);
+  assert.equal(showsOptionalTag(owner, entItem("pressures", "next_move")), false);
+  assert.equal(showsOptionalTag(null, { required: false }), true);
+  assert.equal(showsOptionalTag(null, { required: true }), false);
+});
+
+test("every link field on Entanglements has a placeholder and an empty message", () => {
+  for (const list of ent.fields) {
+    for (const f of list.item_fields) {
+      if (!f.ref) continue;
+      assert.ok(f.no_options, `${list.key}.${f.key}`);
+      if (f.input === "select") assert.ok(f.placeholder, `${list.key}.${f.key}`);
+    }
+  }
+});
+
+test("a title for an either-or pair shows whichever half is used", () => {
+  const lookup = (f, v) => lookupLabel(sample(), f, v);
+  assert.equal(itemTitle(entList("knowledge"), { person: "c1", status: "suspects", rule: "", fact: "the key is in the well" }, lookup),
+    "Ines: Suspects the key is in the well");
+  assert.equal(itemTitle(entList("knowledge"), { person: "c1", status: "", rule: "", fact: "" }, lookup), "Ines: …");
 });

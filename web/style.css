@@ -113,3 +113,13 @@ textarea.text-control { resize: vertical; }
 .add:disabled { opacity: 0.5; cursor: default; }
 .empty, .limit { margin: 4px 0; color: var(--muted); font-size: 0.9rem; }
 .empty[hidden], .limit[hidden] { display: none; }
+
+select.text-control { appearance: auto; }
+select.text-control[hidden], .checks[hidden] { display: none; }
+.note { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; }
+.note[hidden] { display: none; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.check { display: inline-flex; gap: 6px; align-items: center; }
+.check input { accent-color: var(--accent); }
+.check-group { width: 100%; font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+.toggle .options { grid-template-columns: repeat(auto-fit, minmax(150px, 220px)); }

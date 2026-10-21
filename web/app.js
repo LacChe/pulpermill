@@ -5,7 +5,7 @@ import {
 } from "./logic.js";
 import { renderCard } from "./render.js";
 
-const BUILT = ["style", "characters", "world"];
+const BUILT = ["style", "characters", "world", "entanglements"];
 const LABELS = { addCharacter: "Add a character", deleteCharacter: "Delete this character?", remove: "Delete", unnamed: "Unnamed character", noCharacters: "No characters yet." };
 
 const cardsNav = document.getElementById("cards");
@@ -70,6 +70,8 @@ function show() {
   drawNav();
   if (!values) { main.replaceChildren(); return; }
   renderCard(main, card, values, {
+    project,
+    schema,
     common: schema.common,
     changed: () => { if (card.many_per_project) drawNav(); },
   });
