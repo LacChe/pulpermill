@@ -1,0 +1,14 @@
+{
+  "id": "w3-variant-c",
+  "title": "W3 variant-c",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "w3-variant-c-n0",
+      "card": "world",
+      "character": null,
+      "text": "Karrow Gate is a walled river town. Rule: people say the river is cursed, but the truth is that the mill is poisoning it."
+    }
+  ]
+}

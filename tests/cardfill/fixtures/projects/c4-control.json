@@ -1,0 +1,14 @@
+{
+  "id": "c4-control",
+  "title": "C4 control",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "c4-control-n0",
+      "card": "characters",
+      "character": null,
+      "text": "Mira Solenne, 38, woman. She is afraid of being ordinary. Her flaw is that she takes on more than she can finish. She is vulnerable to flattery. She values craftsmanship."
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+[
+  {
+    "id": "c-pim",
+    "name": "Pim Tallowby",
+    "age": 19,
+    "sex": "female",
+    "appearance": "Short and round-cheeked, with freckles, brown hair in a flour-dusted braid and a tiny copper bell in one ear.",
+    "sketch": "A chatty, curious baker's apprentice who is always slightly behind and mostly forgiven.",
+    "wants": [
+      {
+        "id": "c-pimw0",
+        "text": "to be taken seriously"
+      },
+      {
+        "id": "c-pimw1",
+        "text": "to keep everything exactly as it is"
+      }
+    ],
+    "fear": "Being the reason something goes wrong.",
+    "flaw": "She says yes to everything, then panics.",
+    "values": [
+      {
+        "id": "c-pimv0",
+        "text": "caring for the people she feeds"
+      },
+      {
+        "id": "c-pimv1",
+        "text": "doing things properly"
+      }
+    ],
+    "behaviors": [
+      {
+        "id": "c-pimb0",
+        "state": "feels stressed",
+        "tendency": "go quiet and tidy everything in reach"
+      },
+      {
+        "id": "c-pimb1",
+        "state": "feels happy",
+        "tendency": "talk to the dough"
+      }
+    ],
+    "competence": "Can tell the weather by how dough rises.",
+    "vulnerability": "She cannot say no to anyone who asks kindly.",
+    "speech": "Chatty and quick, trailing off into questions.",
+    "history": "Grew up above the bakery."
+  },
+  {
+    "id": "c-orla",
+    "name": "Orla Fennick",
+    "age": 63,
+    "sex": "female",
+    "appearance": "Tall and wiry, with cropped white hair and forearms scarred from the oven.",
+    "sketch": "A gruff, fair master baker who shows rather than tells.",
+    "wants": [
+      {
+        "id": "c-orlaw0",
+        "text": "to carry on exactly as she always has"
+      },
+      {
+        "id": "c-orlaw1",
+        "text": "to finally rest"
+      }
+    ],
+    "fear": "Being useless.",
+    "flaw": "She will not explain anything she cannot show by doing.",
+    "values": [
+      {
+        "id": "c-orlav0",
+        "text": "doing things properly"
+      },
+      {
+        "id": "c-orlav1",
+        "text": "honest work"
+      }
+    ],
+    "behaviors": [
+      {
+        "id": "c-orlab0",
+        "state": "feels tired",
+        "tendency": "snap at whoever is nearest"
+      },
+      {
+        "id": "c-orlab1",
+        "state": "feels calm",
+        "tendency": "hum while she works"
+      }
+    ],
+    "competence": "Reads fire and heat by feel.",
+    "vulnerability": "She cannot bear being thought past it.",
+    "speech": "Short sentences, and never 'please'.",
+    "history": "Has fired the same oven every morning for forty years."
+  },
+  {
+    "id": "c-corbin",
+    "name": "Corbin Reeds",
+    "age": 34,
+    "sex": "male",
+    "appearance": "Lanky, with ink-stained thumbs, a sunburnt neck and a feathered hat he is very proud of.",
+    "sketch": "A delighted wanderer who maps the world but never stays in it.",
+    "wants": [
+      {
+        "id": "c-corbinw0",
+        "text": "to see everything"
+      },
+      {
+        "id": "c-corbinw1",
+        "text": "to find somewhere worth staying"
+      }
+    ],
+    "fear": "Being forgotten.",
+    "flaw": "He leaves before things get hard.",
+    "values": [
+      {
+        "id": "c-corbinv0",
+        "text": "honest maps"
+      },
+      {
+        "id": "c-corbinv1",
+        "text": "curiosity"
+      }
+    ],
+    "behaviors": [
+      {
+        "id": "c-corbinb0",
+        "state": "feels happy",
+        "tendency": "whistle and wander off mid-sentence"
+      },
+      {
+        "id": "c-corbinb1",
+        "state": "feels anxious",
+        "tendency": "go quiet and sketch"
+      }
+    ],
+    "competence": "Draws a true map from a single walk.",
+    "vulnerability": "He cannot resist an unexplored road.",
+    "speech": "Talks a lot and wanders off mid-sentence.",
+    "history": "Has spent ten years walking from valley to valley."
+  }
+]

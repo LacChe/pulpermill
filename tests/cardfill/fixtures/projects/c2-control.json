@@ -1,0 +1,14 @@
+{
+  "id": "c2-control",
+  "title": "C2 control",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "c2-control-n0",
+      "card": "characters",
+      "character": null,
+      "text": "Ines Calder, 41, woman. A private eye, dry and watchful, who distrusts anyone who is polite."
+    }
+  ]
+}

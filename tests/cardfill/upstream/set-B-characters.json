@@ -1,0 +1,94 @@
+[
+  {
+    "id": "b-ines",
+    "name": "Ines Calder",
+    "age": 41,
+    "sex": "female",
+    "appearance": "Narrow-faced, with a grey streak at one temple and a dark coat always worn with the collar turned up.",
+    "sketch": "A private investigator who has outlasted her patience and kept her curiosity.",
+    "wants": [
+      {
+        "id": "b-inesw0",
+        "text": "to be proven right"
+      },
+      {
+        "id": "b-inesw1",
+        "text": "to be left out of other people's trouble"
+      }
+    ],
+    "fear": "Being useful only to people who cannot be trusted.",
+    "flaw": "She refuses to admit she needs anyone, even when the work needs a second pair of hands.",
+    "values": [
+      {
+        "id": "b-inesv0",
+        "text": "telling the truth to a paying client"
+      },
+      {
+        "id": "b-inesv1",
+        "text": "paying her debts"
+      }
+    ],
+    "behaviors": [
+      {
+        "id": "b-inesb0",
+        "state": "feels cornered",
+        "tendency": "go quiet and watchful"
+      },
+      {
+        "id": "b-inesb1",
+        "state": "feels at ease",
+        "tendency": "hum and straighten whatever is nearest"
+      }
+    ],
+    "competence": "Reads rooms and records faster than anyone.",
+    "vulnerability": "She cannot leave a locked door alone.",
+    "speech": "Dry and spare, with questions disguised as remarks.",
+    "history": "Spent years as a clerk before going private."
+  },
+  {
+    "id": "b-walt",
+    "name": "Walt Orsolo",
+    "age": 58,
+    "sex": "male",
+    "appearance": "Broad and stoop-shouldered, with a bartender's forearms and a nose broken twice.",
+    "sketch": "A bar owner who knows everyone's business and has never repeated any of it.",
+    "wants": [
+      {
+        "id": "b-waltw0",
+        "text": "to keep what he has built"
+      },
+      {
+        "id": "b-waltw1",
+        "text": "to be left in peace"
+      }
+    ],
+    "fear": "Losing the bar, and with it his place on the street.",
+    "flaw": "He avoids confrontation until it is too late to avoid anything else.",
+    "values": [
+      {
+        "id": "b-waltv0",
+        "text": "discretion"
+      },
+      {
+        "id": "b-waltv1",
+        "text": "loyalty to old friends"
+      }
+    ],
+    "behaviors": [
+      {
+        "id": "b-waltb0",
+        "state": "feels threatened",
+        "tendency": "busy himself polishing glasses and change the subject"
+      },
+      {
+        "id": "b-waltb1",
+        "state": "feels at ease",
+        "tendency": "talk easily about the old days"
+      }
+    ],
+    "competence": "Remembers every face and every debt.",
+    "vulnerability": "He is easily shamed by being thought weak.",
+    "speech": "Mild and roundabout.",
+    "history": "Has run the bar for thirty years."
+  }
+]

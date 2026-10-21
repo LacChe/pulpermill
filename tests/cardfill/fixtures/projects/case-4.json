@@ -1,0 +1,50 @@
+{
+  "id": "case-4",
+  "title": "Case 4",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "case-4-n0",
+      "card": "style",
+      "character": null,
+      "text": "This is a story about grief and corporate betrayal. Genre: space thriller where Imre finds a conspiracy right away and gets framed for a murder. First person, past tense, Imre narrates. Dark, bitter humor. Short sentences, kind of like a noir but in space. Characters talk a lot but never say what they mean."
+    },
+    {
+      "id": "case-4-n1",
+      "card": "characters",
+      "character": null,
+      "text": "Imre Dace, 29, male. Salvage diver on Tern Station. Wiry, shaved head, a scar through his left eyebrow, the tip of his left ring finger missing. His older brother Kasimir vanished on a dive eight months ago, and what Imre wants is to find Kasimir's last dive log and get Kasimir's salvage claim back from the Authority. He wants to clear his brother's name. He also wants to get promoted to lead diver. He's afraid of the deep, though he'd never say so. Stubborn. Works for the Salvage Authority and hates it. Sarcastic when scared. Good at repairs."
+    },
+    {
+      "id": "case-4-n2",
+      "card": "characters",
+      "character": null,
+      "text": "Teodora Vance, 46, woman, station auditor, used to be Kasimir's boss. Heavy-set, always in a grey coat, reading glasses on a chain. Wants to keep her job and protect Imre. She owns the Lattice, an old salvage drone, and keeps it in Dock 9. Values accuracy. She's the one who erased Kasimir's last log (she doesn't want Imre to know). Dry and patient; when cornered she goes very formal."
+    },
+    {
+      "id": "case-4-n3",
+      "card": "characters",
+      "character": null,
+      "text": "Kasimir Dace, 34, male, missing diver. Tall, broad-shouldered, beard, a tattoo of the station's name on his neck. Wants the truth about the Line to come out, and wants to get his little brother off the station. Fearless to the point of recklessness. Laughs a lot. Keeps his promises."
+    },
+    {
+      "id": "case-4-n4",
+      "card": "world",
+      "character": null,
+      "text": "Tern Station is a salvage habitat orbiting a dead gas giant. About three thousand people living in scrapped ships bolted together. Air is metered and everyone pays an air tax.\n\nPlaces: Dock 9, the oldest dock, always cold, people whisper there; the Spindle, the market ring; the Authority tower.\n\nThings: the Lattice, a salvage drone owned by Teodora Vance, kept in Dock 9; Kasimir's dive log.\n\nThe Salvage Authority runs everything. It's planning to close Dock 9 next month and sell off the wrecks.\n\nRule: no diving past the Line, the old debris boundary. Everyone thinks it's for safety, but the real reason is that the Authority dumps its own waste there."
+    },
+    {
+      "id": "case-4-n5",
+      "card": "entanglements",
+      "character": null,
+      "text": "Imre looks up to Teodora and trusts her; she's been covering for him. Teodora lets Imre borrow the Lattice. Kasimir's log is stored inside the Lattice's memory. Teodora knows that, Imre doesn't. The Authority owns Dock 9 and wants it closed by the end of next month. Air tax collection is getting harder and the Authority is leaning on the divers."
+    },
+    {
+      "id": "case-4-n6",
+      "card": "setup",
+      "character": null,
+      "text": "Imre is the lead. His normal is diving every shift and drinking in the Spindle after. The disruption: things are getting tense between the divers and the Authority. His goal is to find peace about his brother. Stakes: if he doesn't, he'll never forgive himself. Seven chapters."
+    }
+  ]
+}

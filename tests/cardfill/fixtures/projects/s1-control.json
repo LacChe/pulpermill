@@ -1,0 +1,14 @@
+{
+  "id": "s1-control",
+  "title": "S1 control",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "s1-control-n0",
+      "card": "style",
+      "character": null,
+      "text": "I want the lens to be someone who notices what people do with their hands. Third person, past tense, quiet and a little sad."
+    }
+  ]
+}

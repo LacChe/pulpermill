@@ -1,0 +1,14 @@
+{
+  "id": "s3-tempting",
+  "title": "S3 tempting",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "s3-tempting-n0",
+      "card": "style",
+      "character": null,
+      "text": "Imre narrates, first person, past tense, set on Tern Station. Bitter, funny, short sentences."
+    }
+  ]
+}

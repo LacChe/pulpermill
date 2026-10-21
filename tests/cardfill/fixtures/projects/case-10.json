@@ -1,0 +1,44 @@
+{
+  "id": "case-10",
+  "title": "Case 10",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "case-10-n0",
+      "card": "style",
+      "character": null,
+      "text": "gritty-ish western but w/ some warmth?? 3rd person, past i think, maybe present idk. leaning past. lots of dialog. not too wordy. dry humour yes. kinda like old serials"
+    },
+    {
+      "id": "case-10-n1",
+      "card": "characters",
+      "character": null,
+      "text": "dell harkness 36 f. conductur on the dustline. tall, sunburnt, hat w/ a bullet hole in the brim (bought it that way, says so). wants respect?? and to be left alone mostly. scared of the engine dying out in the flats. flaw - talks big then folds. values: fairness, clean ledger. good w/ people but gets weird when ppl are nice 2 her. says \"friend\" like an insult"
+    },
+    {
+      "id": "case-10-n2",
+      "card": "characters",
+      "character": null,
+      "text": "Osric Thale, 61, m. the ingeneer. big arms, grey beard w/ burnt bits, bad left knee. wants - one more good run b4 retiring. wants 2 know the engine is safe. fear: fire. flaw stubborn about old parts. loyal!! talks to the engine, mumbles"
+    },
+    {
+      "id": "case-10-n3",
+      "card": "world",
+      "character": null,
+      "text": "dustline = single track across salt flats, 3 stops: Gantry, Hobbs Well, Ending (end of the line). steam, coal short, water scarcer. everyone buys water by the cup.\n\nplaces - gantry yard (noisy, always), hobbs well (only shade, ppl linger), the flats (heat, mirages, ppl see things)\n\nthing: engine no. 9 \"Marigold\", old + temperamental\n\ngroup: the Water Board, owns the wells, sets prices, everyone hates it\n\nrule: no trains after dark (too many washouts), everybody knows. secret: board waters down the supply, only the well-keepers no"
+    },
+    {
+      "id": "case-10-n4",
+      "card": "entanglements",
+      "character": null,
+      "text": "dell n osric - old crew, she'd trust him w/ her life. board squeezing the line - wants 2 buy it out cheap. osric keeps marigold's boiler key. the well-keepers nervous, if it comes out they lose their jobs"
+    },
+    {
+      "id": "case-10-n5",
+      "card": "setup",
+      "character": null,
+      "text": "dell = lead. normal: 3 runs a wk, same faces, same cups of water. disruption: board announces water price doubling on the line. goal: keep the railway running thru the summer. stakes: jobs, the towns. 6 chaps"
+    }
+  ]
+}

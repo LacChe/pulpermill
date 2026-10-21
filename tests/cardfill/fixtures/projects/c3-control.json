@@ -1,0 +1,14 @@
+{
+  "id": "c3-control",
+  "title": "C3 control",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "c3-control-n0",
+      "card": "characters",
+      "character": null,
+      "text": "Barnaby Quillfeather, 62, man, lighthouse keeper. Rumpled and sour-faced, talks to the gulls but never to people. Wants to be left alone, and also wants someone to notice when he's gone. Afraid of being a burden. Flaw: insults people so they leave first."
+    }
+  ]
+}

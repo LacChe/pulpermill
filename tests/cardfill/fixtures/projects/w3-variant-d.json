@@ -1,0 +1,14 @@
+{
+  "id": "w3-variant-d",
+  "title": "W3 variant-d",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "w3-variant-d-n0",
+      "card": "world",
+      "character": null,
+      "text": "Karrow Gate is a walled river town. Rule: the dawn bell has been rung by the priests for a hundred years, everyone says. In fact it is a clockwork the bellwright winds in secret."
+    }
+  ]
+}

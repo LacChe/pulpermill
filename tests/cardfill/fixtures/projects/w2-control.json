@@ -1,0 +1,14 @@
+{
+  "id": "w2-control",
+  "title": "W2 control",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "w2-control-n0",
+      "card": "world",
+      "character": null,
+      "text": "Tern Station is a salvage habitat orbiting a dead gas giant. The Salvage Authority runs it, meters the air and taxes everyone for it."
+    }
+  ]
+}

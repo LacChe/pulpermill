@@ -1,0 +1,14 @@
+{
+  "id": "c5-tempting",
+  "title": "C5 tempting",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "c5-tempting-n0",
+      "card": "characters",
+      "character": null,
+      "text": "Hester Vane, 52, woman. She never lies, never abandons a friend, and would never steal, not even from someone who deserves it."
+    }
+  ]
+}

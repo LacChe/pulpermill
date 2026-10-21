@@ -1,0 +1,55 @@
+{
+  "id": "a-ent",
+  "ties": [
+    {
+      "id": "a-t1",
+      "tie_from": "a-teodora",
+      "tie_to": "a-imre",
+      "bond": "supervisor and the diver she quietly protects",
+      "edge": "She wants him to stop diving near the Line before she can no longer cover for him."
+    },
+    {
+      "id": "a-t2",
+      "tie_from": "a-imre",
+      "tie_to": "a-kasimir",
+      "bond": "younger and older brother",
+      "edge": "He wants to learn what happened to Kasimir on his last dive."
+    },
+    {
+      "id": "a-t3",
+      "tie_from": "a-teodora",
+      "tie_to": "a-kasimir",
+      "bond": "former supervisor and diver",
+      "edge": "She wants Kasimir's last dive left unexamined."
+    }
+  ],
+  "holdings": [
+    {
+      "id": "a-h1",
+      "holdee": "a-dock9",
+      "held_by": "a-authority"
+    }
+  ],
+  "knowledge": [
+    {
+      "id": "a-k1",
+      "rule": "a-rule-dump",
+      "fact": null,
+      "person": "a-teodora",
+      "status": "knows"
+    }
+  ],
+  "pressures": [
+    {
+      "id": "a-p1",
+      "what": "The Authority is closing Dock 9 next month and selling off the wrecks; if it goes ahead, every diver who works there loses their livelihood.",
+      "source_agent": "a-authority",
+      "source_circumstance": null,
+      "next_move": "Post the closure notice on the Dock 9 gate and send the first inspectors.",
+      "bears_on": [
+        "a-imre",
+        "a-teodora"
+      ]
+    }
+  ]
+}

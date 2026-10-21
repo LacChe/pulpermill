@@ -1,0 +1,999 @@
+[
+  {
+    "id": "s1-tempting",
+    "kind": "probe",
+    "probe": "S1",
+    "target": "lens",
+    "role": "tempting",
+    "fill": [
+      "style"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "s1-control",
+    "kind": "probe",
+    "probe": "S1",
+    "target": "lens",
+    "role": "control",
+    "fill": [
+      "style"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "s2-tempting",
+    "kind": "probe",
+    "probe": "S2",
+    "target": "genre",
+    "role": "tempting",
+    "fill": [
+      "style"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "s2-control",
+    "kind": "probe",
+    "probe": "S2",
+    "target": "genre",
+    "role": "control",
+    "fill": [
+      "style"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "s3-tempting",
+    "kind": "probe",
+    "probe": "S3",
+    "target": "names in Style",
+    "role": "tempting",
+    "fill": [
+      "style"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "s3-control",
+    "kind": "probe",
+    "probe": "S3",
+    "target": "names in Style",
+    "role": "control",
+    "fill": [
+      "style"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "s4-excerpt-1",
+    "kind": "probe",
+    "probe": "S4",
+    "target": "person and tense",
+    "role": "excerpt-1",
+    "fill": [
+      "style"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "s4-excerpt-2",
+    "kind": "probe",
+    "probe": "S4",
+    "target": "person and tense",
+    "role": "excerpt-2",
+    "fill": [
+      "style"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c1-tempting-a",
+    "kind": "probe",
+    "probe": "C1",
+    "target": "wants",
+    "role": "tempting-a",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c1-control-a",
+    "kind": "probe",
+    "probe": "C1",
+    "target": "wants",
+    "role": "control-a",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c1-tempting-b",
+    "kind": "probe",
+    "probe": "C1",
+    "target": "wants",
+    "role": "tempting-b",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c1-control-b",
+    "kind": "probe",
+    "probe": "C1",
+    "target": "wants",
+    "role": "control-b",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c2-tempting",
+    "kind": "probe",
+    "probe": "C2",
+    "target": "relationship in the sketch",
+    "role": "tempting",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c2-control",
+    "kind": "probe",
+    "probe": "C2",
+    "target": "relationship in the sketch",
+    "role": "control",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c3-tempting",
+    "kind": "probe",
+    "probe": "C3",
+    "target": "role-only sketch",
+    "role": "tempting",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c3-control",
+    "kind": "probe",
+    "probe": "C3",
+    "target": "role-only sketch",
+    "role": "control",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c4-tempting",
+    "kind": "probe",
+    "probe": "C4",
+    "target": "four distinct fields",
+    "role": "tempting",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c4-control",
+    "kind": "probe",
+    "probe": "C4",
+    "target": "four distinct fields",
+    "role": "control",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c5-tempting",
+    "kind": "probe",
+    "probe": "C5",
+    "target": "values",
+    "role": "tempting",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c5-control",
+    "kind": "probe",
+    "probe": "C5",
+    "target": "values",
+    "role": "control",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c6-tempting",
+    "kind": "probe",
+    "probe": "C6",
+    "target": "behaviors",
+    "role": "tempting",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c6-control",
+    "kind": "probe",
+    "probe": "C6",
+    "target": "behaviors",
+    "role": "control",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c7-tempting",
+    "kind": "probe",
+    "probe": "C7",
+    "target": "a single want",
+    "role": "tempting",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c7-control",
+    "kind": "probe",
+    "probe": "C7",
+    "target": "a single want",
+    "role": "control",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "c8-input",
+    "kind": "probe",
+    "probe": "C8",
+    "target": "stated facts",
+    "role": "input",
+    "fill": [
+      "characters"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w1-tempting",
+    "kind": "probe",
+    "probe": "W1",
+    "target": "owner in an object",
+    "role": "tempting",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters"
+    ]
+  },
+  {
+    "id": "w1-control",
+    "kind": "probe",
+    "probe": "W1",
+    "target": "owner in an object",
+    "role": "control",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters"
+    ]
+  },
+  {
+    "id": "w2-tempting",
+    "kind": "probe",
+    "probe": "W2",
+    "target": "a group's present plan",
+    "role": "tempting",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w2-control",
+    "kind": "probe",
+    "probe": "W2",
+    "target": "a group's present plan",
+    "role": "control",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w3-variant-a",
+    "kind": "probe",
+    "probe": "W3",
+    "target": "rule status",
+    "role": "variant-a",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w3-variant-b",
+    "kind": "probe",
+    "probe": "W3",
+    "target": "rule status",
+    "role": "variant-b",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w3-variant-c",
+    "kind": "probe",
+    "probe": "W3",
+    "target": "rule status",
+    "role": "variant-c",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w3-variant-d",
+    "kind": "probe",
+    "probe": "W3",
+    "target": "rule status",
+    "role": "variant-d",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w4-tempting-a",
+    "kind": "probe",
+    "probe": "W4",
+    "target": "truth",
+    "role": "tempting-a",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w4-tempting-b",
+    "kind": "probe",
+    "probe": "W4",
+    "target": "truth",
+    "role": "tempting-b",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w4-control",
+    "kind": "probe",
+    "probe": "W4",
+    "target": "truth",
+    "role": "control",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w5-tempting",
+    "kind": "probe",
+    "probe": "W5",
+    "target": "history and era",
+    "role": "tempting",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "w5-control",
+    "kind": "probe",
+    "probe": "W5",
+    "target": "history and era",
+    "role": "control",
+    "fill": [
+      "world"
+    ],
+    "upstream_set": null,
+    "upstream_cards": []
+  },
+  {
+    "id": "e1-tempting",
+    "kind": "probe",
+    "probe": "E1",
+    "target": "holdings",
+    "role": "tempting",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e1-control",
+    "kind": "probe",
+    "probe": "E1",
+    "target": "holdings",
+    "role": "control",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e2-tempting",
+    "kind": "probe",
+    "probe": "E2",
+    "target": "invented entity",
+    "role": "tempting",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "B",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e2-control",
+    "kind": "probe",
+    "probe": "E2",
+    "target": "invented entity",
+    "role": "control",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "B",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e3-tempting",
+    "kind": "probe",
+    "probe": "E3",
+    "target": "edge",
+    "role": "tempting",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "C",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e3-control",
+    "kind": "probe",
+    "probe": "E3",
+    "target": "edge",
+    "role": "control",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "C",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e4-tempting",
+    "kind": "probe",
+    "probe": "E4",
+    "target": "bond and edge",
+    "role": "tempting",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "B",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e4-control",
+    "kind": "probe",
+    "probe": "E4",
+    "target": "bond and edge",
+    "role": "control",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "B",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e5-tempting",
+    "kind": "probe",
+    "probe": "E5",
+    "target": "pressures",
+    "role": "tempting",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "B",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e5-control",
+    "kind": "probe",
+    "probe": "E5",
+    "target": "pressures",
+    "role": "control",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "B",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e6-tempting",
+    "kind": "probe",
+    "probe": "E6",
+    "target": "knowledge status",
+    "role": "tempting",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "B",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e6-control",
+    "kind": "probe",
+    "probe": "E6",
+    "target": "knowledge status",
+    "role": "control",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "B",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e7-tempting",
+    "kind": "probe",
+    "probe": "E7",
+    "target": "rule vs fact",
+    "role": "tempting",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "C",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "e7-control",
+    "kind": "probe",
+    "probe": "E7",
+    "target": "rule vs fact",
+    "role": "control",
+    "fill": [
+      "entanglements"
+    ],
+    "upstream_set": "C",
+    "upstream_cards": [
+      "characters",
+      "world"
+    ]
+  },
+  {
+    "id": "u1-tempting",
+    "kind": "probe",
+    "probe": "U1",
+    "target": "goal",
+    "role": "tempting",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u1-control",
+    "kind": "probe",
+    "probe": "U1",
+    "target": "goal",
+    "role": "control",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u2-tempting",
+    "kind": "probe",
+    "probe": "U2",
+    "target": "normal and disruption",
+    "role": "tempting",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u2-control",
+    "kind": "probe",
+    "probe": "U2",
+    "target": "normal and disruption",
+    "role": "control",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u3-tempting",
+    "kind": "probe",
+    "probe": "U3",
+    "target": "outcome kept out",
+    "role": "tempting",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u3-control",
+    "kind": "probe",
+    "probe": "U3",
+    "target": "outcome kept out",
+    "role": "control",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u4-tempting",
+    "kind": "probe",
+    "probe": "U4",
+    "target": "stakes",
+    "role": "tempting",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u4-control",
+    "kind": "probe",
+    "probe": "U4",
+    "target": "stakes",
+    "role": "control",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u5-tempting",
+    "kind": "probe",
+    "probe": "U5",
+    "target": "protagonist",
+    "role": "tempting",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u5-control",
+    "kind": "probe",
+    "probe": "U5",
+    "target": "protagonist",
+    "role": "control",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "case-1",
+    "kind": "case",
+    "file": "case-1-noir-chapter.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "chapter",
+    "output_language": "en"
+  },
+  {
+    "id": "case-2",
+    "kind": "case",
+    "file": "case-2-domestic-chapter.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "chapter",
+    "output_language": "en"
+  },
+  {
+    "id": "case-3",
+    "kind": "case",
+    "file": "case-3-cozy-fantasy-notes.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "notes",
+    "output_language": "en"
+  },
+  {
+    "id": "case-4",
+    "kind": "case",
+    "file": "case-4-sf-blurred-notes.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "notes",
+    "output_language": "en"
+  },
+  {
+    "id": "case-5",
+    "kind": "case",
+    "file": "case-5-political-chapter-partial-notes.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "chapter+notes",
+    "output_language": "en"
+  },
+  {
+    "id": "case-6",
+    "kind": "case",
+    "file": "case-6-epic-fantasy-overstuffed-notes.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "notes",
+    "output_language": "en"
+  },
+  {
+    "id": "case-7",
+    "kind": "case",
+    "file": "case-7-gothic-voice-chapter.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "chapter",
+    "output_language": "en"
+  },
+  {
+    "id": "case-8",
+    "kind": "case",
+    "file": "case-8-island-comedy-oneliners.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements"
+    ],
+    "input": "notes",
+    "output_language": "en"
+  },
+  {
+    "id": "case-9",
+    "kind": "case",
+    "file": "case-9-wuxia-chinese.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "chapter+notes",
+    "output_language": "zh-Hans"
+  },
+  {
+    "id": "case-10",
+    "kind": "case",
+    "file": "case-10-messy-notes.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "notes",
+    "output_language": "en"
+  },
+  {
+    "id": "case-11",
+    "kind": "case",
+    "file": "case-11-action-chapter.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "chapter",
+    "output_language": "en"
+  },
+  {
+    "id": "case-12",
+    "kind": "case",
+    "file": "case-12-long-chapter.md",
+    "fill": [
+      "style",
+      "characters",
+      "world",
+      "entanglements",
+      "setup"
+    ],
+    "input": "chapter",
+    "output_language": "en"
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "id": "w4-control",
+  "title": "W4 control",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "w4-control-n0",
+      "card": "world",
+      "character": null,
+      "text": "Karrow Gate is a walled river town. Rule: everyone says the old well is haunted. In fact the groundwater there gives off a gas that makes people see things."
+    }
+  ]
+}

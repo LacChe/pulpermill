@@ -1,0 +1,14 @@
+{
+  "id": "w3-variant-a",
+  "title": "W3 variant-a",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "w3-variant-a-n0",
+      "card": "world",
+      "character": null,
+      "text": "Karrow Gate is a walled river town. Rule: the gates close at dusk, and everyone knows it."
+    }
+  ]
+}

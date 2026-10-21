@@ -1,6 +1,6 @@
 # Case 8
 
-**Give the pipeline:** card notes only. No example chapter. There is deliberately no Setup note, so Setup should stay unfilled.
+**Give the pipeline:** card notes only. No example chapter. There is no Setup note.
 
 ## Card notes
 

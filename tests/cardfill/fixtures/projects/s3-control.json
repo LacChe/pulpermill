@@ -1,0 +1,14 @@
+{
+  "id": "s3-control",
+  "title": "S3 control",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "s3-control-n0",
+      "card": "style",
+      "character": null,
+      "text": "The narrator tells it in first person, past tense. Bitter, funny, short sentences."
+    }
+  ]
+}

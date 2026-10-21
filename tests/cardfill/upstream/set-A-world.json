@@ -1,0 +1,68 @@
+{
+  "id": "a-world",
+  "name": "Tern Station",
+  "era_and_technology": "A far-future orbital habitat built from scrapped ships bolted together; suits, drones and tethers do the work, and almost nothing is made new.",
+  "everyday_life": "Air is metered and taxed, so every breath is accounted for, and everyone eats, sleeps and argues within sight of someone who is counting.",
+  "history": "The station was assembled from wrecks pulled out of the debris field around a dead gas giant after the shipping lanes moved away.",
+  "places": [
+    {
+      "id": "a-dock9",
+      "name": "Dock 9",
+      "description": "The oldest dock, long and cold, lined with salvage racks and the hulks of half-stripped wrecks.",
+      "effect": "People lower their voices and keep their hands where others can see them."
+    },
+    {
+      "id": "a-spindle",
+      "name": "The Spindle",
+      "description": "The market ring at the station's center, crowded, loud and lit around the clock.",
+      "effect": "Nobody can stay anonymous or alone there; everyone is drawn into trading, gossip and favors."
+    }
+  ],
+  "objects": [
+    {
+      "id": "a-lattice",
+      "name": "The Lattice",
+      "description": "An old salvage drone, a cage of struts and grapples with a battered sensor array.",
+      "significance": "It can reach wrecks no diver can, and it keeps a record of everything it has seen, so whoever controls it controls what is known about the deep."
+    }
+  ],
+  "powers": [
+    {
+      "id": "a-authority",
+      "name": "The Salvage Authority",
+      "nature": "The body that licenses every dive, owns the docks and sets the air tax.",
+      "hold": "It controls the air supply and the dock leases, so no one can live or work outside its permission.",
+      "felt": "People pay the air tax every day and plan their work around its inspections and notices."
+    }
+  ],
+  "rules": [
+    {
+      "id": "a-rule-line",
+      "statement": "Divers may not cross the Line, the old debris boundary.",
+      "cost": "Anyone caught beyond it loses their license and their air allowance.",
+      "status": "common",
+      "when_broken": "The Authority revokes the license and seals the offender's locker.",
+      "truth": null
+    },
+    {
+      "id": "a-rule-dump",
+      "statement": "The Authority dumps its own waste beyond the Line, which is the real reason the Line is forbidden.",
+      "cost": "Anyone who proves it threatens the Authority's license to run the station.",
+      "status": "uncommon",
+      "when_broken": "The waste drifts back toward the habitat and fouls the dock intakes.",
+      "truth": null
+    }
+  ],
+  "terms": [
+    {
+      "id": "a-t0",
+      "term": "air tax",
+      "meaning": "the levy on every breath taken on the station"
+    },
+    {
+      "id": "a-t1",
+      "term": "wreck-wise",
+      "meaning": "experienced at reading salvage"
+    }
+  ]
+}

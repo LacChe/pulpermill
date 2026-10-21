@@ -1,0 +1,14 @@
+{
+  "id": "c7-tempting",
+  "title": "C7 tempting",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "c7-tempting-n0",
+      "card": "characters",
+      "character": null,
+      "text": "Lucan Marsh, 45, man. Wants to be admired."
+    }
+  ]
+}

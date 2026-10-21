@@ -1,0 +1,44 @@
+{
+  "id": "case-8",
+  "title": "Case 8",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "case-8-n0",
+      "card": "style",
+      "character": null,
+      "text": "light and funny, cozy, kind of a Sunday afternoon vibe"
+    },
+    {
+      "id": "case-8-n1",
+      "card": "characters",
+      "character": null,
+      "text": "Barnaby Quillfeather, grumpy lighthouse keeper."
+    },
+    {
+      "id": "case-8-n2",
+      "card": "characters",
+      "character": null,
+      "text": "Odile Marchetti, retired opera singer who runs the ferry."
+    },
+    {
+      "id": "case-8-n3",
+      "card": "characters",
+      "character": null,
+      "text": "Tobias, a kid who delivers the post."
+    },
+    {
+      "id": "case-8-n4",
+      "card": "world",
+      "character": null,
+      "text": "small island, everyone knows everyone, ferry twice a week, no cars"
+    },
+    {
+      "id": "case-8-n5",
+      "card": "entanglements",
+      "character": null,
+      "text": "the keeper and the ferry lady can't stand each other"
+    }
+  ]
+}

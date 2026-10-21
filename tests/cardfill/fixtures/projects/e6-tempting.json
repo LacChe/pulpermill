@@ -1,0 +1,176 @@
+{
+  "id": "e6-tempting",
+  "title": "E6 tempting",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "e6-tempting-n0",
+      "card": "entanglements",
+      "character": null,
+      "text": "Ines knows the dues go to the Customs House. Walt believes the Mutual's fund pays for burials."
+    }
+  ],
+  "characters": [
+    {
+      "id": "b-ines",
+      "name": "Ines Calder",
+      "age": 41,
+      "sex": "female",
+      "appearance": "Narrow-faced, with a grey streak at one temple and a dark coat always worn with the collar turned up.",
+      "sketch": "A private investigator who has outlasted her patience and kept her curiosity.",
+      "wants": [
+        {
+          "id": "b-inesw0",
+          "text": "to be proven right"
+        },
+        {
+          "id": "b-inesw1",
+          "text": "to be left out of other people's trouble"
+        }
+      ],
+      "fear": "Being useful only to people who cannot be trusted.",
+      "flaw": "She refuses to admit she needs anyone, even when the work needs a second pair of hands.",
+      "values": [
+        {
+          "id": "b-inesv0",
+          "text": "telling the truth to a paying client"
+        },
+        {
+          "id": "b-inesv1",
+          "text": "paying her debts"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "b-inesb0",
+          "state": "feels cornered",
+          "tendency": "go quiet and watchful"
+        },
+        {
+          "id": "b-inesb1",
+          "state": "feels at ease",
+          "tendency": "hum and straighten whatever is nearest"
+        }
+      ],
+      "competence": "Reads rooms and records faster than anyone.",
+      "vulnerability": "She cannot leave a locked door alone.",
+      "speech": "Dry and spare, with questions disguised as remarks.",
+      "history": "Spent years as a clerk before going private."
+    },
+    {
+      "id": "b-walt",
+      "name": "Walt Orsolo",
+      "age": 58,
+      "sex": "male",
+      "appearance": "Broad and stoop-shouldered, with a bartender's forearms and a nose broken twice.",
+      "sketch": "A bar owner who knows everyone's business and has never repeated any of it.",
+      "wants": [
+        {
+          "id": "b-waltw0",
+          "text": "to keep what he has built"
+        },
+        {
+          "id": "b-waltw1",
+          "text": "to be left in peace"
+        }
+      ],
+      "fear": "Losing the bar, and with it his place on the street.",
+      "flaw": "He avoids confrontation until it is too late to avoid anything else.",
+      "values": [
+        {
+          "id": "b-waltv0",
+          "text": "discretion"
+        },
+        {
+          "id": "b-waltv1",
+          "text": "loyalty to old friends"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "b-waltb0",
+          "state": "feels threatened",
+          "tendency": "busy himself polishing glasses and change the subject"
+        },
+        {
+          "id": "b-waltb1",
+          "state": "feels at ease",
+          "tendency": "talk easily about the old days"
+        }
+      ],
+      "competence": "Remembers every face and every debt.",
+      "vulnerability": "He is easily shamed by being thought weak.",
+      "speech": "Mild and roundabout.",
+      "history": "Has run the bar for thirty years."
+    }
+  ],
+  "world": {
+    "id": "b-world",
+    "name": "Marrow Bay",
+    "era_and_technology": "A mid-century port city of steam cranes, telephones and typewriters, with no computers.",
+    "everyday_life": "Everyone on the waterfront pays someone, and favors and receipts are the real currency; nobody speaks plainly about either.",
+    "history": "The port boomed during the war and has been fought over ever since.",
+    "places": [
+      {
+        "id": "b-lantern",
+        "name": "The Lantern Bar",
+        "description": "A low-ceilinged dockside bar with a worn bar-top and a back room.",
+        "effect": "Conversation stops when certain people walk in, and the regulars sit with their backs to the wall."
+      },
+      {
+        "id": "b-quay",
+        "name": "Quay Street",
+        "description": "The long street of shops and bars along the harbor.",
+        "effect": "Everyone on it can see who goes in where, so nothing stays private."
+      }
+    ],
+    "objects": [
+      {
+        "id": "b-ledger",
+        "name": "The burial fund ledger",
+        "description": "A thin cloth-bound book, the Mutual's official record of its burial fund.",
+        "significance": "If it were opened, it would show whether the fund holds anything."
+      }
+    ],
+    "powers": [
+      {
+        "id": "b-mutual",
+        "name": "The Harbor Mutual",
+        "nature": "A burial society for dockworkers' widows that now collects monthly dues from nearly every business on the waterfront.",
+        "hold": "It collects in person and can make a business's books look bad until the owner sells.",
+        "felt": "Owners dread the first Friday of every month and lower their voices when its collectors pass."
+      }
+    ],
+    "rules": [
+      {
+        "id": "b-rule-dues",
+        "statement": "The Mutual's dues are passed on each month to an official at the Customs House.",
+        "cost": "Anyone who says so aloud risks the Mutual's retaliation and loses the official's protection.",
+        "status": "uncommon",
+        "when_broken": "The Mutual and the official both lose their income, and whoever exposed them becomes a target.",
+        "truth": null
+      },
+      {
+        "id": "b-rule-burials",
+        "statement": "The Mutual's dues pay for burials and widows' pensions.",
+        "cost": "Owners who withhold dues are accused of shortchanging widows.",
+        "status": "false_belief",
+        "when_broken": "Nothing visible happens; the belief is simply repeated.",
+        "truth": "The burial fund has been empty since before the war."
+      }
+    ],
+    "terms": [
+      {
+        "id": "b-t0",
+        "term": "dues",
+        "meaning": "the monthly payment every waterfront business makes to the Mutual"
+      },
+      {
+        "id": "b-t1",
+        "term": "grey coat",
+        "meaning": "a Mutual collector"
+      }
+    ]
+  }
+}

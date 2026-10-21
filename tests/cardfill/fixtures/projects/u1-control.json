@@ -1,0 +1,277 @@
+{
+  "id": "u1-control",
+  "title": "U1 control",
+  "schema_version": 1,
+  "output_language": "en",
+  "card_notes": [
+    {
+      "id": "u1-control-n0",
+      "card": "setup",
+      "character": null,
+      "text": "Imre is the lead. His goal is to reach Dock 9 before the Authority closes it."
+    }
+  ],
+  "characters": [
+    {
+      "id": "a-imre",
+      "name": "Imre Dace",
+      "age": 29,
+      "sex": "male",
+      "appearance": "Wiry, with a shaved head, a scar through the left eyebrow and the tip of the left ring finger missing.",
+      "sketch": "A salvage diver who talks his way out of everything and has never admitted he is frightened of the deep.",
+      "wants": [
+        {
+          "id": "a-imrew0",
+          "text": "to be taken seriously"
+        },
+        {
+          "id": "a-imrew1",
+          "text": "to be free of anyone's orders"
+        }
+      ],
+      "fear": "Being found out as afraid, and being the one left behind.",
+      "flaw": "Stubborn: he digs in when told he is wrong and refuses help.",
+      "values": [
+        {
+          "id": "a-imrev0",
+          "text": "loyalty to the people he dives with"
+        },
+        {
+          "id": "a-imrev1",
+          "text": "finishing what he starts"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "a-imreb0",
+          "state": "feels cornered or afraid",
+          "tendency": "turn sarcastic and talk too much"
+        },
+        {
+          "id": "a-imreb1",
+          "state": "feels at ease with his hands busy",
+          "tendency": "whistle and take things apart to see how they work"
+        }
+      ],
+      "competence": "Excellent at repairs and at finding a wreck's weak points.",
+      "vulnerability": "Anyone who questions his nerve can push him into a rash dive.",
+      "speech": "Dry and clipped, with jokes that land a beat late and plenty of dock slang.",
+      "history": "Started diving as a teenager to earn his keep."
+    },
+    {
+      "id": "a-teodora",
+      "name": "Teodora Vance",
+      "age": 46,
+      "sex": "female",
+      "appearance": "Heavy-set, always in a grey coat, with reading glasses on a chain.",
+      "sketch": "A careful auditor who trusts figures over people and has made peace with being disliked.",
+      "wants": [
+        {
+          "id": "a-teodoraw0",
+          "text": "to be beyond reproach"
+        },
+        {
+          "id": "a-teodoraw1",
+          "text": "to protect the people she answers for"
+        }
+      ],
+      "fear": "That one of her quiet kindnesses will come to light and ruin her record.",
+      "flaw": "She hides what she does for others behind procedure, so she is never thanked or understood.",
+      "values": [
+        {
+          "id": "a-teodorav0",
+          "text": "accuracy"
+        },
+        {
+          "id": "a-teodorav1",
+          "text": "keeping her word"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "a-teodorab0",
+          "state": "feels cornered",
+          "tendency": "go formal and cold and quote the regulations"
+        },
+        {
+          "id": "a-teodorab1",
+          "state": "feels settled",
+          "tendency": "polish her glasses and hum under her breath"
+        }
+      ],
+      "competence": "Finds the one false figure in a thousand lines.",
+      "vulnerability": "She cannot bear to be caught being kind, and an accusation of favoritism would undo her.",
+      "speech": "Precise and patient, in full sentences, with 'for the record' before anything she means.",
+      "history": "Rose through the station's accounts office as the person who always checked twice."
+    },
+    {
+      "id": "a-kasimir",
+      "name": "Kasimir Dace",
+      "age": 34,
+      "sex": "male",
+      "appearance": "Tall and broad-shouldered, bearded, with the station's name tattooed across his neck.",
+      "sketch": "A fearless, laughing diver who treats rules as suggestions and promises as law.",
+      "wants": [
+        {
+          "id": "a-kasimirw0",
+          "text": "to leave the station better than he found it"
+        },
+        {
+          "id": "a-kasimirw1",
+          "text": "to live without anyone's permission"
+        }
+      ],
+      "fear": "Being ordinary: a man who dived for years and changed nothing.",
+      "flaw": "Reckless: he treats danger as a dare.",
+      "values": [
+        {
+          "id": "a-kasimirv0",
+          "text": "keeping his promises"
+        },
+        {
+          "id": "a-kasimirv1",
+          "text": "telling the truth even when it costs him"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "a-kasimirb0",
+          "state": "feels cornered",
+          "tendency": "laugh and push forward"
+        },
+        {
+          "id": "a-kasimirb1",
+          "state": "feels settled",
+          "tendency": "tell long, ridiculous stories"
+        }
+      ],
+      "competence": "The strongest diver on the station, able to work a wreck for hours without rest.",
+      "vulnerability": "He cannot walk away from a dare or an injustice.",
+      "speech": "Loud and warm, laughing mid-sentence.",
+      "history": "Spent years at the deepest wrecks, past where anyone else would go."
+    }
+  ],
+  "world": {
+    "id": "a-world",
+    "name": "Tern Station",
+    "era_and_technology": "A far-future orbital habitat built from scrapped ships bolted together; suits, drones and tethers do the work, and almost nothing is made new.",
+    "everyday_life": "Air is metered and taxed, so every breath is accounted for, and everyone eats, sleeps and argues within sight of someone who is counting.",
+    "history": "The station was assembled from wrecks pulled out of the debris field around a dead gas giant after the shipping lanes moved away.",
+    "places": [
+      {
+        "id": "a-dock9",
+        "name": "Dock 9",
+        "description": "The oldest dock, long and cold, lined with salvage racks and the hulks of half-stripped wrecks.",
+        "effect": "People lower their voices and keep their hands where others can see them."
+      },
+      {
+        "id": "a-spindle",
+        "name": "The Spindle",
+        "description": "The market ring at the station's center, crowded, loud and lit around the clock.",
+        "effect": "Nobody can stay anonymous or alone there; everyone is drawn into trading, gossip and favors."
+      }
+    ],
+    "objects": [
+      {
+        "id": "a-lattice",
+        "name": "The Lattice",
+        "description": "An old salvage drone, a cage of struts and grapples with a battered sensor array.",
+        "significance": "It can reach wrecks no diver can, and it keeps a record of everything it has seen, so whoever controls it controls what is known about the deep."
+      }
+    ],
+    "powers": [
+      {
+        "id": "a-authority",
+        "name": "The Salvage Authority",
+        "nature": "The body that licenses every dive, owns the docks and sets the air tax.",
+        "hold": "It controls the air supply and the dock leases, so no one can live or work outside its permission.",
+        "felt": "People pay the air tax every day and plan their work around its inspections and notices."
+      }
+    ],
+    "rules": [
+      {
+        "id": "a-rule-line",
+        "statement": "Divers may not cross the Line, the old debris boundary.",
+        "cost": "Anyone caught beyond it loses their license and their air allowance.",
+        "status": "common",
+        "when_broken": "The Authority revokes the license and seals the offender's locker.",
+        "truth": null
+      },
+      {
+        "id": "a-rule-dump",
+        "statement": "The Authority dumps its own waste beyond the Line, which is the real reason the Line is forbidden.",
+        "cost": "Anyone who proves it threatens the Authority's license to run the station.",
+        "status": "uncommon",
+        "when_broken": "The waste drifts back toward the habitat and fouls the dock intakes.",
+        "truth": null
+      }
+    ],
+    "terms": [
+      {
+        "id": "a-t0",
+        "term": "air tax",
+        "meaning": "the levy on every breath taken on the station"
+      },
+      {
+        "id": "a-t1",
+        "term": "wreck-wise",
+        "meaning": "experienced at reading salvage"
+      }
+    ]
+  },
+  "entanglements": {
+    "id": "a-ent",
+    "ties": [
+      {
+        "id": "a-t1",
+        "tie_from": "a-teodora",
+        "tie_to": "a-imre",
+        "bond": "supervisor and the diver she quietly protects",
+        "edge": "She wants him to stop diving near the Line before she can no longer cover for him."
+      },
+      {
+        "id": "a-t2",
+        "tie_from": "a-imre",
+        "tie_to": "a-kasimir",
+        "bond": "younger and older brother",
+        "edge": "He wants to learn what happened to Kasimir on his last dive."
+      },
+      {
+        "id": "a-t3",
+        "tie_from": "a-teodora",
+        "tie_to": "a-kasimir",
+        "bond": "former supervisor and diver",
+        "edge": "She wants Kasimir's last dive left unexamined."
+      }
+    ],
+    "holdings": [
+      {
+        "id": "a-h1",
+        "holdee": "a-dock9",
+        "held_by": "a-authority"
+      }
+    ],
+    "knowledge": [
+      {
+        "id": "a-k1",
+        "rule": "a-rule-dump",
+        "fact": null,
+        "person": "a-teodora",
+        "status": "knows"
+      }
+    ],
+    "pressures": [
+      {
+        "id": "a-p1",
+        "what": "The Authority is closing Dock 9 next month and selling off the wrecks; if it goes ahead, every diver who works there loses their livelihood.",
+        "source_agent": "a-authority",
+        "source_circumstance": null,
+        "next_move": "Post the closure notice on the Dock 9 gate and send the first inspectors.",
+        "bears_on": [
+          "a-imre",
+          "a-teodora"
+        ]
+      }
+    ]
+  }
+}
