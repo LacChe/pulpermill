@@ -179,7 +179,7 @@ def test_other_languages_match_english_keys_and_tokens():
 # ---------------------------------------------------------------- UI wording (human-only, never sent to the model)
 # Cards whose UI wording is finished. A card listed here must give every option a description and every free-text
 # field a placeholder. Add a card to this set when its wording is written.
-UI_DONE = {"style"}
+UI_DONE = {"style", "characters"}
 FIELD_UI = {"placeholder", "why", "examples", "empty", "add", "delete_confirm", "item_title", "visible_if"}
 FIELD_KEYS = FIELD_UI | {"label", "help", "options", "item_fields", "expand", "lead_in", "item_template", "item_join"}
 OPTION_KEYS = {"label", "expand", "description"}
@@ -207,7 +207,12 @@ def test_ui_wording_uses_known_keys_and_sensible_values(cid, lang):
                 assert isinstance(t[key], str) and t[key].strip(), (n, key)
                 assert not tokens(t[key]), (n, key, "no tokens in plain UI text")
         if "placeholder" in t:
-            assert meta["input"] in ("text", "textarea"), (n, "placeholder only on typed fields")
+            assert meta["input"] in ("text", "textarea", "number"), (n, "placeholder only on typed fields")
+        for key in ("empty", "add", "delete_confirm", "item_title"):
+            if key in t:
+                assert is_list_field(f), (n, key, "list wording only on repeating lists")
+        if "item_title" in t:
+            assert t["item_title"].strip() and tokens(t["item_title"]) and tokens(t["item_title"]) <= set(item_fields(f)), n
         if "examples" in t:
             ex = t["examples"]
             assert set(ex) == {"good", "avoid"}, n
@@ -237,7 +242,10 @@ def test_finished_cards_describe_every_option_and_typed_field(cid, lang):
         meta = f.json_schema_extra
         for value, o in t.get("options", {}).items():
             assert o.get("description"), (n, value)
-        if meta["input"] in ("text", "textarea") and meta["kind"] in ("note", "free"):
+        if is_list_field(f):
+            for key in ("empty", "add", "delete_confirm", "item_title"):
+                assert t.get(key), (n, key)
+        if meta["input"] in ("text", "textarea", "number") and meta["kind"] in ("note", "free"):
             assert t.get("placeholder"), n
 
 

@@ -14,73 +14,118 @@ fields:
   name:
     label: "Name"
     help: "What the narration calls them."
+    placeholder: "e.g. Ines Calder"
+    why: "Every chapter calls them this, so pick a name you won't want to change."
     lead_in: "The character's name is {value}."
   age:
     label: "Age"
     help: "A concrete number, so the story never drifts."
+    placeholder: "e.g. 34"
+    why: "A fixed number stops the story drifting, like a 30-year-old slowly becoming 'young'."
     lead_in: "{name} is {value} years old."
   sex:
     label: "Sex"
     help: "Fixes pronouns and avoids contradictions."
+    why: "Sets the pronouns used in every chapter."
     options:
-      female: {label: "Female", expand: "{name} is a woman, referred to as she and her."}
-      male: {label: "Male", expand: "{name} is a man, referred to as he and him."}
-      other: {label: "Other", expand: "{name} is referred to as they and them."}
+      female: {label: "Female", expand: "{name} is a woman, referred to as she and her.", description: "She / her"}
+      male: {label: "Male", expand: "{name} is a man, referred to as he and him.", description: "He / him"}
+      other: {label: "Other", expand: "{name} is referred to as they and them.", description: "They / them"}
   appearance:
     label: "Appearance"
     help: "Concrete, checkable details: build, hair, face, distinguishing marks, usual dress. State facts, not impressions."
+    placeholder: "e.g. Tall and thin, close-cropped grey hair, a burn scar across the left wrist, always in a canvas work coat."
+    why: "If a detail isn't here, the model may invent a different one in a later chapter."
+    examples:
+      good: ["Tall and thin, close-cropped grey hair, a burn scar across the left wrist"]
+      avoid: ["striking", "looks dangerous"]
     lead_in: "{name}'s appearance: {value}"
   sketch:
     label: "Sketch"
     help: "One or two sentences on what this person is like. Describe the person, not just a role, and if you can, include one contradiction that doesn't fit the type (a brutal enforcer who keeps bees)."
+    placeholder: "e.g. A soft-spoken forger who talks to her plants when she thinks she is alone."
+    why: "The quickest way to give the model a person instead of a type."
+    examples:
+      good: ["A brutal enforcer who keeps bees", "A soft-spoken forger who talks to her plants when she thinks she is alone"]
+      avoid: ["a thief", "the detective"]
   wants:
     label: "Wants"
     help: "Two to five abstract desires that can't all be satisfied at once (succeed at school, be left alone). Nothing concrete and nobody else: aims toward a particular person live in Entanglements. The conflict between them is what drives the character."
+    why: "Wants that pull against each other are what force this character to choose and struggle."
+    empty: "No wants yet. Add at least two that pull against each other."
+    add: "Add a want"
+    delete_confirm: "Delete this want?"
+    item_title: "{text}"
     lead_in: "{name} wants several things that cannot all be satisfied at once: {items}."
     item_template: "{text}"
     item_join: "; "
     item_fields:
-      text: {label: "Want", help: "One desire, in a few words."}
+      text: {label: "Want", help: "One desire, in a few words.", placeholder: "e.g. be left alone", examples: {good: ["be left alone", "succeed at school", "be admired"], avoid: ["get revenge on his brother", "find the missing necklace"]}}
   fear:
     label: "Fear"
     help: "What they avoid or protect themselves from."
+    placeholder: "e.g. Being relied on, then failing the person who relied on them."
+    why: "Fear shows up as what the character avoids, which is easier to write than a feeling."
     lead_in: "{name} avoids and protects themselves from: {value}"
   flaw:
     label: "Flaw"
     help: "A false belief or blind spot that sabotages what they want."
+    placeholder: "e.g. Believes asking for help creates a debt that can never be repaid."
+    why: "A flaw that works against the wants is what turns events into character."
     lead_in: "{name} holds a false belief or blind spot that sabotages what they want: {value}"
   values:
     label: "Values"
     help: "What they hold sacred or will not betray, phrased positively ('keeps their word even when it ruins them')."
+    why: "Values give the character something to lose and lines they won't cross."
+    empty: "No values yet. What would this person never betray?"
+    add: "Add a value"
+    delete_confirm: "Delete this value?"
+    item_title: "{text}"
     lead_in: "{name} holds sacred, and keeps faith with: {items}."
     item_template: "{text}"
     item_join: "; "
     item_fields:
-      text: {label: "Value", help: "One thing they protect, phrased positively."}
+      text: {label: "Value", help: "One thing they protect, phrased positively.", placeholder: "e.g. keeps their word even when it ruins them", examples: {good: ["keeps their word even when it ruins them"], avoid: ["never lies", "doesn't hurt innocents"]}}
   behaviors:
     label: "Behaviors"
     help: "How they act in different inner states. Include at least one calm or happy state."
+    why: "Gives the model a person who acts differently as they feel differently, not one fixed mood."
+    empty: "No behaviors yet. Start with how they act when they feel at ease."
+    add: "Add a behavior"
+    delete_confirm: "Delete this behavior?"
+    item_title: "when {state}, they {tendency}"
     lead_in: "{name} has these dispositions: {items}."
     item_template: "when {state}, they {tendency}"
     item_join: "; "
     item_fields:
-      state: {label: "When", help: "An inner or broad social state, like 'feels watched', 'is being praised' or 'is out of their depth'. Not a specific situation."}
-      tendency: {label: "They", help: "A leaning or habit, like 'go quiet' or 'busy their hands'. Not one particular act."}
+      state: {label: "When", help: "An inner or broad social state, like 'feels watched', 'is being praised' or 'is out of their depth'. Not a specific situation.", placeholder: "e.g. feels watched", examples: {good: ["feels watched", "is being praised", "is out of their depth"], avoid: ["is in a bar fight", "the police arrive"]}}
+      tendency: {label: "They", help: "A leaning or habit, like 'go quiet' or 'busy their hands'. Not one particular act.", placeholder: "e.g. go quiet and busy their hands", examples: {good: ["go quiet", "busy their hands"], avoid: ["punch the nearest wall", "leave through the window"]}}
   competence:
     label: "Competence"
     help: "What they're good at."
+    placeholder: "e.g. Reads people's tells; can fix almost any mechanism."
+    why: "Knowing what they are good at lets the story reward them."
     lead_in: "{name} is good at: {value}"
   vulnerability:
     label: "Vulnerability"
     help: "Where they can be hurt or caught out, including shame that shapes behavior."
+    placeholder: "e.g. Ashamed of never finishing school; cannot bear being laughed at."
+    why: "Gives other characters, and the plot, something to press on."
     lead_in: "{name} can be hurt or caught out by: {value}"
   speech:
     label: "Speech"
     help: "How they talk: rhythm, vocabulary, what they never say."
+    placeholder: "e.g. Short, dry sentences; never says sorry."
+    why: "Lets dialogue sound like this person and not like the narrator."
     lead_in: "{name} speaks like this: {value}"
   history:
     label: "History"
     help: "Short, formative background that explains the flaw and the wants. No named people, places or objects from any story."
+    placeholder: "e.g. Raised in a boarding house where nothing was ever hers to keep."
+    why: "Explains the flaw and the wants. Keep it short or it crowds the page."
+    examples:
+      good: ["Raised in a boarding house where nothing was ever hers to keep"]
+      avoid: ["Her brother Tom left after the fire in Marlow"]
     lead_in: "Formative background: {value}"
 rules:
   char_other_names:

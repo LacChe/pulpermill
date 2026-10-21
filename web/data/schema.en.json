@@ -123,7 +123,7 @@
     {
      "key": "distance",
      "label": "Distance",
-     "help": "How far the narrator stands from the protagonist's thoughts. Leave blank to let the model decide.",
+     "help": "How far the narrator stands from the protagonist's thoughts.",
      "input": "select",
      "kind": "axis",
      "group": "narrator",
@@ -219,7 +219,7 @@
     {
      "key": "rhythm",
      "label": "Rhythm",
-     "help": "How sentences sound. Leave blank to let the model decide.",
+     "help": "How sentences sound.",
      "input": "select",
      "kind": "axis",
      "group": "sentences",
@@ -554,7 +554,7 @@
      "group": "free",
      "required": true,
      "placeholder": "e.g. noir, cozy mystery, space opera",
-     "why": "A named tradition tells the writer which conventions to use and which to leave out.",
+     "why": "A named tradition tells the model which conventions to use and which to leave out.",
      "examples": {
       "good": [
        "noir",
@@ -668,7 +668,9 @@
      "kind": "free",
      "group": "identity",
      "required": true,
-     "fixed": true
+     "fixed": true,
+     "placeholder": "e.g. Ines Calder",
+     "why": "Every chapter calls them this, so pick a name you won't want to change."
     },
     {
      "key": "age",
@@ -678,7 +680,9 @@
      "kind": "free",
      "group": "identity",
      "required": true,
-     "fixed": true
+     "fixed": true,
+     "placeholder": "e.g. 34",
+     "why": "A fixed number stops the story drifting, like a 30-year-old slowly becoming 'young'."
     },
     {
      "key": "sex",
@@ -689,18 +693,22 @@
      "group": "identity",
      "required": true,
      "fixed": true,
+     "why": "Sets the pronouns used in every chapter.",
      "options": [
       {
        "value": "female",
-       "label": "Female"
+       "label": "Female",
+       "description": "She / her"
       },
       {
        "value": "male",
-       "label": "Male"
+       "label": "Male",
+       "description": "He / him"
       },
       {
        "value": "other",
-       "label": "Other"
+       "label": "Other",
+       "description": "They / them"
       }
      ]
     },
@@ -712,7 +720,18 @@
      "kind": "free",
      "group": "identity",
      "required": true,
-     "fixed": true
+     "fixed": true,
+     "placeholder": "e.g. Tall and thin, close-cropped grey hair, a burn scar across the left wrist, always in a canvas work coat.",
+     "why": "If a detail isn't here, the model may invent a different one in a later chapter.",
+     "examples": {
+      "good": [
+       "Tall and thin, close-cropped grey hair, a burn scar across the left wrist"
+      ],
+      "avoid": [
+       "striking",
+       "looks dangerous"
+      ]
+     }
     },
     {
      "key": "sketch",
@@ -721,7 +740,19 @@
      "input": "textarea",
      "kind": "note",
      "group": "identity",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. A soft-spoken forger who talks to her plants when she thinks she is alone.",
+     "why": "The quickest way to give the model a person instead of a type.",
+     "examples": {
+      "good": [
+       "A brutal enforcer who keeps bees",
+       "A soft-spoken forger who talks to her plants when she thinks she is alone"
+      ],
+      "avoid": [
+       "a thief",
+       "the detective"
+      ]
+     }
     },
     {
      "key": "wants",
@@ -733,6 +764,11 @@
      "required": true,
      "max_items": 5,
      "repeat": true,
+     "why": "Wants that pull against each other are what force this character to choose and struggle.",
+     "empty": "No wants yet. Add at least two that pull against each other.",
+     "add": "Add a want",
+     "delete_confirm": "Delete this want?",
+     "item_title": "{text}",
      "item_fields": [
       {
        "key": "text",
@@ -740,7 +776,19 @@
        "help": "One desire, in a few words.",
        "input": "text",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. be left alone",
+       "examples": {
+        "good": [
+         "be left alone",
+         "succeed at school",
+         "be admired"
+        ],
+        "avoid": [
+         "get revenge on his brother",
+         "find the missing necklace"
+        ]
+       }
       }
      ]
     },
@@ -751,7 +799,9 @@
      "input": "textarea",
      "kind": "free",
      "group": "drive",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Being relied on, then failing the person who relied on them.",
+     "why": "Fear shows up as what the character avoids, which is easier to write than a feeling."
     },
     {
      "key": "flaw",
@@ -760,7 +810,9 @@
      "input": "textarea",
      "kind": "free",
      "group": "inner_conflict",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Believes asking for help creates a debt that can never be repaid.",
+     "why": "A flaw that works against the wants is what turns events into character."
     },
     {
      "key": "values",
@@ -772,6 +824,11 @@
      "required": true,
      "max_items": 5,
      "repeat": true,
+     "why": "Values give the character something to lose and lines they won't cross.",
+     "empty": "No values yet. What would this person never betray?",
+     "add": "Add a value",
+     "delete_confirm": "Delete this value?",
+     "item_title": "{text}",
      "item_fields": [
       {
        "key": "text",
@@ -779,7 +836,17 @@
        "help": "One thing they protect, phrased positively.",
        "input": "text",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. keeps their word even when it ruins them",
+       "examples": {
+        "good": [
+         "keeps their word even when it ruins them"
+        ],
+        "avoid": [
+         "never lies",
+         "doesn't hurt innocents"
+        ]
+       }
       }
      ]
     },
@@ -794,6 +861,11 @@
      "counted": true,
      "max_items": 5,
      "repeat": true,
+     "why": "Gives the model a person who acts differently as they feel differently, not one fixed mood.",
+     "empty": "No behaviors yet. Start with how they act when they feel at ease.",
+     "add": "Add a behavior",
+     "delete_confirm": "Delete this behavior?",
+     "item_title": "when {state}, they {tendency}",
      "item_fields": [
       {
        "key": "state",
@@ -801,7 +873,19 @@
        "help": "An inner or broad social state, like 'feels watched', 'is being praised' or 'is out of their depth'. Not a specific situation.",
        "input": "text",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. feels watched",
+       "examples": {
+        "good": [
+         "feels watched",
+         "is being praised",
+         "is out of their depth"
+        ],
+        "avoid": [
+         "is in a bar fight",
+         "the police arrive"
+        ]
+       }
       },
       {
        "key": "tendency",
@@ -809,7 +893,18 @@
        "help": "A leaning or habit, like 'go quiet' or 'busy their hands'. Not one particular act.",
        "input": "text",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. go quiet and busy their hands",
+       "examples": {
+        "good": [
+         "go quiet",
+         "busy their hands"
+        ],
+        "avoid": [
+         "punch the nearest wall",
+         "leave through the window"
+        ]
+       }
       }
      ]
     },
@@ -820,7 +915,9 @@
      "input": "textarea",
      "kind": "free",
      "group": "texture",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Reads people's tells; can fix almost any mechanism.",
+     "why": "Knowing what they are good at lets the story reward them."
     },
     {
      "key": "vulnerability",
@@ -829,7 +926,9 @@
      "input": "textarea",
      "kind": "free",
      "group": "texture",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Ashamed of never finishing school; cannot bear being laughed at.",
+     "why": "Gives other characters, and the plot, something to press on."
     },
     {
      "key": "speech",
@@ -838,7 +937,9 @@
      "input": "textarea",
      "kind": "free",
      "group": "texture",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Short, dry sentences; never says sorry.",
+     "why": "Lets dialogue sound like this person and not like the narrator."
     },
     {
      "key": "history",
@@ -847,7 +948,17 @@
      "input": "textarea",
      "kind": "free",
      "group": "past",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Raised in a boarding house where nothing was ever hers to keep.",
+     "why": "Explains the flaw and the wants. Keep it short or it crowds the page.",
+     "examples": {
+      "good": [
+       "Raised in a boarding house where nothing was ever hers to keep"
+      ],
+      "avoid": [
+       "Her brother Tom left after the fire in Marlow"
+      ]
+     }
     }
    ],
    "rules": [

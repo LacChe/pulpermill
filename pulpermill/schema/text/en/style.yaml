@@ -28,7 +28,7 @@ fields:
       present: {label: "Present", expand: "Tell the story in the present tense, as it unfolds.", description: "“He opens the door.”"}
   distance:
     label: "Distance"
-    help: "How far the narrator stands from the protagonist's thoughts. Leave blank to let the model decide."
+    help: "How far the narrator stands from the protagonist's thoughts."
     why: "Decides how much of the protagonist's inner life the reader gets."
     options:
       external: {label: "External", expand: "The narrator watches from outside: actions, speech and surfaces are shown, and the reader infers what goes on within.", description: "“She read the letter twice. She folded it and put it on the table.”"}
@@ -57,7 +57,7 @@ fields:
     placeholder: "e.g. Knows more than it tells; sometimes speaks to the reader."
   rhythm:
     label: "Rhythm"
-    help: "How sentences sound. Leave blank to let the model decide."
+    help: "How sentences sound."
     why: "Sentence length sets the pace of reading, line by line."
     options:
       terse: {label: "Terse", expand: "Sentences are short and clipped, and each one carries weight.", description: "“She ran. The door slammed. Nothing.”"}
@@ -164,7 +164,7 @@ fields:
     label: "Genre"
     help: "A tradition or a feeling (noir, cozy mystery, space opera). It sets mood and conventions and does not require particular events."
     placeholder: "e.g. noir, cozy mystery, space opera"
-    why: "A named tradition tells the writer which conventions to use and which to leave out."
+    why: "A named tradition tells the model which conventions to use and which to leave out."
     examples:
       good: ["noir", "cozy mystery", "melancholy space opera"]
       avoid: ["a detective finds a body in chapter one", "a heist with a double-cross"]
