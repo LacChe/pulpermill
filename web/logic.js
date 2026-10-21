@@ -476,7 +476,8 @@ CHECKS.holding_pairs_allowed = ({ card, rule, values, project }) => {
     const holder = target.defs.find((d) => d.ref_filter_by);
     if (!thing || !holder) continue;
     const kind = sourceOfId(project, thing.ref, target.item[thing.key]);
-    const holderKind = sourceOfId(project, holder.ref, target.item[holder.key]);
+    // The holder may be a kind the picker would not offer (a thing), so look it up across every kind of holdable thing too.
+    const holderKind = sourceOfId(project, [...new Set([...holder.ref, ...Object.keys(card.holding_pairs ?? {})])], target.item[holder.key]);
     if (kind && holderKind && !(card.holding_pairs?.[kind] ?? []).includes(holderKind)) hits.push(place(target, holder.key));
   }
   return hits;

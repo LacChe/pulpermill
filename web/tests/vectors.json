@@ -1,0 +1,1913 @@
+{
+ "about": "Shared validation cases. Each runs one rule of one card and lists where it is broken as [field, item id, key]. The page tests run them now; the backend runs the same file when it implements the checks.",
+ "cases": [
+  {
+   "name": "setup: protagonist exists",
+   "card": "setup",
+   "rule": "protagonist_link_broken",
+   "values": {
+    "protagonist": "c1"
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "setup: protagonist deleted",
+   "card": "setup",
+   "rule": "protagonist_link_broken",
+   "values": {
+    "protagonist": "gone"
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": [
+    [
+     "protagonist",
+     null,
+     null
+    ]
+   ]
+  },
+  {
+   "name": "outline: cast member deleted",
+   "card": "outline",
+   "rule": "outline_link_broken",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "cast": [
+       "c1",
+       "zz"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": [
+    [
+     "beats",
+     "b1",
+     "cast"
+    ]
+   ]
+  },
+  {
+   "name": "outline: links all live",
+   "card": "outline",
+   "rule": "outline_link_broken",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "cast": [
+       "c1"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "pressure: one source",
+   "card": "entanglements",
+   "rule": "pressure_one_source",
+   "values": {
+    "pressures": [
+     {
+      "id": "p1",
+      "source_agent": "c1"
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "pressure: no source",
+   "card": "entanglements",
+   "rule": "pressure_one_source",
+   "values": {
+    "pressures": [
+     {
+      "id": "p1"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "pressures",
+     "p1",
+     "source_agent"
+    ]
+   ]
+  },
+  {
+   "name": "pressure: both sources",
+   "card": "entanglements",
+   "rule": "pressure_one_source",
+   "values": {
+    "pressures": [
+     {
+      "id": "p1",
+      "source_agent": "c1",
+      "source_circumstance": "a storm"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "pressures",
+     "p1",
+     "source_agent"
+    ]
+   ]
+  },
+  {
+   "name": "knowledge: neither",
+   "card": "entanglements",
+   "rule": "knowledge_one_fact",
+   "values": {
+    "knowledge": [
+     {
+      "id": "k1",
+      "person": "c1"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "knowledge",
+     "k1",
+     "rule"
+    ]
+   ]
+  },
+  {
+   "name": "knowledge: a fact",
+   "card": "entanglements",
+   "rule": "knowledge_one_fact",
+   "values": {
+    "knowledge": [
+     {
+      "id": "k1",
+      "person": "c1",
+      "fact": "f"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "offstage: only what changed",
+   "card": "outline",
+   "rule": "offstage_both_or_neither",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "offstage_did": "x"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "beats",
+     "b1",
+     "offstage_reach"
+    ]
+   ]
+  },
+  {
+   "name": "offstage: only the reach",
+   "card": "outline",
+   "rule": "offstage_both_or_neither",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "offstage_reach": "y"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "beats",
+     "b1",
+     "offstage_did"
+    ]
+   ]
+  },
+  {
+   "name": "offstage: both",
+   "card": "outline",
+   "rule": "offstage_both_or_neither",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "offstage_did": "x",
+      "offstage_reach": "y"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "offstage: neither",
+   "card": "outline",
+   "rule": "offstage_both_or_neither",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "tie to self",
+   "card": "entanglements",
+   "rule": "tie_not_self",
+   "values": {
+    "ties": [
+     {
+      "id": "t1",
+      "tie_from": "c1",
+      "tie_to": "c1"
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": [
+    [
+     "ties",
+     "t1",
+     "tie_to"
+    ]
+   ]
+  },
+  {
+   "name": "tie between two",
+   "card": "entanglements",
+   "rule": "tie_not_self",
+   "values": {
+    "ties": [
+     {
+      "id": "t1",
+      "tie_from": "c1",
+      "tie_to": "c2"
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "tie half empty",
+   "card": "entanglements",
+   "rule": "tie_not_self",
+   "values": {
+    "ties": [
+     {
+      "id": "t1",
+      "tie_from": "c1"
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "place held by a group",
+   "card": "entanglements",
+   "rule": "holding_pair_allowed",
+   "values": {
+    "holdings": [
+     {
+      "id": "h1",
+      "holdee": "pl1",
+      "held_by": "g1"
+     }
+    ]
+   },
+   "project": {
+    "world": {
+     "objects": [
+      {
+       "id": "o1",
+       "name": "Ledger"
+      }
+     ],
+     "places": [
+      {
+       "id": "pl1",
+       "name": "Shop"
+      }
+     ],
+     "powers": [
+      {
+       "id": "g1",
+       "name": "Guild"
+      }
+     ]
+    },
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "place held by a thing",
+   "card": "entanglements",
+   "rule": "holding_pair_allowed",
+   "values": {
+    "holdings": [
+     {
+      "id": "h1",
+      "holdee": "pl1",
+      "held_by": "o1"
+     }
+    ]
+   },
+   "project": {
+    "world": {
+     "objects": [
+      {
+       "id": "o1",
+       "name": "Ledger"
+      }
+     ],
+     "places": [
+      {
+       "id": "pl1",
+       "name": "Shop"
+      }
+     ],
+     "powers": [
+      {
+       "id": "g1",
+       "name": "Guild"
+      }
+     ]
+    },
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": [
+    [
+     "holdings",
+     "h1",
+     "held_by"
+    ]
+   ]
+  },
+  {
+   "name": "thing held by a person",
+   "card": "entanglements",
+   "rule": "holding_pair_allowed",
+   "values": {
+    "holdings": [
+     {
+      "id": "h1",
+      "holdee": "o1",
+      "held_by": "c1"
+     }
+    ]
+   },
+   "project": {
+    "world": {
+     "objects": [
+      {
+       "id": "o1",
+       "name": "Ledger"
+      }
+     ],
+     "places": [
+      {
+       "id": "pl1",
+       "name": "Shop"
+      }
+     ],
+     "powers": [
+      {
+       "id": "g1",
+       "name": "Guild"
+      }
+     ]
+    },
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "character with one want",
+   "card": "characters",
+   "rule": "wants_count",
+   "values": {
+    "id": "c1",
+    "wants": [
+     {
+      "id": "w0",
+      "text": "x"
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": [
+    [
+     "wants",
+     null,
+     null
+    ]
+   ]
+  },
+  {
+   "name": "character with two wants",
+   "card": "characters",
+   "rule": "wants_count",
+   "values": {
+    "id": "c1",
+    "wants": [
+     {
+      "id": "w0",
+      "text": "x"
+     },
+     {
+      "id": "w1",
+      "text": "x"
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "empty wants do not count",
+   "card": "characters",
+   "rule": "wants_count",
+   "values": {
+    "id": "c1",
+    "wants": [
+     {
+      "id": "w0",
+      "text": ""
+     },
+     {
+      "id": "w1",
+      "text": ""
+     },
+     {
+      "id": "w2",
+      "text": ""
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": [
+    [
+     "wants",
+     null,
+     null
+    ]
+   ]
+  },
+  {
+   "name": "three pressures",
+   "card": "entanglements",
+   "rule": "pressures_active_count",
+   "values": {
+    "pressures": [
+     {
+      "id": "p0",
+      "what": "x",
+      "source_agent": "c1"
+     },
+     {
+      "id": "p1",
+      "what": "x",
+      "source_agent": "c1"
+     },
+     {
+      "id": "p2",
+      "what": "x",
+      "source_agent": "c1"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "four pressures",
+   "card": "entanglements",
+   "rule": "pressures_active_count",
+   "values": {
+    "pressures": [
+     {
+      "id": "p0",
+      "what": "x",
+      "source_agent": "c1"
+     },
+     {
+      "id": "p1",
+      "what": "x",
+      "source_agent": "c1"
+     },
+     {
+      "id": "p2",
+      "what": "x",
+      "source_agent": "c1"
+     },
+     {
+      "id": "p3",
+      "what": "x",
+      "source_agent": "c1"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "pressures",
+     null,
+     null
+    ]
+   ]
+  },
+  {
+   "name": "myth without truth",
+   "card": "world",
+   "rule": "rule_false_needs_truth",
+   "values": {
+    "rules": [
+     {
+      "id": "r1",
+      "statement": "s",
+      "status": "false_belief"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "rules",
+     "r1",
+     "truth"
+    ]
+   ]
+  },
+  {
+   "name": "myth with truth",
+   "card": "world",
+   "rule": "rule_false_needs_truth",
+   "values": {
+    "rules": [
+     {
+      "id": "r1",
+      "statement": "s",
+      "status": "false_belief",
+      "truth": "t"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "common rule needs no truth",
+   "card": "world",
+   "rule": "rule_false_needs_truth",
+   "values": {
+    "rules": [
+     {
+      "id": "r1",
+      "statement": "s",
+      "status": "common"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "pressure from an agent needs a next move",
+   "card": "entanglements",
+   "rule": "next_move_for_agents",
+   "values": {
+    "pressures": [
+     {
+      "id": "p1",
+      "source_agent": "c1"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "pressures",
+     "p1",
+     "next_move"
+    ]
+   ]
+  },
+  {
+   "name": "pressure from a circumstance needs none",
+   "card": "entanglements",
+   "rule": "next_move_for_agents",
+   "values": {
+    "pressures": [
+     {
+      "id": "p1",
+      "source_circumstance": "storm"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "later chapter needs a time gap",
+   "card": "outline",
+   "rule": "when_gap_after_first",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 2
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "beats",
+     "b1",
+     "when_gap"
+    ]
+   ]
+  },
+  {
+   "name": "first chapter needs none",
+   "card": "outline",
+   "rule": "when_gap_after_first",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "reveal needs learners",
+   "card": "outline",
+   "rule": "reveal_learners_needed",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "reveal_rule": "r1"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "beats",
+     "b1",
+     "reveal_learners"
+    ]
+   ]
+  },
+  {
+   "name": "redefined goal needs a new goal",
+   "card": "outline",
+   "rule": "goal_now_for_redefined",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "goal_change": "redefined"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "beats",
+     "b1",
+     "goal_now"
+    ]
+   ]
+  },
+  {
+   "name": "achieved goal needs none",
+   "card": "outline",
+   "rule": "goal_now_for_redefined",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "goal_change": "achieved"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "cast without the lead",
+   "card": "outline",
+   "rule": "cast_has_protagonist",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "cast": [
+       "c2"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "setup": {
+     "protagonist": "c1"
+    }
+   },
+   "broken": [
+    [
+     "beats",
+     "b1",
+     "cast"
+    ]
+   ]
+  },
+  {
+   "name": "cast with the lead",
+   "card": "outline",
+   "rule": "cast_has_protagonist",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "cast": [
+       "c1",
+       "c2"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "setup": {
+     "protagonist": "c1"
+    }
+   },
+   "broken": []
+  },
+  {
+   "name": "no lead chosen yet",
+   "card": "outline",
+   "rule": "cast_has_protagonist",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "cast": [
+       "c2"
+      ]
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "harder harder easier harder harder",
+   "card": "outline",
+   "rule": "shift_legal",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "shift": "harder"
+     },
+     {
+      "id": "b2",
+      "chapter": 2,
+      "shift": "harder"
+     },
+     {
+      "id": "b3",
+      "chapter": 3,
+      "shift": "easier"
+     },
+     {
+      "id": "b4",
+      "chapter": 4,
+      "shift": "harder"
+     },
+     {
+      "id": "b5",
+      "chapter": 5,
+      "shift": "harder"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "three harder",
+   "card": "outline",
+   "rule": "shift_legal",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "shift": "harder"
+     },
+     {
+      "id": "b2",
+      "chapter": 2,
+      "shift": "harder"
+     },
+     {
+      "id": "b3",
+      "chapter": 3,
+      "shift": "harder"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "beats",
+     "b3",
+     "shift"
+    ]
+   ]
+  },
+  {
+   "name": "two easier",
+   "card": "outline",
+   "rule": "shift_legal",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "shift": "harder"
+     },
+     {
+      "id": "b2",
+      "chapter": 2,
+      "shift": "easier"
+     },
+     {
+      "id": "b3",
+      "chapter": 3,
+      "shift": "easier"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "beats",
+     "b3",
+     "shift"
+    ]
+   ]
+  },
+  {
+   "name": "an empty chapter breaks a run",
+   "card": "outline",
+   "rule": "shift_legal",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "shift": "harder"
+     },
+     {
+      "id": "b2",
+      "chapter": 2,
+      "shift": ""
+     },
+     {
+      "id": "b3",
+      "chapter": 3,
+      "shift": "harder"
+     },
+     {
+      "id": "b4",
+      "chapter": 4,
+      "shift": "harder"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "world names a character",
+   "card": "world",
+   "rule": "world_names_people",
+   "values": {
+    "history": "Long before Ines arrived, the guild ruled."
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": [
+    [
+     "history",
+     null,
+     null
+    ]
+   ],
+   "message_contains": "Ines"
+  },
+  {
+   "name": "a name inside a longer word is not a mention",
+   "card": "world",
+   "rule": "world_names_people",
+   "values": {
+    "history": "The Inesfield road was built long ago."
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "a character's own name is fine",
+   "card": "characters",
+   "rule": "char_other_names",
+   "values": {
+    "id": "c1",
+    "name": "Ines",
+    "history": "Ines grew up here."
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "a character names another",
+   "card": "characters",
+   "rule": "char_other_names",
+   "values": {
+    "id": "c1",
+    "name": "Ines",
+    "history": "Tomas taught her."
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": [
+    [
+     "history",
+     null,
+     null
+    ]
+   ],
+   "message_contains": "Tomas"
+  },
+  {
+   "name": "a character names a place",
+   "card": "characters",
+   "rule": "char_other_names",
+   "values": {
+    "id": "c1",
+    "name": "Ines",
+    "history": "She left the Shop at dawn."
+   },
+   "project": {
+    "world": {
+     "objects": [
+      {
+       "id": "o1",
+       "name": "Ledger"
+      }
+     ],
+     "places": [
+      {
+       "id": "pl1",
+       "name": "Shop"
+      }
+     ],
+     "powers": [
+      {
+       "id": "g1",
+       "name": "Guild"
+      }
+     ]
+    },
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     },
+     {
+      "id": "c2",
+      "name": "Tomas"
+     }
+    ]
+   },
+   "broken": [
+    [
+     "history",
+     null,
+     null
+    ]
+   ],
+   "message_contains": "Shop"
+  },
+  {
+   "name": "reveal already landed",
+   "card": "outline",
+   "rule": "reveal_not_repeated",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1
+     },
+     {
+      "id": "b4",
+      "chapter": 4,
+      "reveal_rule": "r1"
+     }
+    ]
+   },
+   "project": {
+    "summary_events": {
+     "entries": [
+      {
+       "id": "e1",
+       "beat": "b1",
+       "planted": "A locked room",
+       "reveals_landed": [
+        "r1"
+       ]
+      },
+      {
+       "id": "e2",
+       "beat": "b2",
+       "planted": "A letter",
+       "paid_off": [
+        "e1"
+       ]
+      },
+      {
+       "id": "e3",
+       "beat": "b3",
+       "planted": ""
+      }
+     ]
+    }
+   },
+   "broken": [
+    [
+     "beats",
+     "b4",
+     "reveal_rule"
+    ]
+   ]
+  },
+  {
+   "name": "reveal not yet landed",
+   "card": "outline",
+   "rule": "reveal_not_repeated",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1
+     },
+     {
+      "id": "b4",
+      "chapter": 4,
+      "reveal_rule": "r9"
+     }
+    ]
+   },
+   "project": {
+    "summary_events": {
+     "entries": [
+      {
+       "id": "e1",
+       "beat": "b1",
+       "planted": "A locked room",
+       "reveals_landed": [
+        "r1"
+       ]
+      },
+      {
+       "id": "e2",
+       "beat": "b2",
+       "planted": "A letter",
+       "paid_off": [
+        "e1"
+       ]
+      },
+      {
+       "id": "e3",
+       "beat": "b3",
+       "planted": ""
+      }
+     ]
+    }
+   },
+   "broken": []
+  },
+  {
+   "name": "payoff already paid",
+   "card": "outline",
+   "rule": "payoff_is_open_plant",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1
+     },
+     {
+      "id": "b4",
+      "chapter": 4,
+      "payoff": [
+       "e1"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "summary_events": {
+     "entries": [
+      {
+       "id": "e1",
+       "beat": "b1",
+       "planted": "A locked room",
+       "reveals_landed": [
+        "r1"
+       ]
+      },
+      {
+       "id": "e2",
+       "beat": "b2",
+       "planted": "A letter",
+       "paid_off": [
+        "e1"
+       ]
+      },
+      {
+       "id": "e3",
+       "beat": "b3",
+       "planted": ""
+      }
+     ]
+    }
+   },
+   "broken": [
+    [
+     "beats",
+     "b4",
+     "payoff"
+    ]
+   ]
+  },
+  {
+   "name": "payoff planted nothing",
+   "card": "outline",
+   "rule": "payoff_is_open_plant",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1
+     },
+     {
+      "id": "b4",
+      "chapter": 4,
+      "payoff": [
+       "e3"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "summary_events": {
+     "entries": [
+      {
+       "id": "e1",
+       "beat": "b1",
+       "planted": "A locked room",
+       "reveals_landed": [
+        "r1"
+       ]
+      },
+      {
+       "id": "e2",
+       "beat": "b2",
+       "planted": "A letter",
+       "paid_off": [
+        "e1"
+       ]
+      },
+      {
+       "id": "e3",
+       "beat": "b3",
+       "planted": ""
+      }
+     ]
+    }
+   },
+   "broken": [
+    [
+     "beats",
+     "b4",
+     "payoff"
+    ]
+   ]
+  },
+  {
+   "name": "payoff of an open plant",
+   "card": "outline",
+   "rule": "payoff_is_open_plant",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1
+     },
+     {
+      "id": "b4",
+      "chapter": 4,
+      "payoff": [
+       "e2"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "summary_events": {
+     "entries": [
+      {
+       "id": "e1",
+       "beat": "b1",
+       "planted": "A locked room",
+       "reveals_landed": [
+        "r1"
+       ]
+      },
+      {
+       "id": "e2",
+       "beat": "b2",
+       "planted": "A letter",
+       "paid_off": [
+        "e1"
+       ]
+      },
+      {
+       "id": "e3",
+       "beat": "b3",
+       "planted": ""
+      }
+     ]
+    }
+   },
+   "broken": []
+  },
+  {
+   "name": "payoff not earlier",
+   "card": "outline",
+   "rule": "payoff_is_open_plant",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "payoff": [
+       "e1"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "summary_events": {
+     "entries": [
+      {
+       "id": "e1",
+       "beat": "b1",
+       "planted": "A locked room",
+       "reveals_landed": [
+        "r1"
+       ]
+      },
+      {
+       "id": "e2",
+       "beat": "b2",
+       "planted": "A letter",
+       "paid_off": [
+        "e1"
+       ]
+      },
+      {
+       "id": "e3",
+       "beat": "b3",
+       "planted": ""
+      }
+     ]
+    }
+   },
+   "broken": [
+    [
+     "beats",
+     "b1",
+     "payoff"
+    ]
+   ]
+  },
+  {
+   "name": "spotlight misses the cast",
+   "card": "outline",
+   "rule": "spotlight_in_cast",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "spotlight": "p1",
+      "cast": [
+       "c1"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "entanglements": {
+     "pressures": [
+      {
+       "id": "p1",
+       "what": "x",
+       "source_agent": "g1",
+       "bears_on": [
+        "c2"
+       ]
+      }
+     ]
+    }
+   },
+   "broken": [
+    [
+     "beats",
+     "b1",
+     "spotlight"
+    ]
+   ]
+  },
+  {
+   "name": "spotlight bears on someone on stage",
+   "card": "outline",
+   "rule": "spotlight_in_cast",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "spotlight": "p1",
+      "cast": [
+       "c1",
+       "c2"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "entanglements": {
+     "pressures": [
+      {
+       "id": "p1",
+       "what": "x",
+       "source_agent": "g1",
+       "bears_on": [
+        "c2"
+       ]
+      }
+     ]
+    }
+   },
+   "broken": []
+  },
+  {
+   "name": "spotlight agent on stage",
+   "card": "outline",
+   "rule": "spotlight_in_cast",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "spotlight": "p1",
+      "cast": [
+       "g1"
+      ]
+     }
+    ]
+   },
+   "project": {
+    "entanglements": {
+     "pressures": [
+      {
+       "id": "p1",
+       "what": "x",
+       "source_agent": "g1",
+       "bears_on": [
+        "c2"
+       ]
+      }
+     ]
+    }
+   },
+   "broken": []
+  },
+  {
+   "name": "same turn twice",
+   "card": "outline",
+   "rule": "turn_not_repeated",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "turn": "Ines learns the customer's name but the guild now knows she is asking"
+     },
+     {
+      "id": "b2",
+      "chapter": 2,
+      "turn": "Ines learns the customer's name but the guild now knows she is asking"
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "beats",
+     "b2",
+     "turn"
+    ]
+   ]
+  },
+  {
+   "name": "different turns",
+   "card": "outline",
+   "rule": "turn_not_repeated",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "turn": "Ines learns the customer's name but the guild now knows she is asking"
+     },
+     {
+      "id": "b2",
+      "chapter": 2,
+      "turn": "The east gate closes and the market moves"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "turn repeats a changed line",
+   "card": "outline",
+   "rule": "turn_not_repeated",
+   "values": {
+    "beats": [
+     {
+      "id": "b2",
+      "chapter": 2,
+      "turn": "Ines learns the customer's name but the guild now knows she is asking"
+     }
+    ]
+   },
+   "project": {
+    "summary_events": {
+     "entries": [
+      {
+       "id": "e1",
+       "beat": "b9",
+       "changed": "The guild learned that Ines was asking about the customer's name"
+      }
+     ]
+    }
+   },
+   "broken": [
+    [
+     "beats",
+     "b2",
+     "turn"
+    ]
+   ]
+  },
+  {
+   "name": "style names a character",
+   "card": "style",
+   "rule": "style_agnostic",
+   "values": {
+    "lens": "Ines sees everything first"
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     }
+    ]
+   },
+   "broken": [
+    [
+     "lens",
+     null,
+     null
+    ]
+   ],
+   "message_contains": "Ines"
+  },
+  {
+   "name": "style names nobody",
+   "card": "style",
+   "rule": "style_agnostic",
+   "values": {
+    "lens": "Close, one person at a time"
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     }
+    ]
+   },
+   "broken": []
+  },
+  {
+   "name": "a tie to a deleted character",
+   "card": "entanglements",
+   "rule": "link_broken",
+   "values": {
+    "ties": [
+     {
+      "id": "t1",
+      "tie_from": "c1",
+      "tie_to": "gone"
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     }
+    ],
+    "world": {
+     "places": [
+      {
+       "id": "pl1",
+       "name": "Shop"
+      }
+     ]
+    }
+   },
+   "broken": [
+    [
+     "ties",
+     "t1",
+     "tie_to"
+    ]
+   ]
+  },
+  {
+   "name": "a holding of a deleted place",
+   "card": "entanglements",
+   "rule": "link_broken",
+   "values": {
+    "holdings": [
+     {
+      "id": "h1",
+      "holdee": "gone",
+      "held_by": "c1"
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     }
+    ],
+    "world": {
+     "places": [
+      {
+       "id": "pl1",
+       "name": "Shop"
+      }
+     ]
+    }
+   },
+   "broken": [
+    [
+     "holdings",
+     "h1",
+     "holdee"
+    ]
+   ]
+  },
+  {
+   "name": "all links live",
+   "card": "entanglements",
+   "rule": "link_broken",
+   "values": {
+    "ties": [
+     {
+      "id": "t1",
+      "tie_from": "c1",
+      "tie_to": "c1"
+     }
+    ],
+    "holdings": [
+     {
+      "id": "h1",
+      "holdee": "pl1",
+      "held_by": "c1"
+     }
+    ]
+   },
+   "project": {
+    "characters": [
+     {
+      "id": "c1",
+      "name": "Ines"
+     }
+    ],
+    "world": {
+     "places": [
+      {
+       "id": "pl1",
+       "name": "Shop"
+      }
+     ]
+    }
+   },
+   "broken": []
+  },
+  {
+   "name": "reveal with learners",
+   "card": "outline",
+   "rule": "reveal_learners_needed",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1,
+      "reveal_rule": "r1",
+      "reveal_learners": [
+       "c1"
+      ]
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "no reveal, no learners needed",
+   "card": "outline",
+   "rule": "reveal_learners_needed",
+   "values": {
+    "beats": [
+     {
+      "id": "b1",
+      "chapter": 1
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  }
+ ]
+}

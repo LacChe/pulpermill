@@ -571,3 +571,27 @@ test("a turn too close to an earlier turn or changed line is flagged", () => {
   const two = [beat({ id: "b1", chapter: 1, turn: "A stranger arrives with a sealed letter" }), beat({ id: "b2", chapter: 2, turn: "A stranger arrives with the sealed letter" })];
   assert.deepEqual(run("outline", "turn_not_repeated", { beats: two }), [["beats", "b2", "turn"]]);
 });
+
+// ---- Shared vectors: web/tests/vectors.json ----
+const vectors = JSON.parse(readFileSync(new URL("./vectors.json", import.meta.url), "utf8")).cases;
+
+for (const c of vectors) {
+  test(`vector: ${c.card} / ${c.rule}: ${c.name}`, () => {
+    const card = schema.cards[c.card];
+    assert.ok(card.rules.some((r) => r.id === c.rule), `unknown rule ${c.rule}`);
+    const { problems } = validate(card, c.values, c.project, schema.common);
+    const found = problems.filter((p) => p.rule === c.rule);
+    assert.deepEqual(found.map((p) => [p.field, p.item, p.key]), c.broken);
+    if (c.message_contains) assert.ok(found.every((p) => p.message.includes(c.message_contains)), found[0]?.message);
+  });
+}
+
+test("the vectors cover every code rule, both broken and not broken", () => {
+  for (const card of Object.values(schema.cards)) {
+    for (const rule of card.rules.filter((r) => ruleKind(r) === "code")) {
+      const cases = vectors.filter((c) => c.card === card.id && c.rule === rule.id);
+      assert.ok(cases.some((c) => c.broken.length > 0), `${card.id}/${rule.id} has no broken case`);
+      assert.ok(cases.some((c) => c.broken.length === 0), `${card.id}/${rule.id} has no passing case`);
+    }
+  }
+});
