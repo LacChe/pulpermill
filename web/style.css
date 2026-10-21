@@ -8,6 +8,7 @@
   --accent-soft: #f3e6dc;
   --good: #3f6b3a;
   --bad: #9a3b2e;
+  --warn: #8a6410;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -20,6 +21,7 @@
     --accent-soft: #3a2c22;
     --good: #8fc08a;
     --bad: #e08c7e;
+    --warn: #e0b45c;
   }
 }
 * { box-sizing: border-box; }
@@ -127,3 +129,29 @@ select.text-control[hidden], .checks[hidden] { display: none; }
 .clear { margin-top: 6px; padding: 2px 10px; color: var(--muted); font-size: 0.85rem; }
 .clear[hidden] { display: none; }
 .text-control[readonly] { color: var(--muted); background: transparent; }
+
+/* Problems: written under the field they belong to. They never disable anything. */
+.problems { margin-top: 8px; display: grid; gap: 6px; }
+.problems[hidden] { display: none; }
+.problem { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; border-left: 3px solid var(--line); padding: 2px 0 2px 10px; font-size: 0.9rem; }
+.problem-block { border-left-color: var(--bad); }
+.problem-warn { border-left-color: var(--warn); }
+.problem-kind { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.problem-block .problem-kind { color: var(--bad); }
+.problem-warn .problem-kind { color: var(--warn); }
+.problem-fix { flex-basis: 100%; color: var(--muted); }
+.field:has(> .problems .problem-block) > .field-heading .field-label,
+.item:has(> .problems .problem-block) > .item-head .item-title { color: var(--bad); }
+
+.problem-count { margin: -12px 0 20px; font-weight: 600; }
+.problem-count[hidden] { display: none; }
+.problem-count.has-block { color: var(--bad); }
+.problem-count.has-warn { color: var(--warn); }
+.group-count { margin-left: auto; font-size: 0.8rem; font-weight: 600; }
+.group-count[hidden] { display: none; }
+.group-count.has-block { color: var(--bad); }
+.group-count.has-warn { color: var(--warn); }
+
+.validate-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 24px 0 8px; }
+.validate { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.validate-status { margin: 0; }

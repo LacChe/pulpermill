@@ -15,6 +15,13 @@ const openInput = document.getElementById("open-file");
 let schema;
 let project;
 let view = { card: "style", characterId: null };
+// What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
+// switching cards. Cleared when another project is opened.
+const reviews = new Map();
+function reviewFor(key) {
+  if (!reviews.has(key)) reviews.set(key, { touched: new Set(), validated: false });
+  return reviews.get(key);
+}
 
 function button(text, onClick, extra = {}) {
   const node = document.createElement("button");
@@ -73,6 +80,8 @@ function show() {
     project,
     schema,
     common: schema.common,
+    review: reviewFor(`${card.id}:${values.id ?? ""}`),
+    onValidate: (request) => { window.pulpermill.lastModelRequest = request; },   // the backend call comes in Phase 7
     changed: () => { if (card.many_per_project) drawNav(); },
   });
 }
@@ -92,6 +101,7 @@ openInput.addEventListener("change", async () => {
   if (!file) return;
   try {
     project = JSON.parse(await file.text());
+    reviews.clear();
     view.characterId = null;
     show();
   } catch (error) {

@@ -9,6 +9,7 @@ import {
 } from "../logic.js";
 import { isSupported } from "../render.js";
 import { validate, ruleKind, modelRules, problemsFor, CHECKS, PENDING_CHECKS, legalShifts, similarity, SIMILARITY_LIMIT } from "../logic.js";
+import { filledPaths, problemPath, problemTriggers, shownProblems, problemCounts, modelCheckRequest } from "../logic.js";
 
 const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
 const style = schema.cards.style;
@@ -570,6 +571,81 @@ test("a turn too close to an earlier turn or changed line is flagged", () => {
   assert.deepEqual(run("outline", "turn_not_repeated", { beats }, project), [["beats", "b2", "turn"]]);
   const two = [beat({ id: "b1", chapter: 1, turn: "A stranger arrives with a sealed letter" }), beat({ id: "b2", chapter: 2, turn: "A stranger arrives with the sealed letter" })];
   assert.deepEqual(run("outline", "turn_not_repeated", { beats: two }), [["beats", "b2", "turn"]]);
+});
+
+// ---- Showing problems: when the page lets a problem appear ----
+const setupCard = schema.cards.setup;
+const review = (touched = [], validated = false) => ({ touched: new Set(touched), validated });
+const shownFields = (card, values, project, state) =>
+  shownProblems(card, validate(card, values, project, schema.common).problems, state).map((p) => problemPath(p)).sort();
+
+test("a blank, untouched card shows no problems, even though required fields are empty", () => {
+  const values = blankCard(setupCard);
+  assert.ok(validate(setupCard, values, {}, schema.common).problems.length > 0);
+  assert.deepEqual(shownFields(setupCard, values, {}, review([...filledPaths(setupCard, values)])), []);
+});
+
+test("a problem appears once its field has been left, and not before", () => {
+  const values = blankCard(setupCard);
+  assert.deepEqual(shownFields(setupCard, values, {}, review(["goal"])), ["goal"]);
+  assert.deepEqual(shownFields(setupCard, values, {}, review(["goal", "normal"])), ["goal", "normal"]);
+});
+
+test("Validate shows every code problem, including fields never visited", () => {
+  const values = blankCard(setupCard);
+  assert.deepEqual(shownFields(setupCard, values, {}, review([], true)),
+    ["chapter_count", "disruption", "goal", "normal", "protagonist", "stakes"]);
+});
+
+test("a saved project shows its problems at once: filled fields count as already visited", () => {
+  const values = { ...blankCard(setupCard), protagonist: "gone", goal: "Find the ledger" };
+  const touched = [...filledPaths(setupCard, values)];
+  assert.deepEqual(shownFields(setupCard, values, { characters: [] }, review(touched)), ["protagonist"]);
+});
+
+test("a rule that compares two fields is shown when the writer leaves either one", () => {
+  const values = { ...blankCard(ent), pressures: [{ id: "p1", what: "Rent is due", source_agent: "c1", source_circumstance: "", next_move: "", bears_on: [] }] };
+  const project = { characters: [{ id: "c1", name: "Ines" }] };
+  const problems = validate(ent, values, project, schema.common).problems;
+  const next = problems.find((p) => p.rule === "next_move_for_agents");
+  assert.equal(problemPath(next), "pressures.p1.next_move");
+  assert.ok(problemTriggers(ent, next).includes("pressures.p1.source_agent"));
+  assert.equal(shownProblems(ent, [next], review(["pressures.p1.source_agent"])).length, 1);
+  assert.equal(shownProblems(ent, [next], review(["pressures.p1.what"])).length, 0);
+});
+
+test("problemPath names a plain field, a list, an item and a field inside an item", () => {
+  assert.equal(problemPath({ field: "goal", item: null, key: null }), "goal");
+  assert.equal(problemPath({ field: "beats", item: null, key: null }), "beats");
+  assert.equal(problemPath({ field: "beats", item: "b1", key: null }), "beats.b1");
+  assert.equal(problemPath({ field: "beats", item: "b1", key: "cast" }), "beats.b1.cast");
+});
+
+test("filledPaths lists fields, lists, items and the fields inside them, and skips empty and unticked ones", () => {
+  const values = {
+    ...blankCard(outline),
+    beats: [{ ...blankItem(beatsField), id: "b1", chapter: 1, turn: "A letter arrives" }, { ...blankItem(beatsField), id: "b2" }],
+  };
+  const paths = filledPaths(outline, values);
+  for (const path of ["beats", "beats.b1", "beats.b1.turn", "beats.b1.chapter"]) assert.ok(paths.has(path), path);
+  for (const path of ["beats.b2", "beats.b2.turn", "beats.b1.cast"]) assert.ok(!paths.has(path), path);
+  assert.equal(filledPaths(setupCard, blankCard(setupCard)).size, 0);
+});
+
+test("problemCounts splits blocking problems from warnings", () => {
+  assert.deepEqual(problemCounts([]), { block: 0, warn: 0 });
+  assert.deepEqual(problemCounts([{ severity: "block" }, { severity: "warn" }, { severity: "warn" }]), { block: 1, warn: 2 });
+});
+
+test("the Validate request holds the card's model rules and a snapshot of its values", () => {
+  const values = { ...blankCard(setupCard), goal: "Find the ledger" };
+  const request = modelCheckRequest(setupCard, values);
+  assert.equal(request.card, "setup");
+  assert.deepEqual(request.rules.map((r) => r.id), modelRules(setupCard).map((r) => r.id));
+  assert.ok(request.rules.length > 0 && request.rules.every((r) => r.severity && r.fields.length));
+  assert.deepEqual(request.values, values);
+  values.goal = "changed";
+  assert.equal(request.values.goal, "Find the ledger");
 });
 
 // ---- Shared vectors: web/tests/vectors.json ----

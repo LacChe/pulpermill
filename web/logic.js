@@ -397,6 +397,74 @@ export function problemsFor(problems, field, item = null, key = null) {
   return problems.filter((p) => p.field === field && p.item === item && p.key === key);
 }
 
+// ---- Showing problems ----------------------------------------------------------
+// A problem is shown under its field only once the writer has been there: they left the field, or it already had
+// something in it when the card was drawn (a saved project). A blank, untouched card shows nothing. Pressing Validate
+// shows everything. Nothing here ever stops editing; blocking problems only stop generating.
+
+// Where a problem sits on the page: "protagonist", "beats" (a whole list), "beats.<item>" or "beats.<item>.<key>".
+export function problemPath(p) {
+  if (p.item && p.key) return `${p.field}.${p.item}.${p.key}`;
+  if (p.item) return `${p.field}.${p.item}`;
+  return p.field;
+}
+
+// An unticked box is not "something typed".
+const hasContent = (value) => isFilled(value) && value !== false;
+
+// The paths of everything that has something in it: fields, lists, list items and the fields inside them.
+export function filledPaths(card, values) {
+  const out = new Set();
+  for (const field of card.fields) {
+    const value = values[field.key];
+    if (!hasContent(value)) continue;
+    out.add(field.key);
+    if (!field.repeat) continue;
+    for (const item of value) {
+      const subs = (field.item_fields ?? []).filter((sub) => hasContent(item[sub.key]));
+      if (!subs.length) continue;
+      out.add(`${field.key}.${item.id}`);
+      for (const sub of subs) out.add(`${field.key}.${item.id}.${sub.key}`);
+    }
+  }
+  return out;
+}
+
+// The places the writer may have been when a problem should appear: the field it sits on, and the other fields its
+// rule looks at. "Pushed by: someone" filled in but "next move" empty is shown once the writer leaves "someone".
+export function problemTriggers(card, p) {
+  const out = [problemPath(p)];
+  const rule = (card.rules ?? []).find((r) => r.id === p.rule);
+  if (!rule) return out;
+  const params = rule.params ?? {};
+  const keys = [...(params.fields ?? []), params.field, params.when_present].filter((key) => typeof key === "string");
+  const prefix = p.item ? `${p.field}.${p.item}.` : "";
+  for (const key of keys) out.push(prefix + key);
+  return out;
+}
+
+// `review` is {touched: Set of paths, validated: boolean}.
+export function shownProblems(card, problems, review) {
+  if (review.validated) return problems;
+  return problems.filter((p) => problemTriggers(card, p).some((path) => review.touched.has(path)));
+}
+
+export function problemCounts(problems) {
+  const block = problems.filter((p) => p.severity === "block").length;
+  return { block, warn: problems.length - block };
+}
+
+// What the Validate button hands to the model checks. The backend call itself comes later; for now this only
+// gathers the rules that need the model and a snapshot of the values they judge.
+export function modelCheckRequest(card, values) {
+  return {
+    card: card.id,
+    instance: values.id ?? null,
+    rules: modelRules(card).map((rule) => ({ id: rule.id, severity: rule.severity, fields: rule.fields ?? [] })),
+    values: JSON.parse(JSON.stringify(values)),
+  };
+}
+
 // ---- The code checks -------------------------------------------------------
 // Each takes {rule, card, values, project} and returns where the rule is broken: [{field, item?, key?, tokens?}].
 

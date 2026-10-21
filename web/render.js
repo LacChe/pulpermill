@@ -1,8 +1,9 @@
 // Draws one card as a form. Only this file touches the DOM. All wording comes from the schema JSON,
 // except the few page labels in STRINGS below, which move into the text files when languages are added.
 import {
-  addItem, blockedValues, canAdd, chooseOneOf, fieldShown, groupedFields, isFilled, isItemEmpty, itemTitle,
-  legalShifts, lookupLabel, oneOfChoice, pickerSources, refOptions, removeItem, showsOptionalTag,
+  addItem, blockedValues, canAdd, chooseOneOf, fieldShown, filledPaths, groupedFields, isFilled, isItemEmpty, itemTitle,
+  legalShifts, lookupLabel, modelCheckRequest, oneOfChoice, pickerSources, problemCounts, problemPath, refOptions,
+  removeItem, showsOptionalTag, shownProblems, validate,
 } from "./logic.js";
 
 export const STRINGS = {
@@ -18,6 +19,16 @@ export const STRINGS = {
   clear: "Clear choice",
   setByCode: "Set by the system",
   unsupported: "This field type isn't built yet.",
+  blocks: "Stops generating",
+  warns: "Worth a look",
+  blockOne: "1 problem stops generating",
+  blockMany: "{n} problems stop generating",
+  warnOne: "1 warning",
+  warnMany: "{n} warnings",
+  groupCount: "{n} to check",
+  clean: "Nothing wrong found on this page.",
+  validate: "Validate",
+  modelPending: "Checked what the page can check. {n} more checks need the model and will run once it is connected.",
 };
 
 const TEXT_INPUTS = new Set(["text", "textarea", "number"]);
@@ -55,6 +66,25 @@ function examplesBlock(examples) {
 function whyBlock(why) {
   return el("details", { class: "why" }, el("summary", { text: STRINGS.why }), el("p", { text: why }));
 }
+
+// ---- Problems ----------------------------------------------------------------
+
+// The empty place under a field (or a list item, or a whole list) where its problems are written. It is found again
+// by its path, the same one logic.js gives each problem. It stays hidden while there is nothing in it.
+function problemBox(path, ctx) {
+  const box = el("div", { class: "problems", "data-problems": path, "aria-live": "polite", hidden: true });
+  ctx.boxes?.set(path, box);
+  return box;
+}
+
+function problemLine(p) {
+  return el("div", { class: `problem problem-${p.severity === "block" ? "block" : "warn"}` },
+    el("span", { class: "problem-kind", text: p.severity === "block" ? STRINGS.blocks : STRINGS.warns }),
+    el("span", { class: "problem-text", text: p.message }),
+    p.fix ? el("span", { class: "problem-fix", text: p.fix }) : null);
+}
+
+const countText = (one, many, n) => (n === 1 ? one : many.replace("{n}", String(n)));
 
 // ---- Controls --------------------------------------------------------------
 
@@ -233,7 +263,7 @@ function fieldBlock(field, values, path, ctx, scope) {
   if (field.help) block.append(el("p", { class: "help", text: field.help }));
 
   if (field.repeat) {
-    block.append(listControl(field, values, path, ctx));
+    block.append(listControl(field, values, path, ctx), problemBox(path, ctx));
     if (field.why) block.append(whyBlock(field.why));
     return block;
   }
@@ -290,6 +320,7 @@ function fieldBlock(field, values, path, ctx, scope) {
     scope.live.push(() => { const v = values[field.key] ?? ""; if (control.value !== String(v)) control.value = v; });
     block.append(control);
   }
+  block.append(problemBox(path, ctx));
   if (field.examples) block.append(examplesBlock(field.examples));
   if (field.why) block.append(whyBlock(field.why));
   return block;
@@ -332,7 +363,8 @@ function memoryFor(values) {
 
 function itemRow(field, item, list, ctx, redraw) {
   const compact = field.item_fields.length === 1;
-  const row = el("div", { class: compact ? "item item-compact" : "item", "data-id": item.id });
+  const itemPath = `${field.key}.${item.id}`;
+  const row = el("div", { class: compact ? "item item-compact" : "item", "data-id": item.id, "data-path": itemPath });
   const remove = el("button", { type: "button", class: "remove", text: "×", "aria-label": STRINGS.remove, title: STRINGS.remove });
   remove.addEventListener("click", () => {
     if (!isItemEmpty(item) && field.delete_confirm && !window.confirm(field.delete_confirm)) return;
@@ -343,14 +375,16 @@ function itemRow(field, item, list, ctx, redraw) {
 
   if (compact) {
     const inner = { ...field.item_fields[0], examples: undefined, help: undefined };
-    row.append(textControl(inner, item[inner.key], (next) => { item[inner.key] = next; ctx.changed(); }), remove);
+    const control = textControl(inner, item[inner.key], (next) => { item[inner.key] = next; ctx.changed(); });
+    control.setAttribute("data-path", `${itemPath}.${inner.key}`);   // so leaving the box counts as visiting that field
+    row.append(control, remove);
     return row;
   }
 
   const title = el("span", { class: "item-title" });
   const setTitle = () => { title.textContent = itemTitle(field, item, ctx.lookup) || STRINGS.newItem; };
   setTitle();
-  row.append(el("div", { class: "item-head" }, title, remove));
+  row.append(el("div", { class: "item-head" }, title, remove), problemBox(itemPath, ctx));
   const body = el("div", { class: "item-body" });
   row.append(body);
   fieldsInto(body, field.item_fields, item, `${field.key}.${item.id}.`, {
@@ -392,27 +426,125 @@ function listControl(field, values, path, ctx) {
 }
 
 // `values` is the one object the card edits (a card held once, or one character). It is changed in place.
-// ctx: { project, schema, card, common, changed }
+// ctx: { project, schema, card, common, changed, review?, onValidate? }
+//   review      {touched: Set of paths, validated: boolean}. The page keeps one per card, so coming back to a card
+//               still shows what was found. Without one, the card starts fresh.
+//   onValidate  called with the model-check request when the writer presses Validate.
+// Problems never stop editing: nothing here disables a control.
 export function renderCard(root, card, values, ctx) {
   root.replaceChildren();
-  const section = el("section", { class: "card", "data-card": card.id },
-    el("h2", { text: card.label }),
-    el("p", { class: "summary", text: card.summary }));
+  const project = ctx.project ?? {};
+  const review = ctx.review ?? { touched: new Set(), validated: false };
+  // Whatever is already written counts as visited, so a saved project shows its problems at once.
+  for (const path of filledPaths(card, values)) review.touched.add(path);
+
+  const boxes = new Map();          // path -> the place under that field where its problems are written
+  const groupViews = new Map();     // group id -> {details, badge}
+  const groupOf = (p) => card.fields.find((f) => f.key === p.field)?.group;
+  const count = el("p", { class: "problem-count", role: "status", hidden: true });
+  const status = el("p", { class: "note validate-status", role: "status" });
+  let warned = false;
+
+  // The box a problem is written into: its own field, else its list item, else its list. A field that is hidden
+  // (the other half of an either-or) hands its problem to the item, so a problem is never left unseen.
+  function boxFor(p) {
+    for (const path of [problemPath(p), p.item ? `${p.field}.${p.item}` : null, p.item ? p.field : null]) {
+      const box = path && boxes.get(path);
+      if (box && box.isConnected && !box.parentElement.closest("[hidden]")) return box;
+    }
+    return null;
+  }
+
+  // Writes every problem that may be shown into its place, and updates the counts. Returns [{p, box}].
+  function update() {
+    const { problems, unchecked } = validate(card, values, project, ctx.common);
+    if (unchecked.length && !warned) { warned = true; console.warn("Rules this page cannot run yet:", unchecked); }
+    for (const box of boxes.values()) if (!box.hidden) { box.replaceChildren(); box.hidden = true; }
+    const placed = [];
+    for (const p of shownProblems(card, problems, review)) {
+      const box = boxFor(p);
+      if (!box) continue;
+      box.append(problemLine(p));
+      box.hidden = false;
+      placed.push({ p, box });
+    }
+    const { block, warn } = problemCounts(placed.map((x) => x.p));
+    const parts = [];
+    if (block) parts.push(countText(STRINGS.blockOne, STRINGS.blockMany, block));
+    if (warn) parts.push(countText(STRINGS.warnOne, STRINGS.warnMany, warn));
+    count.textContent = parts.length ? parts.join(" · ") : review.validated ? STRINGS.clean : "";
+    count.hidden = !count.textContent;
+    count.className = `problem-count${block ? " has-block" : warn ? " has-warn" : ""}`;
+    for (const [id, view] of groupViews) {
+      const mine = placed.filter((x) => groupOf(x.p) === id).map((x) => x.p);
+      view.badge.textContent = mine.length ? STRINGS.groupCount.replace("{n}", String(mine.length)) : "";
+      view.badge.hidden = mine.length === 0;
+      view.badge.className = `group-count ${mine.some((p) => p.severity === "block") ? "has-block" : "has-warn"}`;
+    }
+    return placed;
+  }
+
   const inner = {
     ...ctx,
     card,
-    project: ctx.project ?? {},
-    lookup: (itemField, value) => lookupLabel(ctx.project ?? {}, itemField, value, STRINGS.unnamed),
+    project,
+    boxes,
+    changed: () => { ctx.changed?.(); update(); },
+    lookup: (itemField, value) => lookupLabel(project, itemField, value, STRINGS.unnamed),
   };
+
+  const section = el("section", { class: "card", "data-card": card.id },
+    el("h2", { text: card.label }),
+    el("p", { class: "summary", text: card.summary }),
+    count);
 
   for (const { group, fields } of groupedFields(card)) {
     const body = el("div", { class: "group-body" });
     fieldsInto(body, fields, values, "", inner, null);
     if (!group) { section.append(body); continue; }
-    section.append(el("details", { class: "group", open: !group.collapsed },
+    const badge = el("span", { class: "group-count", hidden: true });
+    const details = el("details", { class: "group", open: !group.collapsed },
       el("summary", {}, el("span", { class: "group-label", text: group.label }),
-        group.help ? el("span", { class: "group-help", text: group.help }) : null),
-      body));
+        group.help ? el("span", { class: "group-help", text: group.help }) : null, badge),
+      body);
+    groupViews.set(group.id, { details, badge });
+    section.append(details);
   }
+
+  // Validate: show everything the page can check, hand the model rules on, and bring the first problem into view.
+  const validateButton = el("button", { type: "button", class: "validate", text: STRINGS.validate });
+  validateButton.addEventListener("click", () => {
+    review.validated = true;
+    const placed = update();
+    for (const [id, view] of groupViews) if (placed.some((x) => groupOf(x.p) === id)) view.details.open = true;
+    const request = modelCheckRequest(card, values);
+    ctx.onValidate?.(request);
+    status.textContent = request.rules.length ? STRINGS.modelPending.replace("{n}", String(request.rules.length)) : "";
+    placed[0]?.box.scrollIntoView({ block: "center", behavior: "smooth" });
+  });
+  section.append(el("div", { class: "validate-bar" }, validateButton, status));
+
+  // A problem appears when the writer leaves a field. Leaving a box can shift the page under the mouse, so while a
+  // pointer is still down the update waits for it to be released, or the click that caused the move could miss.
+  let pointerDown = false;
+  let deferred = false;
+  section.addEventListener("pointerdown", () => {
+    pointerDown = true;
+    document.addEventListener("pointerup", () => {
+      pointerDown = false;
+      if (deferred) { deferred = false; setTimeout(update, 0); }
+    }, { once: true, capture: true });
+  }, true);
+  section.addEventListener("focusout", (event) => {
+    let added = false;
+    for (let node = event.target.closest?.("[data-path]"); node; node = node.parentElement?.closest("[data-path]")) {
+      if (!review.touched.has(node.dataset.path)) { review.touched.add(node.dataset.path); added = true; }
+    }
+    if (!added) return;
+    if (pointerDown) deferred = true;
+    else update();
+  });
+
   root.append(section);
+  update();
 }
