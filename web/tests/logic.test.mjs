@@ -10,6 +10,7 @@ import { isSupported } from "../render.js";
 const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
 const style = schema.cards.style;
 const characters = schema.cards.characters;
+const world = schema.cards.world;
 
 test("isFilled treats empty strings, nulls and empty lists as empty", () => {
   for (const empty of [undefined, null, "", []]) assert.equal(isFilled(empty), false);
@@ -81,12 +82,16 @@ test("ensureCard fills missing keys and never overwrites a value", () => {
   assert.equal(project.style.tense, "");
 });
 
-test("the renderer can draw every Style and Characters field, and every option has a description", () => {
-  for (const card of [style, characters]) {
-    for (const f of card.fields) {
-      assert.ok(isSupported(f), `${card.id}.${f.key}`);
-      for (const o of f.options || []) assert.ok(o.description, `${card.id}.${f.key}.${o.value}`);
-    }
+test("the renderer can draw every Style, Characters and World field, and every option has a description", () => {
+  for (const card of [style, characters, world]) {
+    const check = (fields, where) => {
+      for (const f of fields) {
+        assert.ok(isSupported(f), `${where}.${f.key}`);
+        for (const o of f.options || []) assert.ok(o.description, `${where}.${f.key}.${o.value}`);
+        if (f.item_fields) check(f.item_fields, `${where}.${f.key}`);
+      }
+    };
+    check(card.fields, card.id);
   }
 });
 
@@ -180,4 +185,26 @@ test("ensureCard fills blanks inside saved instances and list items without over
   assert.equal(c.wants[0].text, "be left alone");
   assert.equal(c.behaviors[0].state, "calm");
   assert.equal(c.behaviors[0].tendency, "");
+});
+
+test("World: a rule's truth shows only for a false belief", () => {
+  const rules = world.fields.find((f) => f.key === "rules");
+  const truth = rules.item_fields.find((f) => f.key === "truth");
+  assert.equal(isVisible(truth, { status: "false_belief" }), true);
+  assert.equal(isVisible(truth, { status: "common" }), false);
+  assert.equal(isVisible(truth, { status: "" }), false);
+});
+
+test("World: a new item of each list has an empty box for every item field", () => {
+  for (const key of ["places", "objects", "powers", "rules", "terms"]) {
+    const field = world.fields.find((f) => f.key === key);
+    const item = blankItem(field);
+    for (const f of field.item_fields) assert.equal(item[f.key], "", `${key}.${f.key}`);
+  }
+});
+
+test("World: list items get a title from item_title", () => {
+  const places = world.fields.find((f) => f.key === "places");
+  assert.equal(itemTitle(places, { name: "The print shop" }), "The print shop");
+  assert.equal(itemTitle(places, { name: "" }), "");
 });

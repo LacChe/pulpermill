@@ -152,6 +152,7 @@ function itemRow(field, item, list, ctx, redraw) {
     ...ctx, changed: () => { setTitle(); ctx.changed(); },
   }, row);
   row.append(body);
+  applyVisibility(field.item_fields, row, item, `${field.key}.${item.id}.`);
   return row;
 }
 
