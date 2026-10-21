@@ -9,44 +9,51 @@ fields:
   beats:
     label: "Beats"
     help: "Each beat sets up a chapter: where it opens, what the protagonist is after, what stands in the way, and what they must decide."
+    empty: "No beats yet. Choose a cast and press Plan, or add one by hand."
+    add: "Add a beat"
+    delete_confirm: "Delete this beat?"
+    item_title: "Chapter {chapter}"
     lead_in: "Chapter beats:\n{items}"
     item_template: "Chapter {chapter}. We open at {where}, {when_time}{when_gap}. Present: {cast}. The protagonist is after {collision_goal}, but {collision_block}. They must choose between {choice_a} and {choice_b}. By the end, {turn}. This chapter is {shift}. It ends on {ends_on}. {reveal_rule} {reveal_learners} Set up for later: {plant} Pays off: {payoff} {offstage_did} {offstage_reach} {goal_change} {goal_now}"
     item_join: "\n"
     item_fields:
-      chapter: {label: "Chapter", help: "Which chapter this beat is for. Set by the system."}
+      chapter: {label: "Chapter", help: "Which chapter this beat is for. Set by the system.", placeholder: "Set by the system"}
       stale: {label: "May no longer fit", help: "Set when an earlier chapter was regenerated after this beat was planned, so this beat, its chapter and its records may be out of step. Cleared when the chapter is generated again."}
-      where: {label: "Where", help: "Where the chapter opens. A place from World."}
-      when_time: {label: "When", help: "The day and time the chapter opens. The scene is already in motion."}
-      when_gap: {label: "Time since last chapter", help: "How long it has been. Leave blank for chapter 1."}
-      cast: {label: "Cast", help: "Who is on stage. You pick it before planning, and the system suggests the least-used characters. The protagonist is always included."}
-      collision_goal: {label: "The protagonist is after", help: "What the protagonist is trying to get in this chapter."}
-      collision_block: {label: "What blocks it", help: "What stands in the way. It should follow from the previous chapter's choice."}
-      choice_a: {label: "Option A", help: "One side of the choice. Each option is a want or a value, and picking one costs the other."}
-      choice_b: {label: "Option B", help: "The other side of the choice."}
-      turn: {label: "Turn", help: "What is different by the end of the chapter. It is best when it pays off something set up earlier."}
+      where: {label: "Where", help: "Where the chapter opens. A place from World.", placeholder: "Choose where it opens", why: "Anchors the opening in a place you defined, so the model doesn't invent one.", no_options: "No places yet. Add some in World first."}
+      when_time: {label: "When", help: "The day and time the chapter opens. The scene is already in motion.", placeholder: "e.g. Tuesday, just after the shop opens", why: "The model starts mid-scene at this moment, and later plans read these times as a timeline."}
+      when_gap: {label: "Time since last chapter", help: "How long it has been. Leave blank for chapter 1.", placeholder: "e.g. Three days later", why: "Lets the model account for what happened in between."}
+      cast: {label: "Cast", help: "Who is on stage. You pick it before planning, and the system suggests the least-used characters. The protagonist is always included.", placeholder: "Choose who is on stage (up to 5)", why: "Only these characters appear in the chapter. Anyone else can be mentioned or thought of, but doesn't show up.", no_options: "No characters yet. Add some in Characters first."}
+      collision_goal: {label: "The protagonist is after", help: "What the protagonist is trying to get in this chapter.", placeholder: "e.g. Find out who left the ledger", why: "Gives the chapter its engine: something wanted, and something in the way.", examples: {"good": ["Find out who left the ledger", "Get the guild clerk to sign the permit before noon"], "avoid": ["Feel better about her father", "Figure out her life"]}}
+      collision_block: {label: "What blocks it", help: "What stands in the way. It should follow from the previous chapter's choice.", placeholder: "e.g. The only witness is the landlord, who will talk only if Ines stays quiet about the rent", why: "An obstacle that grows out of the last chapter's choice keeps the story connected."}
+      choice_a: {label: "Option A", help: "One side of the choice. Each option is a want or a value, and picking one costs the other.", placeholder: "e.g. Keep the landlord's goodwill", why: "Two options that each cost the other force a decision, and that decision is what makes the chapter matter."}
+      choice_b: {label: "Option B", help: "The other side of the choice.", placeholder: "e.g. Learn the truth about the ledger"}
+      turn: {label: "Turn", help: "What is different by the end of the chapter. It is best when it pays off something set up earlier.", placeholder: "e.g. Ines learns the customer's name, but the guild now knows she is asking.", why: "Naming what is different by the end makes the model write toward a change, not just an event.", examples: {"good": ["Ines learns the customer's name, but the guild now knows she is asking"], "avoid": ["Things get worse", "Ines thinks about what happened"]}}
       shift:
         label: "Shift"
         help: "Whether this chapter makes things harder or easier. Easier is a breath, never a pause: it still changes something, and the next chapter is harder. Choices that aren't allowed right now are disabled."
+        why: "Keeps the story from becoming one long escalation, or one long rest."
+        disabled_reason: "Pacing doesn't allow this here. The limits come from the chapter number, the chapter count set in Setup, and the earlier shifts."
         options:
-          harder: {label: "Harder", expand: "harder for the protagonist: the pressure rises"}
-          easier: {label: "Easier", expand: "a breath: things ease a little, though something still changes"}
-      ends_on: {label: "Ends on", help: "A conceptual stopping point that leaves a question open."}
-      reveal_rule: {label: "Reveal", help: "A Hidden rule or a Myth from World that comes to light this chapter. A rule that has already come to light in a written chapter can't be chosen again; one that was planned but did not land can."}
-      plant: {label: "Plant", help: "One thing this chapter should set up for later. Optional. It counts as open only once the chapter has actually planted it."}
-      payoff: {label: "Pay off", help: "Open plants this chapter should resolve, up to two. Optional. A plant that was planned but not written is not open."}
-      reveal_learners: {label: "Who learns it", help: "Which characters learn the revealed rule."}
-      offstage_did: {label: "Offstage move", help: "Only when the spotlighted pressure has an agent who is not in the cast: what they did since the last chapter. The offstage pass writes it."}
-      offstage_reach: {label: "How it reaches the protagonist", help: "How the offstage move's effects reach the protagonist this chapter."}
+          harder: {label: "Harder", expand: "harder for the protagonist: the pressure rises", description: "Ines finds the ledger, and finds the last pages torn out."}
+          easier: {label: "Easier", expand: "a breath: things ease a little, though something still changes", description: "The shop is quiet, and a neighbour finally tells Ines what she saw."}
+      ends_on: {label: "Ends on", help: "A conceptual stopping point that leaves a question open.", placeholder: "e.g. Ines finds her own initials in the ledger's last entry", why: "A stopping point that leaves a question open is what makes a reader turn the page.", examples: {"good": ["Ines finds her own initials in the ledger's last entry"], "avoid": ["The chapter ends", "Ines goes home"]}}
+      reveal_rule: {label: "Reveal", help: "A Hidden rule or a Myth from World that comes to light this chapter. A rule that has already come to light in a written chapter can't be chosen again; one that was planned but did not land can.", placeholder: "Choose a rule to reveal", why: "A hidden truth reaches the page only through a reveal, so this is the moment one comes out.", no_options: "Nothing left to reveal. Add a Hidden rule or a Myth in World, or every one has already come to light."}
+      plant: {label: "Plant", help: "One thing this chapter should set up for later. Optional. It counts as open only once the chapter has actually planted it.", placeholder: "e.g. The landlord keeps a locked back room", why: "Something small set up now can pay off in a later chapter.", examples: {"good": ["The landlord keeps a locked back room"], "avoid": ["Something important", "A clue"]}}
+      payoff: {label: "Pay off", help: "Open plants this chapter should resolve, up to two. Optional. A plant that was planned but not written is not open.", placeholder: "Choose a plant to pay off", why: "Resolving an earlier plant makes the chapters before it feel like they mattered.", no_options: "No open plants yet. A plant is open once a written chapter has set it up and nothing has paid it off."}
+      reveal_learners: {label: "Who learns it", help: "Which characters learn the revealed rule.", placeholder: "Choose who learns it", why: "Sets who the model expects to be in the know after this chapter.", no_options: "No characters yet. Add some in Characters first.", visible_if: {"reveal_rule": "filled"}}
+      offstage_did: {label: "Offstage move", help: "Only when the spotlighted pressure has an agent who is not in the cast: what they did since the last chapter. The offstage pass writes it.", placeholder: "e.g. The auditor visited the shop while Ines was out", why: "Pressure keeps moving while the protagonist isn't looking, and this records what moved."}
+      offstage_reach: {label: "How it reaches the protagonist", help: "How the offstage move's effects reach the protagonist this chapter.", placeholder: "e.g. A note from the auditor is waiting under the door"}
       goal_change:
         label: "Goal change"
         help: "Only when the goal moves. Achieved and abandoned both end the goal, and the remaining chapters wind down with no new goal. A change that did not land in the text stays pending and is tried again."
+        why: "Marks the moment the story's central aim ends or changes."
         options:
-          achieved: {label: "Achieved", expand: "the protagonist's goal has been achieved"}
-          redefined: {label: "Redefined", expand: "the protagonist's goal has changed to:"}
-          abandoned: {label: "Abandoned", expand: "the protagonist has abandoned the goal"}
-      goal_now: {label: "The goal now", help: "What the goal has become. Only for a redefined goal. It follows the same advice as Setup's goal: something to act on, with a clear outcome, that narrows a want."}
-      spotlight: {label: "Spotlight", help: "The pressure this chapter puts in focus. The system picks it so planning stays consistent, and you can change it."}
-      planned_from: {label: "Planned from", help: "A fingerprint of the live state this beat was planned from. Set by the system. If the live state changes afterward, the beat is flagged as planned from older state."}
+          achieved: {label: "Achieved", expand: "the protagonist's goal has been achieved", description: "Ines hands the ledger to the auditor, and the audit is over."}
+          redefined: {label: "Redefined", expand: "the protagonist's goal has changed to:", description: "Ines stops wanting the ledger and starts wanting whoever forged it."}
+          abandoned: {label: "Abandoned", expand: "the protagonist has abandoned the goal", description: "Ines lets the audit take the shop and walks away."}
+      goal_now: {label: "The goal now", help: "What the goal has become. Only for a redefined goal. It follows the same advice as Setup's goal: something to act on, with a clear outcome, that narrows a want.", placeholder: "e.g. Prove the ledger was forged before the guild meets", visible_if: {"goal_change": "redefined"}}
+      spotlight: {label: "Spotlight", help: "The pressure this chapter puts in focus. The system picks it so planning stays consistent, and you can change it.", placeholder: "Choose a pressure", why: "Rotates attention across the pressures, so one thread doesn't take over every chapter.", no_options: "No pressures yet. Add some in Entanglements first."}
+      planned_from: {label: "Planned from", help: "A fingerprint of the live state this beat was planned from. Set by the system. If the live state changes afterward, the beat is flagged as planned from older state.", placeholder: "Set when the beat is planned"}
 rules:
   outline_link_broken:
     message: "A beat points to something that no longer exists."

@@ -179,7 +179,7 @@ def test_other_languages_match_english_keys_and_tokens():
 # ---------------------------------------------------------------- UI wording (human-only, never sent to the model)
 # Cards whose UI wording is finished. A card listed here must give every option a description and every free-text
 # field a placeholder. Add a card to this set when its wording is written.
-UI_DONE = {"style", "characters", "world", "entanglements", "setup"}
+UI_DONE = {"style", "characters", "world", "entanglements", "setup", "outline"}
 FIELD_UI = {"placeholder", "why", "examples", "empty", "add", "delete_confirm", "item_title", "visible_if",
             "no_options", "filtered_note", "disabled_reason", "one_of"}
 FIELD_KEYS = FIELD_UI | {"label", "help", "options", "item_fields", "expand", "lead_in", "item_template", "item_join"}
@@ -209,9 +209,10 @@ def test_ui_wording_uses_known_keys_and_sensible_values(cid, lang):
                 assert not tokens(t[key]), (n, key, "no tokens in plain UI text")
         if "placeholder" in t:
             assert meta["input"] in ("text", "textarea", "number") or "ref" in meta, (n, "placeholder only on typed fields and pickers")
-        for key in ("no_options", "disabled_reason"):
-            if key in t:
-                assert "ref" in meta, (n, key, "only on reference pickers")
+        if "no_options" in t:
+            assert "ref" in meta, (n, "no_options", "only on reference pickers")
+        if "disabled_reason" in t:
+            assert "ref" in meta or "limited_by" in meta, (n, "disabled_reason", "only on pickers or code-limited choices")
         if "filtered_note" in t:
             assert "ref_filter_by" in meta, n
         if "one_of" in t:
@@ -264,6 +265,8 @@ def test_finished_cards_describe_every_option_and_typed_field(cid, lang):
             assert t.get("placeholder") and t.get("no_options"), n
         if "ref_filter_by" in meta:
             assert t.get("filtered_note"), n
+        if "limited_by" in meta:
+            assert t.get("disabled_reason"), (n, "a code-limited choice must say why an option is disabled")
 
 
 @pytest.mark.parametrize("cid,lang", CASES, ids=CASE_IDS)

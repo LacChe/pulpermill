@@ -2566,6 +2566,10 @@
      "required": true,
      "uncapped": true,
      "repeat": true,
+     "empty": "No beats yet. Choose a cast and press Plan, or add one by hand.",
+     "add": "Add a beat",
+     "delete_confirm": "Delete this beat?",
+     "item_title": "Chapter {chapter}",
      "item_fields": [
       {
        "key": "chapter",
@@ -2574,7 +2578,8 @@
        "input": "number",
        "kind": "note",
        "required": true,
-       "filled_by": "code"
+       "filled_by": "code",
+       "placeholder": "Set by the system"
       },
       {
        "key": "stale",
@@ -2596,7 +2601,10 @@
        "ref": [
         "world.places"
        ],
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "Choose where it opens",
+       "why": "Anchors the opening in a place you defined, so the model doesn't invent one.",
+       "no_options": "No places yet. Add some in World first."
       },
       {
        "key": "when_time",
@@ -2605,7 +2613,9 @@
        "input": "text",
        "kind": "note",
        "required": true,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. Tuesday, just after the shop opens",
+       "why": "The model starts mid-scene at this moment, and later plans read these times as a timeline."
       },
       {
        "key": "when_gap",
@@ -2614,7 +2624,9 @@
        "input": "text",
        "kind": "note",
        "required": false,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. Three days later",
+       "why": "Lets the model account for what happened in between."
       },
       {
        "key": "cast",
@@ -2627,7 +2639,10 @@
         "characters"
        ],
        "filled_by": "human",
-       "max_selected": 5
+       "max_selected": 5,
+       "placeholder": "Choose who is on stage (up to 5)",
+       "why": "Only these characters appear in the chapter. Anyone else can be mentioned or thought of, but doesn't show up.",
+       "no_options": "No characters yet. Add some in Characters first."
       },
       {
        "key": "collision_goal",
@@ -2636,7 +2651,19 @@
        "input": "text",
        "kind": "note",
        "required": true,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. Find out who left the ledger",
+       "why": "Gives the chapter its engine: something wanted, and something in the way.",
+       "examples": {
+        "good": [
+         "Find out who left the ledger",
+         "Get the guild clerk to sign the permit before noon"
+        ],
+        "avoid": [
+         "Feel better about her father",
+         "Figure out her life"
+        ]
+       }
       },
       {
        "key": "collision_block",
@@ -2645,7 +2672,9 @@
        "input": "text",
        "kind": "note",
        "required": true,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. The only witness is the landlord, who will talk only if Ines stays quiet about the rent",
+       "why": "An obstacle that grows out of the last chapter's choice keeps the story connected."
       },
       {
        "key": "choice_a",
@@ -2654,7 +2683,9 @@
        "input": "text",
        "kind": "note",
        "required": true,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. Keep the landlord's goodwill",
+       "why": "Two options that each cost the other force a decision, and that decision is what makes the chapter matter."
       },
       {
        "key": "choice_b",
@@ -2663,7 +2694,8 @@
        "input": "text",
        "kind": "note",
        "required": true,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. Learn the truth about the ledger"
       },
       {
        "key": "turn",
@@ -2672,7 +2704,18 @@
        "input": "text",
        "kind": "note",
        "required": true,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. Ines learns the customer's name, but the guild now knows she is asking.",
+       "why": "Naming what is different by the end makes the model write toward a change, not just an event.",
+       "examples": {
+        "good": [
+         "Ines learns the customer's name, but the guild now knows she is asking"
+        ],
+        "avoid": [
+         "Things get worse",
+         "Ines thinks about what happened"
+        ]
+       }
       },
       {
        "key": "shift",
@@ -2683,14 +2726,18 @@
        "required": true,
        "filled_by": "planner",
        "limited_by": "code",
+       "why": "Keeps the story from becoming one long escalation, or one long rest.",
+       "disabled_reason": "Pacing doesn't allow this here. The limits come from the chapter number, the chapter count set in Setup, and the earlier shifts.",
        "options": [
         {
          "value": "harder",
-         "label": "Harder"
+         "label": "Harder",
+         "description": "Ines finds the ledger, and finds the last pages torn out."
         },
         {
          "value": "easier",
-         "label": "Easier"
+         "label": "Easier",
+         "description": "The shop is quiet, and a neighbour finally tells Ines what she saw."
         }
        ]
       },
@@ -2701,7 +2748,18 @@
        "input": "text",
        "kind": "note",
        "required": true,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. Ines finds her own initials in the ledger's last entry",
+       "why": "A stopping point that leaves a question open is what makes a reader turn the page.",
+       "examples": {
+        "good": [
+         "Ines finds her own initials in the ledger's last entry"
+        ],
+        "avoid": [
+         "The chapter ends",
+         "Ines goes home"
+        ]
+       }
       },
       {
        "key": "reveal_rule",
@@ -2719,7 +2777,10 @@
          "false_belief"
         ]
        },
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "Choose a rule to reveal",
+       "why": "A hidden truth reaches the page only through a reveal, so this is the moment one comes out.",
+       "no_options": "Nothing left to reveal. Add a Hidden rule or a Myth in World, or every one has already come to light."
       },
       {
        "key": "reveal_learners",
@@ -2731,7 +2792,13 @@
        "ref": [
         "characters"
        ],
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "Choose who learns it",
+       "why": "Sets who the model expects to be in the know after this chapter.",
+       "no_options": "No characters yet. Add some in Characters first.",
+       "visible_if": {
+        "reveal_rule": "filled"
+       }
       },
       {
        "key": "plant",
@@ -2740,7 +2807,18 @@
        "input": "text",
        "kind": "note",
        "required": false,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. The landlord keeps a locked back room",
+       "why": "Something small set up now can pay off in a later chapter.",
+       "examples": {
+        "good": [
+         "The landlord keeps a locked back room"
+        ],
+        "avoid": [
+         "Something important",
+         "A clue"
+        ]
+       }
       },
       {
        "key": "payoff",
@@ -2753,7 +2831,10 @@
         "summary_events.entries"
        ],
        "filled_by": "planner",
-       "max_selected": 2
+       "max_selected": 2,
+       "placeholder": "Choose a plant to pay off",
+       "why": "Resolving an earlier plant makes the chapters before it feel like they mattered.",
+       "no_options": "No open plants yet. A plant is open once a written chapter has set it up and nothing has paid it off."
       },
       {
        "key": "offstage_did",
@@ -2762,7 +2843,9 @@
        "input": "text",
        "kind": "note",
        "required": false,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. The auditor visited the shop while Ines was out",
+       "why": "Pressure keeps moving while the protagonist isn't looking, and this records what moved."
       },
       {
        "key": "offstage_reach",
@@ -2771,7 +2854,8 @@
        "input": "text",
        "kind": "note",
        "required": false,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. A note from the auditor is waiting under the door"
       },
       {
        "key": "goal_change",
@@ -2781,18 +2865,22 @@
        "kind": "axis",
        "required": false,
        "filled_by": "planner",
+       "why": "Marks the moment the story's central aim ends or changes.",
        "options": [
         {
          "value": "achieved",
-         "label": "Achieved"
+         "label": "Achieved",
+         "description": "Ines hands the ledger to the auditor, and the audit is over."
         },
         {
          "value": "redefined",
-         "label": "Redefined"
+         "label": "Redefined",
+         "description": "Ines stops wanting the ledger and starts wanting whoever forged it."
         },
         {
          "value": "abandoned",
-         "label": "Abandoned"
+         "label": "Abandoned",
+         "description": "Ines lets the audit take the shop and walks away."
         }
        ]
       },
@@ -2803,7 +2891,11 @@
        "input": "text",
        "kind": "note",
        "required": false,
-       "filled_by": "planner"
+       "filled_by": "planner",
+       "placeholder": "e.g. Prove the ledger was forged before the guild meets",
+       "visible_if": {
+        "goal_change": "redefined"
+       }
       },
       {
        "key": "spotlight",
@@ -2815,7 +2907,10 @@
        "ref": [
         "entanglements.pressures"
        ],
-       "filled_by": "code"
+       "filled_by": "code",
+       "placeholder": "Choose a pressure",
+       "why": "Rotates attention across the pressures, so one thread doesn't take over every chapter.",
+       "no_options": "No pressures yet. Add some in Entanglements first."
       },
       {
        "key": "planned_from",
@@ -2824,7 +2919,8 @@
        "input": "text",
        "kind": "note",
        "required": false,
-       "filled_by": "code"
+       "filled_by": "code",
+       "placeholder": "Set when the beat is planned"
       }
      ]
     }
