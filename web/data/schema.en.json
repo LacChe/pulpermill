@@ -1173,7 +1173,9 @@
      "input": "text",
      "kind": "free",
      "group": "overview",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. The Salt Coast",
+     "why": "The model uses it to refer to the setting the same way every time."
     },
     {
      "key": "era_and_technology",
@@ -1182,7 +1184,18 @@
      "input": "textarea",
      "kind": "free",
      "group": "overview",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. A river city in the 1890s: gas lamps and telegraphs, no cars, about forty thousand people.",
+     "why": "Tells the model what is possible, so it doesn't invent a phone in a world without one.",
+     "examples": {
+      "good": [
+       "A river city in the 1890s: gas lamps and telegraphs, no cars, about forty thousand people"
+      ],
+      "avoid": [
+       "gloomy and oppressive",
+       "a dark, brooding age"
+      ]
+     }
     },
     {
      "key": "everyday_life",
@@ -1191,7 +1204,17 @@
      "input": "textarea",
      "kind": "free",
      "group": "overview",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. Most people work the docks. Fresh water is rationed and sold by the bucket.",
+     "why": "This is the normal the story will break. With no friction there is nothing to disrupt.",
+     "examples": {
+      "good": [
+       "Most people work the docks. Fresh water is rationed and sold by the bucket."
+      ],
+      "avoid": [
+       "People live ordinary lives"
+      ]
+     }
     },
     {
      "key": "history",
@@ -1200,7 +1223,17 @@
      "input": "textarea",
      "kind": "free",
      "group": "overview",
-     "required": true
+     "required": true,
+     "placeholder": "e.g. A famine ten years ago emptied the villages and filled the city.",
+     "why": "Gives the world weight without needing any one person in it.",
+     "examples": {
+      "good": [
+       "A famine ten years ago emptied the villages and filled the city"
+      ],
+      "avoid": [
+       "The old king's son poisoned him in the spring of the famine"
+      ]
+     }
     },
     {
      "key": "places",
@@ -1213,6 +1246,11 @@
      "counted": true,
      "max_items": 5,
      "repeat": true,
+     "why": "A place that acts on people gives a scene something to push against.",
+     "empty": "No places yet. Add the places where scenes will happen.",
+     "add": "Add a place",
+     "delete_confirm": "Delete this place?",
+     "item_title": "{name}",
      "item_fields": [
       {
        "key": "name",
@@ -1220,7 +1258,8 @@
        "help": "What the place is called.",
        "input": "text",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. The Counting House"
       },
       {
        "key": "description",
@@ -1228,7 +1267,16 @@
        "help": "A concrete description you could picture.",
        "input": "textarea",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. A narrow brick building with barred windows and a bell above the door.",
+       "examples": {
+        "good": [
+         "A narrow brick building with barred windows and a bell above the door"
+        ],
+        "avoid": [
+         "a creepy old place"
+        ]
+       }
       },
       {
        "key": "effect",
@@ -1236,7 +1284,17 @@
        "help": "How the place changes the people in it ('everyone here lowers their voice'). A place that is only scenery gives the story nothing to work with.",
        "input": "textarea",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. Everyone lowers their voice and walks on the left.",
+       "examples": {
+        "good": [
+         "Everyone lowers their voice and walks on the left",
+         "Nobody stays past dusk"
+        ],
+        "avoid": [
+         "It is dark and atmospheric"
+        ]
+       }
       }
      ]
     },
@@ -1251,6 +1309,11 @@
      "counted": true,
      "max_items": 5,
      "repeat": true,
+     "why": "A thing matters because someone wants it. This is where you say why.",
+     "empty": "No things yet. Add objects someone might want.",
+     "add": "Add a thing",
+     "delete_confirm": "Delete this thing?",
+     "item_title": "{name}",
      "item_fields": [
       {
        "key": "name",
@@ -1258,7 +1321,8 @@
        "help": "What the thing is called.",
        "input": "text",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. The Ledger"
       },
       {
        "key": "description",
@@ -1266,7 +1330,8 @@
        "help": "A concrete description.",
        "input": "textarea",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. A water-stained book bound in green cloth."
       },
       {
        "key": "significance",
@@ -1274,7 +1339,16 @@
        "help": "What it can do, or what it means to whoever wants it. No owner and no location; those are tracked in Entanglements.",
        "input": "textarea",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. Whoever holds it can prove who owes the Guild money.",
+       "examples": {
+        "good": [
+         "Whoever holds it can prove who owes the Guild money"
+        ],
+        "avoid": [
+         "It belongs to the Guild and sits in the vault"
+        ]
+       }
       }
      ]
     },
@@ -1288,6 +1362,11 @@
      "required": true,
      "max_items": 5,
      "repeat": true,
+     "why": "Groups are how the world pushes back on ordinary people.",
+     "empty": "No groups yet. Add who holds power over ordinary people.",
+     "add": "Add a group",
+     "delete_confirm": "Delete this group?",
+     "item_title": "{name}",
      "item_fields": [
       {
        "key": "name",
@@ -1295,7 +1374,8 @@
        "help": "What the group is called.",
        "input": "text",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. The Water Guild"
       },
       {
        "key": "nature",
@@ -1303,7 +1383,8 @@
        "help": "An institution, an organisation, a nation, a crowd.",
        "input": "textarea",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. A guild of licensed well-keepers."
       },
       {
        "key": "hold",
@@ -1311,7 +1392,8 @@
        "help": "Force, money, law, belief, numbers.",
        "input": "textarea",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. Control of every well in the city, and the law that licenses them."
       },
       {
        "key": "felt",
@@ -1319,7 +1401,17 @@
        "help": "How an ordinary person meets it day to day. Leave out what the group wants right now; that goes in Entanglements.",
        "input": "textarea",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. A weekly water tax, and well-keepers who check your bucket.",
+       "examples": {
+        "good": [
+         "A weekly water tax",
+         "A curfew bell and the patrols that follow it"
+        ],
+        "avoid": [
+         "It plans to take over the harbour"
+        ]
+       }
       }
      ]
     },
@@ -1333,6 +1425,11 @@
      "required": true,
      "max_items": 5,
      "repeat": true,
+     "why": "A rule with a price gives characters a choice, and choices are where drama comes from.",
+     "empty": "No rules yet. Add something that is true here and costs something.",
+     "add": "Add a rule",
+     "delete_confirm": "Delete this rule?",
+     "item_title": "{statement}",
      "item_fields": [
       {
        "key": "statement",
@@ -1340,7 +1437,8 @@
        "help": "What is true.",
        "input": "textarea",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. Nobody may refuse a guest water."
       },
       {
        "key": "cost",
@@ -1348,7 +1446,16 @@
        "help": "What using or living by this rule costs.",
        "input": "textarea",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. Hosts go thirsty in a drought.",
+       "examples": {
+        "good": [
+         "Hosts go thirsty in a drought"
+        ],
+        "avoid": [
+         "It is just how things are"
+        ]
+       }
       },
       {
        "key": "status",
@@ -1360,15 +1467,18 @@
        "options": [
         {
          "value": "common",
-         "label": "Common knowledge"
+         "label": "Common knowledge",
+         "description": "Everyone knows it, and it is true: the gates close at dusk."
         },
         {
          "value": "uncommon",
-         "label": "Hidden"
+         "label": "Hidden",
+         "description": "True, but few know it: the gates cannot be opened from outside."
         },
         {
          "value": "false_belief",
-         "label": "Myth"
+         "label": "Myth",
+         "description": "Widely believed, but false: people say the river is cursed. You then say what is really true."
         }
        ]
       },
@@ -1378,7 +1488,17 @@
        "help": "Whether breaking it is impossible, punished, shameful, or has a side effect. A hard limit and a priced choice work differently.",
        "input": "textarea",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. Punished: the household is shunned.",
+       "examples": {
+        "good": [
+         "Punished: the household is shunned",
+         "Impossible: the door will not open to a stranger refused"
+        ],
+        "avoid": [
+         "Bad things happen"
+        ]
+       }
       },
       {
        "key": "truth",
@@ -1386,7 +1506,11 @@
        "help": "Only for a Myth: what is actually true.",
        "input": "textarea",
        "kind": "note",
-       "required": false
+       "required": false,
+       "placeholder": "e.g. The custom was invented by the Guild to keep every door open to its collectors.",
+       "visible_if": {
+        "status": "false_belief"
+       }
       }
      ]
     },
@@ -1400,6 +1524,11 @@
      "required": true,
      "max_items": 5,
      "repeat": true,
+     "why": "Keeps invented words spelled and used the same way in every chapter.",
+     "empty": "No vocabulary yet. Add invented or local words.",
+     "add": "Add a term",
+     "delete_confirm": "Delete this term?",
+     "item_title": "{term}: {meaning}",
      "item_fields": [
       {
        "key": "term",
@@ -1407,7 +1536,8 @@
        "help": "The word or name.",
        "input": "text",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. bucketsworn"
       },
       {
        "key": "meaning",
@@ -1415,7 +1545,8 @@
        "help": "One line.",
        "input": "text",
        "kind": "note",
-       "required": true
+       "required": true,
+       "placeholder": "e.g. someone who has pledged their water to the Guild"
       }
      ]
     }

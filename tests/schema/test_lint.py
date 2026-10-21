@@ -179,7 +179,7 @@ def test_other_languages_match_english_keys_and_tokens():
 # ---------------------------------------------------------------- UI wording (human-only, never sent to the model)
 # Cards whose UI wording is finished. A card listed here must give every option a description and every free-text
 # field a placeholder. Add a card to this set when its wording is written.
-UI_DONE = {"style", "characters"}
+UI_DONE = {"style", "characters", "world"}
 FIELD_UI = {"placeholder", "why", "examples", "empty", "add", "delete_confirm", "item_title", "visible_if"}
 FIELD_KEYS = FIELD_UI | {"label", "help", "options", "item_fields", "expand", "lead_in", "item_template", "item_join"}
 OPTION_KEYS = {"label", "expand", "description"}
@@ -262,3 +262,44 @@ def test_ui_wording_never_repeats_model_text(cid, lang):
         shown += [t[k] for k in ("placeholder", "why", "empty", "add", "delete_confirm") if k in t]
         shown += [o["description"] for o in t.get("options", {}).values() if "description" in o]
     assert not set(shown) & model_text
+
+
+def _siblings(model, text):
+    """(list name, item field name) -> (schema field, text entry), plus the option values of each sibling."""
+    for n, f in fields_of(model).items():
+        if is_list_field(f):
+            yield n, item_fields(f), text["fields"][n]["item_fields"]
+
+
+@pytest.mark.parametrize("cid,lang", CASES, ids=CASE_IDS)
+def test_visible_if_points_at_sibling_fields_and_real_options(cid, lang):
+    model = card(cid)[0]
+    text = load_text(cid, lang)
+    for n, f, t in _targets(model, text):
+        if "visible_if" not in t:
+            continue
+        cond = t["visible_if"]
+        assert isinstance(cond, dict) and cond, n
+    for list_name, schema_items, text_items in _siblings(model, text):
+        for item_name, t in text_items.items():
+            for key, wanted in (t.get("visible_if") or {}).items():
+                assert key in schema_items and key != item_name, (list_name, item_name, key)
+                allowed = set(options_of(schema_items[key]))
+                wanted = wanted if isinstance(wanted, list) else [wanted]
+                assert allowed and set(wanted) <= allowed, (list_name, item_name, key)
+
+
+@pytest.mark.parametrize("cid,lang", CASES, ids=CASE_IDS)
+def test_a_field_shown_only_sometimes_matches_the_block_rule_that_requires_it(cid, lang):
+    """If code requires a field only when another has some value, the form must show it in exactly that case."""
+    if cid not in UI_DONE:
+        pytest.skip("UI wording not written yet")
+    model, _, _, rules, _ = card(cid)
+    text = load_text(cid, lang)
+    for r in rules:
+        if r.check != "required_if":
+            continue
+        for list_name, _, text_items in _siblings(model, text):
+            target = text_items.get(r.params["field"])
+            if target is not None:
+                assert target.get("visible_if") == r.params["when"], r.id

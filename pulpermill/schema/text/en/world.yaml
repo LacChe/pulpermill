@@ -15,77 +15,119 @@ fields:
   name:
     label: "Name"
     help: "What the world or setting is called."
+    placeholder: "e.g. The Salt Coast"
+    why: "The model uses it to refer to the setting the same way every time."
     lead_in: "The setting is called {value}."
   era_and_technology:
     label: "Era and technology"
     help: "When it is, what people can and can't do, and the scale (a block, a city, a continent). State facts, not mood; mood belongs to Style."
+    placeholder: "e.g. A river city in the 1890s: gas lamps and telegraphs, no cars, about forty thousand people."
+    why: "Tells the model what is possible, so it doesn't invent a phone in a world without one."
+    examples:
+      good: ["A river city in the 1890s: gas lamps and telegraphs, no cars, about forty thousand people"]
+      avoid: ["gloomy and oppressive", "a dark, brooding age"]
     lead_in: "Era and technology in {name}: {value}"
   everyday_life:
     label: "Everyday life"
     help: "What a normal day looks like for most people, and what is scarce, expensive or contested. This is the normal that Setup's disruption will break."
+    placeholder: "e.g. Most people work the docks. Fresh water is rationed and sold by the bucket."
+    why: "This is the normal the story will break. With no friction there is nothing to disrupt."
+    examples:
+      good: ["Most people work the docks. Fresh water is rationed and sold by the bucket."]
+      avoid: ["People live ordinary lives"]
     lead_in: "Everyday life in {name}: {value}"
   history:
     label: "History"
     help: "What happened before the story that people still live with (a war, a fire, a treaty). Name no characters; anything involving specific people goes in Entanglements."
+    placeholder: "e.g. A famine ten years ago emptied the villages and filled the city."
+    why: "Gives the world weight without needing any one person in it."
+    examples:
+      good: ["A famine ten years ago emptied the villages and filled the city"]
+      avoid: ["The old king's son poisoned him in the spring of the famine"]
     lead_in: "History that people still live with: {value}"
   places:
     label: "Places"
     help: "A handful of places. Each needs a name, a concrete description, and what the place does to the people in it."
+    why: "A place that acts on people gives a scene something to push against."
+    empty: "No places yet. Add the places where scenes will happen."
+    add: "Add a place"
+    delete_confirm: "Delete this place?"
+    item_title: "{name}"
     lead_in: "Places in {name}, each shaping the people in it:\n{items}"
     item_template: "{name}: {description} What it does to people there: {effect}"
     item_join: "\n"
     item_fields:
-      name: {label: "Name", help: "What the place is called."}
-      description: {label: "Description", help: "A concrete description you could picture."}
-      effect: {label: "What it does to people", help: "How the place changes the people in it ('everyone here lowers their voice'). A place that is only scenery gives the story nothing to work with."}
+      name: {label: "Name", help: "What the place is called.", placeholder: "e.g. The Counting House"}
+      description: {label: "Description", help: "A concrete description you could picture.", placeholder: "e.g. A narrow brick building with barred windows and a bell above the door.", examples: {good: ["A narrow brick building with barred windows and a bell above the door"], avoid: ["a creepy old place"]}}
+      effect: {label: "What it does to people", help: "How the place changes the people in it ('everyone here lowers their voice'). A place that is only scenery gives the story nothing to work with.", placeholder: "e.g. Everyone lowers their voice and walks on the left.", examples: {good: ["Everyone lowers their voice and walks on the left", "Nobody stays past dusk"], avoid: ["It is dark and atmospheric"]}}
   objects:
     label: "Things"
     help: "A handful of objects that matter."
+    why: "A thing matters because someone wants it. This is where you say why."
+    empty: "No things yet. Add objects someone might want."
+    add: "Add a thing"
+    delete_confirm: "Delete this thing?"
+    item_title: "{name}"
     lead_in: "Things that matter in {name}:\n{items}"
     item_template: "{name}: {description} Why it matters: {significance}"
     item_join: "\n"
     item_fields:
-      name: {label: "Name", help: "What the thing is called."}
-      description: {label: "Description", help: "A concrete description."}
-      significance: {label: "Why it matters", help: "What it can do, or what it means to whoever wants it. No owner and no location; those are tracked in Entanglements."}
+      name: {label: "Name", help: "What the thing is called.", placeholder: "e.g. The Ledger"}
+      description: {label: "Description", help: "A concrete description.", placeholder: "e.g. A water-stained book bound in green cloth."}
+      significance: {label: "Why it matters", help: "What it can do, or what it means to whoever wants it. No owner and no location; those are tracked in Entanglements.", placeholder: "e.g. Whoever holds it can prove who owes the Guild money.", examples: {good: ["Whoever holds it can prove who owes the Guild money"], avoid: ["It belongs to the Guild and sits in the vault"]}}
   powers:
     label: "Groups"
     help: "Institutions, organisations, nations and crowds. Say how an ordinary person meets them day to day (a tax, a curfew, a whisper)."
+    why: "Groups are how the world pushes back on ordinary people."
+    empty: "No groups yet. Add who holds power over ordinary people."
+    add: "Add a group"
+    delete_confirm: "Delete this group?"
+    item_title: "{name}"
     lead_in: "Groups with power in {name}:\n{items}"
     item_template: "{name}: {nature} It holds power by {hold} Ordinary people feel it as {felt}"
     item_join: "\n"
     item_fields:
-      name: {label: "Name", help: "What the group is called."}
-      nature: {label: "What it is", help: "An institution, an organisation, a nation, a crowd."}
-      hold: {label: "How it holds power", help: "Force, money, law, belief, numbers."}
-      felt: {label: "How people feel it", help: "How an ordinary person meets it day to day. Leave out what the group wants right now; that goes in Entanglements."}
+      name: {label: "Name", help: "What the group is called.", placeholder: "e.g. The Water Guild"}
+      nature: {label: "What it is", help: "An institution, an organisation, a nation, a crowd.", placeholder: "e.g. A guild of licensed well-keepers."}
+      hold: {label: "How it holds power", help: "Force, money, law, belief, numbers.", placeholder: "e.g. Control of every well in the city, and the law that licenses them."}
+      felt: {label: "How people feel it", help: "How an ordinary person meets it day to day. Leave out what the group wants right now; that goes in Entanglements.", placeholder: "e.g. A weekly water tax, and well-keepers who check your bucket.", examples: {good: ["A weekly water tax", "A curfew bell and the patrols that follow it"], avoid: ["It plans to take over the harbour"]}}
   rules:
     label: "Rules"
     help: "Things that are true here. Give each a price and a consequence for breaking it; a rule with no price is just a fact."
+    why: "A rule with a price gives characters a choice, and choices are where drama comes from."
+    empty: "No rules yet. Add something that is true here and costs something."
+    add: "Add a rule"
+    delete_confirm: "Delete this rule?"
+    item_title: "{statement}"
     lead_in: "What is true in {name}:\n{items}"
     item_template: "{statement} ({status}). Cost: {cost} When broken: {when_broken}"
     item_join: "\n"
     item_fields:
-      statement: {label: "Statement", help: "What is true."}
-      cost: {label: "Cost", help: "What using or living by this rule costs."}
+      statement: {label: "Statement", help: "What is true.", placeholder: "e.g. Nobody may refuse a guest water."}
+      cost: {label: "Cost", help: "What using or living by this rule costs.", placeholder: "e.g. Hosts go thirsty in a drought.", examples: {good: ["Hosts go thirsty in a drought"], avoid: ["It is just how things are"]}}
       status:
         label: "Status"
         help: "Common knowledge: everyone knows it, and it is true. Hidden: true, but known to few. Myth: widely believed, but false. Who exactly knows is recorded in Entanglements."
         options:
-          common: {label: "Common knowledge", expand: "common knowledge"}
-          uncommon: {label: "Hidden", expand: "known only to a few"}
-          false_belief: {label: "Myth", expand: "widely believed but false; the truth is: {truth}"}
-      when_broken: {label: "When broken", help: "Whether breaking it is impossible, punished, shameful, or has a side effect. A hard limit and a priced choice work differently."}
-      truth: {label: "The truth", help: "Only for a Myth: what is actually true."}
+          common: {label: "Common knowledge", expand: "common knowledge", description: "Everyone knows it, and it is true: the gates close at dusk."}
+          uncommon: {label: "Hidden", expand: "known only to a few", description: "True, but few know it: the gates cannot be opened from outside."}
+          false_belief: {label: "Myth", expand: "widely believed but false; the truth is: {truth}", description: "Widely believed, but false: people say the river is cursed. You then say what is really true."}
+      when_broken: {label: "When broken", help: "Whether breaking it is impossible, punished, shameful, or has a side effect. A hard limit and a priced choice work differently.", placeholder: "e.g. Punished: the household is shunned.", examples: {good: ["Punished: the household is shunned", "Impossible: the door will not open to a stranger refused"], avoid: ["Bad things happen"]}}
+      truth: {label: "The truth", help: "Only for a Myth: what is actually true.", placeholder: "e.g. The custom was invented by the Guild to keep every door open to its collectors.", visible_if: {status: "false_belief"}}
   terms:
     label: "Vocabulary"
     help: "Invented or local words and names, each with a one-line meaning, so the story stays consistent."
+    why: "Keeps invented words spelled and used the same way in every chapter."
+    empty: "No vocabulary yet. Add invented or local words."
+    add: "Add a term"
+    delete_confirm: "Delete this term?"
+    item_title: "{term}: {meaning}"
     lead_in: "Words and names used in {name}: {items}"
     item_template: "{term}: {meaning}"
     item_join: "; "
     item_fields:
-      term: {label: "Term", help: "The word or name."}
-      meaning: {label: "Meaning", help: "One line."}
+      term: {label: "Term", help: "The word or name.", placeholder: "e.g. bucketsworn"}
+      meaning: {label: "Meaning", help: "One line.", placeholder: "e.g. someone who has pledged their water to the Guild"}
 rules:
   world_names_people:
     message: "This mentions {names}. A world has to work with any cast, so it should not name characters."
