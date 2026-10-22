@@ -187,6 +187,99 @@ export function newProject(schema) {
   return { title: "", schema_version: schema.schema_version };
 }
 
+// ---- Saving, opening and the recovery copy -------------------------------
+// The saved file is the project itself, with nothing wrapped around it, so the backend reads the same thing.
+// This section has no page code: it only turns a project into text and text back into a project.
+const copyOf = (value) => JSON.parse(JSON.stringify(value));
+
+// The project with every card filled out to its full shape. Visiting a card fills in blank fields, so two
+// projects that differ only in blanks the page has not drawn yet are the same project once settled.
+export function settledProject(schema, project) {
+  const settled = copyOf(project);
+  for (const id of schema.order) ensureCard(settled, schema.cards[id]);
+  return settled;
+}
+
+// The text of a project, used both to compare ("has anything changed since the last save?") and to save.
+export function projectSnapshot(schema, project) {
+  return JSON.stringify(settledProject(schema, project), null, 2) + "\n";
+}
+
+export function hasUnsavedChanges(schema, project, savedSnapshot) {
+  return projectSnapshot(schema, project) !== savedSnapshot;
+}
+
+// The file name to offer when saving: the project's title, or a plain default when it has none yet.
+export function projectFileName(project, fallback = "pulpermill-project") {
+  const slug = String(project.title ?? "").toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/g, "");
+  return `${slug || fallback}.json`;
+}
+
+// Turn the text of a file into a project, or say why not. The reasons are codes; the page words them.
+//   unreadable   not JSON at all
+//   not_project  JSON, but not a Pulpermill project (no schema_version)
+//   newer        saved by a newer version of the page than this one
+//   damaged      a card holds the wrong kind of thing (`card` names it)
+// An older file still opens, and comes back with `older: true` so the page can say so.
+export function readProject(text, schema) {
+  let data;
+  try {
+    data = JSON.parse(String(text).replace(/^﻿/, ""));
+  } catch {
+    return { ok: false, reason: "unreadable" };
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data) || !Number.isInteger(data.schema_version)) {
+    return { ok: false, reason: "not_project" };
+  }
+  if (data.schema_version > schema.schema_version) return { ok: false, reason: "newer" };
+  for (const id of schema.order) {
+    const card = schema.cards[id];
+    const held = data[id];
+    if (held === undefined || held === null) continue;
+    const isObject = (v) => v && typeof v === "object" && !Array.isArray(v);
+    const fine = card.many_per_project ? Array.isArray(held) && held.every(isObject) : isObject(held);
+    if (!fine) return { ok: false, reason: "damaged", card: id };
+  }
+  return { ok: true, project: data, older: data.schema_version < schema.schema_version };
+}
+
+// The safety copy kept in the browser while the writer works. The file stays the real save.
+export const RECOVERY_KEY = "pulpermill-recovery";
+
+export function recoveryRecord(schema, project, now = new Date()) {
+  return JSON.stringify({
+    schema_version: schema.schema_version,
+    saved_at: now.toISOString(),
+    project: settledProject(schema, project),
+  });
+}
+
+// What the browser kept, or null if it is missing, damaged or from a newer page.
+export function readRecovery(text, schema) {
+  let record;
+  try {
+    record = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (!record || typeof record.saved_at !== "string" || !record.project) return null;
+  const read = readProject(JSON.stringify(record.project), schema);
+  if (!read.ok) return null;
+  return {
+    project: read.project,
+    savedAt: record.saved_at,
+    title: typeof read.project.title === "string" ? read.project.title : "",
+    characters: (read.project.characters ?? []).length,
+  };
+}
+
+// Only offer the copy back if it holds something. A copy of a blank project is not worth interrupting for.
+export function worthRecovering(schema, recovered) {
+  return Boolean(recovered) &&
+    projectSnapshot(schema, recovered.project) !== projectSnapshot(schema, newProject(schema));
+}
+
 // ---- Links to other cards ------------------------------------------------
 // A field with `ref` picks from lists elsewhere in the project. A source is "characters" or "<card>.<list>".
 const NAME_KEYS = ["name", "statement", "term", "what", "planted"];
