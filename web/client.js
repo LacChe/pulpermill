@@ -55,7 +55,8 @@ export function blockedByPage(setting, pageProtocol) {
 
 export const DEFAULT_TIMEOUTS = { status: 5000, fill: 180000, judge: 180000, style_fit: 120000 };
 
-const STATUS_FAILURES = { 400: "bad_request", 413: "too_long", 429: "busy", 503: "busy" };
+// The fallback when the body is not an answer. It agrees with HTTP_STATUS in pulpermill/schema/contract.py.
+const STATUS_FAILURES = { 400: "bad_request", 409: "stopped", 413: "too_long", 429: "busy", 502: "bad_output", 503: "busy" };
 
 // One call to a real backend: POST the request as JSON to <url>/api. The backend answers in the contract's shapes,
 // with an HTTP status that agrees. A body that is not an answer falls back on the status.

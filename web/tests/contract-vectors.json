@@ -1,0 +1,817 @@
+{
+  "note": "Shared by the page's tests (web/tests/logic.test.mjs section 'The contract vectors') and the backend's (tests/schema/test_contract.py). `requests`: valid ones marked `golden` are exactly what the page builds for the project in the page test; the rest are mistakes the backend must refuse. `replies`: what the backend may send; the page must read every valid one and refuse every invalid one. Cases where the two sides are deliberately not equally strict (extra keys, values of the wrong kind for a particular card) are left out.",
+  "requests": [
+    {
+      "name": "the page's status request",
+      "golden": "status",
+      "valid": true,
+      "data": {
+        "call": "status"
+      }
+    },
+    {
+      "name": "the page's fill_setup request",
+      "golden": "fill_setup",
+      "valid": true,
+      "data": {
+        "call": "fill",
+        "schema_version": 1,
+        "language": "en",
+        "card": "setup",
+        "instance": null,
+        "note": "Suvi must find the ledger.",
+        "example_chapter": null,
+        "values": {
+          "protagonist": "c0000001"
+        },
+        "related": {
+          "style": {
+            "person": "first"
+          },
+          "characters": [
+            {
+              "id": "c0000001",
+              "name": "Suvi"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "the page's fill_character request",
+      "golden": "fill_character",
+      "valid": true,
+      "data": {
+        "call": "fill",
+        "schema_version": 1,
+        "language": "en",
+        "card": "characters",
+        "instance": "c0000001",
+        "note": "An archivist.",
+        "example_chapter": null,
+        "values": {
+          "id": "c0000001",
+          "name": "Suvi"
+        },
+        "related": {}
+      }
+    },
+    {
+      "name": "the page's judge_world request",
+      "golden": "judge_world",
+      "valid": true,
+      "data": {
+        "call": "judge",
+        "schema_version": 1,
+        "language": "en",
+        "card": "world",
+        "instance": null,
+        "rules": [
+          {
+            "id": "everyday_has_friction",
+            "fields": [
+              "everyday_life"
+            ]
+          }
+        ],
+        "values": {
+          "name": "The Salt Coast",
+          "everyday_life": "Ordinary."
+        },
+        "related": {}
+      }
+    },
+    {
+      "name": "the page's style_fit request",
+      "golden": "style_fit",
+      "valid": true,
+      "data": {
+        "call": "style_fit",
+        "schema_version": 1,
+        "language": "en",
+        "style": {
+          "person": "first"
+        },
+        "protagonist": {
+          "id": "c0000001",
+          "name": "Suvi"
+        }
+      }
+    },
+    {
+      "name": "no call named",
+      "valid": false,
+      "data": {
+        "schema_version": 1,
+        "language": "en"
+      }
+    },
+    {
+      "name": "a call that does not exist",
+      "valid": false,
+      "data": {
+        "call": "dance"
+      }
+    },
+    {
+      "name": "status with extras",
+      "valid": false,
+      "data": {
+        "call": "status",
+        "language": "en"
+      }
+    },
+    {
+      "name": "fill with no note and no example chapter",
+      "valid": false,
+      "data": {
+        "call": "fill",
+        "schema_version": 1,
+        "language": "en",
+        "card": "setup",
+        "instance": null,
+        "note": null,
+        "example_chapter": null,
+        "values": {
+          "protagonist": "c0000001"
+        },
+        "related": {
+          "style": {
+            "person": "first"
+          },
+          "characters": [
+            {
+              "id": "c0000001",
+              "name": "Suvi"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "fill with a blank note",
+      "valid": false,
+      "data": {
+        "call": "fill",
+        "schema_version": 1,
+        "language": "en",
+        "card": "setup",
+        "instance": null,
+        "note": "   ",
+        "example_chapter": null,
+        "values": {
+          "protagonist": "c0000001"
+        },
+        "related": {
+          "style": {
+            "person": "first"
+          },
+          "characters": [
+            {
+              "id": "c0000001",
+              "name": "Suvi"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "fill of Characters with no instance",
+      "valid": false,
+      "data": {
+        "call": "fill",
+        "schema_version": 1,
+        "language": "en",
+        "card": "characters",
+        "instance": null,
+        "note": "An archivist.",
+        "example_chapter": null,
+        "values": {
+          "id": "c0000001",
+          "name": "Suvi"
+        },
+        "related": {}
+      }
+    },
+    {
+      "name": "fill of another card that names an instance",
+      "valid": false,
+      "data": {
+        "call": "fill",
+        "schema_version": 1,
+        "language": "en",
+        "card": "setup",
+        "instance": "c0000001",
+        "note": "Suvi must find the ledger.",
+        "example_chapter": null,
+        "values": {
+          "protagonist": "c0000001"
+        },
+        "related": {
+          "style": {
+            "person": "first"
+          },
+          "characters": [
+            {
+              "id": "c0000001",
+              "name": "Suvi"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "fill of a card that cannot be filled",
+      "valid": false,
+      "data": {
+        "call": "fill",
+        "schema_version": 1,
+        "language": "en",
+        "card": "outline",
+        "instance": null,
+        "note": "Suvi must find the ledger.",
+        "example_chapter": null,
+        "values": {
+          "protagonist": "c0000001"
+        },
+        "related": {
+          "style": {
+            "person": "first"
+          },
+          "characters": [
+            {
+              "id": "c0000001",
+              "name": "Suvi"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "fill with no language",
+      "valid": false,
+      "data": {
+        "call": "fill",
+        "schema_version": 1,
+        "card": "setup",
+        "instance": null,
+        "note": "Suvi must find the ledger.",
+        "example_chapter": null,
+        "values": {
+          "protagonist": "c0000001"
+        },
+        "related": {
+          "style": {
+            "person": "first"
+          },
+          "characters": [
+            {
+              "id": "c0000001",
+              "name": "Suvi"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "fill with no schema version",
+      "valid": false,
+      "data": {
+        "call": "fill",
+        "language": "en",
+        "card": "setup",
+        "instance": null,
+        "note": "Suvi must find the ledger.",
+        "example_chapter": null,
+        "values": {
+          "protagonist": "c0000001"
+        },
+        "related": {
+          "style": {
+            "person": "first"
+          },
+          "characters": [
+            {
+              "id": "c0000001",
+              "name": "Suvi"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "fill with a field nobody knows",
+      "valid": false,
+      "data": {
+        "call": "fill",
+        "schema_version": 1,
+        "language": "en",
+        "card": "setup",
+        "instance": null,
+        "note": "Suvi must find the ledger.",
+        "example_chapter": null,
+        "values": {
+          "protagonist": "c0000001"
+        },
+        "related": {
+          "style": {
+            "person": "first"
+          },
+          "characters": [
+            {
+              "id": "c0000001",
+              "name": "Suvi"
+            }
+          ]
+        },
+        "surprise": 1
+      }
+    },
+    {
+      "name": "judge of a card that does not exist",
+      "valid": false,
+      "data": {
+        "call": "judge",
+        "schema_version": 1,
+        "language": "en",
+        "card": "nope",
+        "instance": null,
+        "rules": [
+          {
+            "id": "everyday_has_friction",
+            "fields": [
+              "everyday_life"
+            ]
+          }
+        ],
+        "values": {
+          "name": "The Salt Coast",
+          "everyday_life": "Ordinary."
+        },
+        "related": {}
+      }
+    },
+    {
+      "name": "judge with a rule that has no fields",
+      "valid": false,
+      "data": {
+        "call": "judge",
+        "schema_version": 1,
+        "language": "en",
+        "card": "world",
+        "instance": null,
+        "rules": [
+          {
+            "id": "x"
+          }
+        ],
+        "values": {
+          "name": "The Salt Coast",
+          "everyday_life": "Ordinary."
+        },
+        "related": {}
+      }
+    },
+    {
+      "name": "style fit with no protagonist",
+      "valid": false,
+      "data": {
+        "call": "style_fit",
+        "schema_version": 1,
+        "language": "en",
+        "style": {
+          "person": "first"
+        }
+      }
+    }
+  ],
+  "replies": [
+    {
+      "name": "idle",
+      "call": "status",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "state": "idle"
+      }
+    },
+    {
+      "name": "busy",
+      "call": "status",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "state": "busy"
+      }
+    },
+    {
+      "name": "status with an unknown state",
+      "call": "status",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "state": "sleeping"
+      }
+    },
+    {
+      "name": "status with no state",
+      "call": "status",
+      "valid": false,
+      "data": {
+        "ok": true
+      }
+    },
+    {
+      "name": "status that does not say whether it worked",
+      "call": "status",
+      "valid": false,
+      "data": {
+        "state": "idle"
+      }
+    },
+    {
+      "name": "a busy failure",
+      "call": "fill",
+      "valid": true,
+      "card": "world",
+      "page": {
+        "kind": "busy"
+      },
+      "data": {
+        "ok": false,
+        "error": {
+          "kind": "busy",
+          "detail": ""
+        }
+      }
+    },
+    {
+      "name": "a bad_request failure",
+      "call": "fill",
+      "valid": true,
+      "card": "world",
+      "page": {
+        "kind": "bad_request"
+      },
+      "data": {
+        "ok": false,
+        "error": {
+          "kind": "bad_request",
+          "detail": ""
+        }
+      }
+    },
+    {
+      "name": "a bad_output failure",
+      "call": "fill",
+      "valid": true,
+      "card": "world",
+      "page": {
+        "kind": "bad_output"
+      },
+      "data": {
+        "ok": false,
+        "error": {
+          "kind": "bad_output",
+          "detail": ""
+        }
+      }
+    },
+    {
+      "name": "a too_long failure",
+      "call": "fill",
+      "valid": true,
+      "card": "world",
+      "page": {
+        "kind": "too_long"
+      },
+      "data": {
+        "ok": false,
+        "error": {
+          "kind": "too_long",
+          "detail": ""
+        }
+      }
+    },
+    {
+      "name": "a stopped failure",
+      "call": "fill",
+      "valid": true,
+      "card": "world",
+      "page": {
+        "kind": "stopped"
+      },
+      "data": {
+        "ok": false,
+        "error": {
+          "kind": "stopped",
+          "detail": ""
+        }
+      }
+    },
+    {
+      "name": "a server failure",
+      "call": "fill",
+      "valid": true,
+      "card": "world",
+      "page": {
+        "kind": "server"
+      },
+      "data": {
+        "ok": false,
+        "error": {
+          "kind": "server",
+          "detail": ""
+        }
+      }
+    },
+    {
+      "name": "a failure with words",
+      "call": "fill",
+      "valid": true,
+      "card": "world",
+      "page": {
+        "kind": "server"
+      },
+      "data": {
+        "ok": false,
+        "error": {
+          "kind": "server",
+          "detail": "The model crashed."
+        }
+      }
+    },
+    {
+      "name": "a fill with text and a list",
+      "call": "fill",
+      "valid": true,
+      "card": "world",
+      "data": {
+        "ok": true,
+        "values": {
+          "name": "The Salt Coast",
+          "era_and_technology": "Steam.",
+          "places": [
+            {
+              "name": "The Quay",
+              "description": "Where boats land."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a fill with nothing to add",
+      "call": "fill",
+      "valid": true,
+      "card": "world",
+      "data": {
+        "ok": true,
+        "values": {}
+      }
+    },
+    {
+      "name": "a fill with no values",
+      "call": "fill",
+      "valid": false,
+      "card": "world",
+      "data": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a fill whose values are a list",
+      "call": "fill",
+      "valid": false,
+      "card": "world",
+      "data": {
+        "ok": true,
+        "values": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "a fill whose values are nothing",
+      "call": "fill",
+      "valid": false,
+      "card": "world",
+      "data": {
+        "ok": true,
+        "values": null
+      }
+    },
+    {
+      "name": "a judge with one hit and one pass",
+      "call": "judge",
+      "valid": true,
+      "card": "world",
+      "asked": [
+        "everyday_has_friction",
+        "era_is_fact_not_mood"
+      ],
+      "values": {
+        "everyday_life": "Ordinary.",
+        "places": [
+          {
+            "id": "p0000001",
+            "name": "The Quay"
+          }
+        ]
+      },
+      "data": {
+        "ok": true,
+        "results": [
+          {
+            "rule": "everyday_has_friction",
+            "hits": [
+              {
+                "field": "everyday_life"
+              }
+            ]
+          },
+          {
+            "rule": "era_is_fact_not_mood",
+            "hits": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "a judge hit on a list item",
+      "call": "judge",
+      "valid": true,
+      "card": "world",
+      "asked": [
+        "everyday_has_friction",
+        "era_is_fact_not_mood"
+      ],
+      "values": {
+        "everyday_life": "Ordinary.",
+        "places": [
+          {
+            "id": "p0000001",
+            "name": "The Quay"
+          }
+        ]
+      },
+      "data": {
+        "ok": true,
+        "results": [
+          {
+            "rule": "everyday_has_friction",
+            "hits": [
+              {
+                "field": "places",
+                "item": "p0000001",
+                "key": "name"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a judge with no results at all",
+      "call": "judge",
+      "valid": true,
+      "card": "world",
+      "asked": [
+        "everyday_has_friction",
+        "era_is_fact_not_mood"
+      ],
+      "values": {
+        "everyday_life": "Ordinary.",
+        "places": [
+          {
+            "id": "p0000001",
+            "name": "The Quay"
+          }
+        ]
+      },
+      "data": {
+        "ok": true,
+        "results": []
+      }
+    },
+    {
+      "name": "a judge whose results are not a list",
+      "call": "judge",
+      "valid": false,
+      "card": "world",
+      "asked": [
+        "everyday_has_friction",
+        "era_is_fact_not_mood"
+      ],
+      "values": {
+        "everyday_life": "Ordinary.",
+        "places": [
+          {
+            "id": "p0000001",
+            "name": "The Quay"
+          }
+        ]
+      },
+      "data": {
+        "ok": true,
+        "results": "none"
+      }
+    },
+    {
+      "name": "a judge result with no hits list",
+      "call": "judge",
+      "valid": false,
+      "card": "world",
+      "asked": [
+        "everyday_has_friction",
+        "era_is_fact_not_mood"
+      ],
+      "values": {
+        "everyday_life": "Ordinary.",
+        "places": [
+          {
+            "id": "p0000001",
+            "name": "The Quay"
+          }
+        ]
+      },
+      "data": {
+        "ok": true,
+        "results": [
+          {
+            "rule": "everyday_has_friction"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a judge hit with no field",
+      "call": "judge",
+      "valid": false,
+      "card": "world",
+      "asked": [
+        "everyday_has_friction",
+        "era_is_fact_not_mood"
+      ],
+      "values": {
+        "everyday_life": "Ordinary.",
+        "places": [
+          {
+            "id": "p0000001",
+            "name": "The Quay"
+          }
+        ]
+      },
+      "data": {
+        "ok": true,
+        "results": [
+          {
+            "rule": "everyday_has_friction",
+            "hits": [
+              {
+                "item": "p0000001"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a style fit that fits",
+      "call": "style_fit",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "fits": true
+      }
+    },
+    {
+      "name": "a style fit that does not",
+      "call": "style_fit",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "fits": false,
+        "message": "The protagonist is too guarded for first person."
+      }
+    },
+    {
+      "name": "a style fit that is not yes or no",
+      "call": "style_fit",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "fits": "yes"
+      }
+    },
+    {
+      "name": "a style fit with no answer",
+      "call": "style_fit",
+      "valid": false,
+      "data": {
+        "ok": true
+      }
+    }
+  ]
+}

@@ -1214,3 +1214,54 @@ test("deleting a character takes that character's note with it", () => {
   setNote(project, "world", null, "");
   assert.equal("card_notes" in project, false);
 });
+
+// ---- The contract vectors ----
+// web/tests/contract-vectors.json is shared with the backend's tests (tests/schema/test_contract.py): the page must build
+// exactly the golden requests and read every valid reply, and the backend must accept the same requests and replies.
+
+const contractVectors = JSON.parse(readFileSync(new URL("./contract-vectors.json", import.meta.url), "utf8"));
+const vectorsApi = await import("../logic.js");
+
+test("the golden requests are exactly what the page builds", () => {
+  const project = {
+    title: "Golden", schema_version: schema.schema_version,
+    style: { person: "first" },
+    characters: [{ id: "c0000001", name: "Suvi" }],
+    setup: { protagonist: "c0000001" },
+    card_notes: [
+      { id: "n0000001", card: "setup", text: "Suvi must find the ledger." },
+      { id: "n0000002", card: "characters", character: "c0000001", text: "An archivist." },
+    ],
+  };
+  const built = {
+    status: { call: "status" },
+    fill_setup: vectorsApi.fillRequest(schema, project, "setup").request,
+    fill_character: vectorsApi.fillRequest(schema, project, "characters", "c0000001").request,
+    judge_world: vectorsApi.judgeRequest(schema, project, "world", { name: "The Salt Coast", everyday_life: "Ordinary." }, ["everyday_has_friction"]),
+    style_fit: vectorsApi.styleFitRequest(schema, project).request,
+  };
+  const golden = contractVectors.requests.filter((v) => v.golden);
+  assert.deepEqual(golden.map((v) => v.golden).sort(), Object.keys(built).sort(), "every request the page makes has a golden case");
+  for (const v of golden) assert.deepEqual(built[v.golden], v.data, v.name);
+});
+
+test("every valid reply is read and every invalid one refused", () => {
+  const read = (v) => {
+    switch (v.call) {
+      case "status": return vectorsApi.readStatus(v.data);
+      case "fill": return vectorsApi.readFillReply(schema.cards[v.card], v.data);
+      case "judge": return vectorsApi.readJudgeReply(schema.cards[v.card], v.values, v.asked, v.data);
+      case "style_fit": return vectorsApi.readStyleFitReply(v.data);
+      default: throw new Error(`no reader for ${v.call}`);
+    }
+  };
+  assert.deepEqual([...new Set(contractVectors.replies.map((v) => v.call))].sort(), ["fill", "judge", "status", "style_fit"]);
+  for (const v of contractVectors.replies) {
+    const result = read(v);
+    // A failure the backend may send is read as a failure with its kind; any other reply is read when it is valid.
+    const isFailure = v.data.ok === false;
+    assert.equal(result.ok, isFailure ? false : v.valid, v.name);
+    if (v.page?.kind) assert.equal(result.error.kind, v.page.kind, v.name);
+    if (!v.valid) assert.equal(result.error.kind, "bad_output", v.name);
+  }
+});

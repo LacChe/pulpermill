@@ -177,6 +177,8 @@ test("a real backend's failures: its own words win, then the status code, then a
   assert.equal(await kind(() => json(null, 429)), "busy");
   assert.equal(await kind(() => json(null, 400)), "bad_request");
   assert.equal(await kind(() => json(null, 413)), "too_long");
+  assert.equal(await kind(() => json(null, 502)), "bad_output");
+  assert.equal(await kind(() => json(null, 409)), "stopped");
   assert.equal(await kind(() => json(null, 500)), "server");
   assert.equal(await kind(() => json(["not", "an", "answer"])), "bad_output");
   assert.equal(await kind(() => ({ ok: true, status: 200, json: async () => { throw new SyntaxError("x"); } })), "bad_output");

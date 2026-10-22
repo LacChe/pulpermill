@@ -50,15 +50,15 @@ const STRINGS = {
   declined: "Nothing was changed.",
   dropped: "The project changed while the model was working, so its answer was thrown away.",
   confirmReplace: "The model’s draft would replace your words in: {fields}. Go ahead? You can undo it afterwards.",
-  unmatched: "The model named {names}, which don’t match anything in your cards, so those links were left empty.",
+  unmatched: "The model named {names}, but nothing in your cards matches, so those links were left empty.",
   noSource: "Add a note for this card, or an example chapter, first. The model fills a card from one of them.",
   noInstance: "That character isn’t there any more.",
   more: "and {n} more",
   backendBad: "That isn’t an address I can use. Type “mock”, or something like localhost:8000.",
   backendMixed: "This page is served over https, so the browser won’t let it call a plain http address. Use an https address, or open the page from your own computer.",
-  whereMock: "the built-in sample model (nothing leaves this page)",
+  whereMock: "the built-in sample model, which writes placeholder text (nothing leaves this page)",
   working: "The model is working…",
-  connection: { unknown: "Not checked yet", idle: "Ready", busy: "Busy with another job", unreachable: "Can’t reach it" },
+  connection: { unknown: "Not checked yet", idle: "Ready", busy: "Busy with another job", unreachable: "Can’t reach the model" },
 };
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
 
