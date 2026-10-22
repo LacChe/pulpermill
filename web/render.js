@@ -430,6 +430,8 @@ function listControl(field, values, path, ctx) {
 //   review      {touched: Set of paths, validated: boolean}. The page keeps one per card, so coming back to a card
 //               still shows what was found. Without one, the card starts fresh.
 //   onValidate  called with the model-check request when the writer presses Validate.
+//   reviewChanged  called whenever what the card shows may have changed (an edit, leaving a field, Validate), so
+//               the page can bring the tabs up to date.
 // Problems never stop editing: nothing here disables a control.
 export function renderCard(root, card, values, ctx) {
   root.replaceChildren();
@@ -481,6 +483,7 @@ export function renderCard(root, card, values, ctx) {
       view.badge.hidden = mine.length === 0;
       view.badge.className = `group-count ${mine.some((p) => p.severity === "block") ? "has-block" : "has-warn"}`;
     }
+    ctx.reviewChanged?.();
     return placed;
   }
 

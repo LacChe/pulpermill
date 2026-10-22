@@ -547,6 +547,51 @@ export function problemCounts(problems) {
   return { block, warn: problems.length - block };
 }
 
+// ---- What a tab or a dropdown entry says about a card ---------------------------
+// One status per card (or per character):
+//   started  something is written in it
+//   ready    started, and nothing in it blocks generating. This looks at every problem, shown or not, so a tick
+//            is never given to a card that still has a required field the writer has not reached.
+//   block, warn  the problems the writer has already been shown (the same rule as under the fields), so a tab never
+//                nags about a part of the card the writer has not touched.
+export function cardStatus(card, values, project, common, review) {
+  const filled = filledPaths(card, values);
+  const { problems } = validate(card, values, project, common);
+  const seen = { validated: review.validated, touched: new Set([...review.touched, ...filled]) };
+  const counts = problemCounts(shownProblems(card, problems, seen));
+  const started = filled.size > 0;
+  return { started, ready: started && !problems.some((p) => p.severity === "block"), ...counts };
+}
+
+// Several statuses (every character) as one. A card held many times is ready only when each one is.
+export function combineStatus(list) {
+  return {
+    started: list.some((s) => s.started),
+    ready: list.length > 0 && list.every((s) => s.ready),
+    block: list.reduce((sum, s) => sum + s.block, 0),
+    warn: list.reduce((sum, s) => sum + s.warn, 0),
+  };
+}
+
+// The status of every card, and of every character. `reviewOf(key)` gives the review state kept for
+// "<card id>:<instance id or empty>", as the page does.
+export function projectStatus(schema, project, reviewOf) {
+  const settled = settledProject(schema, project);
+  const cards = {};
+  const instances = {};
+  for (const id of schema.order) {
+    const card = schema.cards[id];
+    const list = card.many_per_project ? settled[id] : [settled[id]];
+    const each = list.map((values) => ({
+      id: values.id ?? null,
+      status: cardStatus(card, values, settled, schema.common, reviewOf(`${id}:${values.id ?? ""}`)),
+    }));
+    if (card.many_per_project) instances[id] = each;
+    cards[id] = combineStatus(each.map((e) => e.status));
+  }
+  return { cards, instances };
+}
+
 // What the Validate button hands to the model checks. The backend call itself comes later; for now this only
 // gathers the rules that need the model and a snapshot of the values they judge.
 export function modelCheckRequest(card, values) {

@@ -1,15 +1,19 @@
 // Loads the schema, holds the project in memory and draws the cards built so far.
 // The project bar (name, New, Open, Save, unsaved-changes mark, recovery offer) lives here too.
-// The card switcher is a stand-in until the real navigation exists.
+// The tabs show where each card stands; a dropdown picks the character on the Characters card.
 import {
   addInstance, ensureCard, findInstance, instanceName, newProject, removeInstance,
   hasUnsavedChanges, projectSnapshot, projectFileName, readProject,
-  RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering,
+  RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering, projectStatus,
 } from "./logic.js";
-import { renderCard } from "./render.js";
+import { renderCard, STRINGS as CARD_STRINGS } from "./render.js";
 
-const BUILT = ["style", "characters", "world", "entanglements", "setup", "outline"];
-const LABELS = { addCharacter: "Add a character", deleteCharacter: "Delete this character?", remove: "Delete", unnamed: "Unnamed character", noCharacters: "No characters yet." };
+const LABELS = {
+  addCharacter: "Add a character", deleteCharacter: "Delete this character?", remove: "Delete this character",
+  unnamed: "Unnamed character", noCharacters: "No characters yet.", character: "Character",
+  tabEmpty: "nothing in it yet", tabStarted: "started", tabReady: "nothing stops generating",
+  markBlock: "✕ {n}", markWarn: "△ {n}", markReady: "✓", markStarted: "●",
+};
 const STRINGS = {
   untitled: "Untitled story",
   clean: "No unsaved changes",
@@ -226,22 +230,82 @@ function offerRecovery(recovered) {
   recoveryNode.hidden = false;
 }
 
-// ---- Cards --------------------------------------------------------------------
+// ---- Navigation ---------------------------------------------------------------
+const countWords = (one, many, n) => (n === 1 ? one : many.replace("{n}", String(n)));
+
+// What a status says, as small marks (for the eye) and as words (for the tooltip and screen readers).
+function markNodes(status) {
+  const marks = [];
+  const add = (cls, text) => marks.push(Object.assign(document.createElement("span"), { className: `mark ${cls}`, textContent: text }));
+  if (status.block) add("mark-block", fill(LABELS.markBlock, { n: status.block }));
+  if (status.warn) add("mark-warn", fill(LABELS.markWarn, { n: status.warn }));
+  if (!status.block && !status.warn) {
+    if (status.ready) add("mark-ready", LABELS.markReady);
+    else if (status.started) add("mark-started", LABELS.markStarted);
+  }
+  return marks;
+}
+
+function statusWords(status) {
+  const parts = [];
+  if (status.block) parts.push(countWords(CARD_STRINGS.blockOne, CARD_STRINGS.blockMany, status.block));
+  if (status.warn) parts.push(countWords(CARD_STRINGS.warnOne, CARD_STRINGS.warnMany, status.warn));
+  if (!parts.length) parts.push(status.ready ? LABELS.tabReady : status.started ? LABELS.tabStarted : LABELS.tabEmpty);
+  return parts.join(", ");
+}
+
+function optionText(name, status) {
+  const marks = markNodes(status).map((node) => node.textContent);
+  return [name || LABELS.unnamed, ...marks].join("  ");
+}
+
+// Brings every tab and every character entry up to date without rebuilding them, so focus stays where it is.
+function updateMarks() {
+  if (!schema || !project) return;
+  const { cards, instances } = projectStatus(schema, project, reviewFor);
+  for (const node of cardsNav.querySelectorAll("[data-card]")) {
+    const status = cards[node.dataset.card];
+    node.querySelector(".tab-marks").replaceChildren(...markNodes(status));
+    node.setAttribute("aria-label", `${schema.cards[node.dataset.card].label}: ${statusWords(status)}`);
+    node.title = statusWords(status);
+  }
+  const select = peopleNav.querySelector("select");
+  if (!select) return;
+  const byId = new Map((instances.characters ?? []).map((entry) => [entry.id, entry.status]));
+  for (const option of select.options) {
+    const instance = findInstance(project, schema.cards.characters, option.value);
+    if (instance && byId.has(option.value)) option.textContent = optionText(instanceName(instance), byId.get(option.value));
+  }
+}
+
 function drawNav() {
-  cardsNav.replaceChildren(...BUILT.map((id) =>
-    button(schema.cards[id].label, () => { view.card = id; show(); }, { current: view.card === id })));
+  cardsNav.replaceChildren(...schema.order.map((id) => {
+    const node = button("", () => { view.card = id; show(); }, { current: view.card === id });
+    node.dataset.card = id;
+    node.append(
+      Object.assign(document.createElement("span"), { className: "tab-label", textContent: schema.cards[id].label }),
+      Object.assign(document.createElement("span"), { className: "tab-marks" }));
+    return node;
+  }));
 
   const card = schema.cards[view.card];
   peopleNav.hidden = !card.many_per_project;
   if (!card.many_per_project) return;
   const list = project[card.id];
-  const items = list.map((instance) =>
-    button(instanceName(instance) || LABELS.unnamed, () => { view.characterId = instance.id; show(); },
-      { current: instance.id === view.characterId }));
-  if (!list.length) {
-    const note = document.createElement("span");
-    note.textContent = LABELS.noCharacters;
-    items.push(note);
+  const items = [];
+  if (list.length) {
+    const select = document.createElement("select");
+    select.className = "text-control character-select";
+    select.id = "character-select";
+    for (const instance of list) {
+      select.append(Object.assign(document.createElement("option"), {
+        value: instance.id, textContent: instanceName(instance) || LABELS.unnamed, selected: instance.id === view.characterId,
+      }));
+    }
+    select.addEventListener("change", () => { view.characterId = select.value; show(); });
+    items.push(Object.assign(document.createElement("label"), { className: "people-label", htmlFor: "character-select", textContent: LABELS.character }), select);
+  } else {
+    items.push(Object.assign(document.createElement("span"), { textContent: LABELS.noCharacters }));
   }
   items.push(button(`+ ${LABELS.addCharacter}`, () => {
     view.characterId = addInstance(project, card).id;
@@ -278,7 +342,8 @@ function show() {
     common: schema.common,
     review: reviewFor(`${card.id}:${values.id ?? ""}`),
     onValidate: (request) => { window.pulpermill.lastModelRequest = request; },   // the backend call comes in Phase 7
-    changed: () => { if (card.many_per_project) drawNav(); touchState(); },
+    changed: touchState,
+    reviewChanged: updateMarks,
   });
 }
 
