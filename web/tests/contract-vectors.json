@@ -741,6 +741,124 @@
         ],
         "shifts": []
       }
+    },
+    {
+      "name": "the page's offstage request",
+      "golden": "offstage",
+      "valid": true,
+      "data": {
+        "call": "offstage",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 1,
+        "chapter_count": 0,
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {
+          "powers": [],
+          "places": []
+        },
+        "entanglements": {
+          "ties": [],
+          "holdings": [],
+          "pressures": []
+        },
+        "latest_events": null
+      }
+    },
+    {
+      "name": "the page's plan request",
+      "golden": "plan",
+      "valid": true,
+      "data": {
+        "call": "plan",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 1,
+        "chapter_count": 0,
+        "style": {
+          "person": "first",
+          "tense": "",
+          "distance": "",
+          "humor": "",
+          "pacing": "",
+          "narrator_note": "",
+          "rhythm": "",
+          "diction": "",
+          "formality": "",
+          "imagery": "",
+          "edge": "",
+          "explicitness": "",
+          "sentences_note": "",
+          "attitude": "",
+          "stance_note": "",
+          "amount": "",
+          "directness": "",
+          "polish": "",
+          "voice_difference": "",
+          "dialogue_note": "",
+          "lens": "",
+          "genre": ""
+        },
+        "setup": {
+          "protagonist": "Suvi",
+          "normal": "",
+          "disruption": "",
+          "goal": "",
+          "stakes": "",
+          "chapter_count": null
+        },
+        "goal": null,
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {
+          "name": "",
+          "era_and_technology": "",
+          "everyday_life": "",
+          "places": [],
+          "objects": [],
+          "powers": [],
+          "rules": []
+        },
+        "entanglements": {
+          "ties": [],
+          "holdings": [],
+          "knowledge": [],
+          "pressures": []
+        },
+        "spotlight": {},
+        "legal_shifts": [
+          "harder",
+          "easier"
+        ],
+        "open_plants": [],
+        "available_reveals": [],
+        "use_counts": {
+          "characters": [
+            {
+              "name": "Suvi",
+              "uses": 0,
+              "last": null
+            }
+          ],
+          "places": [],
+          "behaviors": [],
+          "things": []
+        },
+        "earlier_beats": [],
+        "earlier_events": [],
+        "latest_shifts": [],
+        "offstage": null,
+        "retry": null
+      }
     }
   ],
   "replies": [

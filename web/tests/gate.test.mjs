@@ -1,37 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { readProject, projectSnapshot as projectText, newProject, settledProject, addInstance, fillRequest, readFillReply, planFill, setCardValues, findInstance } from "../logic.js";
-import { createMock } from "../mock.js";
+import { readProject, projectSnapshot as projectText, newProject, settledProject, addInstance } from "../logic.js";
+import { schema, readyProject } from "./helpers.mjs";
 import {
   STATIC_CARDS, GATE_CARDS, cardLocked, storyStarted, lockStaticCards, unlockStaticCards, canUnlock, startGate,
 } from "../gate.js";
 
-const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
 const characters = schema.cards.characters;
-
-// A project every card of which the mock has filled in, with the two things the mock cannot make sensible on its own set by hand.
-async function readyProject() {
-  const mock = createMock(schema, { delay: 0 });
-  const p = settledProject(schema, { ...newProject(schema), example_chapter: "Once." });
-  async function fillOne(cardId, instanceId = null) {
-    const card = schema.cards[cardId];
-    const read = readFillReply(card, await mock.send(fillRequest(schema, p, cardId, instanceId).request));
-    const current = card.many_per_project ? findInstance(p, card, instanceId) : p[cardId];
-    const plan = planFill(card, current, read, p);
-    setCardValues(card, current, Object.fromEntries([...plan.filled, ...plan.replaced].map((key) => [key, plan.next[key]])));
-  }
-  for (const name of ["Suvi", "Ola"]) {
-    const person = addInstance(p, characters);
-    person.name = name;
-    await fillOne("characters", person.id);
-    person.name = name;
-  }
-  for (const id of ["style", "world", "entanglements", "setup"]) await fillOne(id);
-  p.setup.protagonist = p.characters[0].id;
-  p.entanglements.holdings[0].holdee = p.world.objects[0].id;   // the mock names every sample thing alike, so it cannot pick one
-  return p;
-}
 
 test("the static cards and the cards the gate checks", () => {
   assert.deepEqual(STATIC_CARDS, ["style", "characters", "world", "setup"]);

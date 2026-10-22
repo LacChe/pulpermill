@@ -689,7 +689,7 @@ export const ERROR_KINDS = ["busy", "bad_request", "bad_output", "too_long", "st
 export const STORY_CALLS = ["offstage", "plan", "generate", "end_story"];
 export const STAGES = ["offstage", "think", "beat", "retry", "write", "events", "shifts", "update"];
 
-function envelope(schema, project, call) {
+export function envelope(schema, project, call) {
   return { call, schema_version: schema.schema_version, language: project.output_language || schema.lang };
 }
 

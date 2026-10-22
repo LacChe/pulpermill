@@ -10,6 +10,7 @@ import {
 import { renderCard, errorText, makeReadOnly, STRINGS as CARD_STRINGS } from "./render.js";
 import { cardLocked } from "./gate.js";
 import { createStoryBar } from "./story.js";
+import { createPlanPanel } from "./planpanel.js";
 import { createMock } from "./mock.js";
 import {
   BACKEND_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
@@ -83,6 +84,7 @@ let project;
 let client;
 let mock;
 let storyBar;
+let planPanel;
 let view = { card: "style", characterId: null };
 // What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
 // switching cards. Cleared when another project is opened.
@@ -147,6 +149,7 @@ function replaceProject(next, savedAs = next) {
   project = next;
   reviews.clear();
   drafts.clear();
+  planPanel?.reset();
   view = { card: "style", characterId: null };
   titleInput.value = project.title;
   savedSnapshot = projectSnapshot(schema, savedAs);
@@ -480,6 +483,7 @@ function show() {
     reviewChanged: updateMarks,
   });
   if (cardLocked(project, card.id)) makeReadOnly(main, STRINGS.lockedBanner);
+  if (card.id === "outline") planPanel?.draw(main);
   storyBar?.draw();
 }
 
@@ -499,7 +503,12 @@ try {
     notice: (text, kind) => showNotice(text, kind),
     redraw: () => show(),
   });
-  client.onChange(() => { drawConnection(); storyBar.draw(); });
+  planPanel = createPlanPanel({
+    schema, client, getProject: () => project, backendWhere, errorText,
+    changed: () => touchState(), redraw: () => show(),
+    notice: (text, kind, action) => showNotice(text, kind, action),
+  });
+  client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); });
   drawConnection();
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.
   const recovered = readRecovery(store.get() ?? "", schema);

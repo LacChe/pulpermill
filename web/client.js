@@ -11,9 +11,11 @@
 // by itself is ask the backend whether it is idle.
 
 import {
+  readOffstageReply, readPlanReply,
   failure, STORY_CALLS, readStatus, fillRequest, readFillReply, planFill, judgeRequest, readJudgeReply, styleFitRequest,
   readStyleFitReply,
 } from "./logic.js";
+import { planGate, offstageDue, offstageRequest, planRequest, landBeat, beatForChapter, beatBlockers } from "./plan.js";
 
 // ---- The backend setting ----------------------------------------------------
 // "mock" (the default, so the page works with nothing running) or the address of a backend.
@@ -85,7 +87,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // options: {setting, mock, fetchImpl, timeouts, sleep, pollEvery, lostAfter}
 //   setting    from parseBackendSetting
 //   mock       the object from createMock, used when the setting is "mock"
-//   sleep      how to wait between idle checks (tests pass a fast one)
+//   sleep      how to wait between the idle checks after a Stop or a timeout (tests pass a fast one)
 //   pollEvery  while a story call runs, how often to ask status (ms): it shows the stage and notices a lost connection
 //   lostAfter  how many status checks in a row may fail before the call is given up as unreachable
 export function createClient({ setting = { kind: "mock" }, mock = null, fetchImpl = globalThis.fetch, timeouts = {}, sleep = wait, pollEvery = 1000, lostAfter = 3 } = {}) {
@@ -111,9 +113,12 @@ export function createClient({ setting = { kind: "mock" }, mock = null, fetchImp
   function watch(onLost) {
     let alive = true;
     let misses = 0;
+    let wake = null;
+    // A real timer that the end of the call can cut short, so nothing is left waiting and the loop always yields.
+    const nap = () => new Promise((resolve) => { const t = setTimeout(resolve, pollEvery); wake = () => { clearTimeout(t); resolve(); }; });
     (async () => {
       while (alive) {
-        await sleep(pollEvery);
+        await nap();
         if (!alive) break;
         const reply = readStatus(await start({ call: "status" }).done);
         if (!alive) break;
@@ -126,7 +131,7 @@ export function createClient({ setting = { kind: "mock" }, mock = null, fetchImp
         }
       }
     })();
-    return () => { alive = false; if (stage !== null) { stage = null; changed(); } };
+    return () => { alive = false; wake?.(); if (stage !== null) { stage = null; changed(); } };
   }
 
   async function settle({ interval = 500, tries = 20 } = {}) {
@@ -268,4 +273,42 @@ export function checkStyleFit(client, schema, project) {
   if (!made.ok) return refused(made.reason);
   const call = client.start(made.request);
   return { stop: call.stop, done: call.done.then(readStyleFitReply) };
+}
+
+// Plan the next chapter: the offstage move when one is due, then think and fill the beat, and one more try when the
+// Outline's own blocking rules refuse the first beat (the second attempt is told what was wrong). Nothing is changed:
+// it resolves to {ok: true, beat, thinking, offstage, unresolved, dropped, blockers, retried, replaces} and the page decides
+// what to land. `replaces` is the unwritten beat for the same chapter that landing it would replace.
+// A request the page cannot make resolves to {ok: false, reason} (see planGate); a failed call to its failure.
+export function planChapter(client, schema, project, castIds) {
+  const gate = planGate(project, castIds);
+  if (!gate.ok) return refused(gate.reason === "cast" ? `cast_${gate.why}` : gate.reason);
+  const replaces = beatForChapter(project, gate.chapter);
+  let current = null;
+  let stopped = false;
+  const call = (request) => { current = client.start(request); return current.done; };
+  const done = (async () => {
+    let offstage = null;
+    if (offstageDue(gate.chapter)) {
+      const read = readOffstageReply(await call(offstageRequest(schema, project, castIds)));
+      if (!read.ok) return read;
+      offstage = { did: read.did, reach: read.reach };
+    }
+    if (stopped) return failure("stopped");
+    let read = readPlanReply(await call(planRequest(schema, project, castIds, { offstage })));
+    if (!read.ok) return read;
+    let landed = landBeat(schema, project, castIds, read, { offstage, existing: replaces });
+    let blockers = beatBlockers(schema, project, landed.beat);
+    let retried = false;
+    if (blockers.length && !stopped) {
+      retried = true;
+      const second = readPlanReply(await call(planRequest(schema, project, castIds, { offstage, retry: { thinking: read.thinking, beat: read.beat, problems: blockers } })));
+      if (!second.ok) return second;
+      read = second;
+      landed = landBeat(schema, project, castIds, read, { offstage, existing: replaces });
+      blockers = beatBlockers(schema, project, landed.beat);
+    }
+    return { ok: true, beat: landed.beat, thinking: read.thinking, offstage, unresolved: landed.unresolved, dropped: landed.dropped, blockers, retried, replaces };
+  })();
+  return { done, stop() { stopped = true; current?.stop(); } };
 }

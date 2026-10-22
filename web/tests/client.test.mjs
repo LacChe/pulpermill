@@ -355,3 +355,110 @@ test("one failed status check among good ones does not end the call", async () =
   assert.equal(reply.ok, true);
   assert.ok(checks > 2);
 });
+
+// ---- Planning a chapter ----
+
+import { readyProject } from "./helpers.mjs";
+import { lockStaticCards } from "../gate.js";
+import { planChapter } from "../client.js";
+
+async function startedProject() {
+  const p = lockStaticCards(await readyProject());
+  p.setup.chapter_count = 6;
+  return p;
+}
+
+test("planning calls the model for a beat, with no offstage move in chapter 1, and changes nothing", async () => {
+  const p = await startedProject();
+  const text = JSON.stringify(p);
+  const mock = countingMock();
+  const result = await planChapter(mockClient(mock), schema, p, [p.characters[0].id]).done;
+  assert.equal(result.ok, true);
+  assert.deepEqual(mock.seen.map((r) => r.call), ["plan"]);
+  assert.equal(result.beat.chapter, 1);
+  assert.equal(result.offstage, null);
+  assert.equal(result.retried, false);
+  assert.deepEqual(result.blockers, []);
+  assert.match(result.thinking, /chapter 1/);
+  assert.equal(JSON.stringify(p), text, "the page decides what to land");
+});
+
+test("an offstage move comes first when one is due, and goes into the plan request and the beat", async () => {
+  const p = await startedProject();
+  const [suvi] = p.characters;
+  p.outline = { beats: [{ id: "b1", chapter: 1, where: p.world.places[0].id, cast: [suvi.id], spotlight: p.entanglements.pressures[0].id, shift: "harder" }] };
+  p.chapters = [{ id: "c1", beat: "b1", text: "One." }];
+  p.summary_events = { entries: [{ id: "e1", beat: "b1", happened: "It happened." }] };
+  const mock = countingMock();
+  const result = await planChapter(mockClient(mock), schema, p, [suvi.id]).done;
+  assert.deepEqual(mock.seen.map((r) => r.call), ["offstage", "plan"]);
+  assert.deepEqual(mock.seen[1].offstage, result.offstage);
+  assert.equal(result.beat.offstage_did, result.offstage.did);
+  assert.equal(result.beat.chapter, 2);
+});
+
+test("a beat the blocking rules refuse is sent back once with the rules' words, and the second answer is used", async () => {
+  const p = await startedProject();
+  const [suvi] = p.characters;
+  const mock = countingMock();
+  const send = mock.send;
+  let first = true;
+  mock.send = async (request, extra) => {
+    const reply = await send(request, extra);
+    if (request.call === "plan" && first) { first = false; return { ...reply, beat: { ...reply.beat, turn: "" } }; }
+    return reply;
+  };
+  const result = await planChapter(mockClient(mock), schema, p, [suvi.id]).done;
+  assert.deepEqual(mock.seen.map((r) => r.call), ["plan", "plan"]);
+  assert.equal(mock.seen[0].retry, null);
+  assert.ok(mock.seen[1].retry.problems.length > 0);
+  assert.equal(mock.seen[1].retry.beat.turn, "", "the failed attempt goes back as it was");
+  assert.equal(result.retried, true);
+  assert.deepEqual(result.blockers, []);
+  assert.ok(result.beat.turn);
+});
+
+test("a beat that still fails after the retry is returned with its problems, never retried again", async () => {
+  const p = await startedProject();
+  const mock = countingMock();
+  const send = mock.send;
+  mock.send = async (request, extra) => {
+    const reply = await send(request, extra);
+    return request.call === "plan" ? { ...reply, beat: { ...reply.beat, turn: "" } } : reply;
+  };
+  const result = await planChapter(mockClient(mock), schema, p, [p.characters[0].id]).done;
+  assert.equal(mock.seen.length, 2);
+  assert.equal(result.ok, true);
+  assert.equal(result.retried, true);
+  assert.ok(result.blockers.length > 0);
+});
+
+test("a failed call changes nothing and comes back as its failure", async () => {
+  const p = await startedProject();
+  const mock = countingMock();
+  mock.queue("busy");
+  const result = await planChapter(mockClient(mock), schema, p, [p.characters[0].id]).done;
+  assert.equal(result.error.kind, "busy");
+  const bad = countingMock();
+  bad.queue("bad_output");
+  assert.equal((await planChapter(mockClient(bad), schema, p, [p.characters[0].id]).done).error.kind, "bad_output");
+});
+
+test("a plan the page cannot make says why, without calling the model", async () => {
+  const p = await startedProject();
+  const mock = countingMock();
+  const client = mockClient(mock);
+  assert.equal((await planChapter(client, schema, { ...p, locks: [] }, [p.characters[0].id]).done).reason, "not_started");
+  assert.equal((await planChapter(client, schema, p, [p.characters[1].id]).done).reason, "cast_no_protagonist");
+  assert.equal(mock.seen.length, 0);
+});
+
+test("Stop ends the plan and no second call is made", async () => {
+  const p = await startedProject();
+  const mock = countingMock({ delay: 60 });
+  const call = planChapter(mockClient(mock), schema, p, [p.characters[0].id]);
+  setTimeout(() => call.stop(), 10);
+  const result = await call.done;
+  assert.equal(result.error.kind, "stopped");
+  assert.equal(mock.seen.length, 1);
+});

@@ -224,3 +224,23 @@ select.text-control[hidden], .checks[hidden] { display: none; }
 .tab-lock { margin-left: 4px; font-size: 0.8em; }
 .locked-banner { margin: 0 0 14px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--muted); }
 main.locked input:disabled, main.locked select:disabled, main.locked textarea:disabled { opacity: 0.8; cursor: not-allowed; }
+
+.plan-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; display: grid; gap: 10px; }
+.plan-panel h3 { margin: 0; font-size: 1.1rem; }
+.plan-panel h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+.plan-panel p { margin: 0; }
+.plan-chapter { font-weight: 600; }
+.plan-stale { color: var(--warn); border-left: 3px solid var(--warn); padding-left: 10px; }
+.plan-cast-box { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px 10px; }
+.plan-cast-box legend { font-weight: 600; padding: 0 6px; }
+.plan-cast { display: grid; gap: 4px; margin-top: 6px; }
+.plan-person { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.plan-name { font-weight: 600; }
+.plan-used { color: var(--muted); font-size: 0.88rem; }
+.plan-facts { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; margin: 0; font-size: 0.92rem; }
+.plan-facts dt { color: var(--muted); }
+.plan-facts dd { margin: 0; }
+.plan-actions { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.plan-actions .validate:disabled { opacity: 0.6; cursor: default; }
+.plan-thought > summary { cursor: pointer; font-weight: 600; }
+.plan-thinking { white-space: pre-wrap; margin-top: 6px; }
