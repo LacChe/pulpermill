@@ -648,6 +648,123 @@ test("the Validate request holds the card's model rules and a snapshot of its va
   assert.equal(request.values.goal, "Find the ledger");
 });
 
+// ---- Saving, opening and the recovery copy ----
+
+const importIo = {};
+const io = await import("../logic.js");
+Object.assign(importIo, io);
+const { settledProject, projectSnapshot, hasUnsavedChanges, projectFileName, readProject,
+  RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering } = importIo;
+
+test("a settled project has every card in full, and settling does not change the original", () => {
+  const project = newProject(schema);
+  const settled = settledProject(schema, project);
+  assert.deepEqual(Object.keys(project), ["title", "schema_version"]);
+  for (const id of schema.order) assert.ok(id in settled, id);
+  assert.deepEqual(settled.characters, []);
+});
+
+test("visiting a card is not a change, typing is", () => {
+  const project = newProject(schema);
+  const saved = projectSnapshot(schema, project);
+  ensureCard(project, style);                       // the page fills in blanks when a card is shown
+  assert.equal(hasUnsavedChanges(schema, project, saved), false);
+  project.style.narrator_note = "Dry and a little tired";
+  assert.equal(hasUnsavedChanges(schema, project, saved), true);
+  project.style.narrator_note = "";
+  assert.equal(hasUnsavedChanges(schema, project, saved), false);
+});
+
+test("adding a character is a change", () => {
+  const project = newProject(schema);
+  const saved = projectSnapshot(schema, project);
+  addInstance(project, characters);
+  assert.equal(hasUnsavedChanges(schema, project, saved), true);
+});
+
+test("file names come from the title and stay safe", () => {
+  assert.equal(projectFileName({ title: "" }), "pulpermill-project.json");
+  assert.equal(projectFileName({}), "pulpermill-project.json");
+  assert.equal(projectFileName({ title: "The Salt Road" }), "the-salt-road.json");
+  assert.equal(projectFileName({ title: "  Who killed Mr. X?! / part 2 " }), "who-killed-mr-x-part-2.json");
+  assert.equal(projectFileName({ title: "???" }), "pulpermill-project.json");
+  assert.equal(projectFileName({ title: "盐路 的故事" }), "盐路-的故事.json");
+  assert.ok(projectFileName({ title: "a".repeat(200) }).length <= 65);
+});
+
+test("a saved project reads back as the same project", () => {
+  const project = newProject(schema);
+  project.title = "Round trip";
+  project.style = { ...blankCard(style), narrator_note: "Find the lighthouse" };
+  const one = addInstance(project, characters);
+  one.name = "Mara";
+  const text = projectSnapshot(schema, project);
+  const read = readProject(text, schema);
+  assert.equal(read.ok, true);
+  assert.equal(read.older, false);
+  assert.equal(projectSnapshot(schema, read.project), text);
+  assert.equal(read.project.characters[0].name, "Mara");
+});
+
+test("the saved file is the project, nothing wrapped around it", () => {
+  const data = JSON.parse(projectSnapshot(schema, newProject(schema)));
+  assert.equal(data.schema_version, schema.schema_version);
+  assert.equal(data.title, "");
+});
+
+test("opening says why a file cannot be used", () => {
+  const v = schema.schema_version;
+  assert.equal(readProject("not json {", schema).reason, "unreadable");
+  assert.equal(readProject("", schema).reason, "unreadable");
+  assert.equal(readProject("[1,2]", schema).reason, "not_project");
+  assert.equal(readProject("null", schema).reason, "not_project");
+  assert.equal(readProject('{"title":"x"}', schema).reason, "not_project");
+  assert.equal(readProject(`{"schema_version":"${v}"}`, schema).reason, "not_project");
+  assert.equal(readProject(`{"schema_version":${v + 1}}`, schema).reason, "newer");
+  const bad = readProject(`{"schema_version":${v},"characters":{"a":1}}`, schema);
+  assert.deepEqual([bad.ok, bad.reason, bad.card], [false, "damaged", "characters"]);
+  assert.equal(readProject(`{"schema_version":${v},"characters":[1]}`, schema).reason, "damaged");
+  assert.equal(readProject(`{"schema_version":${v},"style":[]}`, schema).reason, "damaged");
+});
+
+test("opening copes with a byte-order mark and a project that has no cards yet", () => {
+  const read = readProject(`﻿{"schema_version":${schema.schema_version},"title":"x"}`, schema);
+  assert.equal(read.ok, true);
+  assert.equal(read.project.title, "x");
+});
+
+test("an older file still opens and says it is older", () => {
+  if (schema.schema_version < 2) {
+    const fake = { ...schema, schema_version: schema.schema_version + 1 };
+    const read = readProject(JSON.stringify({ schema_version: schema.schema_version }), fake);
+    assert.deepEqual([read.ok, read.older], [true, true]);
+  }
+});
+
+test("the recovery copy reads back with what the page needs to offer it", () => {
+  const project = newProject(schema);
+  project.title = "Half done";
+  addInstance(project, characters).name = "Mara";
+  const text = recoveryRecord(schema, project, new Date("2026-10-22T07:30:00Z"));
+  const got = readRecovery(text, schema);
+  assert.equal(got.title, "Half done");
+  assert.equal(got.characters, 1);
+  assert.equal(got.savedAt, "2026-10-22T07:30:00.000Z");
+  assert.equal(worthRecovering(schema, got), true);
+  assert.ok(RECOVERY_KEY.length > 0);
+});
+
+test("a blank recovery copy is not worth offering, and a bad one is ignored", () => {
+  const blank = readRecovery(recoveryRecord(schema, newProject(schema)), schema);
+  assert.equal(worthRecovering(schema, blank), false);
+  assert.equal(worthRecovering(schema, null), false);
+  assert.equal(readRecovery("nope", schema), null);
+  assert.equal(readRecovery("{}", schema), null);
+  assert.equal(readRecovery(JSON.stringify({ saved_at: "x", project: { title: "no version" } }), schema), null);
+  const newer = JSON.stringify({ saved_at: "x", project: { schema_version: schema.schema_version + 1 } });
+  assert.equal(readRecovery(newer, schema), null);
+});
+
 // ---- Shared vectors: web/tests/vectors.json ----
 const vectors = JSON.parse(readFileSync(new URL("./vectors.json", import.meta.url), "utf8")).cases;
 
