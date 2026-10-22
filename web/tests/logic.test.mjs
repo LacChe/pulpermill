@@ -765,6 +765,91 @@ test("a blank recovery copy is not worth offering, and a bad one is ignored", ()
   assert.equal(readRecovery(newer, schema), null);
 });
 
+// ---- What a tab or a dropdown entry says ----
+
+const { cardStatus, combineStatus, projectStatus } = await import("../logic.js");
+const reviewOf = () => ({ touched: new Set(), validated: false });
+const miniCard = {
+  id: "mini", label: "Mini",
+  fields: [{ key: "a", label: "A", type: "text", required: true }, { key: "b", label: "B", type: "text" }],
+  rules: [],
+};
+const miniCommon = { missing: { message: "{label} is needed", fix: "Fill it in" } };
+
+test("a blank card has nothing started and nothing to show", () => {
+  const s = cardStatus(miniCard, { a: "", b: "" }, {}, miniCommon, reviewOf());
+  assert.deepEqual(s, { started: false, ready: false, block: 0, warn: 0 });
+});
+
+test("a started card with a required field missing is not ready, and does not nag until visited", () => {
+  const s = cardStatus(miniCard, { a: "", b: "something" }, {}, miniCommon, reviewOf());
+  assert.equal(s.started, true);
+  assert.equal(s.ready, false);
+  assert.equal(s.block, 0);                                  // the missing field has not been reached
+  const left = { touched: new Set(["a"]), validated: false };
+  assert.equal(cardStatus(miniCard, { a: "", b: "something" }, {}, miniCommon, left).block, 1);
+  const checked = { touched: new Set(), validated: true };
+  assert.equal(cardStatus(miniCard, { a: "", b: "something" }, {}, miniCommon, checked).block, 1);
+});
+
+test("a started card with nothing blocking is ready", () => {
+  const s = cardStatus(miniCard, { a: "x", b: "" }, {}, miniCommon, reviewOf());
+  assert.deepEqual(s, { started: true, ready: true, block: 0, warn: 0 });
+});
+
+test("combining statuses: ready only when every one is, counts add up", () => {
+  const ready = { started: true, ready: true, block: 0, warn: 0 };
+  const bad = { started: true, ready: false, block: 2, warn: 1 };
+  const blank = { started: false, ready: false, block: 0, warn: 0 };
+  assert.deepEqual(combineStatus([ready, ready]), { started: true, ready: true, block: 0, warn: 0 });
+  assert.deepEqual(combineStatus([ready, bad]), { started: true, ready: false, block: 2, warn: 1 });
+  assert.deepEqual(combineStatus([ready, blank]), { started: true, ready: false, block: 0, warn: 0 });
+  assert.deepEqual(combineStatus([]), { started: false, ready: false, block: 0, warn: 0 });
+});
+
+test("a blank project has every tab empty", () => {
+  const { cards, instances } = projectStatus(schema, newProject(schema), reviewOf);
+  assert.deepEqual(Object.keys(cards), schema.order);
+  for (const id of schema.order) assert.deepEqual(cards[id], { started: false, ready: false, block: 0, warn: 0 }, id);
+  assert.deepEqual(instances.characters, []);
+});
+
+test("a saved project shows its problems on the tabs at once, and a blank extra character spoils the tick", () => {
+  const project = newProject(schema);
+  project.style = { ...blankCard(style), person: "not a real option" };
+  const a = addInstance(project, characters);
+  a.name = "Mara";
+  addInstance(project, characters);
+  const { cards, instances } = projectStatus(schema, project, reviewOf);
+  assert.equal(cards.style.started, true);
+  assert.ok(cards.style.block >= 1);
+  assert.equal(cards.characters.started, true);
+  assert.equal(cards.characters.ready, false);
+  assert.equal(instances.characters.length, 2);
+  assert.equal(instances.characters[0].status.started, true);
+  assert.equal(instances.characters[1].status.started, false);
+  assert.equal(cards.world.started, false);
+});
+
+test("status does not change the project it looks at", () => {
+  const project = newProject(schema);
+  const before = JSON.stringify(project);
+  projectStatus(schema, project, reviewOf);
+  assert.equal(JSON.stringify(project), before);
+});
+
+test("each character is judged with its own review state", () => {
+  const project = newProject(schema);
+  const a = addInstance(project, characters);
+  const b = addInstance(project, characters);
+  a.name = "A"; b.name = "B";
+  const reviews = new Map();
+  const of = (key) => { if (!reviews.has(key)) reviews.set(key, { touched: new Set(), validated: false }); return reviews.get(key); };
+  of(`characters:${a.id}`).validated = true;
+  const { instances } = projectStatus(schema, project, of);
+  assert.ok(instances.characters[0].status.block > instances.characters[1].status.block);
+});
+
 // ---- Shared vectors: web/tests/vectors.json ----
 const vectors = JSON.parse(readFileSync(new URL("./vectors.json", import.meta.url), "utf8")).cases;
 
