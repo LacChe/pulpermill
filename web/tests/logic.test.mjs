@@ -9,7 +9,7 @@ import {
 } from "../logic.js";
 import { isSupported } from "../render.js";
 import { validate, ruleKind, modelRules, problemsFor, CHECKS, PENDING_CHECKS, legalShifts, similarity, SIMILARITY_LIMIT } from "../logic.js";
-import { filledPaths, problemPath, problemTriggers, shownProblems, problemCounts, modelCheckRequest } from "../logic.js";
+import { filledPaths, problemPath, problemTriggers, shownProblems, problemCounts } from "../logic.js";
 
 const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
 const style = schema.cards.style;
@@ -637,15 +637,158 @@ test("problemCounts splits blocking problems from warnings", () => {
   assert.deepEqual(problemCounts([{ severity: "block" }, { severity: "warn" }, { severity: "warn" }]), { block: 1, warn: 2 });
 });
 
-test("the Validate request holds the card's model rules and a snapshot of its values", () => {
-  const values = { ...blankCard(setupCard), goal: "Find the ledger" };
-  const request = modelCheckRequest(setupCard, values);
-  assert.equal(request.card, "setup");
-  assert.deepEqual(request.rules.map((r) => r.id), modelRules(setupCard).map((r) => r.id));
-  assert.ok(request.rules.length > 0 && request.rules.every((r) => r.severity && r.fields.length));
-  assert.deepEqual(request.values, values);
-  values.goal = "changed";
+// ---- The backend contract ----
+
+const contract = await import("../logic.js");
+const { fillRequest, readFillReply, judgeRequest, readJudgeReply, styleFitRequest, readStyleFitReply, readReply, readStatus,
+  failure, relatedCards, ERROR_KINDS, FILLABLE } = contract;
+
+const worldCard = schema.cards.world;
+const projectWith = (extra = {}) => settledProject(schema, { ...newProject(schema), ...extra });
+
+test("every request names its call, the schema version and the output language", () => {
+  const project = projectWith({ output_language: "fr", example_chapter: "Once." });
+  const fill = fillRequest(schema, project, "style").request;
+  assert.deepEqual([fill.call, fill.schema_version, fill.language], ["fill", schema.schema_version, "fr"]);
+  const plain = fillRequest(schema, projectWith({ example_chapter: "Once." }), "style").request;
+  assert.equal(plain.language, schema.lang);
+  assert.equal(judgeRequest(schema, project, "world", project.world).call, "judge");
+});
+
+test("fill needs the example chapter or a note for that card, and only the five fillable cards fill", () => {
+  assert.deepEqual(FILLABLE, ["style", "characters", "world", "entanglements", "setup"]);
+  assert.equal(fillRequest(schema, projectWith(), "world").reason, "no_source");
+  assert.equal(fillRequest(schema, projectWith({ example_chapter: "   " }), "world").reason, "no_source");
+  assert.equal(fillRequest(schema, projectWith({ example_chapter: "x" }), "outline").reason, "not_fillable");
+  assert.equal(fillRequest(schema, projectWith(), "nope").reason, "unknown_card");
+  const byChapter = fillRequest(schema, projectWith({ example_chapter: "A chapter." }), "world").request;
+  assert.deepEqual([byChapter.example_chapter, byChapter.note], ["A chapter.", null]);
+  const byNote = fillRequest(schema, projectWith({ card_notes: [{ id: "n1", card: "world", text: "Salt city." }] }), "world").request;
+  assert.deepEqual([byNote.example_chapter, byNote.note], [null, "Salt city."]);
+  assert.equal(fillRequest(schema, projectWith({ card_notes: [{ id: "n1", card: "style", text: "Dry." }] }), "world").reason, "no_source");
+});
+
+test("a note for a character only counts for that character", () => {
+  const project = projectWith();
+  const a = addInstance(project, characters);
+  const b = addInstance(project, characters);
+  project.card_notes = [{ id: "n1", card: "characters", character: a.id, text: "Suvi, archivist." }];
+  assert.equal(fillRequest(schema, project, "characters", a.id).request.note, "Suvi, archivist.");
+  assert.equal(fillRequest(schema, project, "characters", b.id).reason, "no_source");
+  assert.equal(fillRequest(schema, project, "characters", "missing").reason, "no_instance");
+  assert.equal(fillRequest(schema, project, "characters", a.id).request.instance, a.id);
+});
+
+test("a request carries a copy of the card's values and only the cards it reads", () => {
+  const project = projectWith({ example_chapter: "x" });
+  project.setup.goal = "Find the ledger";
+  const request = fillRequest(schema, project, "setup").request;
   assert.equal(request.values.goal, "Find the ledger");
+  assert.deepEqual(Object.keys(request.related).sort(), schema.cards.setup.reads.filter((id) => project[id] !== undefined).sort());
+  request.values.goal = "changed";
+  request.related.style.person = "changed";
+  assert.equal(project.setup.goal, "Find the ledger");
+  assert.notEqual(project.style.person, "changed");
+  assert.deepEqual(fillRequest(schema, project, "world").request.related, {});
+  assert.deepEqual(relatedCards(schema, project, schema.cards.style), {});
+});
+
+test("the reply envelope: ok replies pass, failures keep their kind, anything else is a bad output", () => {
+  assert.deepEqual(readReply({ ok: true, x: 1 }), { ok: true, x: 1 });
+  assert.deepEqual(readReply({ ok: false, error: { kind: "busy", detail: "mid-chapter" } }), failure("busy", "mid-chapter"));
+  assert.equal(readReply({ ok: false, error: { kind: "weird" } }).error.kind, "server");
+  for (const bad of [null, undefined, "text", [], {}, { ok: "yes" }]) assert.equal(readReply(bad).error.kind, "bad_output");
+  assert.ok(["busy", "bad_output", "too_long", "stopped", "unreachable", "timeout"].every((k) => ERROR_KINDS.includes(k)));
+});
+
+test("status is idle or busy", () => {
+  assert.deepEqual(readStatus({ ok: true, state: "idle" }), { ok: true, state: "idle" });
+  assert.equal(readStatus({ ok: true, state: "busy" }).state, "busy");
+  assert.equal(readStatus({ ok: true, state: "sleeping" }).error.kind, "bad_output");
+  assert.equal(readStatus({ ok: false, error: { kind: "server" } }).error.kind, "server");
+});
+
+test("a fill reply keeps the card's own fields and names the rest", () => {
+  const key = worldCard.fields[0].key;
+  const reply = readFillReply(worldCard, { ok: true, values: { [key]: "x", surprise: 1 } });
+  assert.deepEqual(reply, { ok: true, values: { [key]: "x" }, ignored: ["surprise"] });
+  assert.equal(readFillReply(worldCard, { ok: true }).error.kind, "bad_output");
+  assert.equal(readFillReply(worldCard, { ok: true, values: [] }).error.kind, "bad_output");
+  assert.equal(readFillReply(worldCard, { ok: false, error: { kind: "stopped" } }).error.kind, "stopped");
+});
+
+test("the judge request lists the card's model rules, or only the ones asked for", () => {
+  const project = projectWith();
+  const all = judgeRequest(schema, project, "world", project.world);
+  assert.deepEqual(all.rules.map((r) => r.id), modelRules(worldCard).map((r) => r.id));
+  assert.ok(all.rules.every((r) => r.id && r.fields.length));
+  assert.deepEqual(all.rules[0], { id: all.rules[0].id, fields: modelRules(worldCard)[0].fields });
+  const some = judgeRequest(schema, project, "world", project.world, ["everyday_has_friction"]);
+  assert.deepEqual(some.rules.map((r) => r.id), ["everyday_has_friction"]);
+  assert.deepEqual(some.values, project.world);
+  assert.equal(some.instance, null);
+});
+
+test("a judge reply becomes problems the page shows like any other; unanswered rules are missing, not passed", () => {
+  const project = projectWith();
+  const sent = ["everyday_has_friction", "era_is_fact_not_mood", "history_no_people"];
+  const reply = { ok: true, results: [
+    { rule: "everyday_has_friction", hits: [{ field: "everyday_life" }] },
+    { rule: "era_is_fact_not_mood", hits: [] },
+  ] };
+  const read = readJudgeReply(worldCard, project.world, sent, reply);
+  assert.equal(read.ok, true);
+  assert.deepEqual(read.answered, ["everyday_has_friction", "era_is_fact_not_mood"]);
+  assert.deepEqual(read.missing, ["history_no_people"]);
+  assert.equal(read.problems.length, 1);
+  const [p] = read.problems;
+  assert.deepEqual([p.rule, p.kind, p.severity, p.field, p.item], ["everyday_has_friction", "model", "warn", "everyday_life", null]);
+  assert.ok(p.message && p.fix);
+});
+
+test("a judge reply ignores rules that were not asked, and rejects shapes it cannot use", () => {
+  const project = projectWith();
+  const sent = ["everyday_has_friction"];
+  const extra = readJudgeReply(worldCard, project.world, sent, { ok: true, results: [
+    { rule: "era_is_fact_not_mood", hits: [{ field: "everyday_life" }] }, { rule: "no_such_rule", hits: [] },
+  ] });
+  assert.deepEqual([extra.problems.length, extra.answered, extra.missing], [0, [], sent]);
+  assert.equal(readJudgeReply(worldCard, project.world, sent, { ok: true }).error.kind, "bad_output");
+  assert.equal(readJudgeReply(worldCard, project.world, sent, { ok: true, results: [{ rule: sent[0] }] }).error.kind, "bad_output");
+  assert.equal(readJudgeReply(worldCard, project.world, sent, { ok: true, results: [{ rule: sent[0], hits: [{ field: "nope" }] }] }).error.kind, "bad_output");
+  assert.equal(readJudgeReply(worldCard, project.world, sent, { ok: false, error: { kind: "too_long" } }).error.kind, "too_long");
+});
+
+test("a judge hit on a list item that is gone falls back to the whole field", () => {
+  const project = projectWith();
+  const listField = worldCard.fields.find((f) => f.repeat && modelRules(worldCard).some((r) => r.fields.includes(f.key)));
+  const rule = modelRules(worldCard).find((r) => r.fields.includes(listField.key));
+  const item = addItem(listField, project.world[listField.key]);
+  const hit = (id) => readJudgeReply(worldCard, project.world, [rule.id], { ok: true, results: [{ rule: rule.id, hits: [{ field: listField.key, item: id, key: "x" }] }] }).problems[0];
+  assert.deepEqual([hit(item.id).item, hit(item.id).key], [item.id, "x"]);
+  assert.deepEqual([hit("gone").item, hit("gone").key], [null, null]);
+});
+
+test("style fit needs the protagonist Setup chose", () => {
+  const project = projectWith();
+  assert.equal(styleFitRequest(schema, project).reason, "no_protagonist");
+  const hero = addInstance(project, characters);
+  project.setup.protagonist = hero.id;
+  hero.name = "Suvi";
+  project.style.person = "first";
+  const { request } = styleFitRequest(schema, project);
+  assert.deepEqual([request.call, request.protagonist.name, request.style.person], ["style_fit", "Suvi", "first"]);
+  hero.name = "changed";
+  assert.equal(request.protagonist.name, "Suvi");
+  project.setup.protagonist = "gone";
+  assert.equal(styleFitRequest(schema, project).reason, "no_protagonist");
+});
+
+test("a style fit reply says whether it fits", () => {
+  assert.deepEqual(readStyleFitReply({ ok: true, fits: true }), { ok: true, fits: true, message: "" });
+  assert.deepEqual(readStyleFitReply({ ok: true, fits: false, message: "Too guarded." }), { ok: true, fits: false, message: "Too guarded." });
+  assert.equal(readStyleFitReply({ ok: true, fits: "yes" }).error.kind, "bad_output");
+  assert.equal(readStyleFitReply({ ok: false, error: { kind: "busy" } }).error.kind, "busy");
 });
 
 // ---- Saving, opening and the recovery copy ----
@@ -894,4 +1037,127 @@ test("the vectors cover every code rule, both broken and not broken", () => {
       assert.ok(cases.some((c) => c.broken.length === 0), `${card.id}/${rule.id} has no passing case`);
     }
   }
+});
+
+// ---- Landing a fill ----
+
+const landing = await import("../logic.js");
+const { wordsToId, resolveFillLinks, planFill, setCardValues, filledFieldKeys } = landing;
+const landEnt = schema.cards.entanglements;
+const landSetup = schema.cards.setup;
+
+// A project with two people, one power, and a second "Ola" so a name can be ambiguous.
+function peopleProject() {
+  const project = projectWith();
+  const suvi = addInstance(project, characters);
+  suvi.name = "Suvi";
+  const ola = addInstance(project, characters);
+  ola.name = "Ola";
+  const guild = addItem(schema.cards.world.fields.find((f) => f.key === "powers"), project.world.powers);
+  guild.name = "The Salt Guild";
+  return { project, suvi, ola, guild };
+}
+
+test("words become ids: names match without caring about case or spacing, ids pass through, nothing is guessed", () => {
+  const { project, suvi, guild } = peopleProject();
+  const sources = ["characters", "world.powers"];
+  assert.deepEqual(wordsToId(project, sources, "Suvi"), { id: suvi.id });
+  assert.deepEqual(wordsToId(project, sources, "  the  SALT guild "), { id: guild.id });
+  assert.deepEqual(wordsToId(project, sources, suvi.id), { id: suvi.id });
+  assert.deepEqual(wordsToId(project, sources, "Nobody"), { none: true });
+  assert.deepEqual(wordsToId(project, sources, ""), { none: true });
+  const twin = addInstance(project, characters);
+  twin.name = "suvi";
+  assert.deepEqual(wordsToId(project, sources, "Suvi"), { several: true });
+  addInstance(project, characters);
+  assert.deepEqual(wordsToId(project, sources, ""), { none: true }, "an entry with no name yet is never matched");
+});
+
+test("a fill's links become ids, inside list items too; unmatched words are left empty and reported", () => {
+  const { project, suvi, ola, guild } = peopleProject();
+  const reply = { ties: [
+    { tie_from: "Suvi", tie_to: "Ola", bond: "sisters" },
+    { tie_from: "Suvi", tie_to: "The Harbour Board", bond: "owes them" },
+  ], pressures: [{ what: "Rent due", bears_on: ["Ola", "The Salt Guild", "Nobody"] }] };
+  const { values, unresolved } = resolveFillLinks(landEnt, reply, project);
+  assert.deepEqual([values.ties[0].tie_from, values.ties[0].tie_to, values.ties[0].bond], [suvi.id, ola.id, "sisters"]);
+  assert.equal(values.ties[1].tie_to, "");
+  assert.deepEqual(values.pressures[0].bears_on, [ola.id, guild.id]);
+  assert.deepEqual(unresolved, [
+    { field: "ties", index: 1, key: "tie_to", words: "The Harbour Board", why: "none" },
+    { field: "pressures", index: 0, key: "bears_on", words: "Nobody", why: "none" },
+  ]);
+  assert.equal(reply.ties[0].tie_from, "Suvi", "the reply itself is not changed");
+  const one = resolveFillLinks(landSetup, { protagonist: "Ola", goal: "Find it" }, project);
+  assert.deepEqual([one.values.protagonist, one.values.goal, one.unresolved], [ola.id, "Find it", []]);
+});
+
+test("a fill reply of the wrong kind is a bad output", () => {
+  const read = (card, values) => readFillReply(card, { ok: true, values });
+  assert.equal(read(landEnt, { ties: "none" }).error.kind, "bad_output");
+  assert.equal(read(landEnt, { ties: [{ bond: ["a"] }] }).error.kind, "bad_output");
+  assert.equal(read(landEnt, { ties: ["Suvi"] }).error.kind, "bad_output");
+  assert.equal(read(landEnt, { pressures: [{ bears_on: "Ola" }] }).error.kind, "bad_output");
+  assert.equal(read(landSetup, { goal: ["x"] }).error.kind, "bad_output");
+  assert.equal(read(landSetup, { goal: { a: 1 } }).error.kind, "bad_output");
+  assert.equal(read(landSetup, { chapter_count: 8, goal: "x" }).ok, true);
+  assert.equal(read(landEnt, { pressures: [{ what: "x", bears_on: ["Ola"], surprise: [1] }] }).ok, true);
+});
+
+test("planning a fill: empty fields fill, written ones are named as replaced, same words stay put", () => {
+  const { project, suvi } = peopleProject();
+  const current = project.setup;
+  current.goal = "My own goal";
+  current.stakes = "Same stakes";
+  const reply = { values: { protagonist: "Suvi", goal: "The model's goal", stakes: "Same stakes", normal: "A quiet harbour", surprise: 1 }, ignored: ["surprise"] };
+  const plan = planFill(landSetup, current, reply, project);
+  assert.deepEqual([plan.filled.sort(), plan.replaced, plan.unchanged], [["normal", "protagonist"], ["goal"], ["stakes"]]);
+  assert.deepEqual([plan.next.protagonist, plan.next.goal, plan.next.normal], [suvi.id, "The model's goal", "A quiet harbour"]);
+  assert.deepEqual(plan.ignored, ["surprise"]);
+  assert.equal(current.goal, "My own goal", "planning changes nothing");
+  assert.equal(plan.before.goal, "My own goal");
+  assert.deepEqual(filledFieldKeys(landSetup, current), ["goal", "stakes"]);
+});
+
+test("an empty answer never wipes what the writer wrote, and fields the model skipped stay as they were", () => {
+  const { project } = peopleProject();
+  const current = project.setup;
+  current.goal = "Keep me";
+  current.normal = "And me";
+  const plan = planFill(landSetup, current, { values: { goal: "", normal: null, stakes: "New" } }, project);
+  assert.deepEqual([plan.filled, plan.replaced, plan.unchanged], [["stakes"], [], []]);
+  assert.equal(plan.next.goal, "Keep me");
+  assert.equal(plan.next.normal, "And me");
+});
+
+test("filled lists get fresh ids; the same list again changes nothing and keeps its ids", () => {
+  const { project, suvi, ola } = peopleProject();
+  const reply = { values: { ties: [{ tie_from: "Suvi", tie_to: "Ola", bond: "sisters", edge: "" }] } };
+  const first = planFill(landEnt, project.entanglements, reply, project);
+  assert.deepEqual([first.filled, first.replaced], [["ties"], []]);
+  const [tie] = first.next.ties;
+  assert.match(tie.id, /^[0-9a-f]{8}$/);
+  assert.deepEqual([tie.tie_from, tie.tie_to, tie.bond], [suvi.id, ola.id, "sisters"]);
+  setCardValues(landEnt, project.entanglements, first.next);
+  const again = planFill(landEnt, project.entanglements, reply, project);
+  assert.deepEqual([again.unchanged, again.filled, again.replaced], [["ties"], [], []]);
+  assert.equal(again.next.ties[0].id, tie.id);
+  const other = planFill(landEnt, project.entanglements, { values: { ties: [{ tie_from: "Ola", tie_to: "Suvi", bond: "rivals" }] } }, project);
+  assert.deepEqual(other.replaced, ["ties"]);
+  assert.notEqual(other.next.ties[0].id, tie.id);
+});
+
+test("setting values in place keeps the same object, never touches the id, and Undo puts the old values back", () => {
+  const { project, suvi } = peopleProject();
+  suvi.appearance = "Sunburnt";
+  const target = suvi;
+  const plan = planFill(characters, target, { values: { appearance: "Tall", sketch: "An archivist", id: "hijack" } }, project);
+  assert.equal(plan.next.id, suvi.id);
+  setCardValues(characters, target, plan.next);
+  assert.equal(target, project.characters[0]);
+  assert.deepEqual([target.id, target.appearance, target.sketch], [suvi.id, "Tall", "An archivist"]);
+  setCardValues(characters, target, plan.before);
+  assert.deepEqual([target.id, target.appearance, target.sketch], [suvi.id, "Sunburnt", ""]);
+  plan.before.appearance = "mutated";
+  assert.equal(target.appearance, "Sunburnt", "values are copied, not shared");
 });
