@@ -182,7 +182,7 @@ export function instanceName(instance) {
   return typeof instance.name === "string" ? instance.name.trim() : "";
 }
 
-// A stand-in until the project shell exists: just enough of a project to hold the cards on screen.
+// A blank project: a title and the schema version. The cards fill themselves in as they are shown.
 export function newProject(schema) {
   return { title: "", schema_version: schema.schema_version };
 }
@@ -590,6 +590,23 @@ export function projectStatus(schema, project, reviewOf) {
     cards[id] = combineStatus(each.map((e) => e.status));
   }
   return { cards, instances };
+}
+
+// ---- Fixed and live fields ---------------------------------------------------------
+// The schema flags some fields: `fixed` (always sent to the model exactly as written, never changed in the story) and
+// `changes` (a live field: what the writer enters is the starting point, and the model updates it chapter by chapter).
+// The page tags those fields, and explains the tags only on a card that actually has them.
+export function flagsUsed(card) {
+  const used = { fixed: false, changes: false };
+  const walk = (fields) => {
+    for (const field of fields) {
+      if (field.fixed) used.fixed = true;
+      if (field.changes) used.changes = true;
+      walk(field.item_fields ?? []);
+    }
+  };
+  walk(card.fields);
+  return used;
 }
 
 // What the Validate button hands to the model checks. The backend call itself comes later; for now this only

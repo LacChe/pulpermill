@@ -1,13 +1,19 @@
 // Draws one card as a form. Only this file touches the DOM. All wording comes from the schema JSON,
 // except the few page labels in STRINGS below, which move into the text files when languages are added.
 import {
-  addItem, blockedValues, canAdd, chooseOneOf, fieldShown, filledPaths, groupedFields, isFilled, isItemEmpty, itemTitle,
+  addItem, blockedValues, canAdd, chooseOneOf, fieldShown, filledPaths, flagsUsed, groupedFields, isFilled, isItemEmpty, itemTitle,
   legalShifts, lookupLabel, modelCheckRequest, oneOfChoice, pickerSources, problemCounts, problemPath, refOptions,
   removeItem, showsOptionalTag, shownProblems, validate,
 } from "./logic.js";
 
 export const STRINGS = {
   optional: "Optional",
+  tagLive: "Changes as the story runs",
+  tagLiveHelp: "What you write is the starting point. The model updates it as chapters are written, and you can edit it between chapters.",
+  tagFixed: "Never changes",
+  tagFixedHelp: "The model always gets this exactly as written and never changes it during the story.",
+  noteLive: "Fields tagged “{tag}” are where things start. The model updates them chapter by chapter, and you can edit them between chapters.",
+  noteFixed: "Fields tagged “{tag}” go to the model exactly as written, and it never changes them during the story.",
   why: "Why this matters",
   good: "Works well",
   avoid: "Avoid",
@@ -259,6 +265,8 @@ function fieldBlock(field, values, path, ctx, scope) {
   const block = el("div", { class: "field", "data-path": path });
   const heading = el("div", { class: "field-heading" }, el("span", { class: "field-label", text: field.label }));
   if (showsOptionalTag(scope.owner, field)) heading.append(el("span", { class: "tag", text: STRINGS.optional }));
+  if (field.changes) heading.append(el("span", { class: "tag tag-live", text: STRINGS.tagLive, title: STRINGS.tagLiveHelp }));
+  if (field.fixed) heading.append(el("span", { class: "tag tag-fixed", text: STRINGS.tagFixed, title: STRINGS.tagFixedHelp }));
   block.append(heading);
   if (field.help) block.append(el("p", { class: "help", text: field.help }));
 
@@ -496,9 +504,17 @@ export function renderCard(root, card, values, ctx) {
     lookup: (itemField, value) => lookupLabel(project, itemField, value, STRINGS.unnamed),
   };
 
+  // One line saying what the "changes" and "never changes" tags mean, only on a card that has them.
+  const used = flagsUsed(card);
+  const noteText = [
+    used.changes ? STRINGS.noteLive.replace("{tag}", STRINGS.tagLive) : "",
+    used.fixed ? STRINGS.noteFixed.replace("{tag}", STRINGS.tagFixed) : "",
+  ].filter(Boolean).join(" ");
+
   const section = el("section", { class: "card", "data-card": card.id },
     el("h2", { text: card.label }),
     el("p", { class: "summary", text: card.summary }),
+    noteText ? el("p", { class: "flag-note", text: noteText }) : null,
     count);
 
   for (const { group, fields } of groupedFields(card)) {
