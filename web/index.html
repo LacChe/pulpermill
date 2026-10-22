@@ -9,12 +9,20 @@
 <body>
   <header class="bar">
     <h1>Pulpermill</h1>
+    <label class="project-name">
+      <span class="visually-hidden">Project name</span>
+      <input type="text" id="title" class="text-control" placeholder="Untitled story" autocomplete="off">
+    </label>
+    <span id="save-state" class="save-state" role="status"></span>
     <div class="bar-actions">
-      <button type="button" id="open">Open project</button>
-      <button type="button" id="save">Save project</button>
+      <button type="button" id="new">New</button>
+      <button type="button" id="open">Open…</button>
+      <button type="button" id="save">Save</button>
       <input type="file" id="open-file" accept=".json,application/json" hidden>
     </div>
   </header>
+  <div id="recovery" class="notice" hidden></div>
+  <div id="notice" class="notice" role="status" hidden></div>
   <nav id="cards" class="tabs" aria-label="Cards"></nav>
   <nav id="people" class="tabs people" aria-label="Characters" hidden></nav>
   <main id="card"></main>
