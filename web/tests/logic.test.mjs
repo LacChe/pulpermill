@@ -850,6 +850,28 @@ test("each character is judged with its own review state", () => {
   assert.ok(instances.characters[0].status.block > instances.characters[1].status.block);
 });
 
+// ---- Fixed and live fields ----
+
+const { flagsUsed } = await import("../logic.js");
+
+test("a card says which of the fixed and live flags it uses", () => {
+  assert.deepEqual(flagsUsed(style), { fixed: false, changes: false });
+  assert.deepEqual(flagsUsed(characters), { fixed: true, changes: false });
+  assert.deepEqual(flagsUsed(ent), { fixed: false, changes: true });
+  assert.deepEqual(flagsUsed(world), { fixed: false, changes: false });
+  assert.deepEqual(flagsUsed({ fields: [] }), { fixed: false, changes: false });
+});
+
+test("no field is both fixed and live, so it never gets two tags", () => {
+  const walk = (fields, where) => {
+    for (const f of fields) {
+      assert.ok(!(f.fixed && f.changes), `${where}.${f.key} is both`);
+      walk(f.item_fields ?? [], `${where}.${f.key}`);
+    }
+  };
+  for (const card of Object.values(schema.cards)) walk(card.fields, card.id);
+});
+
 // ---- Shared vectors: web/tests/vectors.json ----
 const vectors = JSON.parse(readFileSync(new URL("./vectors.json", import.meta.url), "utf8")).cases;
 
