@@ -5,8 +5,13 @@ import {
   addInstance, ensureCard, findInstance, instanceName, newProject, removeInstance,
   hasUnsavedChanges, projectSnapshot, projectFileName, readProject,
   RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering, projectStatus,
+  noteFor, setNote, setExample, setCardValues,
 } from "./logic.js";
-import { renderCard, STRINGS as CARD_STRINGS } from "./render.js";
+import { renderCard, errorText, STRINGS as CARD_STRINGS } from "./render.js";
+import { createMock } from "./mock.js";
+import {
+  BACKEND_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
+} from "./client.js";
 
 const LABELS = {
   addCharacter: "Add a character", deleteCharacter: "Delete this character?", remove: "Delete this character",
@@ -38,6 +43,22 @@ const STRINGS = {
   restore: "Restore it",
   throwAway: "Throw it away",
   close: "Close",
+  undo: "Undo",
+  undone: "Put back what those fields held before the fill.",
+  filled: "The model drafted: {fields}. They are marked “Model draft” until you edit them.",
+  nothingNew: "The model had nothing new to add to this card.",
+  declined: "Nothing was changed.",
+  dropped: "The project changed while the model was working, so its answer was thrown away.",
+  confirmReplace: "The model’s draft would replace your words in: {fields}. Go ahead? You can undo it afterwards.",
+  unmatched: "The model named {names}, which don’t match anything in your cards, so those links were left empty.",
+  noSource: "Add a note for this card, or an example chapter, first. The model fills a card from one of them.",
+  noInstance: "That character isn’t there any more.",
+  more: "and {n} more",
+  backendBad: "That isn’t an address I can use. Type “mock”, or something like localhost:8000.",
+  backendMixed: "This page is served over https, so the browser won’t let it call a plain http address. Use an https address, or open the page from your own computer.",
+  whereMock: "the built-in sample model (nothing leaves this page)",
+  working: "The model is working…",
+  connection: { unknown: "Not checked yet", idle: "Ready", busy: "Busy with another job", unreachable: "Can’t reach it" },
 };
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
 
@@ -47,10 +68,15 @@ const main = document.getElementById("card");
 const openInput = document.getElementById("open-file");
 const titleInput = document.getElementById("title");
 const stateNode = document.getElementById("save-state");
+const backendInput = document.getElementById("backend");
+const connectionNode = document.getElementById("connection");
+const stopButton = document.getElementById("stop");
 const noticeNode = document.getElementById("notice");
 const recoveryNode = document.getElementById("recovery");
 let schema;
 let project;
+let client;
+let mock;
 let view = { card: "style", characterId: null };
 // What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
 // switching cards. Cleared when another project is opened.
@@ -58,6 +84,13 @@ const reviews = new Map();
 function reviewFor(key) {
   if (!reviews.has(key)) reviews.set(key, { touched: new Set(), validated: false });
   return reviews.get(key);
+}
+
+// Which fields the model has just drafted, per card (and per character), until the writer edits them.
+const drafts = new Map();
+function draftsFor(key) {
+  if (!drafts.has(key)) drafts.set(key, new Set());
+  return drafts.get(key);
 }
 
 function button(text, onClick, extra = {}) {
@@ -107,6 +140,7 @@ function replaceProject(next, savedAs = next) {
   next.title = typeof next.title === "string" ? next.title : "";
   project = next;
   reviews.clear();
+  drafts.clear();
   view = { card: "style", characterId: null };
   titleInput.value = project.title;
   savedSnapshot = projectSnapshot(schema, savedAs);
@@ -115,12 +149,12 @@ function replaceProject(next, savedAs = next) {
 }
 
 // ---- Messages ---------------------------------------------------------------
-function showNotice(text, kind = "") {
+function showNotice(text, kind = "", action = null) {
   const close = button(STRINGS.close, () => { noticeNode.hidden = true; }, { className: "notice-close" });
   const words = document.createElement("span");
   words.textContent = text;
   noticeNode.className = `notice ${kind}`.trim();
-  noticeNode.replaceChildren(words, close);
+  noticeNode.replaceChildren(...[words, action && button(action.label, action.run, { className: "validate" }), close].filter(Boolean));
   noticeNode.hidden = false;
 }
 
@@ -230,6 +264,89 @@ function offerRecovery(recovered) {
   recoveryNode.hidden = false;
 }
 
+// ---- The model backend ----------------------------------------------------------
+// "mock" is the built-in sample model, so the page works with nothing running. Anything else is an address.
+const backendWhere = () => (client.state.setting.kind === "mock" ? STRINGS.whereMock : settingText(client.state.setting));
+
+function drawConnection() {
+  const { working, connection } = client.state;
+  stopButton.hidden = !working;
+  connectionNode.textContent = working ? STRINGS.working : STRINGS.connection[connection];
+  connectionNode.dataset.state = working ? "busy" : connection;
+}
+
+function chooseBackend(text) {
+  const parsed = parseBackendSetting(text);
+  const keep = () => { backendInput.value = settingText(client.state.setting); };
+  if (!parsed.ok) { showNotice(STRINGS.backendBad, "notice-bad"); keep(); return; }
+  if (blockedByPage(parsed, location.protocol)) { showNotice(STRINGS.backendMixed, "notice-bad"); keep(); return; }
+  try { localStorage.setItem(BACKEND_KEY, settingText(parsed)); } catch { /* the choice is just not remembered */ }
+  client.setSetting(parsed);
+  keep();
+  client.checkStatus();
+  show();
+}
+
+backendInput.addEventListener("change", () => chooseBackend(backendInput.value));
+document.getElementById("check").addEventListener("click", () => client.checkStatus());
+stopButton.addEventListener("click", () => client.stop());
+
+// ---- Filling a card ---------------------------------------------------------------
+// The writer presses the button; the model answers; nothing changes until the page has the whole answer. If the answer
+// would replace words the writer wrote, the page asks first, and afterwards Undo puts those fields back.
+const sameView = (card, instanceId) => view.card === card.id && (!card.many_per_project || view.characterId === instanceId);
+const copy = (value) => JSON.parse(JSON.stringify(value));
+
+function listOf(labels) {
+  return labels.length > 6 ? `${labels.slice(0, 6).join(", ")} ${fill(STRINGS.more, { n: labels.length - 6 })}` : labels.join(", ");
+}
+
+async function runFill(card, shown) {
+  const here = project;
+  const instanceId = card.many_per_project ? shown.id : null;
+  const result = await fillCard(client, schema, project, card.id, instanceId).done;
+  const targetNow = () => (card.many_per_project ? findInstance(project, card, instanceId) : project[card.id]);
+  if (project !== here || !targetNow()) { showNotice(STRINGS.dropped); return; }
+  if (result.reason) {
+    showNotice(result.reason === "no_instance" ? STRINGS.noInstance : STRINGS.noSource, "notice-bad");
+    return;
+  }
+  if (!result.ok) { showNotice(errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); return; }
+
+  const label = (key) => card.fields.find((f) => f.key === key)?.label ?? key;
+  if (result.replaced.length && !window.confirm(fill(STRINGS.confirmReplace, { fields: listOf(result.replaced.map(label)) }))) {
+    showNotice(STRINGS.declined);
+    return;
+  }
+  const keys = [...result.filled, ...result.replaced];
+  const unmatched = [...new Set(result.unresolved.map((u) => u.words))];
+  const extra = unmatched.length ? ` ${fill(STRINGS.unmatched, { names: unmatched.map((n) => `“${n}”`).join(", ") })}` : "";
+  if (!keys.length) { showNotice(`${STRINGS.nothingNew}${extra}`); return; }
+
+  // Only the fields the model drafted are written, and what they held a moment ago is what Undo puts back. Anything
+  // else the writer typed while waiting is left alone.
+  const target = targetNow();
+  const before = Object.fromEntries(keys.map((key) => [key, copy(target[key])]));
+  setCardValues(card, target, Object.fromEntries(keys.map((key) => [key, result.next[key]])));
+  const marked = draftsFor(`${card.id}:${target.id ?? ""}`);
+  for (const key of keys) marked.add(key);
+  if (sameView(card, instanceId)) show();
+  touchState();
+
+  showNotice(`${fill(STRINGS.filled, { fields: listOf(keys.map(label)) })}${extra}`, "", {
+    label: STRINGS.undo,
+    run: () => {
+      const now = project === here ? targetNow() : null;
+      if (!now) return;
+      setCardValues(card, now, before);
+      for (const key of keys) marked.delete(key);
+      if (sameView(card, instanceId)) show();
+      touchState();
+      showNotice(STRINGS.undone);
+    },
+  });
+}
+
 // ---- Navigation ---------------------------------------------------------------
 const countWords = (one, many, n) => (n === 1 ? one : many.replace("{n}", String(n)));
 
@@ -336,12 +453,19 @@ function show() {
   }
   drawNav();
   if (!values) { main.replaceChildren(); return; }
+  const key = `${card.id}:${values.id ?? ""}`;
+  const instanceId = card.many_per_project ? values.id : null;
   renderCard(main, card, values, {
     project,
     schema,
     common: schema.common,
-    review: reviewFor(`${card.id}:${values.id ?? ""}`),
-    onValidate: (request) => { window.pulpermill.lastModelRequest = request; },   // the backend call comes in Phase 7
+    review: reviewFor(key),
+    drafts: draftsFor(key),
+    judge: () => judgeCard(client, schema, project, card.id, values),
+    onFill: () => runFill(card, values),
+    notes: { get: () => noteFor(project, card.id, instanceId), set: (text) => { setNote(project, card.id, instanceId, text); touchState(); } },
+    example: { get: () => project.example_chapter ?? "", set: (text) => { setExample(project, text); touchState(); } },
+    backendWhere,
     changed: touchState,
     reviewChanged: updateMarks,
   });
@@ -349,12 +473,24 @@ function show() {
 
 try {
   schema = await (await fetch("data/schema.en.json")).json();
+  let stored = null;
+  try { stored = localStorage.getItem(BACKEND_KEY); } catch { /* no storage: the built-in model is used */ }
+  let setting = readStoredSetting(stored);
+  if (blockedByPage(setting, location.protocol)) setting = { ok: true, kind: "mock" };
+  mock = createMock(schema, { delay: 700 });
+  client = createClient({ setting, mock });
+  backendInput.value = settingText(setting);
+  client.onChange(drawConnection);
+  drawConnection();
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.
   const recovered = readRecovery(store.get() ?? "", schema);
   offerPending = worthRecovering(schema, recovered);
   replaceProject(newProject(schema));
   if (offerPending) offerRecovery(recovered);
+  client.checkStatus();   // only asks whether the backend is free; no model runs
 } catch (error) {
   main.textContent = "The page couldn't load its schema.";
 }
-window.pulpermill = { get project() { return project; }, get dirty() { return isDirty(); } };   // for looking at the data while testing
+window.pulpermill = {
+  get project() { return project; }, get dirty() { return isDirty(); }, get client() { return client; }, get mock() { return mock; },
+};   // for looking at the data while testing

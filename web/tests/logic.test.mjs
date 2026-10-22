@@ -1161,3 +1161,56 @@ test("setting values in place keeps the same object, never touches the id, and U
   plan.before.appearance = "mutated";
   assert.equal(target.appearance, "Sunburnt", "values are copied, not shared");
 });
+
+// ---- The writer's notes ----
+
+const notesApi = await import("../logic.js");
+const { noteFor, setNote, setExample } = notesApi;
+
+test("a note is kept per card, and per character for Characters; a blank note is no note", () => {
+  const project = projectWith();
+  const a = addInstance(project, characters);
+  const b = addInstance(project, characters);
+  assert.equal(noteFor(project, "world"), "");
+  setNote(project, "world", null, "Salt city.");
+  setNote(project, "characters", a.id, "Suvi, archivist.");
+  setNote(project, "characters", b.id, "Ola, her sister.");
+  assert.equal(noteFor(project, "world"), "Salt city.");
+  assert.equal(noteFor(project, "characters", a.id), "Suvi, archivist.");
+  assert.equal(noteFor(project, "characters", b.id), "Ola, her sister.");
+  assert.equal(project.card_notes.length, 3);
+  assert.ok(project.card_notes.every((n) => /^[0-9a-f]{8}$/.test(n.id)));
+  assert.equal("character" in project.card_notes.find((n) => n.card === "world"), false);
+  const id = project.card_notes.find((n) => n.card === "world").id;
+  setNote(project, "world", null, "Salt city, grey.");
+  assert.equal(project.card_notes.find((n) => n.card === "world").id, id, "editing keeps the note's id");
+  assert.equal(project.card_notes.length, 3);
+  setNote(project, "world", null, "   ");
+  assert.equal(noteFor(project, "world"), "");
+  assert.equal(project.card_notes.length, 2);
+  setNote(project, "characters", a.id, "");
+  setNote(project, "characters", b.id, "");
+  assert.equal("card_notes" in project, false, "no notes, no key: an empty box is not a change");
+});
+
+test("the example chapter is left out of the project when blank", () => {
+  const project = projectWith();
+  setExample(project, "Once upon a time.");
+  assert.equal(project.example_chapter, "Once upon a time.");
+  setExample(project, "  \n");
+  assert.equal("example_chapter" in project, false);
+});
+
+test("deleting a character takes that character's note with it", () => {
+  const project = projectWith();
+  const a = addInstance(project, characters);
+  const b = addInstance(project, characters);
+  setNote(project, "characters", a.id, "About A.");
+  setNote(project, "characters", b.id, "About B.");
+  setNote(project, "world", null, "Salt city.");
+  removeInstance(project, characters, a.id);
+  assert.deepEqual(project.card_notes.map((n) => [n.card, n.character ?? null]), [["characters", b.id], ["world", null]]);
+  removeInstance(project, characters, b.id);
+  setNote(project, "world", null, "");
+  assert.equal("card_notes" in project, false);
+});

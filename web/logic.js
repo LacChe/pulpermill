@@ -170,7 +170,40 @@ export function addInstance(project, card) {
 }
 
 export function removeInstance(project, card, id) {
+  // A note about a character goes with the character, so no note is left pointing at someone who is gone.
+  if (card.id === "characters" && project.card_notes) {
+    project.card_notes = project.card_notes.filter((n) => !(n.card === "characters" && n.character === id));
+    if (!project.card_notes.length) delete project.card_notes;
+  }
   return removeItem(project[card.id] ?? [], id);
+}
+
+// ---- The writer's notes for the model -------------------------------------
+// A note describes one card (for Characters, one character) in the writer's own words, and the example chapter is
+// shared by every card. Both are kept on the project, and both are left out of it when blank, so an untouched box
+// is not a change.
+
+export function noteFor(project, cardId, instanceId = null) {
+  const note = (project.card_notes ?? []).find((n) => n.card === cardId && (cardId !== "characters" || n.character === instanceId));
+  return note?.text ?? "";
+}
+
+export function setNote(project, cardId, instanceId, text) {
+  const notes = project.card_notes ?? [];
+  const same = (n) => n.card === cardId && (cardId !== "characters" || n.character === instanceId);
+  const kept = notes.filter((n) => !same(n));
+  if (String(text ?? "").trim()) {
+    const existing = notes.find(same);
+    const note = existing ?? { id: newId(notes.map((n) => n.id)), card: cardId, ...(cardId === "characters" ? { character: instanceId } : {}) };
+    kept.push({ ...note, text });
+  }
+  if (kept.length) project.card_notes = kept;
+  else delete project.card_notes;
+}
+
+export function setExample(project, text) {
+  if (String(text ?? "").trim()) project.example_chapter = text;
+  else delete project.example_chapter;
 }
 
 export function findInstance(project, card, id) {

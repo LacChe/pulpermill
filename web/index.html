@@ -21,6 +21,15 @@
       <input type="file" id="open-file" accept=".json,application/json" hidden>
     </div>
   </header>
+  <div class="backend-bar">
+    <label class="backend">
+      <span>Model backend</span>
+      <input type="text" id="backend" class="text-control" autocomplete="off" spellcheck="false">
+    </label>
+    <span id="connection" class="connection" role="status"></span>
+    <button type="button" id="check">Check</button>
+    <button type="button" id="stop" class="stop" hidden>Stop</button>
+  </div>
   <div id="recovery" class="notice" hidden></div>
   <div id="notice" class="notice" role="status" hidden></div>
   <nav id="cards" class="tabs" aria-label="Cards"></nav>

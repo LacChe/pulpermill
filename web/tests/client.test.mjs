@@ -277,3 +277,12 @@ test("the style-fit check resolves to fits and a message", async () => {
   const bad = await checkStyleFit(client, schema, p).done;
   assert.equal(bad.fits, false);
 });
+
+test("stop() ends the call this page has going, and does nothing when there is none", async () => {
+  const client = mockClient(countingMock({ delay: 80 }));
+  client.stop();
+  const call = fillCard(client, schema, project(), "world");
+  setTimeout(() => client.stop(), 5);
+  assert.equal((await call.done).error.kind, "stopped");
+  assert.equal(client.state.working, false);
+});

@@ -171,3 +171,10 @@ test("an unknown card or call is the page's mistake", async () => {
   assert.equal((await mock.send({ call: "judge", card: "nope" })).error.kind, "bad_request");
   assert.equal((await mock.send({ call: "dance" })).error.kind, "bad_request");
 });
+
+test("with only one person there is nobody to tie them to, so the sample leaves ties out", async () => {
+  const p = settledProject(schema, { ...newProject(schema), example_chapter: "Once." });
+  addInstance(p, characters).name = "Suvi";
+  const reply = await quick().send(fillRequest(schema, p, "entanglements").request);
+  assert.equal(reply.values.ties, undefined);
+});

@@ -150,6 +150,8 @@ export function createClient({ setting = { kind: "mock" }, mock = null, fetchImp
       setConnection(reply.ok ? reply.state : "unreachable");
       return connection;
     },
+    // End whatever call this page has going. Does nothing when there is none.
+    stop() { running?.stop(); },
     setSetting(next) { current = next; connection = "unknown"; judgeCache.clear(); changed(); },
     onChange(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     // What the page needs to draw: whether this page is waiting on a call, and what the backend last said.

@@ -1,9 +1,9 @@
 // Draws one card as a form. Only this file touches the DOM. All wording comes from the schema JSON,
 // except the few page labels in STRINGS below, which move into the text files when languages are added.
 import {
-  addItem, blockedValues, canAdd, chooseOneOf, fieldShown, filledPaths, flagsUsed, groupedFields, isFilled, isItemEmpty, itemTitle,
-  legalShifts, lookupLabel, modelCheckRequest, oneOfChoice, pickerSources, problemCounts, problemPath, refOptions,
-  removeItem, showsOptionalTag, shownProblems, validate,
+  FILLABLE, addItem, blockedValues, canAdd, chooseOneOf, fieldShown, filledFieldKeys, filledPaths, flagsUsed, groupedFields,
+  isFilled, isItemEmpty, itemTitle, legalShifts, lookupLabel, modelRules, oneOfChoice, pickerSources, problemCounts,
+  problemPath, refOptions, removeItem, showsOptionalTag, shownProblems, validate,
 } from "./logic.js";
 
 export const STRINGS = {
@@ -34,8 +34,41 @@ export const STRINGS = {
   groupCount: "{n} to check",
   clean: "Nothing wrong found on this page.",
   validate: "Validate",
-  modelPending: "Checked what the page can check. {n} more checks need the model and will run once it is connected.",
+  tagDraft: "Model draft",
+  tagDraftHelp: "The model wrote this. It stays marked until you edit it.",
+  modelOpinion: "The model’s opinion",
+  modelChecking: "The model is checking…",
+  modelNone: "The model flagged nothing.",
+  modelOne: "The model flagged 1 thing worth a look.",
+  modelMany: "The model flagged {n} things worth a look.",
+  modelUnanswered: "{n} of its checks got no answer, so they were not counted as passed.",
+  fillTitle: "Fill this card with the model",
+  fillHelp: "Write a few rough notes, or paste a chapter you like. The model drafts the fields and you edit them. It never changes anything you have not agreed to.",
+  noteLabel: "Your notes for this card",
+  noteLabelPerson: "Your notes about this character",
+  notePlaceholder: "Rough is fine: a few lines, or a pasted description.",
+  exampleLabel: "Example chapter (shared by every card)",
+  examplePlaceholder: "A chapter you wrote or like. The model learns the voice and the world from it.",
+  fillButton: "Fill with the model",
+  fillWorking: "The model is working…",
+  fillSends: "Pressing the button sends this card, the cards it reads, and your notes to {where}.",
+  errors: {
+    busy: "The model is busy with another job, so nothing was changed. Wait for it to finish, or press Stop.",
+    bad_output: "The model’s answer didn’t come out in the right shape, so nothing was changed. Press the button again.",
+    too_long: "There is too much text to send to the model in one go, so nothing was changed. Shorten the notes or the example chapter.",
+    stopped: "Stopped. Nothing was changed.",
+    server: "The backend had a problem, so nothing was changed.",
+    unreachable: "Couldn’t reach the model backend, so nothing was changed. Check the address and that it is running.",
+    timeout: "The model took too long to answer, so nothing was changed.",
+    bad_request: "The page sent something the backend didn’t understand, so nothing was changed.",
+  },
 };
+
+// The words for a failed call: what happened, and that nothing was changed.
+export function errorText(error) {
+  const base = STRINGS.errors[error?.kind] ?? STRINGS.errors.server;
+  return error?.detail && ["server", "bad_request"].includes(error.kind) ? `${base} (${error.detail})` : base;
+}
 
 const TEXT_INPUTS = new Set(["text", "textarea", "number"]);
 
@@ -84,10 +117,18 @@ function problemBox(path, ctx) {
 }
 
 function problemLine(p) {
+  const label = p.kind === "model" ? STRINGS.modelOpinion : p.severity === "block" ? STRINGS.blocks : STRINGS.warns;
   return el("div", { class: `problem problem-${p.severity === "block" ? "block" : "warn"}` },
-    el("span", { class: "problem-kind", text: p.severity === "block" ? STRINGS.blocks : STRINGS.warns }),
+    el("span", { class: "problem-kind", text: label }),
     el("span", { class: "problem-text", text: p.message }),
     p.fix ? el("span", { class: "problem-fix", text: p.fix }) : null);
+}
+
+// The value a problem is about, as text: its list item, or its field. A model opinion remembers this, so it can tell
+// when the writer has changed that part since the model looked.
+function snapshotOf(values, p) {
+  if (p.item) return JSON.stringify((values[p.field] ?? []).find((i) => i.id === p.item) ?? null);
+  return JSON.stringify(values[p.field] ?? null);
 }
 
 const countText = (one, many, n) => (n === 1 ? one : many.replace("{n}", String(n)));
@@ -122,6 +163,8 @@ function checkControl(field, values, scope, ctx) {
   return el("label", { class: "check" }, box, el("span", { text: field.label }));
 }
 
+let typing = false;       // true while a keystroke is being recorded; nothing is checked then
+
 function textControl(field, value, onInput) {
   const isArea = field.input === "textarea";
   const control = el(isArea ? "textarea" : "input", {
@@ -135,7 +178,13 @@ function textControl(field, value, onInput) {
   });
   control.value = value ?? "";
   control.addEventListener("input", () => {
-    onInput(field.input === "number" ? (control.value === "" ? null : Number(control.value)) : control.value);
+    // Typing records the value but checks nothing: code checks run when the writer leaves the field.
+    typing = true;
+    try {
+      onInput(field.input === "number" ? (control.value === "" ? null : Number(control.value)) : control.value);
+    } finally {
+      typing = false;
+    }
   });
   return control;
 }
@@ -267,6 +316,13 @@ function fieldBlock(field, values, path, ctx, scope) {
   if (showsOptionalTag(scope.owner, field)) heading.append(el("span", { class: "tag", text: STRINGS.optional }));
   if (field.changes) heading.append(el("span", { class: "tag tag-live", text: STRINGS.tagLive, title: STRINGS.tagLiveHelp }));
   if (field.fixed) heading.append(el("span", { class: "tag tag-fixed", text: STRINGS.tagFixed, title: STRINGS.tagFixedHelp }));
+  // A field the model just wrote stays marked until the writer edits it, anywhere inside it.
+  if (ctx.drafts && path === field.key) {
+    let tag = ctx.drafts.has(field.key) ? el("span", { class: "tag tag-draft", text: STRINGS.tagDraft, title: STRINGS.tagDraftHelp }) : null;
+    if (tag) heading.append(tag);
+    const inherited = ctx.changed;
+    ctx = { ...ctx, changed: () => { tag?.remove(); tag = null; ctx.drafts.delete(field.key); inherited(); } };
+  }
   block.append(heading);
   if (field.help) block.append(el("p", { class: "help", text: field.help }));
 
@@ -433,11 +489,42 @@ function listControl(field, values, path, ctx) {
   return wrap;
 }
 
+// The notes and Fill button on a card the model can fill. All the work is the page's (ctx.onFill); this only draws it.
+function fillPanel(card, values, ctx) {
+  if (!FILLABLE.includes(card.id) || !ctx.onFill) return null;
+  const area = (label, placeholder, rows, get, set) => {
+    const box = el("textarea", { class: "text-control", rows, placeholder, "aria-label": label });
+    box.value = get() ?? "";
+    box.addEventListener("input", () => set(box.value));
+    return el("label", { class: "fill-field" }, el("span", { class: "field-label", text: label }), box);
+  };
+  const button = el("button", { type: "button", class: "fill-button", text: STRINGS.fillButton });
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    button.textContent = STRINGS.fillWorking;
+    try { await ctx.onFill(); } finally { button.disabled = false; button.textContent = STRINGS.fillButton; }
+  });
+  const where = ctx.backendWhere?.() ?? "";
+  return el("details", { class: "fill-panel", open: filledFieldKeys(card, values).length === 0 },
+    el("summary", {}, el("span", { class: "group-label", text: STRINGS.fillTitle })),
+    el("div", { class: "fill-body" },
+      el("p", { class: "help", text: STRINGS.fillHelp }),
+      area(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, STRINGS.notePlaceholder, 4, ctx.notes.get, ctx.notes.set),
+      area(STRINGS.exampleLabel, STRINGS.examplePlaceholder, 6, ctx.example.get, ctx.example.set),
+      el("div", { class: "fill-actions" }, button),
+      el("p", { class: "note", text: STRINGS.fillSends.replace("{where}", where) })));
+}
+
 // `values` is the one object the card edits (a card held once, or one character). It is changed in place.
-// ctx: { project, schema, card, common, changed, review?, onValidate? }
-//   review      {touched: Set of paths, validated: boolean}. The page keeps one per card, so coming back to a card
-//               still shows what was found. Without one, the card starts fresh.
-//   onValidate  called with the model-check request when the writer presses Validate.
+// ctx: { project, schema, card, common, changed, review?, judge?, onFill?, notes?, example?, drafts?, backendWhere? }
+//   review      {touched: Set of paths, validated: boolean, model: [...]}. The page keeps one per card, so coming back
+//               to a card still shows what was found. Without one, the card starts fresh.
+//   judge       called when the writer presses Validate; returns {done, stop} like the client's calls. The model's
+//               answer is kept in review.model and shown under the fields it is about.
+//   onFill      called when the writer presses the Fill button. The page does the rest (see app.js).
+//   notes, example  {get(), set(text)}: the writer's note for this card, and the example chapter shared by all.
+//   drafts      Set of field keys the model just wrote; each is tagged until edited.
+//   backendWhere  words for where a model call goes, shown under the Fill button.
 //   reviewChanged  called whenever what the card shows may have changed (an edit, leaving a field, Validate), so
 //               the page can bring the tabs up to date.
 // Problems never stop editing: nothing here disables a control.
@@ -471,7 +558,9 @@ export function renderCard(root, card, values, ctx) {
     if (unchecked.length && !warned) { warned = true; console.warn("Rules this page cannot run yet:", unchecked); }
     for (const box of boxes.values()) if (!box.hidden) { box.replaceChildren(); box.hidden = true; }
     const placed = [];
-    for (const p of shownProblems(card, problems, review)) {
+    // The model's opinions stay while the thing they were about is as it was, and go once the writer edits it.
+    const opinions = (review.model ?? []).filter((m) => snapshotOf(values, m) === m.at);
+    for (const p of [...shownProblems(card, problems, review), ...opinions]) {
       const box = boxFor(p);
       if (!box) continue;
       box.append(problemLine(p));
@@ -500,7 +589,7 @@ export function renderCard(root, card, values, ctx) {
     card,
     project,
     boxes,
-    changed: () => { ctx.changed?.(); update(); },
+    changed: () => { ctx.changed?.(); if (!typing) update(); },
     lookup: (itemField, value) => lookupLabel(project, itemField, value, STRINGS.unnamed),
   };
 
@@ -515,6 +604,7 @@ export function renderCard(root, card, values, ctx) {
     el("h2", { text: card.label }),
     el("p", { class: "summary", text: card.summary }),
     noteText ? el("p", { class: "flag-note", text: noteText }) : null,
+    fillPanel(card, values, inner),
     count);
 
   for (const { group, fields } of groupedFields(card)) {
@@ -530,16 +620,27 @@ export function renderCard(root, card, values, ctx) {
     section.append(details);
   }
 
-  // Validate: show everything the page can check, hand the model rules on, and bring the first problem into view.
+  // Validate: show everything the page can check at once, then ask the model about its own rules. The model is only
+  // asked here, on the button, never while the writer types or leaves a field.
   const validateButton = el("button", { type: "button", class: "validate", text: STRINGS.validate });
-  validateButton.addEventListener("click", () => {
+  validateButton.addEventListener("click", async () => {
     review.validated = true;
     const placed = update();
     for (const [id, view] of groupViews) if (placed.some((x) => groupOf(x.p) === id)) view.details.open = true;
-    const request = modelCheckRequest(card, values);
-    ctx.onValidate?.(request);
-    status.textContent = request.rules.length ? STRINGS.modelPending.replace("{n}", String(request.rules.length)) : "";
     placed[0]?.box.scrollIntoView({ block: "center", behavior: "smooth" });
+    status.textContent = "";
+    if (!ctx.judge || !modelRules(card).length) return;
+    status.textContent = STRINGS.modelChecking;
+    validateButton.disabled = true;
+    let result;
+    try { result = await ctx.judge().done; } finally { validateButton.disabled = false; }
+    if (!result.ok) { status.textContent = errorText(result.error); return; }
+    review.model = result.problems.map((p) => ({ ...p, at: snapshotOf(values, p) }));
+    const seen = update().filter((x) => x.p.kind === "model").length;
+    status.textContent = [
+      seen ? countText(STRINGS.modelOne, STRINGS.modelMany, seen) : STRINGS.modelNone,
+      result.missing.length ? STRINGS.modelUnanswered.replace("{n}", String(result.missing.length)) : "",
+    ].filter(Boolean).join(" ");
   });
   section.append(el("div", { class: "validate-bar" }, validateButton, status));
 
@@ -555,11 +656,10 @@ export function renderCard(root, card, values, ctx) {
     }, { once: true, capture: true });
   }, true);
   section.addEventListener("focusout", (event) => {
-    let added = false;
     for (let node = event.target.closest?.("[data-path]"); node; node = node.parentElement?.closest("[data-path]")) {
-      if (!review.touched.has(node.dataset.path)) { review.touched.add(node.dataset.path); added = true; }
+      review.touched.add(node.dataset.path);
     }
-    if (!added) return;
+    // Leaving a field always rechecks, so a problem shown earlier clears once the writer has fixed it and moved on.
     if (pointerDown) deferred = true;
     else update();
   });

@@ -63,6 +63,9 @@ function sampleFields(owner, fields, related, nth) {
       const item = sampleFields(field, defs, related, nth);
       // An item that needs a link the project cannot give (no rules yet, say) is left out rather than half made.
       if (defs.some((d) => d.ref && d.required !== false && item[d.key] === undefined)) continue;
+      // Nor one that would point two of its own links at the same thing (a tie from someone to themselves).
+      const picked = defs.filter((d) => d.ref && d.input !== "select-multiple" && item[d.key] !== undefined).map((d) => item[d.key]);
+      if (new Set(picked).size < picked.length) continue;
       values[field.key] = [item];
       continue;
     }
