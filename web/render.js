@@ -528,6 +528,16 @@ function fillPanel(card, values, ctx) {
 //   reviewChanged  called whenever what the card shows may have changed (an edit, leaving a field, Validate), so
 //               the page can bring the tabs up to date.
 // Problems never stop editing: nothing here disables a control.
+// Makes a drawn card read-only: every control is switched off and a line at the top says why. Validate stays on, since
+// it changes nothing in the card. Called after renderCard for a card that is locked.
+export function makeReadOnly(root, banner) {
+  root.classList.add("locked");
+  root.prepend(el("p", { class: "locked-banner", role: "note", text: banner }));
+  for (const control of root.querySelectorAll("input, select, textarea, button")) {
+    if (!control.classList.contains("validate")) control.disabled = true;
+  }
+}
+
 export function renderCard(root, card, values, ctx) {
   root.replaceChildren();
   const project = ctx.project ?? {};

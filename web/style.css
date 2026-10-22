@@ -213,3 +213,14 @@ select.text-control[hidden], .checks[hidden] { display: none; }
 .tag-draft { color: var(--good); border-color: var(--good); }
 .problem-kind { white-space: nowrap; }
 .notice .validate { padding: 2px 12px; }
+
+.story-bar { max-width: 772px; margin: 12px auto 0; padding: 8px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; border: 1px solid var(--line); border-radius: 6px; font-size: 0.9rem; }
+.story-bar p { margin: 0; color: var(--muted); max-width: 70ch; }
+.story-bar .story-fix { color: var(--bad); flex-basis: 100%; }
+.story-bar .validate { padding: 3px 14px; }
+.story-started { background: var(--panel); }
+.story-stops { flex-basis: 100%; margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.story-stops button { background: none; border: none; padding: 0; color: var(--bad); text-decoration: underline; cursor: pointer; font: inherit; }
+.tab-lock { margin-left: 4px; font-size: 0.8em; }
+.locked-banner { margin: 0 0 14px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--muted); }
+main.locked input:disabled, main.locked select:disabled, main.locked textarea:disabled { opacity: 0.8; cursor: not-allowed; }

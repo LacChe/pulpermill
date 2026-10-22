@@ -7,7 +7,9 @@ import {
   RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering, projectStatus,
   noteFor, setNote, setExample, setCardValues,
 } from "./logic.js";
-import { renderCard, errorText, STRINGS as CARD_STRINGS } from "./render.js";
+import { renderCard, errorText, makeReadOnly, STRINGS as CARD_STRINGS } from "./render.js";
+import { cardLocked } from "./gate.js";
+import { createStoryBar } from "./story.js";
 import { createMock } from "./mock.js";
 import {
   BACKEND_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
@@ -16,6 +18,7 @@ import {
 const LABELS = {
   addCharacter: "Add a character", deleteCharacter: "Delete this character?", remove: "Delete this character",
   unnamed: "Unnamed character", noCharacters: "No characters yet.", character: "Character",
+  locked: "locked", lockMark: "🔒",
   tabEmpty: "nothing in it yet", tabStarted: "started", tabReady: "nothing stops generating",
   markBlock: "✕ {n}", markWarn: "△ {n}", markReady: "✓", markStarted: "●",
 };
@@ -58,6 +61,7 @@ const STRINGS = {
   backendMixed: "This page is served over https, so the browser won’t let it call a plain http address. Use an https address, or open the page from your own computer.",
   whereMock: "the built-in sample model, which writes placeholder text (nothing leaves this page)",
   working: "The model is working…",
+  lockedBanner: "This card is locked because the story has started. You can read it, but not change it.",
   connection: { unknown: "Not checked yet", idle: "Ready", busy: "Busy with another job", unreachable: "Can’t reach the model" },
 };
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
@@ -73,10 +77,12 @@ const connectionNode = document.getElementById("connection");
 const stopButton = document.getElementById("stop");
 const noticeNode = document.getElementById("notice");
 const recoveryNode = document.getElementById("recovery");
+const storyNode = document.getElementById("story-bar");
 let schema;
 let project;
 let client;
 let mock;
+let storyBar;
 let view = { card: "style", characterId: null };
 // What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
 // switching cards. Cleared when another project is opened.
@@ -302,6 +308,7 @@ function listOf(labels) {
 }
 
 async function runFill(card, shown) {
+  if (cardLocked(project, card.id)) return;
   const here = project;
   const instanceId = card.many_per_project ? shown.id : null;
   const result = await fillCard(client, schema, project, card.id, instanceId).done;
@@ -383,8 +390,9 @@ function updateMarks() {
   for (const node of cardsNav.querySelectorAll("[data-card]")) {
     const status = cards[node.dataset.card];
     node.querySelector(".tab-marks").replaceChildren(...markNodes(status));
-    node.setAttribute("aria-label", `${schema.cards[node.dataset.card].label}: ${statusWords(status)}`);
-    node.title = statusWords(status);
+    const words = cardLocked(project, node.dataset.card) ? `${statusWords(status)}, ${LABELS.locked}` : statusWords(status);
+    node.setAttribute("aria-label", `${schema.cards[node.dataset.card].label}: ${words}`);
+    node.title = words;
   }
   const select = peopleNav.querySelector("select");
   if (!select) return;
@@ -401,7 +409,8 @@ function drawNav() {
     node.dataset.card = id;
     node.append(
       Object.assign(document.createElement("span"), { className: "tab-label", textContent: schema.cards[id].label }),
-      Object.assign(document.createElement("span"), { className: "tab-marks" }));
+      Object.assign(document.createElement("span"), { className: "tab-marks" }),
+      ...(cardLocked(project, id) ? [Object.assign(document.createElement("span"), { className: "tab-lock", textContent: LABELS.lockMark, title: LABELS.locked })] : []));
     return node;
   }));
 
@@ -439,6 +448,7 @@ function drawNav() {
     }, { className: "remove-person" }));
   }
   peopleNav.replaceChildren(...items);
+  if (cardLocked(project, card.id)) for (const node of peopleNav.querySelectorAll(".add, .remove-person")) node.disabled = true;
 }
 
 function show() {
@@ -469,6 +479,8 @@ function show() {
     changed: touchState,
     reviewChanged: updateMarks,
   });
+  if (cardLocked(project, card.id)) makeReadOnly(main, STRINGS.lockedBanner);
+  storyBar?.draw();
 }
 
 try {
@@ -480,7 +492,14 @@ try {
   mock = createMock(schema, { delay: 700 });
   client = createClient({ setting, mock });
   backendInput.value = settingText(setting);
-  client.onChange(drawConnection);
+  storyBar = createStoryBar(storyNode, {
+    schema, client, getProject: () => project,
+    goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId }; show(); },
+    changed: () => touchState(),
+    notice: (text, kind) => showNotice(text, kind),
+    redraw: () => show(),
+  });
+  client.onChange(() => { drawConnection(); storyBar.draw(); });
   drawConnection();
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.
   const recovered = readRecovery(store.get() ?? "", schema);
