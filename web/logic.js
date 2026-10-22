@@ -609,15 +609,301 @@ export function flagsUsed(card) {
   return used;
 }
 
-// What the Validate button hands to the model checks. The backend call itself comes later; for now this only
-// gathers the rules that need the model and a snapshot of the values they judge.
-export function modelCheckRequest(card, values) {
+// ---- The backend contract ---------------------------------------------------
+// What the page sends to the backend and what it accepts back. Pure: nothing here sends anything, so the mock,
+// the real backend and the tests all speak the same shapes.
+//
+// Two rules the page keeps, whatever the call:
+//   1. A model is only ever asked after the writer presses a button. Never on typing, never on leaving a field.
+//   2. Code checks run when the writer leaves a field (or presses Validate). Never per keystroke.
+//
+// Transport: GET {base}/status, and POST {base}/{call} with a JSON body for the others. The backend is stateless,
+// so every request carries everything the call needs.
+//   Every request: {call, schema_version, language, ...}. `language` is the project's output language.
+//   Every reply:   {ok: true, ...} or {ok: false, error: {kind, detail?}}.
+//
+//   status     GET. Reply {ok, state: "idle" | "busy"}.
+//   fill       Fill one card from the writer's note and/or the example chapter.
+//              Request {card, instance, note, example_chapter, values, related}. Reply {ok, values}. `values` is
+//              the card's fields by key. A field that links to another card's entry is named in words; the page
+//              turns the words into ids.
+//   judge      The model-judged rules for one card. Request {card, instance, rules: [{id, fields}], values,
+//              related}. Reply {ok, results: [{rule, hits: [{field, item?, key?}]}]}. A rule with no hits passed.
+//   style_fit  Does the protagonist's personality allow the chosen person, tense and voice? Request {style,
+//              protagonist}. Reply {ok, fits, message}.
+//
+//   `related` holds the cards this card reads (schema `reads`), by card id: the few cards that matter to it,
+//   never the whole project.
+
+export const FILLABLE = ["style", "characters", "world", "entanglements", "setup"];
+
+// Errors from the backend: busy (try again when idle), bad_request (the page sent something wrong),
+// bad_output (the model's answer did not fit the shape; the backend already retried), too_long (the context does
+// not fit the model), stopped (the writer pressed Stop), server (anything else).
+// Made by the page itself: unreachable (nothing answered), timeout (no answer in time).
+export const ERROR_KINDS = ["busy", "bad_request", "bad_output", "too_long", "stopped", "server", "unreachable", "timeout"];
+
+function envelope(schema, project, call) {
+  return { call, schema_version: schema.schema_version, language: project.output_language || schema.lang };
+}
+
+// The cards `card` reads, copied, by card id. A card held many times is a list.
+export function relatedCards(schema, project, card) {
+  const related = {};
+  for (const id of card.reads ?? []) {
+    if (schema.cards[id] && project[id] !== undefined) related[id] = copyOf(project[id]);
+  }
+  return related;
+}
+
+// A reply that failed: the same shape whether the backend sent it or the page made it.
+export function failure(kind, detail = "") {
+  return { ok: false, error: { kind: ERROR_KINDS.includes(kind) ? kind : "server", detail: String(detail ?? "") } };
+}
+
+// The envelope check shared by every reply. Returns the reply when it is {ok: true}, else a failure.
+export function readReply(reply) {
+  if (reply === null || typeof reply !== "object" || Array.isArray(reply)) return failure("bad_output", "The reply is not an object.");
+  if (reply.ok === false) return failure(reply.error?.kind, reply.error?.detail);
+  if (reply.ok !== true) return failure("bad_output", "The reply does not say whether it worked.");
+  return reply;
+}
+
+export function readStatus(reply) {
+  const checked = readReply(reply);
+  if (!checked.ok) return checked;
+  if (checked.state !== "idle" && checked.state !== "busy") return failure("bad_output", "The state is neither idle nor busy.");
+  return { ok: true, state: checked.state };
+}
+
+// Fill: {ok: true, request} or {ok: false, reason}. The model may only fill a card when there is something to fill it
+// from: the example chapter, or a note for that card (for a character, a note about that character).
+export function fillRequest(schema, project, cardId, instanceId = null) {
+  const card = schema.cards[cardId];
+  if (!card) return { ok: false, reason: "unknown_card" };
+  if (!FILLABLE.includes(cardId)) return { ok: false, reason: "not_fillable" };
+  let values;
+  if (card.many_per_project) {
+    values = findInstance(project, card, instanceId);
+    if (!values) return { ok: false, reason: "no_instance" };
+  } else {
+    values = project[cardId] ?? blankCard(card);
+  }
+  const note = (project.card_notes ?? []).find((n) => n.card === cardId && (!card.many_per_project || n.character === instanceId));
+  const noteText = isFilled(note?.text?.trim()) ? note.text : null;
+  const example = isFilled(project.example_chapter?.trim()) ? project.example_chapter : null;
+  if (!noteText && !example) return { ok: false, reason: "no_source" };
   return {
-    card: card.id,
-    instance: values.id ?? null,
-    rules: modelRules(card).map((rule) => ({ id: rule.id, severity: rule.severity, fields: rule.fields ?? [] })),
-    values: JSON.parse(JSON.stringify(values)),
+    ok: true,
+    request: {
+      ...envelope(schema, project, "fill"),
+      card: cardId, instance: card.many_per_project ? instanceId : null,
+      note: noteText, example_chapter: example,
+      values: copyOf(values), related: relatedCards(schema, project, card),
+    },
   };
+}
+
+// Fill reply: the card's fields by key. Keys the card does not have are set aside and named, not kept.
+// A value of the wrong kind (a list where text goes, text where a list goes) is a shape failure.
+export function readFillReply(card, reply) {
+  const checked = readReply(reply);
+  if (!checked.ok) return checked;
+  const given = checked.values;
+  if (given === null || typeof given !== "object" || Array.isArray(given)) return failure("bad_output", "The reply has no values.");
+  const known = new Map(card.fields.map((f) => [f.key, f]));
+  const values = {};
+  const ignored = [];
+  for (const [key, value] of Object.entries(given)) {
+    const field = known.get(key);
+    if (!field) {
+      ignored.push(key);
+    } else if (!rightKind(field, value)) {
+      return failure("bad_output", `The value for ${key} is the wrong kind of thing.`);
+    } else {
+      values[key] = value;
+    }
+  }
+  return { ok: true, values, ignored };
+}
+
+const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const isPlain = (v) => v === null || ["string", "number", "boolean"].includes(typeof v);
+
+// A single value (not a list of items) is the right kind when it is text, a number or a tick box, or, for a
+// multiple choice, a list of those. A list field holds objects whose own values follow the same rule.
+function rightValue(field, value) {
+  return field.input === "select-multiple" ? Array.isArray(value) && value.every(isPlain) : isPlain(value);
+}
+
+function rightKind(field, value) {
+  if (!field.repeat) return rightValue(field, value);
+  if (!Array.isArray(value)) return false;
+  const defs = new Map((field.item_fields ?? []).map((f) => [f.key, f]));
+  return value.every((item) => isObject(item) && Object.entries(item).every(([key, v]) => !defs.has(key) || rightValue(defs.get(key), v)));
+}
+
+// ---- Landing a fill ------------------------------------------------------
+// The model names what a link points at in words ("Suvi", "the Salt Guild"). The page turns the words into ids here,
+// once, so the same code runs in the page and in Node. Words that match nothing, or match two entries, are left empty
+// and reported, never guessed.
+
+const squash = (text) => String(text ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+
+// One word or phrase -> an id: {id} when exactly one entry has that name (or the text already is an id),
+// {none: true} or {several: true} otherwise.
+export function wordsToId(project, sources, words) {
+  const options = refOptions(project, sources, "");
+  const text = String(words ?? "").trim();
+  const byId = options.find((o) => o.value === text);
+  if (byId) return { id: byId.value };
+  const want = squash(text);
+  const hits = options.filter((o) => o.label && squash(o.label) === want);
+  if (hits.length === 1) return { id: hits[0].value };
+  return hits.length ? { several: true } : { none: true };
+}
+
+function resolveValue(project, field, value, where, unresolved) {
+  if (!field.ref || !isFilled(value)) return value;
+  const one = (words) => {
+    const found = wordsToId(project, field.ref, words);
+    if (found.id) return found.id;
+    unresolved.push({ ...where, words: String(words), why: found.several ? "several" : "none" });
+    return null;
+  };
+  if (Array.isArray(value)) return value.map(one).filter((id) => id !== null);
+  return one(value) ?? "";
+}
+
+// The fill's values with every link turned into an id. Returns {values, unresolved: [{field, item?, key?, words, why}]}.
+export function resolveFillLinks(card, values, project) {
+  const unresolved = [];
+  const out = {};
+  for (const field of card.fields) {
+    if (!(field.key in values)) continue;
+    const value = values[field.key];
+    if (field.repeat) {
+      out[field.key] = (value ?? []).map((item, index) => {
+        const resolved = { ...item };
+        for (const def of field.item_fields ?? []) {
+          if (def.key in item) resolved[def.key] = resolveValue(project, def, item[def.key], { field: field.key, index, key: def.key }, unresolved);
+        }
+        return resolved;
+      });
+    } else {
+      out[field.key] = resolveValue(project, field, value, { field: field.key }, unresolved);
+    }
+  }
+  return { values: out, unresolved };
+}
+
+const withoutIds = (list) => JSON.stringify((list ?? []).map(({ id, ...rest }) => rest));
+const sameValue = (field, a, b) => (field.repeat ? withoutIds(a) === withoutIds(b) : JSON.stringify(a) === JSON.stringify(b));
+
+// What the card holds right now that a fill could replace: the keys of the fields with something in them.
+export function filledFieldKeys(card, values) {
+  return card.fields.filter((field) => isFilled(values[field.key])).map((field) => field.key);
+}
+
+// Work out what a fill would do to a card, without doing it.
+//   current  the card's values now (one character's, for Characters)
+//   reply    the values from readFillReply
+// Only a field the model gave something for can change; an empty answer never wipes what the writer wrote.
+// Every new list item gets a fresh id. Returns
+//   {ok, next, before, filled, replaced, unchanged, unresolved, ignored}
+//   next       the card's values as they would be after the fill (a copy)
+//   before     a copy of the values as they are now, kept so Undo can put them back
+//   filled     keys that were empty and now have the model's words
+//   replaced   keys that had the writer's words and would change (the page asks before this happens)
+//   unchanged  keys the model gave back exactly as they were
+//   unresolved links the model named that match nothing here (see resolveFillLinks)
+export function planFill(card, current, reply, project) {
+  const before = copyOf(current);
+  const next = copyOf(current);
+  const { values, unresolved } = resolveFillLinks(card, reply.values, project);
+  const filled = [];
+  const replaced = [];
+  const unchanged = [];
+  const taken = [];
+  for (const field of card.fields) {
+    if (!(field.key in values) || !isFilled(values[field.key])) continue;
+    let value = values[field.key];
+    if (field.repeat) {
+      value = value.map((item) => {
+        const fresh = { ...blankFields(field.item_fields ?? []), id: newId(taken) };
+        taken.push(fresh.id);
+        for (const def of field.item_fields ?? []) if (def.key in item) fresh[def.key] = item[def.key];
+        return fresh;
+      });
+    }
+    if (sameValue(field, current[field.key], value)) unchanged.push(field.key);
+    else {
+      (isFilled(current[field.key]) ? replaced : filled).push(field.key);
+      next[field.key] = value;
+    }
+  }
+  return { ok: true, next, before, filled, replaced, unchanged, unresolved, ignored: reply.ignored ?? [] };
+}
+
+// Put values into a card's values object in place, so whatever holds that object sees the change (used for the fill
+// and for Undo). Only the keys the card has are written; the instance id is never touched.
+export function setCardValues(card, target, values) {
+  for (const field of card.fields) if (field.key in values) target[field.key] = copyOf(values[field.key]);
+  return target;
+}
+
+// The model-judged rules for one card. `ruleIds` narrows which to ask about (all of them when left out).
+export function judgeRequest(schema, project, cardId, values, ruleIds = null) {
+  const card = schema.cards[cardId];
+  const rules = modelRules(card).filter((rule) => !ruleIds || ruleIds.includes(rule.id));
+  return {
+    ...envelope(schema, project, "judge"),
+    card: cardId, instance: values.id ?? null,
+    rules: rules.map((rule) => ({ id: rule.id, fields: rule.fields ?? [] })),
+    values: copyOf(values), related: relatedCards(schema, project, card),
+  };
+}
+
+// Judge reply -> {ok, problems, answered, missing}. Each hit becomes a problem like the code checks make, so the page
+// shows it the same way. A rule the model did not answer is `missing`, never counted as passed. A hit that names a
+// field the card does not have is a shape failure. A hit on a list item that is gone falls back to the whole field.
+export function readJudgeReply(card, values, sentRuleIds, reply) {
+  const checked = readReply(reply);
+  if (!checked.ok) return checked;
+  if (!Array.isArray(checked.results)) return failure("bad_output", "The reply has no results.");
+  const problems = [];
+  const answered = [];
+  for (const result of checked.results) {
+    const rule = modelRules(card).find((r) => r.id === result?.rule);
+    if (!rule || !sentRuleIds.includes(rule.id) || answered.includes(rule.id)) continue;
+    if (!Array.isArray(result.hits)) return failure("bad_output", `The answer for ${rule.id} has no hits list.`);
+    for (const hit of result.hits) {
+      const field = card.fields.find((f) => f.key === hit?.field);
+      if (!field) return failure("bad_output", `The answer for ${rule.id} names a field the card does not have.`);
+      const there = hit.item && (values[field.key] ?? []).some((i) => i.id === hit.item);
+      problems.push(problem(card, rule, there ? { field: field.key, item: hit.item, key: hit.key ?? null } : { field: field.key }));
+    }
+    answered.push(rule.id);
+  }
+  return { ok: true, problems, answered, missing: sentRuleIds.filter((id) => !answered.includes(id)) };
+}
+
+// Style fit: the style card against the protagonist Setup chose. Needs both.
+export function styleFitRequest(schema, project) {
+  const protagonistId = project.setup?.protagonist;
+  const protagonist = findInstance(project, schema.cards.characters, protagonistId);
+  if (!protagonist) return { ok: false, reason: "no_protagonist" };
+  return {
+    ok: true,
+    request: { ...envelope(schema, project, "style_fit"), style: copyOf(project.style ?? {}), protagonist: copyOf(protagonist) },
+  };
+}
+
+export function readStyleFitReply(reply) {
+  const checked = readReply(reply);
+  if (!checked.ok) return checked;
+  if (typeof checked.fits !== "boolean") return failure("bad_output", "The reply does not say whether the style fits.");
+  return { ok: true, fits: checked.fits, message: typeof checked.message === "string" ? checked.message : "" };
 }
 
 // ---- The code checks -------------------------------------------------------
