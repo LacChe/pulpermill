@@ -104,7 +104,7 @@ test("no answer in time is a timeout, and the page waits for the backend to be i
   mock.queue("timeout");
   const result = await fillCard(client, schema, project(), "world").done;
   assert.equal(result.error.kind, "timeout");
-  assert.deepEqual(client.state, { working: false, connection: "idle", setting: { kind: "mock" } });
+  assert.deepEqual(client.state, { working: false, connection: "idle", setting: { kind: "mock" }, stage: null });
 });
 
 test("Stop ends the call with a stopped failure and the page is free again", async () => {
@@ -287,4 +287,71 @@ test("stop() ends the call this page has going, and does nothing when there is n
   setTimeout(() => client.stop(), 5);
   assert.equal((await call.done).error.kind, "stopped");
   assert.equal(client.state.working, false);
+});
+
+// ---- Story calls: progress and a lost connection ----
+
+const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const generateRequest = { call: "generate", schema_version: 1, language: "en", chapter: 1, chapter_count: 3, beat: {}, cast: [], entanglements: {} };
+
+test("while a story call runs the page asks status and shows the stage the backend names, then clears it", async () => {
+  const mock = createMock(schema, { delay: 120 });
+  const client = createClient({ setting: { kind: "mock" }, mock, sleep: realSleep, pollEvery: 10 });
+  const seen = [];
+  client.onChange((state) => { if (state.stage && seen.at(-1) !== state.stage) seen.push(state.stage); });
+  const reply = await client.start(generateRequest).done;
+  assert.equal(reply.ok, true);
+  assert.deepEqual(seen, ["write", "events", "shifts"]);
+  assert.equal(client.state.stage, null);
+  assert.equal(client.state.working, false);
+});
+
+test("a plan that is retried names the retry stage", async () => {
+  const mock = createMock(schema, { delay: 80 });
+  const client = createClient({ setting: { kind: "mock" }, mock, sleep: realSleep, pollEvery: 5 });
+  const seen = new Set();
+  client.onChange((state) => { if (state.stage) seen.add(state.stage); });
+  await client.start({ call: "plan", schema_version: 1, language: "en", chapter: 1, chapter_count: 3, retry: { thinking: "x", beat: {}, problems: ["y"] } }).done;
+  assert.ok(seen.has("retry"));
+});
+
+test("short calls do not poll status", async () => {
+  let statusChecks = 0;
+  const fetchImpl = async (url, { body }) => {
+    const request = JSON.parse(body);
+    if (request.call === "status") { statusChecks += 1; return json({ ok: true, state: "busy" }); }
+    await realSleep(40);
+    return json({ ok: true, fits: true, message: "" });
+  };
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: realSleep, pollEvery: 5 });
+  await client.start({ call: "style_fit", style: {}, protagonist: {} }).done;
+  assert.equal(statusChecks, 0);
+});
+
+test("a connection that drops during a story call ends it as unreachable after a few failed checks", async () => {
+  let aborted = false;
+  const fetchImpl = (url, { body, signal }) => {
+    const request = JSON.parse(body);
+    if (request.call === "status") return Promise.reject(new TypeError("Failed to fetch"));
+    return new Promise((resolve, reject) => signal.addEventListener("abort", () => { aborted = true; reject(Object.assign(new Error("aborted"), { name: "AbortError" })); }));
+  };
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: realSleep, pollEvery: 5, lostAfter: 3, timeouts: { generate: 5000 } });
+  const reply = await client.start(generateRequest).done;
+  assert.equal(reply.error.kind, "unreachable");
+  assert.equal(aborted, true);
+  assert.equal(client.state.working, false);
+});
+
+test("one failed status check among good ones does not end the call", async () => {
+  let checks = 0;
+  const fetchImpl = async (url, { body }) => {
+    const request = JSON.parse(body);
+    if (request.call === "status") { checks += 1; if (checks === 2) throw new TypeError("blip"); return json({ ok: true, state: "busy", stage: "write" }); }
+    await realSleep(80);
+    return json({ ok: true, did: "a", reach: "b" });
+  };
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: realSleep, pollEvery: 5, lostAfter: 3 });
+  const reply = await client.start({ call: "offstage", schema_version: 1, language: "en" }).done;
+  assert.equal(reply.ok, true);
+  assert.ok(checks > 2);
 });

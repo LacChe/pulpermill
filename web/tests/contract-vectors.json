@@ -383,6 +383,364 @@
           "person": "first"
         }
       }
+    },
+    {
+      "name": "an offstage request",
+      "valid": true,
+      "data": {
+        "call": "offstage",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 2,
+        "chapter_count": 8,
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {
+          "powers": [
+            {
+              "id": "g1",
+              "name": "The Harbour Board"
+            }
+          ]
+        },
+        "entanglements": {
+          "pressures": []
+        },
+        "latest_events": {
+          "happened": "Suvi found the ledger's cover."
+        }
+      }
+    },
+    {
+      "name": "offstage with no cast",
+      "valid": false,
+      "data": {
+        "call": "offstage",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 2,
+        "chapter_count": 8,
+        "world": {
+          "powers": [
+            {
+              "id": "g1",
+              "name": "The Harbour Board"
+            }
+          ]
+        },
+        "entanglements": {
+          "pressures": []
+        },
+        "latest_events": {
+          "happened": "Suvi found the ledger's cover."
+        }
+      }
+    },
+    {
+      "name": "a plan request",
+      "valid": true,
+      "data": {
+        "call": "plan",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 2,
+        "chapter_count": 8,
+        "style": {
+          "person": "first"
+        },
+        "setup": {
+          "goal": "Find the ledger."
+        },
+        "goal": "Find the ledger.",
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {},
+        "entanglements": {},
+        "spotlight": {
+          "id": "p1",
+          "what": "The board wants the ledger."
+        },
+        "legal_shifts": [
+          "harder"
+        ],
+        "open_plants": [
+          {
+            "text": "A torn page",
+            "chapter": 1
+          }
+        ],
+        "available_reveals": [],
+        "use_counts": {},
+        "earlier_beats": [],
+        "earlier_events": [],
+        "latest_shifts": [],
+        "offstage": null
+      }
+    },
+    {
+      "name": "a plan retry carries the first attempt and the rules' words",
+      "valid": true,
+      "data": {
+        "call": "plan",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 2,
+        "chapter_count": 8,
+        "style": {
+          "person": "first"
+        },
+        "setup": {
+          "goal": "Find the ledger."
+        },
+        "goal": "Find the ledger.",
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {},
+        "entanglements": {},
+        "spotlight": {
+          "id": "p1",
+          "what": "The board wants the ledger."
+        },
+        "legal_shifts": [
+          "harder"
+        ],
+        "open_plants": [
+          {
+            "text": "A torn page",
+            "chapter": 1
+          }
+        ],
+        "available_reveals": [],
+        "use_counts": {},
+        "earlier_beats": [],
+        "earlier_events": [],
+        "latest_shifts": [],
+        "offstage": null,
+        "retry": {
+          "thinking": "Two ways.",
+          "beat": {
+            "turn": "Nothing changes."
+          },
+          "problems": [
+            "The turn does not say what is different."
+          ]
+        }
+      }
+    },
+    {
+      "name": "a plan with a shift that is neither harder nor easier",
+      "valid": false,
+      "data": {
+        "call": "plan",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 2,
+        "chapter_count": 8,
+        "style": {
+          "person": "first"
+        },
+        "setup": {
+          "goal": "Find the ledger."
+        },
+        "goal": "Find the ledger.",
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {},
+        "entanglements": {},
+        "spotlight": {
+          "id": "p1",
+          "what": "The board wants the ledger."
+        },
+        "legal_shifts": [
+          "sideways"
+        ],
+        "open_plants": [
+          {
+            "text": "A torn page",
+            "chapter": 1
+          }
+        ],
+        "available_reveals": [],
+        "use_counts": {},
+        "earlier_beats": [],
+        "earlier_events": [],
+        "latest_shifts": [],
+        "offstage": null
+      }
+    },
+    {
+      "name": "a retry with no problems list",
+      "valid": false,
+      "data": {
+        "call": "plan",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 2,
+        "chapter_count": 8,
+        "style": {
+          "person": "first"
+        },
+        "setup": {
+          "goal": "Find the ledger."
+        },
+        "goal": "Find the ledger.",
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {},
+        "entanglements": {},
+        "spotlight": {
+          "id": "p1",
+          "what": "The board wants the ledger."
+        },
+        "legal_shifts": [
+          "harder"
+        ],
+        "open_plants": [
+          {
+            "text": "A torn page",
+            "chapter": 1
+          }
+        ],
+        "available_reveals": [],
+        "use_counts": {},
+        "earlier_beats": [],
+        "earlier_events": [],
+        "latest_shifts": [],
+        "offstage": null,
+        "retry": {
+          "thinking": "x",
+          "beat": {}
+        }
+      }
+    },
+    {
+      "name": "a generate request",
+      "valid": true,
+      "data": {
+        "call": "generate",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 2,
+        "chapter_count": 8,
+        "style": {
+          "person": "first"
+        },
+        "setup": {},
+        "goal": "Find the ledger.",
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {},
+        "entanglements": {},
+        "standing": [],
+        "earlier_events": [],
+        "previous_ending": null,
+        "beat": {
+          "where": "The Salt Coast",
+          "turn": "She chooses the ledger."
+        },
+        "open_plants": [],
+        "available_reveals": []
+      }
+    },
+    {
+      "name": "generate with no beat",
+      "valid": false,
+      "data": {
+        "call": "generate",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 2,
+        "chapter_count": 8,
+        "style": {
+          "person": "first"
+        },
+        "setup": {},
+        "goal": "Find the ledger.",
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {},
+        "entanglements": {},
+        "standing": [],
+        "earlier_events": [],
+        "previous_ending": null,
+        "open_plants": [],
+        "available_reveals": []
+      }
+    },
+    {
+      "name": "an end-of-story request",
+      "valid": true,
+      "data": {
+        "call": "end_story",
+        "schema_version": 1,
+        "language": "en",
+        "style": {},
+        "setup": {},
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {},
+        "events": [
+          {
+            "happened": "x"
+          }
+        ],
+        "shifts": []
+      }
+    },
+    {
+      "name": "end of story with no world",
+      "valid": false,
+      "data": {
+        "call": "end_story",
+        "schema_version": 1,
+        "language": "en",
+        "style": {},
+        "setup": {},
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "events": [
+          {
+            "happened": "x"
+          }
+        ],
+        "shifts": []
+      }
     }
   ],
   "replies": [
@@ -811,6 +1169,154 @@
       "valid": false,
       "data": {
         "ok": true
+      }
+    },
+    {
+      "name": "busy and saying what it is doing",
+      "call": "status",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "state": "busy",
+        "stage": "write"
+      }
+    },
+    {
+      "name": "offstage move",
+      "call": "offstage",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "did": "The board raids the docks.",
+        "reach": "Suvi hears the bells."
+      }
+    },
+    {
+      "name": "offstage with only half a move",
+      "call": "offstage",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "did": "The board raids the docks."
+      }
+    },
+    {
+      "name": "a plan",
+      "call": "plan",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "thinking": "Two directions; the second.",
+        "beat": {
+          "where": "The Salt Coast",
+          "turn": "She picks the ledger."
+        }
+      }
+    },
+    {
+      "name": "a plan whose beat is not an object",
+      "call": "plan",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "thinking": "x",
+        "beat": "not a beat"
+      }
+    },
+    {
+      "name": "a chapter with its records",
+      "call": "generate",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "chapter_text": "Suvi walked.",
+        "events": {
+          "happened": "Suvi found a page.",
+          "changed": "She has the page.",
+          "planted": null,
+          "paid_off": [
+            "A torn page"
+          ],
+          "reveals_landed": [],
+          "behaviors_seen": [],
+          "things_seen": [
+            "The ledger"
+          ],
+          "goal_landed": false
+        },
+        "shifts": [
+          {
+            "character": "Suvi",
+            "decided": "Keep it secret."
+          }
+        ],
+        "changes": [
+          {
+            "section": "knowledge",
+            "item": "k0000001",
+            "field": "status",
+            "value": "knows"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a chapter with no events",
+      "call": "generate",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "chapter_text": "Suvi walked.",
+        "shifts": [],
+        "changes": []
+      }
+    },
+    {
+      "name": "a change to a section that is not live",
+      "call": "generate",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "chapter_text": "Suvi walked.",
+        "events": {
+          "happened": "x"
+        },
+        "shifts": [],
+        "changes": [
+          {
+            "section": "style",
+            "item": "s1",
+            "field": "person",
+            "value": "third"
+          }
+        ]
+      }
+    },
+    {
+      "name": "updated cards",
+      "call": "end_story",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {
+          "name": "The Salt Coast"
+        }
+      }
+    },
+    {
+      "name": "updated cards that are not a list",
+      "call": "end_story",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "characters": "nobody",
+        "world": {}
       }
     }
   ]

@@ -665,6 +665,15 @@ export function flagsUsed(card) {
 //   style_fit  Does the protagonist's personality allow the chosen person, tense and voice? Request {style,
 //              protagonist}. Reply {ok, fits, message}.
 //
+//   offstage   Plan, only when due: what do background groups and places do? Reply {ok, did, reach}.
+//   plan       Think, then fill the beat. Reply {ok, thinking, beat}. The beat is by field key, links in words.
+//   generate   Write the chapter, then the Events pass, then the Shifts pass. Reply {ok, chapter_text, events,
+//              shifts, changes}. All or nothing: the page commits the chapter and its records as one unit.
+//   end_story  Update Characters and World from the records. Reply {ok, characters, world}.
+//   The page works out everything deterministic (spotlight, legal shifts, open plants, goal, which cards are in
+//   play) and sends it; the backend renders prose and runs the model. Progress is not streamed: while a long call
+//   runs the page asks `status`, which may name the stage ({state: "busy", stage: "write"}).
+//
 //   `related` holds the cards this card reads (schema `reads`), by card id: the few cards that matter to it,
 //   never the whole project.
 
@@ -675,6 +684,10 @@ export const FILLABLE = ["style", "characters", "world", "entanglements", "setup
 // not fit the model), stopped (the writer pressed Stop), server (anything else).
 // Made by the page itself: unreachable (nothing answered), timeout (no answer in time).
 export const ERROR_KINDS = ["busy", "bad_request", "bad_output", "too_long", "stopped", "server", "unreachable", "timeout"];
+
+// The calls that take long enough to show progress for, and the stages a busy backend may name.
+export const STORY_CALLS = ["offstage", "plan", "generate", "end_story"];
+export const STAGES = ["offstage", "think", "beat", "retry", "write", "events", "shifts", "update"];
 
 function envelope(schema, project, call) {
   return { call, schema_version: schema.schema_version, language: project.output_language || schema.lang };
@@ -706,7 +719,8 @@ export function readStatus(reply) {
   const checked = readReply(reply);
   if (!checked.ok) return checked;
   if (checked.state !== "idle" && checked.state !== "busy") return failure("bad_output", "The state is neither idle nor busy.");
-  return { ok: true, state: checked.state };
+  const stage = STAGES.includes(checked.stage) ? checked.stage : null;
+  return stage && checked.state === "busy" ? { ok: true, state: checked.state, stage } : { ok: true, state: checked.state };
 }
 
 // Fill: {ok: true, request} or {ok: false, reason}. The model may only fill a card when there is something to fill it
@@ -937,6 +951,75 @@ export function readStyleFitReply(reply) {
   if (!checked.ok) return checked;
   if (typeof checked.fits !== "boolean") return failure("bad_output", "The reply does not say whether the style fits.");
   return { ok: true, fits: checked.fits, message: typeof checked.message === "string" ? checked.message : "" };
+}
+
+// ---- The story calls: replies -----------------------------------------------
+// Shape only. Links in these replies are words (names, or the wording the page sent); the steps that use each reply
+// turn them into ids, the way the fill does. A reply whose shape is wrong is a bad_output and changes nothing.
+
+const isText = (value) => typeof value === "string";
+const isOptionalText = (value) => value === undefined || value === null || typeof value === "string";
+const isTextList = (value) => Array.isArray(value) && value.every(isText);
+const bad = (detail) => failure("bad_output", detail);
+
+export function readOffstageReply(reply) {
+  const checked = readReply(reply);
+  if (!checked.ok) return checked;
+  if (!isText(checked.did) || !isText(checked.reach)) return bad("The offstage move needs words for what happened and how it reaches the protagonist.");
+  if (!checked.did.trim() || !checked.reach.trim()) return bad("The offstage move is missing one of its two parts.");
+  return { ok: true, did: checked.did.trim(), reach: checked.reach.trim() };
+}
+
+export function readPlanReply(reply) {
+  const checked = readReply(reply);
+  if (!checked.ok) return checked;
+  if (!isText(checked.thinking)) return bad("The plan has no thinking text.");
+  if (!isObject(checked.beat)) return bad("The plan has no beat.");
+  return { ok: true, thinking: checked.thinking, beat: checked.beat };
+}
+
+const SHIFT_TEXT = ["believes", "fears", "wants", "refuses", "decided"];
+const CHANGE_SECTIONS = ["ties", "holdings", "knowledge", "pressures"];
+
+export function readGenerateReply(reply) {
+  const checked = readReply(reply);
+  if (!checked.ok) return checked;
+  if (!isText(checked.chapter_text) || !checked.chapter_text.trim()) return bad("The chapter text is empty.");
+  const e = checked.events;
+  if (!isObject(e) || !isText(e.happened) || !e.happened.trim()) return bad("The chapter's events are missing.");
+  if (!isOptionalText(e.changed) || !isOptionalText(e.planted)) return bad("The chapter's events have text of the wrong kind.");
+  const lists = ["paid_off", "reveals_landed", "behaviors_seen", "things_seen"];
+  for (const key of lists) if (e[key] !== undefined && !isTextList(e[key])) return bad(`The events' ${key} is not a list of names.`);
+  if (e.goal_landed !== undefined && typeof e.goal_landed !== "boolean") return bad("The events' goal_landed is not yes or no.");
+  if (!Array.isArray(checked.shifts)) return bad("The chapter's shifts are missing.");
+  const shifts = [];
+  for (const shift of checked.shifts) {
+    if (!isObject(shift) || !isText(shift.character) || !shift.character.trim()) return bad("A shift does not say who moved.");
+    for (const key of SHIFT_TEXT) if (!isOptionalText(shift[key])) return bad(`A shift's ${key} is not text.`);
+    shifts.push({ character: shift.character.trim(), ...Object.fromEntries(SHIFT_TEXT.filter((k) => isText(shift[k]) && shift[k].trim()).map((k) => [k, shift[k].trim()])) });
+  }
+  if (!Array.isArray(checked.changes)) return bad("The proposed changes are missing.");
+  for (const change of checked.changes) {
+    if (!isObject(change) || !CHANGE_SECTIONS.includes(change.section) || !isText(change.item) || !isText(change.field) || !("value" in change)) {
+      return bad("A proposed change does not say what to change.");
+    }
+  }
+  const events = {
+    happened: e.happened.trim(), changed: e.changed?.trim() || null, planted: e.planted?.trim() || null,
+    goal_landed: e.goal_landed === true,
+  };
+  for (const key of lists) events[key] = e[key] ?? [];
+  return { ok: true, chapter_text: checked.chapter_text, events, shifts, changes: checked.changes.map((c) => ({ section: c.section, item: c.item, field: c.field, value: c.value })) };
+}
+
+export function readEndStoryReply(reply) {
+  const checked = readReply(reply);
+  if (!checked.ok) return checked;
+  if (!Array.isArray(checked.characters) || !checked.characters.every((c) => isObject(c) && isText(c.id))) {
+    return bad("The updated characters must each carry the id they were sent with.");
+  }
+  if (!isObject(checked.world)) return bad("The updated world is missing.");
+  return { ok: true, characters: checked.characters, world: checked.world };
 }
 
 // ---- The code checks -------------------------------------------------------

@@ -1252,10 +1252,14 @@ test("every valid reply is read and every invalid one refused", () => {
       case "fill": return vectorsApi.readFillReply(schema.cards[v.card], v.data);
       case "judge": return vectorsApi.readJudgeReply(schema.cards[v.card], v.values, v.asked, v.data);
       case "style_fit": return vectorsApi.readStyleFitReply(v.data);
+      case "offstage": return vectorsApi.readOffstageReply(v.data);
+      case "plan": return vectorsApi.readPlanReply(v.data);
+      case "generate": return vectorsApi.readGenerateReply(v.data);
+      case "end_story": return vectorsApi.readEndStoryReply(v.data);
       default: throw new Error(`no reader for ${v.call}`);
     }
   };
-  assert.deepEqual([...new Set(contractVectors.replies.map((v) => v.call))].sort(), ["fill", "judge", "status", "style_fit"]);
+  assert.deepEqual([...new Set(contractVectors.replies.map((v) => v.call))].sort(), ["end_story", "fill", "generate", "judge", "offstage", "plan", "status", "style_fit"]);
   for (const v of contractVectors.replies) {
     const result = read(v);
     // A failure the backend may send is read as a failure with its kind; any other reply is read when it is valid.
@@ -1264,4 +1268,26 @@ test("every valid reply is read and every invalid one refused", () => {
     if (v.page?.kind) assert.equal(result.error.kind, v.page.kind, v.name);
     if (!v.valid) assert.equal(result.error.kind, "bad_output", v.name);
   }
+});
+
+test("a busy status may name its stage; an unknown stage is ignored and an idle one never has one", () => {
+  assert.deepEqual(vectorsApi.readStatus({ ok: true, state: "busy", stage: "events" }), { ok: true, state: "busy", stage: "events" });
+  assert.deepEqual(vectorsApi.readStatus({ ok: true, state: "busy", stage: "dreaming" }), { ok: true, state: "busy" });
+  assert.deepEqual(vectorsApi.readStatus({ ok: true, state: "idle", stage: "write" }), { ok: true, state: "idle" });
+  assert.deepEqual(vectorsApi.STORY_CALLS, ["offstage", "plan", "generate", "end_story"]);
+});
+
+test("a chapter reply is tidied: text trimmed, empty shift boxes dropped, lists defaulted", () => {
+  const read = vectorsApi.readGenerateReply({
+    ok: true, chapter_text: "Text.", events: { happened: " Happened. ", changed: "  " },
+    shifts: [{ character: " Suvi ", believes: "  ", decided: " Stay. " }], changes: [],
+  });
+  assert.equal(read.ok, true);
+  assert.deepEqual(read.events, { happened: "Happened.", changed: null, planted: null, goal_landed: false, paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [] });
+  assert.deepEqual(read.shifts, [{ character: "Suvi", decided: "Stay." }]);
+});
+
+test("an offstage move needs both parts", () => {
+  assert.equal(vectorsApi.readOffstageReply({ ok: true, did: "x", reach: "  " }).error.kind, "bad_output");
+  assert.deepEqual(vectorsApi.readOffstageReply({ ok: true, did: " a ", reach: "b" }), { ok: true, did: "a", reach: "b" });
 });

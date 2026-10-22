@@ -8,7 +8,8 @@ from helpers import REPO, CARDS, card
 from pulpermill.schema import contract
 from pulpermill.schema.contract import (
     BackendErrorKind, FillableCard, UserCard, HTTP_STATUS, PAGE_ERROR_KINDS, parse_request, parse_reply, error_reply,
-    FillRequest, JudgeRequest, StatusRequest, StyleFitRequest, ErrorReply,
+    FillRequest, JudgeRequest, StatusRequest, StyleFitRequest, ErrorReply, OffstageRequest, PlanRequest, GenerateRequest,
+    EndStoryRequest, STAGES,
 )
 from pulpermill.schema.project import UserCard as ProjectUserCard
 
@@ -32,7 +33,8 @@ def test_every_request_example_is_accepted_or_refused_as_marked():
 
 
 def test_requests_parse_into_the_model_of_their_call():
-    wanted = {"status": StatusRequest, "fill": FillRequest, "judge": JudgeRequest, "style_fit": StyleFitRequest}
+    wanted = {"status": StatusRequest, "fill": FillRequest, "judge": JudgeRequest, "style_fit": StyleFitRequest,
+              "offstage": OffstageRequest, "plan": PlanRequest, "generate": GenerateRequest, "end_story": EndStoryRequest}
     seen = set()
     for case in VECTORS["requests"]:
         if case["valid"]:
@@ -95,3 +97,23 @@ def test_the_golden_fills_carry_only_the_cards_own_fields():
 def test_the_modules_public_names_are_what_the_docs_promise():
     for name in ["parse_request", "parse_reply", "error_reply", "HTTP_STATUS", "REPLIES"]:
         assert hasattr(contract, name)
+
+
+def test_the_stages_a_busy_backend_may_name_match_the_pages():
+    assert list(STAGES) == js_list(LOGIC, "STAGES")
+
+
+def test_the_story_calls_match_the_pages_and_every_reply_has_a_model():
+    assert set(js_list(LOGIC, "STORY_CALLS")) == {"offstage", "plan", "generate", "end_story"}
+    assert set(contract.REPLIES) == {"status", "fill", "judge", "style_fit"} | set(js_list(LOGIC, "STORY_CALLS"))
+
+
+def test_every_story_call_has_a_timeout_on_the_page():
+    table = re.search(r"export const DEFAULT_TIMEOUTS = \{(.*?)\};", CLIENT, re.S).group(1)
+    for call in js_list(LOGIC, "STORY_CALLS"):
+        assert re.search(rf"\b{call}:\s*\d+", table), call
+
+
+def test_a_status_that_names_an_unknown_stage_is_refused():
+    with pytest.raises(ValidationError):
+        parse_reply("status", {"ok": True, "state": "busy", "stage": "dreaming"})

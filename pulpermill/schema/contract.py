@@ -86,7 +86,87 @@ class StyleFitRequest(Envelope):
     protagonist: dict[str, Any]
 
 
-Request = Annotated[Union[StatusRequest, FillRequest, JudgeRequest, StyleFitRequest], Field(discriminator="call")]
+# ---- The story calls ----------------------------------------------------------------------------------------------
+# The page does the code work (spotlight, legal shifts, open plants, available reveals, which cards are in play) and
+# sends the result; the backend renders prose from it, runs the model and answers in words. Cards and records inside
+# these requests are the project's own values, copied, with their ids, filtered to the cast and what is in play.
+
+Shift = Literal["harder", "easier"]
+
+
+class OffstageRequest(Envelope):
+    """Plan, only when the page says an offstage change is due: what do background groups and places do this chapter?"""
+    call: Literal["offstage"]
+    chapter: int
+    chapter_count: int
+    cast: list[dict[str, Any]]
+    world: dict[str, Any]                   # the groups and places that may change, with the places' use counts
+    entanglements: dict[str, Any]           # only the ties, holdings and pressures those touch
+    latest_events: dict[str, Any] | None = None    # the last written chapter's Events entry; none for chapter 1
+
+
+class PlanRetry(Strict):
+    """A first attempt the page's block rules refused, sent back with the rules' words so the second attempt can fix it."""
+    thinking: str
+    beat: dict[str, Any]
+    problems: list[str]
+
+
+class PlanRequest(Envelope):
+    """Think, then fill the beat. One call; the reply carries both the thinking and the beat."""
+    call: Literal["plan"]
+    chapter: int
+    chapter_count: int
+    style: dict[str, Any]
+    setup: dict[str, Any]
+    goal: str | None = None                 # the current goal, worked out by the page; none once it ended
+    cast: list[dict[str, Any]]
+    world: dict[str, Any]
+    entanglements: dict[str, Any]
+    spotlight: dict[str, Any]               # the pressure the page chose
+    legal_shifts: list[Shift]
+    open_plants: list[dict[str, Any]]       # [{text, chapter}]; a payoff is answered with a plant's text
+    available_reveals: list[dict[str, Any]]
+    use_counts: dict[str, Any]
+    earlier_beats: list[dict[str, Any]]
+    earlier_events: list[dict[str, Any]]
+    latest_shifts: list[dict[str, Any]]
+    offstage: dict[str, Any] | None = None  # {did, reach} from an offstage call
+    retry: PlanRetry | None = None
+
+
+class GenerateRequest(Envelope):
+    """Write the chapter, then the Events pass, then the Shifts and Entanglements pass. One call, all or nothing."""
+    call: Literal["generate"]
+    chapter: int
+    chapter_count: int
+    style: dict[str, Any]
+    setup: dict[str, Any]                   # normal and disruption only in chapter 1
+    goal: str | None = None
+    cast: list[dict[str, Any]]
+    world: dict[str, Any]
+    entanglements: dict[str, Any]
+    standing: list[dict[str, Any]]          # "where they stand now": the latest shift values per cast member
+    earlier_events: list[dict[str, Any]]
+    previous_ending: str | None = None
+    beat: dict[str, Any]                    # the beat in words, not ids
+    open_plants: list[dict[str, Any]]
+    available_reveals: list[dict[str, Any]]
+
+
+class EndStoryRequest(Envelope):
+    """After the last chapter: update Characters and World from what the records say happened."""
+    call: Literal["end_story"]
+    style: dict[str, Any]
+    setup: dict[str, Any]
+    characters: list[dict[str, Any]]
+    world: dict[str, Any]
+    events: list[dict[str, Any]]
+    shifts: list[dict[str, Any]]
+
+
+Request = Annotated[Union[StatusRequest, FillRequest, JudgeRequest, StyleFitRequest, OffstageRequest, PlanRequest,
+                          GenerateRequest, EndStoryRequest], Field(discriminator="call")]
 _request = TypeAdapter(Request)
 
 
@@ -108,9 +188,15 @@ class ErrorReply(Strict):
     error: ErrorBody
 
 
+# What a busy backend may say it is doing, so the page can show progress by asking status. Not a promise of order.
+Stage = Literal["offstage", "think", "beat", "retry", "write", "events", "shifts", "update"]
+STAGES = ("offstage", "think", "beat", "retry", "write", "events", "shifts", "update")
+
+
 class StatusReply(Strict):
     ok: Literal[True]
     state: Literal["idle", "busy"]
+    stage: Stage | None = None              # only when busy, and only if the backend knows
 
 
 class FillReply(Strict):
@@ -144,8 +230,69 @@ class StyleFitReply(Strict):
     message: str = ""                       # when it does not fit: what to look at, in the writer's language
 
 
+class OffstageReply(Strict):
+    """What the background did and how it reaches the protagonist. Both, or the page refuses the move."""
+    ok: Literal[True]
+    did: str
+    reach: str
+
+
+class PlanReply(Strict):
+    """The planner's free-text thinking (shown to the writer) and the beat's fields by key. Links are words: a place's
+    name, character names, a rule's statement, and a payoff is the wording of an open plant that was sent."""
+    ok: Literal[True]
+    thinking: str
+    beat: dict[str, Any]
+
+
+class EventsOut(Strict):
+    """What the chapter text shows happened. Links are names or the wording that was sent."""
+    happened: str
+    changed: str | None = None
+    planted: str | None = None
+    paid_off: list[str] = []
+    reveals_landed: list[str] = []
+    behaviors_seen: list[str] = []
+    things_seen: list[str] = []
+    goal_landed: bool = False
+
+
+class ShiftOut(Strict):
+    """One character who moved. At least one of the five is given; the page refuses an empty entry."""
+    character: str
+    believes: str | None = None
+    fears: str | None = None
+    wants: str | None = None
+    refuses: str | None = None
+    decided: str | None = None
+
+
+class Change(Strict):
+    """A proposed change to one live Entanglements field. `item` is the id the page sent; the backend never makes one."""
+    section: Literal["ties", "holdings", "knowledge", "pressures"]
+    item: str
+    field: str
+    value: Any                              # a name for a link, a list of names for several, words for text
+
+
+class GenerateReply(Strict):
+    ok: Literal[True]
+    chapter_text: str
+    events: EventsOut
+    shifts: list[ShiftOut]
+    changes: list[Change]
+
+
+class EndStoryReply(Strict):
+    """Characters (each with the id it was sent) and World, as they are after the story. The page forces fixed fields back."""
+    ok: Literal[True]
+    characters: list[dict[str, Any]]
+    world: dict[str, Any]
+
+
 REPLIES: dict[str, type[Strict]] = {
     "status": StatusReply, "fill": FillReply, "judge": JudgeReply, "style_fit": StyleFitReply,
+    "offstage": OffstageReply, "plan": PlanReply, "generate": GenerateReply, "end_story": EndStoryReply,
 }
 _error = TypeAdapter(ErrorReply)
 

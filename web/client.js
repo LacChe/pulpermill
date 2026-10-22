@@ -11,7 +11,7 @@
 // by itself is ask the backend whether it is idle.
 
 import {
-  failure, readStatus, fillRequest, readFillReply, planFill, judgeRequest, readJudgeReply, styleFitRequest,
+  failure, STORY_CALLS, readStatus, fillRequest, readFillReply, planFill, judgeRequest, readJudgeReply, styleFitRequest,
   readStyleFitReply,
 } from "./logic.js";
 
@@ -53,7 +53,10 @@ export function blockedByPage(setting, pageProtocol) {
 
 // ---- The client ----------------------------------------------------------------
 
-export const DEFAULT_TIMEOUTS = { status: 5000, fill: 180000, judge: 180000, style_fit: 120000 };
+export const DEFAULT_TIMEOUTS = {
+  status: 5000, fill: 180000, judge: 180000, style_fit: 120000,
+  offstage: 120000, plan: 300000, generate: 900000, end_story: 600000,
+};
 
 // The fallback when the body is not an answer. It agrees with HTTP_STATUS in pulpermill/schema/contract.py.
 const STATUS_FAILURES = { 400: "bad_request", 409: "stopped", 413: "too_long", 429: "busy", 502: "bad_output", 503: "busy" };
@@ -79,14 +82,17 @@ async function post(fetchImpl, url, request, signal) {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// options: {setting, mock, fetchImpl, timeouts, sleep}
+// options: {setting, mock, fetchImpl, timeouts, sleep, pollEvery, lostAfter}
 //   setting    from parseBackendSetting
 //   mock       the object from createMock, used when the setting is "mock"
 //   sleep      how to wait between idle checks (tests pass a fast one)
-export function createClient({ setting = { kind: "mock" }, mock = null, fetchImpl = globalThis.fetch, timeouts = {}, sleep = wait } = {}) {
+//   pollEvery  while a story call runs, how often to ask status (ms): it shows the stage and notices a lost connection
+//   lostAfter  how many status checks in a row may fail before the call is given up as unreachable
+export function createClient({ setting = { kind: "mock" }, mock = null, fetchImpl = globalThis.fetch, timeouts = {}, sleep = wait, pollEvery = 1000, lostAfter = 3 } = {}) {
   let current = setting;
   let running = null;                 // the model call this page has going, if any
   let connection = "unknown";         // unknown | idle | busy | unreachable
+  let stage = null;                   // what the backend says it is doing, while a story call runs
   const listeners = new Set();
   const judgeCache = new Map();
 
@@ -97,6 +103,30 @@ export function createClient({ setting = { kind: "mock" }, mock = null, fetchImp
   function transport(request, signal) {
     if (current.kind === "mock") return mock.send(request, { signal });
     return post(fetchImpl, current.url, request, signal);
+  }
+
+  // While a story call runs, ask status every `pollEvery` ms. It shows the stage the backend names, and it is how the
+  // page notices the connection dropped: `lostAfter` failed checks in a row end the call as unreachable.
+  // Returns a function that stops watching.
+  function watch(onLost) {
+    let alive = true;
+    let misses = 0;
+    (async () => {
+      while (alive) {
+        await sleep(pollEvery);
+        if (!alive) break;
+        const reply = readStatus(await start({ call: "status" }).done);
+        if (!alive) break;
+        if (!reply.ok) {
+          if (++misses >= lostAfter) { onLost(); break; }
+        } else {
+          misses = 0;
+          const next = reply.state === "busy" ? reply.stage ?? null : null;
+          if (next !== stage) { stage = next; changed(); }
+        }
+      }
+    })();
+    return () => { alive = false; if (stage !== null) { stage = null; changed(); } };
   }
 
   async function settle({ interval = 500, tries = 20 } = {}) {
@@ -118,15 +148,18 @@ export function createClient({ setting = { kind: "mock" }, mock = null, fetchImp
     const timer = setTimeout(() => { why = "timeout"; controller.abort(); }, limits[call] ?? limits.fill);
     const handle = { stop() { why ??= "stopped"; controller.abort(); } };
     if (!isStatus) { running = handle; changed(); }
+    const unwatch = STORY_CALLS.includes(call) ? watch(() => { why ??= "unreachable"; controller.abort(); }) : () => {};
     const done = (async () => {
       let reply;
       try {
         reply = await transport(request, controller.signal);
       } catch (error) {
         reply = why === "timeout" ? failure("timeout", "No answer in time.")
+          : why === "unreachable" ? failure("unreachable", "The backend stopped answering.")
           : error?.name === "AbortError" ? failure("stopped") : failure("unreachable", error?.message);
       } finally {
         clearTimeout(timer);
+        unwatch();
         if (!isStatus) running = null;
       }
       if (!isStatus) {
@@ -156,7 +189,7 @@ export function createClient({ setting = { kind: "mock" }, mock = null, fetchImp
     setSetting(next) { current = next; connection = "unknown"; judgeCache.clear(); changed(); },
     onChange(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     // What the page needs to draw: whether this page is waiting on a call, and what the backend last said.
-    get state() { return { working: Boolean(running), connection, setting: current }; },
+    get state() { return { working: Boolean(running), connection, setting: current, stage }; },
   };
   return client;
 }

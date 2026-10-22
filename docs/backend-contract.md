@@ -1,6 +1,6 @@
 # Backend contract
 
-*What the page sends the backend and what comes back. Phase 7. The backend is not written yet: the page runs against a mock (`web/mock.js`) that answers in exactly these shapes.*
+*What the page sends the backend and what comes back. Phases 7 and 8. The backend is not written yet: the page runs against a mock (`web/mock.js`) that answers in exactly these shapes.*
 
 The code that holds this contract:
 
@@ -52,11 +52,13 @@ The page reads the body first. When the body is not an answer it falls back on t
 | `unreachable` | **page** | none | Nothing answered. Never sent by a backend. | Couldn't reach the model, so nothing was changed. Check the address and that it is running. |
 | `timeout` | **page** | none | No answer in time (below). Never sent by a backend. | The model took too long to answer, so nothing was changed. |
 
-The page gives up after 5 seconds for `status`, 180 seconds for `fill` and `judge`, and 120 seconds for `style_fit`.
+The page gives up after 5 seconds for `status`, 180 seconds for `fill` and `judge`, 120 seconds for `style_fit` and `offstage`, 300 seconds for `plan`, 600 seconds for `end_story` and 900 seconds for `generate`.
 
 ## Status and Stop
 
 `status` is `{"call": "status"}` and the reply is `{"ok": true, "state": "idle"}` or `"busy"`. The page asks when it opens, when the writer presses Check, after the address changes, and after a Stop or a timeout.
+
+**Progress.** Story calls are long and are not streamed. While one runs, the page asks `status` every second. A busy backend may say where it is: `{"ok": true, "state": "busy", "stage": "events"}`. `stage` is one of `offstage`, `think`, `beat`, `retry`, `write`, `events`, `shifts`, `update`, is only sent while busy, and is optional (a backend that does not know leaves it out; a stage the page does not know is ignored). The same checks tell the page the connection is lost: three failed checks in a row end the call as `unreachable`, nothing changed. So `status` must always answer, even while the model is working.
 
 **Stop.** The page aborts its request. When the connection closes the backend must stop inference (the doc's cancel flag, checked inside the generation loop) and report `idle` from then on. After a Stop or a timeout the page asks `status` every half second, up to 20 times, keeps the button disabled and shows "Busy" until it says `idle`. If the backend is still busy after those 10 seconds the page stops waiting but keeps showing "Busy", and the Check button asks again.
 
@@ -138,13 +140,60 @@ The story-start gate. Does the protagonist's personality allow the person, tense
 
 Reply: `{"ok": true, "fits": false, "message": "Too guarded for first person."}`. `message` is optional and is shown when `fits` is false.
 
-## Not in the contract yet
+## The story calls
 
-The story calls come in the story phase and join this table the same way: a request and reply model in `contract.py`, a builder and reader in `logic.js`, examples in the vectors, a section here. Still to come: the cast and spotlight plan (think, then fill the beat), the offstage pass, generating a chapter (write, events pass, shifts pass), regenerating a chapter, and the end-of-story update. Those are longer, so they will probably stream progress; that is decided then, not now.
+These carry a story, one chapter at a time. The same ground rules hold: stateless, all or nothing, the page decides, links in words. What is new is that **the page does the code work and sends the result**: the spotlight, the legal shifts, the open plants, the available reveals, the current goal, the use counts and which cards are in play (the cast, and what the beat touches) are worked out on the page. The backend renders prose from what it is sent, runs the model, and answers. Cards and records inside these requests are the project's own values, copied, with their ids, so a reply can point back at an item by the id it was sent.
+
+Replies use words for links (a place's name, a character's name, a rule's statement, the wording of an open plant that was sent). The step that lands each reply turns the words into ids, the way the fill does, and tells the writer about any that match nothing.
+
+### `offstage`: what the background does
+
+Only sent when the page decides an offstage change is due (every second chapter). About background groups and places, never the spotlight.
+
+```json
+{"call": "offstage", "schema_version": 1, "language": "en", "chapter": 2, "chapter_count": 8,
+ "cast": [{"id": "c0000001", "name": "Suvi"}], "world": {}, "entanglements": {}, "latest_events": {"happened": "..."}}
+```
+
+Reply: `{"ok": true, "did": "The board raids the docks.", "reach": "Suvi hears the bells."}`. Both are needed; the page refuses half a move.
+
+### `plan`: think, then fill the beat
+
+One call. The backend thinks in free text, then fills the beat in the schema's shape. The thinking comes back and **the writer is shown it**. `offstage` is the move from the call above, when there was one. `retry` is sent only when the page's block rules refused the first attempt: it holds that attempt and the rules' words, and the backend tries once more with them. The pipeline allows two attempts in total.
+
+Request: `chapter`, `chapter_count`, `style`, `setup`, `goal`, `cast`, `world`, `entanglements`, `spotlight`, `legal_shifts` (`harder` and/or `easier`), `open_plants` (`[{text, chapter}]`), `available_reveals`, `use_counts`, `earlier_beats`, `earlier_events`, `latest_shifts`, `offstage`, `retry`.
+
+Reply: `{"ok": true, "thinking": "...", "beat": {"where": "The Salt Coast", "turn": "..."}}`. `beat` holds the beat's planner fields by key (not the cast, the chapter number, the spotlight, the offstage move or the planned-from hash: those are the writer's or the page's). A `payoff` is a list of open plants' wording as it was sent. Keys the beat does not have are ignored.
+
+### `generate`: write a chapter
+
+One call, three passes: write the chapter, the Events pass (what the text shows happened) and the Shifts and Entanglements pass (who moved, and proposed changes to the live fields). Nothing is kept if any pass fails; the writer presses Generate again.
+
+Request: `chapter`, `chapter_count`, `style`, `setup` (the normal and the disruption only in chapter 1), `goal`, `cast`, `world`, `entanglements`, `standing` (where they stand now: the latest shifts, which override the cards), `earlier_events`, `previous_ending`, `beat` (in words), `open_plants`, `available_reveals`. A prompt that does not fit is `too_long`, checked before the model runs.
+
+Reply:
+
+```json
+{"ok": true, "chapter_text": "...",
+ "events": {"happened": "...", "changed": "...", "planted": null, "paid_off": [], "reveals_landed": [],
+            "behaviors_seen": [], "things_seen": [], "goal_landed": false},
+ "shifts": [{"character": "Suvi", "decided": "Keep it secret."}],
+ "changes": [{"section": "knowledge", "item": "k0000001", "field": "status", "value": "knows"}]}
+```
+
+- `events` is what the text shows. A planned plant, payoff, reveal or goal change counts only when it is here; the page compares. `paid_off` and `reveals_landed` use the wording that was sent.
+- `shifts` has only characters who moved, with at least one of `believes`, `fears`, `wants`, `refuses`, `decided`. The page refuses an empty entry.
+- `changes` are proposals to **live** Entanglements fields (`ties`, `holdings`, `knowledge`, `pressures`). `item` is an id the page sent; the backend never makes one. The page applies them, asks before touching anything locked, and warns if a reveal landed but no one's knowledge changed.
+
+### `end_story`: update Characters and World
+
+After the last chapter. Reads the Events and Shifts summaries (one sentence per event), never the chapters.
+
+Request: `style`, `setup`, `characters` (all, with ids), `world`, `events`, `shifts`. Reply: `{"ok": true, "characters": [{"id": "c0000001", ...}], "world": {...}}`. Every character carries the id it was sent. The page forces the fixed fields (name, age, sex, appearance) back and keeps the originals.
 
 ## How it is tested
 
 - `web/tests/logic.test.mjs` ("The contract vectors") checks that the page builds exactly the golden requests and reads every valid reply and refuses every invalid one.
 - `tests/schema/test_contract.py` checks that the Pydantic models accept and refuse the same examples, and that the error kinds, fillable cards, card list and HTTP statuses match what the page uses.
 - Examples where the two sides are deliberately not equally strict (extra keys, a value of the wrong kind for one particular card) are left out of the vectors.
-- `web/mock.js` can be made to fail on demand (`mock.queue("busy", "bad_output", …)`), and writing `FLAG ME` into a card makes its judge and style-fit answers complain, so every state above can be seen in the page without a model.
+- `web/mock.js` answers every call, including the story calls (a plain sample chapter, a beat made from the request's own places, and a stage in `status`), and can be made to fail on demand (`mock.queue("busy", "bad_output", …)`), and writing `FLAG ME` into a card makes its judge and style-fit answers complain, so every state above can be seen in the page without a model.

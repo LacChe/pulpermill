@@ -1,5 +1,5 @@
 // A stand-in for the backend, so the page can be built, tested and shown on GitHub Pages with no model running.
-// It answers the same four calls the real backend will (see "The backend contract" in logic.js) in the same shapes,
+// It answers the same calls the real backend will (fill, judge, style_fit, offstage, plan, generate, end_story, status) (see "The backend contract" in logic.js) in the same shapes,
 // so the page cannot tell the difference. It writes no story: its answers are plain samples that are valid for the
 // schema, which is enough to see every state the page has to handle.
 //
@@ -80,6 +80,7 @@ export function createMock(schema, options = {}) {
   const upcoming = [];
   let working = 0;
   let served = 0;
+  let stage = null;     // what a busy mock says it is doing, like a real backend answering status
 
   // Resolve after `ms`, or reject the way fetch does when the writer presses Stop.
   function wait(ms, signal) {
@@ -99,6 +100,45 @@ export function createMock(schema, options = {}) {
     if (request.card === "characters" && request.instance) values.name = `Mock character ${nth + 1}`;
     return { ok: true, values };
   };
+
+  // ---- The story calls: plain samples that are valid for the shapes ----
+  const names = (list) => (Array.isArray(list) ? list : []).map((entry) => entry?.name).filter(Boolean);
+
+  const offstage = () => ({ ok: true, did: "Mock offstage move: a background group acts.", reach: "Mock reach: word of it gets to the protagonist." });
+
+  const plan = (request, nth) => {
+    const beats = schema.cards.outline.fields.find((f) => f.key === "beats");
+    const related = { characters: request.cast ?? [], world: request.world ?? {} };
+    const skip = ["offstage_did", "offstage_reach", "cast"];
+    const wanted = beats.item_fields.filter((f) => f.filled_by === "planner" && !skip.includes(f.key));
+    const beat = sampleFields(beats, wanted, related, nth);
+    if (request.legal_shifts?.length) beat.shift = request.legal_shifts[0];
+    if (request.chapter === 1) delete beat.when_gap;
+    const plant = (request.open_plants ?? [])[0];
+    if (plant?.text) beat.payoff = [plant.text];
+    return { ok: true, thinking: `Mock thinking for chapter ${request.chapter}: two directions, the second one is chosen.`, beat };
+  };
+
+  const generate = (request) => {
+    const beat = request.beat ?? {};
+    const who = names(request.cast)[0];
+    const pressure = (request.entanglements?.pressures ?? [])[0];
+    return {
+      ok: true,
+      chapter_text: `Mock chapter ${request.chapter} of ${request.chapter_count}. ${beat.turn ?? ""}`.trim(),
+      events: {
+        happened: `Mock events of chapter ${request.chapter}.`, changed: "Mock change.", planted: beat.plant ?? null,
+        paid_off: beat.payoff ?? [], reveals_landed: beat.reveal_rule ? [beat.reveal_rule] : [],
+        behaviors_seen: [], things_seen: [], goal_landed: Boolean(beat.goal_change),
+      },
+      shifts: who ? [{ character: who, decided: "Mock decision." }] : [],
+      changes: pressure?.id ? [{ section: "pressures", item: pressure.id, field: "next_move", value: "Mock next move." }] : [],
+    };
+  };
+
+  const endStory = (request) => ({
+    ok: true, characters: JSON.parse(JSON.stringify(request.characters ?? [])), world: JSON.parse(JSON.stringify(request.world ?? {})),
+  });
 
   const judge = (request) => {
     const card = schema.cards[request.card];
@@ -128,10 +168,22 @@ export function createMock(schema, options = {}) {
 
   // What a bad output looks like for each call: the envelope is fine, the content is not.
   const garbled = (call) => (call === "fill" ? { ok: true, values: ["not", "a", "card"] }
-    : call === "judge" ? { ok: true, results: "none" } : { ok: true, fits: "maybe" });
+    : call === "judge" ? { ok: true, results: "none" }
+    : call === "offstage" ? { ok: true, did: "Only half a move." }
+    : call === "plan" ? { ok: true, thinking: "", beat: "not a beat" }
+    : call === "generate" ? { ok: true, chapter_text: "", events: {}, shifts: [], changes: [] }
+    : call === "end_story" ? { ok: true, characters: "nobody", world: {} } : { ok: true, fits: "maybe" });
+
+  // The stages a story call goes through, so status can say where it is. Each takes an equal share of the delay.
+  const STAGES_OF = { offstage: ["offstage"], plan: ["think", "beat"], generate: ["write", "events", "shifts"], end_story: ["update"] };
+  async function through(call, signal, retrying) {
+    const list = retrying && call === "plan" ? ["retry", "beat"] : STAGES_OF[call] ?? [];
+    if (!list.length) return wait(delay, signal);
+    for (const name of list) { stage = name; await wait(delay / list.length, signal); }
+  }
 
   async function send(request, { signal } = {}) {
-    if (request?.call === "status") return { ok: true, state: working ? "busy" : "idle" };
+    if (request?.call === "status") return working ? { ok: true, state: "busy", ...(stage ? { stage } : {}) } : { ok: true, state: "idle" };
     const scripted = upcoming.shift();
     working += 1;
     try {
@@ -140,7 +192,7 @@ export function createMock(schema, options = {}) {
         throw new TypeError("Failed to fetch");
       }
       if (scripted === "timeout") await wait(Infinity, signal);
-      await wait(delay, signal);
+      await through(request?.call, signal, Boolean(request?.retry));
       const nth = served;
       served += 1;
       if (scripted === "bad_output") return garbled(request.call);
@@ -149,10 +201,15 @@ export function createMock(schema, options = {}) {
         case "fill": return fill(request, nth);
         case "judge": return judge(request);
         case "style_fit": return styleFit(request);
+        case "offstage": return offstage(request);
+        case "plan": return plan(request, nth);
+        case "generate": return generate(request);
+        case "end_story": return endStory(request);
         default: return failure("bad_request", `The mock does not know the call ${request?.call}.`);
       }
     } finally {
       working -= 1;
+      if (!working) stage = null;
     }
   }
 
