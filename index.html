@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pulpermill</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="bar">
+    <h1>Pulpermill</h1>
+    <label class="project-name">
+      <span class="visually-hidden">Project name</span>
+      <input type="text" id="title" class="text-control" placeholder="Untitled story" autocomplete="off">
+    </label>
+    <span id="save-state" class="save-state" role="status"></span>
+    <div class="bar-actions">
+      <button type="button" id="new">New</button>
+      <button type="button" id="open">Open…</button>
+      <button type="button" id="save">Save</button>
+      <input type="file" id="open-file" accept=".json,application/json" hidden>
+    </div>
+  </header>
+  <div class="backend-bar">
+    <label class="backend">
+      <span>Model backend</span>
+      <input type="text" id="backend" class="text-control" autocomplete="off" spellcheck="false">
+    </label>
+    <span id="connection" class="connection" role="status"></span>
+    <button type="button" id="check">Check</button>
+    <button type="button" id="stop" class="stop" hidden>Stop</button>
+  </div>
+  <div id="recovery" class="notice" hidden></div>
+  <div id="notice" class="notice" role="status" hidden></div>
+  <nav id="cards" class="tabs" aria-label="Cards"></nav>
+  <nav id="people" class="tabs people" aria-label="Characters" hidden></nav>
+  <main id="card"></main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
