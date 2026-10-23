@@ -13,6 +13,7 @@ import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
 import { createGeneratePanel } from "./generatepanel.js";
 import { createEndPanel } from "./endpanel.js";
+import { createExportPanel } from "./exportpanel.js";
 import { writtenBeatIds } from "./plan.js";
 import { createMock } from "./mock.js";
 import {
@@ -91,6 +92,7 @@ let storyBar;
 let planPanel;
 let generatePanel;
 let endPanel;
+let exportPanel;
 let view = { card: "style", characterId: null };
 // What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
 // switching cards. Cleared when another project is opened.
@@ -496,6 +498,7 @@ function show() {
     planPanel?.draw(main);
     generatePanel?.draw(main);
     endPanel?.draw(main);
+    exportPanel?.draw(main);
   }
   storyBar?.draw();
 }
@@ -526,6 +529,7 @@ try {
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),
   });
+  exportPanel = createExportPanel({ schema, getProject: () => project });
   endPanel = createEndPanel({
     schema, client, getProject: () => project, backendWhere, errorText,
     changed: () => touchState(), redraw: () => show(),
