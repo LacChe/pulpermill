@@ -5,6 +5,7 @@
 import { generateChapter, regenerateChapter } from "./client.js";
 import { generateGate, applyGenerated, commitChapter, regenerateGate, applyRegenerated, commitRegenerated } from "./generate.js";
 import { chapterInfo } from "./plan.js";
+import { chapterNoteFor, setChapterNote, copyNote, putNote } from "./modelnotes.js";
 
 export const STRINGS = {
   title: "Write the chapter",
@@ -54,7 +55,6 @@ function node(tag, props = {}, ...children) {
 
 // hooks: {schema, client, getProject, backendWhere, changed(), redraw(), notice(text, kind), errorText(error)}
 export function createGeneratePanel(hooks) {
-  const reviews = new Map();            // chapter id -> {applied, warnings}; only kept while the page is open
   let button = null;
   let stageLine = null;
   let againButtons = [];
@@ -90,7 +90,7 @@ export function createGeneratePanel(hooks) {
     }
     const n = Number(result.beat.chapter);
     commitChapter(project, outcome);
-    reviews.set(outcome.chapter.id, { applied: outcome.changes.applied, warnings: outcome.warnings });
+    setChapterNote(project, outcome.chapter.id, { applied: outcome.changes.applied, warnings: outcome.warnings });
     hooks.notice(fill(leftLocked ? STRINGS.droppedLocked : STRINGS.done, { n }), "");
     hooks.changed();
     hooks.redraw();
@@ -116,14 +116,14 @@ export function createGeneratePanel(hooks) {
       if (!window.confirm(fill(STRINGS.locked, { list }))) outcome = applyRegenerated(hooks.schema, project, result.ctx, result.read, { overwriteLocked: false });
     }
     const { undo } = commitRegenerated(project, outcome);
-    const earlier = reviews.get(outcome.chapter.id);
-    reviews.set(outcome.chapter.id, { applied: outcome.changes.applied, warnings: outcome.warnings, before: outcome.before });
+    const earlier = copyNote(project, "chapter", outcome.chapter.id);
+    setChapterNote(project, outcome.chapter.id, { applied: outcome.changes.applied, warnings: outcome.warnings, before: outcome.before });
     hooks.notice(fill(STRINGS.againDone, { n: number }), "", {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
         undo();
-        if (earlier) reviews.set(outcome.chapter.id, earlier); else reviews.delete(outcome.chapter.id);
+        putNote(project, "chapter", outcome.chapter.id, earlier);
         hooks.changed();
         hooks.redraw();
         hooks.notice(fill(STRINGS.undone, { n: number }));
@@ -142,7 +142,7 @@ export function createGeneratePanel(hooks) {
     ordered.forEach((c, at) => {
       const parts = [node("summary", { textContent: fill(STRINGS.chapterTitle, { n: numberOf(c) }) })];
       const paragraphs = (text) => text.split(/\n\s*\n/).map((paragraph) => node("p", { className: "chapter-text", textContent: paragraph.trim() }));
-      const review = reviews.get(c.id);
+      const review = chapterNoteFor(project, c.id);
       if (review?.before !== undefined) {
         parts.push(node("div", { className: "chapter-compare" },
           node("div", {}, node("h5", { textContent: STRINGS.before }), ...paragraphs(review.before)),
@@ -200,5 +200,5 @@ export function createGeneratePanel(hooks) {
     refresh();
   }
 
-  return { draw, refresh, reset() { reviews.clear(); button = null; stageLine = null; mine = false; } };
+  return { draw, refresh, reset() { button = null; stageLine = null; mine = false; } };
 }

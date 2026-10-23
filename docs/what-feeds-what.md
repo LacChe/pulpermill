@@ -109,6 +109,7 @@
 | Shifts | W (latest value per field per cast member, shown after the cards and marked as overriding), P, E | Fields: believes, fears, wants, refuses, decided. `hides` is dropped. |
 | Entanglements history | C (restore for regenerate) | Never sent to a model. |
 | Example chapter, card notes | F |  |
+| Model notes (`plan_notes`, `chapter_notes`, `end_note`) | human only | What the model said and what the page showed, kept so H can read it after reopening the file. Display only: never sent to a model, never read by the pipeline. Each is replaced when its beat, chapter or after-story copy is made again, and goes with it. |
 | after\_story | export, a new story |  |
 | Language | W (target language line) | Model-facing text stays English; only the human-facing text is translated. The judge prompts are English too. |
 

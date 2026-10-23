@@ -4,7 +4,7 @@ copy, the generation inputs the user gave (example chapter, per-card notes) and 
 or the pipeline can stop mid-story and resume from the file alone.
 Written out and read back as JSON (Project.model_dump_json / model_validate_json); ids survive the round trip."""
 from typing import Literal
-from .common import spec, Rule, Item
+from .common import spec, Rule, Item, TextItem
 from .style import Style
 from .characters import Characters
 from .world import World
@@ -69,6 +69,47 @@ class AfterStory(Item):
     world: World = spec(None, None, "card", card_of="world", filled_by="code")
 
 
+# ---- What the model said, kept so the user can read it again after reopening the file -------------------------
+# Display records: the page shows them and nobody edits them. They are never sent to a model, and the pipeline does not
+# read them. Each is replaced as a whole when the thing it is about is made again, and goes when that thing goes.
+
+class PlanNote(Item):
+    """How the planner thought about one chapter, shown to the user. Planning the chapter again replaces it."""
+    beat: str = spec("select", None, "note", ref=["outline.beats"], filled_by="code")
+    thinking: str = spec("textarea", None, "note", filled_by="planner")
+    retried: bool = spec("checkbox", None, "note", required=False, default=False, filled_by="code")   # the first try broke a rule
+
+
+class ChangeLine(Item):
+    """One value the chapter changed in Entanglements, as the user was shown it (words, not ids)."""
+    label: str = spec("text", None, "note", filled_by="code")
+    before: str | None = spec("text", None, "note", required=False, filled_by="code")
+    after: str | None = spec("text", None, "note", required=False, filled_by="code")
+
+
+class ChapterNote(Item):
+    """What the page showed the user when a chapter was made: the changes it applied to Entanglements and what it noticed.
+    `before` is the chapter's text from before it was written again (only on a chapter that was), shown beside the new one."""
+    chapter: str = spec("select", None, "note", ref=["chapters"], filled_by="code")
+    changes: list[ChangeLine] = spec(None, None, "pairs", required=False, default=[], repeat=True, uncapped=True)
+    warnings: list[TextItem] = spec(None, None, "pairs", required=False, default=[], repeat=True, uncapped=True)
+    before: str | None = spec("textarea", None, "note", required=False, filled_by="code")
+
+
+class ForcedFields(Item):
+    """Fixed fields of one character that the model changed at the end of the story and the page put back."""
+    character: str = spec("text", None, "note", filled_by="code")      # the name as the user saw it
+    fields: str = spec("text", None, "note", filled_by="code")         # the fields' keys, separated by commas
+
+
+class EndNote(Item):
+    """What the page noticed about the end-of-story copy: fixed fields put back, fields dropped because they did not fit,
+    and how many problems the copy has that its card would stop generating on."""
+    forced: list[ForcedFields] = spec(None, None, "pairs", required=False, default=[], repeat=True, uncapped=True)
+    dropped: str | None = spec("text", None, "note", required=False, filled_by="code")     # field keys, separated by commas
+    problems: int = spec("number", None, "note", required=False, default=0, filled_by="code")
+
+
 class Project(Item):
     # About the file
     title: str = spec("text", "about", "note")
@@ -97,6 +138,11 @@ class Project(Item):
     chapters: list[Chapter] = spec(None, "story", "pairs", repeat=True, uncapped=True)
     after_story: AfterStory | None = spec(None, "story", "card", required=False, card_of="after_story")
 
+    # What the model said (display only; see PlanNote)
+    plan_notes: list[PlanNote] = spec(None, "notes", "pairs", required=False, default=[], repeat=True, uncapped=True)
+    chapter_notes: list[ChapterNote] = spec(None, "notes", "pairs", required=False, default=[], repeat=True, uncapped=True)
+    end_note: EndNote | None = spec(None, "notes", "card", required=False, card_of="end_note")
+
     # Locks on what the user edits (the UI sets them; they say nothing about the story itself)
     locks: list[Lock] = spec(None, "locks", "pairs", required=False, default=[], repeat=True, uncapped=True)
 
@@ -115,7 +161,7 @@ PROJECT_RULES = [
          check="chapter_markers"),
     Rule(id="links_resolve", severity="block",
          fields=["characters", "world", "setup", "entanglements", "outline", "summary_events", "summary_shifts",
-                 "entanglements_history", "chapters", "card_notes", "locks"],
+                 "entanglements_history", "chapters", "card_notes", "plan_notes", "chapter_notes", "locks"],
          when="a link in any card, note or lock points at something that does not exist in this project (for example a protagonist who is not among the characters)",
          check="links_resolve"),
     Rule(id="after_story_ready", severity="block", fields=["after_story", "chapters", "setup"],
@@ -130,6 +176,12 @@ PROJECT_RULES = [
     Rule(id="note_unique_per_target", severity="block", fields=["card_notes"],
          when="two notes are for the same card (or, for Characters, the same character)",
          check="unique_across_items", params={"fields": ["card", "character"]}),
+    Rule(id="plan_note_unique", severity="block", fields=["plan_notes"],
+         when="two plan notes are for the same beat",
+         check="unique_across_items", params={"fields": ["beat"]}),
+    Rule(id="chapter_note_unique", severity="block", fields=["chapter_notes"],
+         when="two chapter notes are for the same chapter",
+         check="unique_across_items", params={"fields": ["chapter"]}),
     Rule(id="lock_item_needs_field", severity="block", fields=["locks"],
          when="a lock names a list item without the field the item is in",
          check="required_if", params={"field": "field", "when_present": "item"}),

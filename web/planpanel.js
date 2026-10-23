@@ -3,6 +3,7 @@
 // outline below, where it can be edited like any other. Nothing here calls the model except that one button.
 import { storyStarted } from "./gate.js";
 import { planChapter } from "./client.js";
+import { planNoteFor, setPlanNote, copyNote, putNote, removeNote } from "./modelnotes.js";
 import {
   CAST_MAX, chapterInfo, beatForChapter, castChoices, suggestedCast, castProblem, pickSpotlight, shiftsForChapter, currentGoal,
   openPlants, availableReveals, offstageDue, planIsStale, placeBeat,
@@ -49,7 +50,7 @@ export const STRINGS = {
   confirmReplan: "Plan this chapter again? The beat you have now will be replaced. You can undo it afterwards.",
   stale: "The Entanglements have changed since this was planned. Plan it again to use the new state, or write the beat on as it is.",
   thought: "How the model thought about this chapter",
-  thoughtKept: "This is only kept while the page is open.",
+  thoughtKept: "This is kept with your project, and replaced when you plan the chapter again.",
   reasons: {
     not_started: "Start the story first.", done: "Every chapter is written.", no_pressure: "Entanglements has no pressure yet.",
     cast_empty: "Pick who is in the chapter.", cast_too_many: "A chapter has at most {max} people.",
@@ -68,7 +69,6 @@ function node(tag, props = {}, ...children) {
 // hooks: {schema, client, getProject, backendWhere, changed(), redraw(), notice(text, kind, action), errorText(error)}
 export function createPlanPanel(hooks) {
   let selection = null;                 // {project, chapter, ids}: who is ticked, per project and chapter
-  const thoughts = new Map();           // beat id -> {thinking, retried, blockers}
   let button = null;
 
   function chosen(project, chapter, existing) {
@@ -113,9 +113,9 @@ export function createPlanPanel(hooks) {
     if (!result.ok) { hooks.notice(hooks.errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); return; }
 
     const previous = result.replaces ? copy(result.replaces) : null;
-    const previousThought = previous ? thoughts.get(previous.id) : null;
+    const previousThought = previous ? copyNote(project, "plan", previous.id) : null;
     placeBeat(project, result.beat);
-    thoughts.set(result.beat.id, { thinking: result.thinking, retried: result.retried, blockers: result.blockers });
+    setPlanNote(project, result.beat.id, { thinking: result.thinking, retried: result.retried });
     const parts = [fill(STRINGS.planned, { n: result.beat.chapter })];
     if (result.retried) parts.push(STRINGS.retried);
     if (result.blockers.length) parts.push(fill(STRINGS.stillBlocks, { n: result.blockers.length }));
@@ -128,10 +128,10 @@ export function createPlanPanel(hooks) {
         if (hooks.getProject() !== project) return;
         if (previous) {
           placeBeat(project, previous);
-          if (previousThought) thoughts.set(previous.id, previousThought); else thoughts.delete(previous.id);
+          putNote(project, "plan", previous.id, previousThought);
         } else {
           project.outline.beats = project.outline.beats.filter((b) => b.id !== result.beat.id);
-          thoughts.delete(result.beat.id);
+          removeNote(project, "plan", result.beat.id);
         }
         hooks.changed();
         hooks.redraw();
@@ -197,7 +197,7 @@ export function createPlanPanel(hooks) {
       node("span", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) })));
     startable();
 
-    const thought = existing ? thoughts.get(existing.id) : null;
+    const thought = existing ? planNoteFor(project, existing.id) : null;
     if (thought) {
       const lines = [node("p", { className: "plan-thinking", textContent: thought.thinking }), node("p", { className: "help", textContent: STRINGS.thoughtKept })];
       if (thought.retried) lines.unshift(node("p", { className: "help", textContent: STRINGS.retried }));
@@ -205,5 +205,5 @@ export function createPlanPanel(hooks) {
     }
   }
 
-  return { draw, refresh, reset() { selection = null; thoughts.clear(); button = null; } };
+  return { draw, refresh, reset() { selection = null; button = null; } };
 }

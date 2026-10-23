@@ -4,6 +4,7 @@
 // except that one button.
 import { endStory } from "./client.js";
 import { endGate, afterStoryChanges, afterStoryProblems } from "./endstory.js";
+import { endNoteFor, setEndNote, copyEndNote, putEndNote } from "./modelnotes.js";
 
 export const STRINGS = {
   title: "End of the story",
@@ -40,7 +41,6 @@ function node(tag, props = {}, ...children) {
 export function createEndPanel(hooks) {
   let button = null;
   let mine = false;
-  let note = null;                 // what the page noticed about the last result: {forced, dropped, problems}; only kept while the page is open
   let status = null;
 
   function refresh() {
@@ -59,15 +59,15 @@ export function createEndPanel(hooks) {
     if (result.reason) { hooks.notice(STRINGS.reasons[result.reason] ?? result.reason, "notice-bad"); hooks.redraw(); return; }
     if (!result.ok) { hooks.notice(hooks.errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); refresh(); return; }
     const previous = project.after_story ? copy(project.after_story) : null;
-    const previousNote = note;
+    const previousNote = copyEndNote(project);
     project.after_story = result.after;
-    note = { forced: result.forced, dropped: result.dropped, problems: afterStoryProblems(hooks.schema, project, result.after) };
+    setEndNote(project, { forced: result.forced, dropped: result.dropped, problems: afterStoryProblems(hooks.schema, project, result.after) });
     hooks.notice(STRINGS.done, "", {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
         if (previous) project.after_story = previous; else delete project.after_story;
-        note = previousNote;
+        putEndNote(project, previousNote);
         hooks.changed();
         hooks.redraw();
         hooks.notice(STRINGS.undone);
@@ -79,6 +79,7 @@ export function createEndPanel(hooks) {
 
   function review(project) {
     const box = node("div", { className: "after-story" }, node("h4", { textContent: STRINGS.changes }));
+    const note = endNoteFor(project);
     const changes = afterStoryChanges(hooks.schema, project, project.after_story);
     if (!changes.length) box.append(node("p", { className: "help", textContent: STRINGS.noChanges }));
     else {
@@ -117,5 +118,5 @@ export function createEndPanel(hooks) {
     refresh();
   }
 
-  return { draw, refresh, reset() { note = null; button = null; status = null; mine = false; } };
+  return { draw, refresh, reset() { button = null; status = null; mine = false; } };
 }

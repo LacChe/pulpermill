@@ -50,7 +50,7 @@ The fill needs an example chapter or a note for that card. There is no revise-ca
 | Compute chapter number, spotlight, legal shifts, least-used places, current goal, available reveals, open plants | C | Spotlight rotation and shift legality are code. Available reveals are those that have not landed. |
 | Offstage change (only when due) | C, O (M, free text) | C decides occasionally that a change is due. It is about background groups or places, never the spotlight, which always involves someone in the cast. O reads the groups, places and this chapter's Events, and writes `offstage_did` and `offstage_reach`. |
 | Think | M (free text) | Reads open pressures and their next moves, ties, latest shifts, open plants, available reveals, use counts, summaries, and any offstage move. Proposes 2 or 3 directions, picks one with a reason, says how the chapter should be written, and decides whether to plant something or pay off an open plant. |
-| Fill the beat | M (grammar) | Includes the optional `plant` and `payoff`. The thinking text is in context. Code discards it afterward. |
+| Fill the beat | M (grammar) | Includes the optional `plant` and `payoff`. The thinking text is in context. Afterward C keeps it as a display note in the project, so H can read it again after reopening the file. It is never sent to a model. |
 | Block rules, then model-judged beat warnings | C, M | turn is a change, choice is costly, ends on an open question. |
 | Retry | C | Two attempts in total; the first failure's message goes into the second. Still failing: H sees the rule's message and fix, and Generate stays disabled. Warnings are shown but do not block. |
 | Assess, edit, replan | H |  |
@@ -69,7 +69,7 @@ The fill needs an example chapter or a note for that card. There is no revise-ca
 | Shifts and Entanglements pass | M (grammar) | chapter, Characters, Entanglements | per-character shifts (believes, fears, wants, refuses, decided); proposed changes to live fields, including knowledge status |
 | Map names to ids; check block rules (for example no more than two open plants) | C |  |  |
 | Apply X2's proposed changes to live fields; warn if a reveal landed but nobody's knowledge changed; list any locked values the changes would overwrite and ask H to confirm; compute diffs; tally counts | C, H |  | new Entanglements |
-| Commit chapter, records, history and new Entanglements as one unit | C |  | project file |
+| Commit chapter, records, history and new Entanglements as one unit | C |  | project file, plus a display note of what the page showed (the changes applied, what it noticed, and the earlier text of a rewritten chapter) |
 | Review the chapter and the diffs | H |  |  |
 
 Any failure leaves nothing committed. Shape failures retry up to the same two attempts, then the error is shown.
@@ -89,7 +89,7 @@ Any failure leaves nothing committed. Shape failures retry up to the same two at
 | Update Characters and World | M (grammar) | Always reads the Events and Shifts summaries (one sentence per event, so they stay small), never the full chapters, plus the current cards. Works like card creation. |
 | Force fixed fields (name, age, sex, appearance) back to their original values; keep ids | C |  |
 | Store as the after-story copy; originals untouched | C |  |
-| Review, edit, download | H |  |
+| Review, edit, download | H | C keeps a display note of what it forced back or dropped, with the copy |
 
 ## 6. Export
 
@@ -107,7 +107,6 @@ H exports the story as markdown (required), the cards as a zip, and the project 
 
 ## Open or parked
 
-- Store the planner's thinking text in the project, or discard it (open).
 - Run the thinking pass several times and have a judge pick the best (try only if single plans are bland).
 - Model revise pass over the chapter (revisit only if stories are still bad).
 - Model, generation settings and prompt versions come later.

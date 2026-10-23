@@ -1518,5 +1518,55 @@
         "world": {}
       }
     }
-  ]
+  ],
+  "project_notes": {
+    "note": "What the model said, as the page keeps it in the project file. The page's own code builds these (web/tests/modelnotes.test.mjs, ids aside) and the Pydantic models accept them (tests/schema/test_project.py), so the two agree on the shape.",
+    "plan_notes": [
+      {
+        "id": "p0000001",
+        "beat": "b0000001",
+        "thinking": "Two directions: Suvi confronts the board, or she hides the ledger. The second costs her more, so I will take it.",
+        "retried": true
+      }
+    ],
+    "chapter_notes": [
+      {
+        "id": "n0000001",
+        "chapter": "c0000001",
+        "changes": [
+          {
+            "id": "l0000001",
+            "label": "Status",
+            "before": "suspects",
+            "after": "knows"
+          }
+        ],
+        "warnings": [
+          {
+            "id": "w0000001",
+            "text": "A reveal landed, but nobody's knowledge changed. Check the Knowledge list in Entanglements."
+          }
+        ],
+        "before": "The first version of the chapter."
+      },
+      {
+        "id": "n0000002",
+        "chapter": "c0000002",
+        "changes": [],
+        "warnings": []
+      }
+    ],
+    "end_note": {
+      "id": "e0000001",
+      "forced": [
+        {
+          "id": "f0000001",
+          "character": "Suvi",
+          "fields": "age, appearance"
+        }
+      ],
+      "dropped": "history",
+      "problems": 2
+    }
+  }
 }
