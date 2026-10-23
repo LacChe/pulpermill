@@ -284,3 +284,97 @@ export function commitChapter(project, outcome) {
   });
   return project;
 }
+
+// ---- Writing a chapter again ---------------------------------------------------------------------
+// Regenerating chapter N goes back to the state N was first written from: the Entanglements as the history kept them, and
+// only the records of the chapters before it. It reuses N's beat. The old chapter stays in the project until the new one
+// commits (a failed or stopped call changes nothing), and later chapters stay where they are, with their beats marked stale.
+
+const chapterNumber = (project, beatId) => Number((project.outline?.beats ?? []).find((b) => b.id === beatId)?.chapter) || 0;
+
+// The project as it stood when chapter `number` was about to be written: no chapter or record from `number` on, and the
+// Entanglements that chapter was written from.
+export function projectBefore(project, number) {
+  const trial = copyOf(project);
+  const early = (x) => chapterNumber(project, x.beat) < number;
+  trial.chapters = (project.chapters ?? []).filter(early).map(copyOf);
+  trial.summary_events = { ...(project.summary_events ?? {}), entries: (project.summary_events?.entries ?? []).filter(early).map(copyOf) };
+  trial.summary_shifts = { ...(project.summary_shifts ?? {}), shifts: (project.summary_shifts?.shifts ?? []).filter(early).map(copyOf) };
+  trial.entanglements_history = { ...(project.entanglements_history ?? {}), states: (project.entanglements_history?.states ?? []).filter(early).map(copyOf) };
+  const snapshot = (project.entanglements_history?.states ?? []).find((s) => chapterNumber(project, s.beat) === number);
+  if (snapshot) trial.entanglements = copyOf(snapshot.state);
+  return trial;
+}
+
+// {ok, number, beat, trial, later} or {ok: false, reason}: not_started, no_chapter, no_snapshot, cast_<why>, beat_blocked (with `problems`).
+// `later` is how many chapters come after this one.
+export function regenerateGate(schema, project, number) {
+  if (!storyStarted(project)) return { ok: false, reason: "not_started" };
+  const written = project.chapters ?? [];
+  const chapter = written.find((c) => chapterNumber(project, c.beat) === number);
+  if (!chapter) return { ok: false, reason: "no_chapter" };
+  if (!(project.entanglements_history?.states ?? []).some((s) => s.beat === chapter.beat)) return { ok: false, reason: "no_snapshot" };
+  const trial = projectBefore(project, number);
+  const beat = trial.outline.beats.find((b) => b.id === chapter.beat);
+  const why = castProblem(project, beat.cast);
+  if (why) return { ok: false, reason: `cast_${why}` };
+  const problems = beatBlockers(schema, trial, beat);
+  if (problems.length) return { ok: false, reason: "beat_blocked", problems };
+  return { ok: true, number, beat, trial, chapter, later: written.length - number };
+}
+
+// What the page checks when the model answers: nothing the new chapter depends on was edited meanwhile.
+export function regenerateKey(schema, project, number) {
+  const chapter = (project.chapters ?? []).find((c) => chapterNumber(project, c.beat) === number);
+  return JSON.stringify([entanglementsHash(schema, project), project.outline?.beats ?? [], (project.chapters ?? []).map((c) => c.id), chapter?.text ?? null]);
+}
+
+// The records of a regenerated chapter, from the model's reply. The chapter, its events and its history keep their ids (later
+// records point at them); the shifts get new ones. Warns about what later chapters still lean on.
+export function applyRegenerated(schema, project, ctx, read, { overwriteLocked = true } = {}) {
+  const { trial, beat, number } = ctx;
+  const out = applyGenerated(schema, trial, beat, read, { overwriteLocked });
+  const old = {
+    chapter: (project.chapters ?? []).find((c) => c.beat === beat.id),
+    events: (project.summary_events?.entries ?? []).find((e) => e.beat === beat.id),
+    history: (project.entanglements_history?.states ?? []).find((s) => s.beat === beat.id),
+  };
+  out.chapter.id = old.chapter.id;
+  out.events.id = old.events.id;
+  out.history.id = old.history.id;
+  const taken = [...(project.summary_shifts?.shifts ?? []).map((s) => s.id), ...(project.chapters ?? []).map((c) => c.id),
+    ...(project.summary_events?.entries ?? []).map((e) => e.id), ...(project.entanglements_history?.states ?? []).map((s) => s.id)];
+  for (const s of out.shifts) { s.id = newId(taken); taken.push(s.id); }
+  out.before = old.chapter.text;
+  // Later chapters were written from the old version.
+  const lateEvents = (project.summary_events?.entries ?? []).filter((e) => chapterNumber(project, e.beat) > number);
+  if (lateEvents.some((e) => (e.paid_off ?? []).includes(out.events.id)) && !out.events.planted) {
+    out.warnings.push({ kind: "later", text: "A later chapter paid off something this chapter planted, and the new version plants nothing." });
+  }
+  if (project.chapters.length > number) {
+    out.warnings.push({ kind: "later", text: `The ${project.chapters.length - number} later chapter(s) were written from the old version. They stay as they are, and their beats are marked stale.` });
+  }
+  return out;
+}
+
+// Replaces chapter N's text, events, shifts and history with the new ones, sets the Entanglements to the new result and
+// marks every later beat stale, all at once. Returns an undo that puts everything back as it was.
+export function commitRegenerated(project, outcome) {
+  const keep = copyOf({
+    chapters: project.chapters, summary_events: project.summary_events, summary_shifts: project.summary_shifts,
+    entanglements_history: project.entanglements_history, entanglements: project.entanglements, outline: project.outline, locks: project.locks ?? [],
+  });
+  const beat = outcome.chapter.beat;
+  const number = chapterNumber(project, beat);
+  const stale = (project.outline.beats ?? []).map((b) => (Number(b.chapter) > number ? { ...b, stale: true } : b));
+  Object.assign(project, {
+    chapters: project.chapters.map((c) => (c.beat === beat ? outcome.chapter : c)),
+    summary_events: { ...project.summary_events, entries: project.summary_events.entries.map((e) => (e.beat === beat ? outcome.events : e)) },
+    summary_shifts: { ...project.summary_shifts, shifts: [...project.summary_shifts.shifts.filter((s) => s.beat !== beat), ...outcome.shifts] },
+    entanglements_history: { ...project.entanglements_history, states: project.entanglements_history.states.map((s) => (s.beat === beat ? outcome.history : s)) },
+    entanglements: outcome.entanglements,
+    outline: { ...project.outline, beats: stale },
+    locks: (project.locks ?? []).filter((l) => !outcome.unlock.includes(l.id)),
+  });
+  return { undo() { Object.assign(project, copyOf(keep)); } };
+}

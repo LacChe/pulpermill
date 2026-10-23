@@ -2,8 +2,8 @@
 // chapter; the page then applies the result and commits it as one unit. The panel also lists the written chapters and, for
 // the chapter just made, what changed in the Entanglements and what the page noticed. Nothing here calls the model except
 // that one button. Stopping is the Stop button the page already has: a stopped or failed chapter leaves nothing behind.
-import { generateChapter } from "./client.js";
-import { generateGate, applyGenerated, commitChapter } from "./generate.js";
+import { generateChapter, regenerateChapter } from "./client.js";
+import { generateGate, applyGenerated, commitChapter, regenerateGate, applyRegenerated, commitRegenerated } from "./generate.js";
 import { chapterInfo } from "./plan.js";
 
 export const STRINGS = {
@@ -35,6 +35,14 @@ export const STRINGS = {
   noChanges: "Nothing in Entanglements changed.",
   change: "{field}: {from} → {to}",
   noticed: "What the page noticed",
+  again: "Write chapter {n} again",
+  againConfirm: "Write chapter {n} again?\n\nThe Entanglements go back to what this chapter was first written from, and what the model makes now replaces the Entanglements as they are. This chapter's text, events and shifts are replaced. {later}You can undo it afterwards.",
+  againLater: "The {k} later chapter(s) stay as they are, and their beats are marked stale. ",
+  againDone: "Chapter {n} is written again.",
+  undo: "Undo", undone: "Put chapter {n} back as it was.",
+  before: "Before", after: "After",
+  noChapterGate: "This chapter cannot be written again:",
+  reasonsAgain: { no_chapter: "There is no such chapter.", no_snapshot: "The Entanglements it was written from were not kept." },
 };
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
 
@@ -49,10 +57,12 @@ export function createGeneratePanel(hooks) {
   const reviews = new Map();            // chapter id -> {applied, warnings}; only kept while the page is open
   let button = null;
   let stageLine = null;
+  let againButtons = [];
   let mine = false;                     // this panel pressed the button and is waiting
 
   function refresh() {
     const { working, stage } = hooks.client.state;
+    for (const b of againButtons) b.disabled = working;
     if (button) button.disabled = working || button.dataset.blocked === "true";
     if (stageLine) stageLine.textContent = working && mine ? STRINGS.stages[stage] ?? STRINGS.working : "";
   }
@@ -86,6 +96,43 @@ export function createGeneratePanel(hooks) {
     hooks.redraw();
   }
 
+  async function again(project, number, later) {
+    if (!window.confirm(fill(STRINGS.againConfirm, { n: number, later: later ? fill(STRINGS.againLater, { k: later }) : "" }))) return;
+    mine = true;
+    refresh();
+    const result = await regenerateChapter(hooks.client, hooks.schema, project, number).done;
+    mine = false;
+    if (hooks.getProject() !== project) return;
+    if (result.reason) {
+      const why = STRINGS.reasonsAgain[result.reason] ?? STRINGS.reasons[result.reason] ?? result.reason;
+      hooks.notice([why, ...(result.problems ?? [])].join(" "), "notice-bad");
+      hooks.redraw();
+      return;
+    }
+    if (!result.ok) { hooks.notice(hooks.errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); refresh(); return; }
+    let outcome = result.outcome;
+    if (outcome.changes.locked.length) {
+      const list = outcome.changes.locked.map((a) => `• ${a.label}: ${a.from} → ${a.to}`).join("\n");
+      if (!window.confirm(fill(STRINGS.locked, { list }))) outcome = applyRegenerated(hooks.schema, project, result.ctx, result.read, { overwriteLocked: false });
+    }
+    const { undo } = commitRegenerated(project, outcome);
+    const earlier = reviews.get(outcome.chapter.id);
+    reviews.set(outcome.chapter.id, { applied: outcome.changes.applied, warnings: outcome.warnings, before: outcome.before });
+    hooks.notice(fill(STRINGS.againDone, { n: number }), "", {
+      label: STRINGS.undo,
+      run: () => {
+        if (hooks.getProject() !== project) return;
+        undo();
+        if (earlier) reviews.set(outcome.chapter.id, earlier); else reviews.delete(outcome.chapter.id);
+        hooks.changed();
+        hooks.redraw();
+        hooks.notice(fill(STRINGS.undone, { n: number }));
+      },
+    });
+    hooks.changed();
+    hooks.redraw();
+  }
+
   function chapterList(project) {
     const written = project.chapters ?? [];
     const box = node("div", { className: "chapter-list" }, node("h4", { textContent: STRINGS.chapters }));
@@ -94,8 +141,15 @@ export function createGeneratePanel(hooks) {
     const ordered = [...written].sort((a, b) => numberOf(a) - numberOf(b));
     ordered.forEach((c, at) => {
       const parts = [node("summary", { textContent: fill(STRINGS.chapterTitle, { n: numberOf(c) }) })];
-      for (const paragraph of c.text.split(/\n\s*\n/)) parts.push(node("p", { className: "chapter-text", textContent: paragraph.trim() }));
+      const paragraphs = (text) => text.split(/\n\s*\n/).map((paragraph) => node("p", { className: "chapter-text", textContent: paragraph.trim() }));
       const review = reviews.get(c.id);
+      if (review?.before !== undefined) {
+        parts.push(node("div", { className: "chapter-compare" },
+          node("div", {}, node("h5", { textContent: STRINGS.before }), ...paragraphs(review.before)),
+          node("div", {}, node("h5", { textContent: STRINGS.after }), ...paragraphs(c.text))));
+      } else {
+        parts.push(...paragraphs(c.text));
+      }
       if (review) {
         parts.push(node("h5", { textContent: STRINGS.changes }));
         parts.push(review.applied.length
@@ -105,6 +159,13 @@ export function createGeneratePanel(hooks) {
           parts.push(node("h5", { textContent: STRINGS.noticed }));
           parts.push(node("ul", { className: "chapter-warnings" }, ...review.warnings.map((w) => node("li", { textContent: w.text }))));
         }
+      }
+      const gate = regenerateGate(hooks.schema, project, numberOf(c));
+      if (gate.ok) {
+        const redo = node("button", { type: "button", className: "validate again", textContent: fill(STRINGS.again, { n: numberOf(c) }) });
+        redo.addEventListener("click", () => again(project, numberOf(c), gate.later));
+        parts.push(node("div", { className: "plan-actions" }, redo));
+        againButtons.push(redo);
       }
       box.append(node("details", { className: "chapter", open: at === ordered.length - 1 }, ...parts));
     });
@@ -116,6 +177,7 @@ export function createGeneratePanel(hooks) {
     const project = hooks.getProject();
     button = null;
     stageLine = null;
+    againButtons = [];
     if (!project) return;
     const panel = node("section", { className: "generate-panel" }, node("h3", { textContent: STRINGS.title }));
     (container.querySelector(".plan-panel")?.after(panel) ?? container.prepend(panel));

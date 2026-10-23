@@ -7,11 +7,12 @@ import {
   RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering, projectStatus,
   noteFor, setNote, setExample, setCardValues,
 } from "./logic.js";
-import { renderCard, errorText, makeReadOnly, STRINGS as CARD_STRINGS } from "./render.js";
+import { renderCard, errorText, makeReadOnly, freezeItems, STRINGS as CARD_STRINGS } from "./render.js";
 import { cardLocked } from "./gate.js";
 import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
 import { createGeneratePanel } from "./generatepanel.js";
+import { writtenBeatIds } from "./plan.js";
 import { createMock } from "./mock.js";
 import {
   BACKEND_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
@@ -63,6 +64,7 @@ const STRINGS = {
   backendMixed: "This page is served over https, so the browser won’t let it call a plain http address. Use an https address, or open the page from your own computer.",
   whereMock: "the built-in sample model, which writes placeholder text (nothing leaves this page)",
   working: "The model is working…",
+  writtenBeat: "This beat was written from. To change the chapter, write it again below.",
   lockedBanner: "This card is locked because the story has started. You can read it, but not change it.",
   connection: { unknown: "Not checked yet", idle: "Ready", busy: "Busy with another job", unreachable: "Can’t reach the model" },
 };
@@ -486,7 +488,11 @@ function show() {
     reviewChanged: updateMarks,
   });
   if (cardLocked(project, card.id)) makeReadOnly(main, STRINGS.lockedBanner);
-  if (card.id === "outline") { planPanel?.draw(main); generatePanel?.draw(main); }
+  if (card.id === "outline") {
+    freezeItems(main, writtenBeatIds(project), STRINGS.writtenBeat);
+    planPanel?.draw(main);
+    generatePanel?.draw(main);
+  }
   storyBar?.draw();
 }
 
@@ -514,7 +520,7 @@ try {
   generatePanel = createGeneratePanel({
     schema, client, getProject: () => project, backendWhere, errorText,
     changed: () => touchState(), redraw: () => show(),
-    notice: (text, kind) => showNotice(text, kind),
+    notice: (text, kind, action) => showNotice(text, kind, action),
   });
   client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); });
   drawConnection();

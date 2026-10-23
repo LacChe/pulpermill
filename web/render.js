@@ -538,6 +538,16 @@ export function makeReadOnly(root, banner) {
   }
 }
 
+// Freezes the list items with the given ids (a written chapter's beat): their controls are switched off and each says why.
+export function freezeItems(root, ids, note) {
+  for (const row of root.querySelectorAll(".item[data-id]")) {
+    if (!ids.has(row.dataset.id)) continue;
+    row.classList.add("frozen");
+    row.prepend(el("p", { class: "frozen-note", role: "note", text: note }));
+    for (const control of row.querySelectorAll("input, select, textarea, button")) control.disabled = true;
+  }
+}
+
 export function renderCard(root, card, values, ctx) {
   root.replaceChildren();
   const project = ctx.project ?? {};

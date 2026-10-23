@@ -15,7 +15,7 @@ import {
   failure, STORY_CALLS, readStatus, fillRequest, readFillReply, planFill, judgeRequest, readJudgeReply, styleFitRequest,
   readStyleFitReply,
 } from "./logic.js";
-import { generateGate, generateRequest, applyGenerated, inputsKey } from "./generate.js";
+import { generateGate, generateRequest, applyGenerated, inputsKey, regenerateGate, regenerateKey, applyRegenerated } from "./generate.js";
 import { planGate, offstageDue, offstageRequest, planRequest, landBeat, beatForChapter, beatBlockers } from "./plan.js";
 
 // ---- The backend setting ----------------------------------------------------
@@ -332,6 +332,25 @@ export function generateChapter(client, schema, project) {
       const again = generateGate(schema, project);
       if (!again.ok || inputsKey(schema, project, again.beat) !== key) return { ok: false, reason: "changed" };
       return { ok: true, beat: gate.beat, stale: gate.stale, read, outcome: applyGenerated(schema, project, gate.beat, read, { overwriteLocked: true }) };
+    }),
+  };
+}
+
+// Write chapter `number` again, from the state it was first written from. Nothing is changed: it resolves to
+// {ok: true, ctx, read, outcome} (applyRegenerated's outcome, with the old text as `before`), or a failure as generateChapter does.
+// The writer's answer to the locked-values question is applied with applyRegenerated(schema, project, ctx, read, {overwriteLocked}).
+export function regenerateChapter(client, schema, project, number) {
+  const gate = regenerateGate(schema, project, number);
+  if (!gate.ok) return { done: Promise.resolve({ ok: false, reason: gate.reason, problems: gate.problems }), stop() {} };
+  const key = regenerateKey(schema, project, number);
+  const call = client.start(generateRequest(schema, gate.trial, gate.beat));
+  return {
+    stop: call.stop,
+    done: call.done.then((reply) => {
+      const read = readGenerateReply(reply);
+      if (!read.ok) return read;
+      if (regenerateKey(schema, project, number) !== key) return { ok: false, reason: "changed" };
+      return { ok: true, ctx: gate, read, outcome: applyRegenerated(schema, project, gate, read, { overwriteLocked: true }) };
     }),
   };
 }
