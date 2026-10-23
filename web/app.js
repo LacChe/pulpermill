@@ -15,6 +15,7 @@ import { createGeneratePanel } from "./generatepanel.js";
 import { createEndPanel } from "./endpanel.js";
 import { createExportPanel } from "./exportpanel.js";
 import { createImportPanel } from "./importpanel.js";
+import { createWelcomeStrip } from "./welcomestrip.js";
 import { fileKind } from "./exporting.js";
 import { pruneNotes } from "./modelnotes.js";
 import { writtenBeatIds } from "./plan.js";
@@ -83,6 +84,8 @@ const openInput = document.getElementById("open-file");
 const importInput = document.getElementById("import-file");
 const importButton = document.getElementById("import");
 const importNode = document.getElementById("import-panel");
+const welcomeNode = document.getElementById("welcome");
+const guideButton = document.getElementById("guide");
 const titleInput = document.getElementById("title");
 const stateNode = document.getElementById("save-state");
 const backendInput = document.getElementById("backend");
@@ -101,6 +104,7 @@ let generatePanel;
 let endPanel;
 let exportPanel;
 let importPanel;
+let welcome;
 let view = { card: "style", characterId: null };
 // What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
 // switching cards. Cleared when another project is opened.
@@ -245,6 +249,7 @@ openInput.addEventListener("change", async () => {
 
 // Import card: pick a card file; the import panel says what it would do and changes nothing until the writer says so.
 importButton.addEventListener("click", () => { if (schema) importInput.click(); });
+guideButton.addEventListener("click", () => welcome?.toggle());
 importInput.addEventListener("change", async () => {
   const file = importInput.files[0];
   importInput.value = "";
@@ -429,6 +434,7 @@ function optionText(name, status) {
 // Brings every tab and every character entry up to date without rebuilding them, so focus stays where it is.
 function updateMarks() {
   if (!schema || !project) return;
+  welcome?.draw();
   const { cards, instances } = projectStatus(schema, project, reviewFor);
   for (const node of cardsNav.querySelectorAll("[data-card]")) {
     const status = cards[node.dataset.card];
@@ -531,6 +537,7 @@ function show() {
     exportPanel?.draw(main);
   }
   storyBar?.draw();
+  welcome?.draw();
 }
 
 try {
@@ -558,6 +565,11 @@ try {
     schema, client, getProject: () => project, backendWhere, errorText,
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),
+  });
+  welcome = createWelcomeStrip(welcomeNode, {
+    schema, getProject: () => project,
+    goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId }; show(); },
+    shownChanged: (shown) => guideButton.setAttribute("aria-expanded", String(shown)),
   });
   exportPanel = createExportPanel({ schema, getProject: () => project });
   importPanel = createImportPanel(importNode, {
