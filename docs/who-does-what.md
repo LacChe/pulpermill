@@ -22,7 +22,7 @@
 | Step | Actor | Notes |
 | --- | --- | --- |
 | Open the page, connect the backend | H, C | C runs a status check (idle or busy). |
-| Import a project, individual cards, or an example chapter | H, C | C keeps valid fields only and warns on bad input. It never crashes. |
+| Import a project, individual cards, or an example chapter | H, C | C keeps valid fields only and warns on bad input. It never crashes. A card file (Style, a character, World) comes in only to a card that is not locked. H sees what would change first, and a character comes in as a new character or in place of one H has. Undo is offered afterwards. |
 
 ## 1. Card loop
 
