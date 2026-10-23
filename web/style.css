@@ -257,3 +257,9 @@ main.locked input:disabled, main.locked select:disabled, main.locked textarea:di
 .chapter-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
 .item.frozen { opacity: 0.85; }
 .frozen-note { margin: 0 0 6px; color: var(--muted); font-size: 0.85rem; }
+
+.end-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; display: grid; gap: 10px; }
+.end-panel h3 { margin: 0; font-size: 1.1rem; }
+.end-panel h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+.end-panel p { margin: 0; }
+.after-changes { margin: 2px 0 0; padding-left: 20px; }

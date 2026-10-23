@@ -12,6 +12,7 @@ import { cardLocked } from "./gate.js";
 import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
 import { createGeneratePanel } from "./generatepanel.js";
+import { createEndPanel } from "./endpanel.js";
 import { writtenBeatIds } from "./plan.js";
 import { createMock } from "./mock.js";
 import {
@@ -89,6 +90,7 @@ let mock;
 let storyBar;
 let planPanel;
 let generatePanel;
+let endPanel;
 let view = { card: "style", characterId: null };
 // What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
 // switching cards. Cleared when another project is opened.
@@ -155,6 +157,7 @@ function replaceProject(next, savedAs = next) {
   drafts.clear();
   planPanel?.reset();
   generatePanel?.reset();
+  endPanel?.reset();
   view = { card: "style", characterId: null };
   titleInput.value = project.title;
   savedSnapshot = projectSnapshot(schema, savedAs);
@@ -492,6 +495,7 @@ function show() {
     freezeItems(main, writtenBeatIds(project), STRINGS.writtenBeat);
     planPanel?.draw(main);
     generatePanel?.draw(main);
+    endPanel?.draw(main);
   }
   storyBar?.draw();
 }
@@ -522,7 +526,12 @@ try {
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),
   });
-  client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); });
+  endPanel = createEndPanel({
+    schema, client, getProject: () => project, backendWhere, errorText,
+    changed: () => touchState(), redraw: () => show(),
+    notice: (text, kind, action) => showNotice(text, kind, action),
+  });
+  client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); endPanel.refresh(); });
   drawConnection();
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.
   const recovered = readRecovery(store.get() ?? "", schema);

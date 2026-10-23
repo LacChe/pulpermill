@@ -189,7 +189,7 @@ Reply:
 
 After the last chapter. Reads the Events and Shifts summaries (one sentence per event), never the chapters.
 
-Request: `style`, `setup`, `characters` (all, with ids), `world`, `events`, `shifts`. Reply: `{"ok": true, "characters": [{"id": "c0000001", ...}], "world": {...}}`. Every character carries the id it was sent. The page forces the fixed fields (name, age, sex, appearance) back and keeps the originals.
+Request: `style`, `setup`, `characters` (all, with ids), `world`, `events`, `shifts`. Reply: `{"ok": true, "characters": [{"id": "c0000001", ...}], "world": {...}}`. Every character carries the id it was sent. The page forces the fixed fields (name, age, sex, appearance) back and keeps the originals. The characters must come back as the same people (none missing, none new), or the page refuses the reply as `bad_output`. In a list, an item that returns with an id the page knows keeps it, an item without a known id is new (the page gives it one), and an item left out stays as it was; the backend never needs to make an id. A value that does not fit its field is dropped and the field keeps its old value. The page stores the result as `after_story` and never touches the originals.
 
 ## How it is tested
 

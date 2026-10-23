@@ -11,11 +11,12 @@
 // by itself is ask the backend whether it is idle.
 
 import {
-  readOffstageReply, readPlanReply, readGenerateReply,
+  readOffstageReply, readPlanReply, readGenerateReply, readEndStoryReply,
   failure, STORY_CALLS, readStatus, fillRequest, readFillReply, planFill, judgeRequest, readJudgeReply, styleFitRequest,
   readStyleFitReply,
 } from "./logic.js";
 import { generateGate, generateRequest, applyGenerated, inputsKey, regenerateGate, regenerateKey, applyRegenerated } from "./generate.js";
+import { endGate, endStoryRequest, landEndStory } from "./endstory.js";
 import { planGate, offstageDue, offstageRequest, planRequest, landBeat, beatForChapter, beatBlockers } from "./plan.js";
 
 // ---- The backend setting ----------------------------------------------------
@@ -351,6 +352,22 @@ export function regenerateChapter(client, schema, project, number) {
       if (!read.ok) return read;
       if (regenerateKey(schema, project, number) !== key) return { ok: false, reason: "changed" };
       return { ok: true, ctx: gate, read, outcome: applyRegenerated(schema, project, gate, read, { overwriteLocked: true }) };
+    }),
+  };
+}
+
+// The end of the story: the model updates Characters and World from the records. Nothing is changed: it resolves to
+// {ok: true, after, forced, dropped} (landEndStory's) and the page stores `after` as project.after_story once the writer has seen
+// it. {ok: false, reason: "not_done"} while a chapter is still to write, and the call's failure otherwise.
+export function endStory(client, schema, project) {
+  const gate = endGate(project);
+  if (!gate.ok) return { done: Promise.resolve({ ok: false, reason: gate.reason }), stop() {} };
+  const call = client.start(endStoryRequest(schema, project));
+  return {
+    stop: call.stop,
+    done: call.done.then((reply) => {
+      const read = readEndStoryReply(reply);
+      return read.ok ? landEndStory(schema, project, read) : read;
     }),
   };
 }

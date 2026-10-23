@@ -136,9 +136,15 @@ export function createMock(schema, options = {}) {
     };
   };
 
-  const endStory = (request) => ({
-    ok: true, characters: JSON.parse(JSON.stringify(request.characters ?? [])), world: JSON.parse(JSON.stringify(request.world ?? {})),
-  });
+  // The characters and world as sent, with a few changes so the review has something to show: a changed sketch, a changed
+  // name (which the page must put back), and one new place.
+  const endStory = (request) => {
+    const characters = JSON.parse(JSON.stringify(request.characters ?? []));
+    const world = JSON.parse(JSON.stringify(request.world ?? {}));
+    if (characters[0]) { characters[0].sketch = `${characters[0].sketch ?? ""} (Mock: changed by the story.)`.trim(); characters[0].name = `${characters[0].name} (changed)`; }
+    if (world.places?.[0]) { const { id, ...place } = world.places[0]; world.places.push({ ...place, name: "Mock new place" }); }
+    return { ok: true, characters, world };
+  };
 
   const judge = (request) => {
     const card = schema.cards[request.card];
