@@ -1,6 +1,7 @@
 // The export panel: shown at the bottom of the Outline card. The story as one markdown file, each portable card as its own
 // JSON file, and a pointer to Save for the project file. Nothing here calls the model.
-import { storyMarkdown, storyFileName, cardFiles, storyCounts } from "./exporting.js";
+import { storyMarkdown, storyFileName, cardFiles, cardsZipName, storyCounts } from "./exporting.js";
+import { makeZip } from "./zip.js";
 
 export const STRINGS = {
   title: "Export",
@@ -12,7 +13,7 @@ export const STRINGS = {
   cards: "The cards",
   cardsHelp: "Style, each character and the world, each as its own JSON file, so they can be used in another story. The other cards belong to this story only.",
   download: "Download",
-  downloadAll: "Download all the card files",
+  downloadAll: "Download all the card files (.zip)",
   project: "The project",
   projectHelp: "Use Save at the top. The project file holds everything, and opening it brings the story back as it was.",
 };
@@ -60,7 +61,7 @@ export function createExportPanel(hooks) {
     });
     panel.append(node("ul", { className: "export-files" }, ...rows));
     const all = node("button", { type: "button", className: "validate", textContent: STRINGS.downloadAll });
-    all.addEventListener("click", () => files.forEach((f, at) => setTimeout(() => download(f.name, f.text, "application/json"), at * 300)));
+    all.addEventListener("click", () => download(cardsZipName(project), makeZip(files.map((f) => ({ name: f.name, text: f.text }))), "application/zip"));
     panel.append(node("div", { className: "plan-actions" }, all),
       node("h4", { textContent: STRINGS.project }), node("p", { className: "help", textContent: STRINGS.projectHelp }));
   }

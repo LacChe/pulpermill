@@ -35,6 +35,10 @@ export function storyFileName(project) {
   return `${slug(project.title, "untitled")}-story.md`;
 }
 
+export function cardsZipName(project) {
+  return `${slug(project.title, "untitled")}-cards.zip`;
+}
+
 // One card as the text of a file.
 export function cardFileText(schema, cardId, values) {
   return `${JSON.stringify({ [CARD_FILE_KEY]: cardId, schema_version: schema.schema_version, values }, null, 2)}\n`;
