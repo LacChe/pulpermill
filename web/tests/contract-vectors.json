@@ -1566,7 +1566,8 @@
         }
       ],
       "dropped": "history",
-      "problems": 2
+      "problems": 2,
+      "made_from": "a1b2c3d4"
     }
   }
 }

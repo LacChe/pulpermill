@@ -108,6 +108,9 @@ class EndNote(Item):
     forced: list[ForcedFields] = spec(None, None, "pairs", required=False, default=[], repeat=True, uncapped=True)
     dropped: str | None = spec("text", None, "note", required=False, filled_by="code")     # field keys, separated by commas
     problems: int = spec("number", None, "note", required=False, default=0, filled_by="code")
+    # A short fingerprint of the written chapters the copy was made from. The page compares it with the chapters as they are
+    # now, and says the copy may be out of date when they differ. Display only; a note without it is never called out of date.
+    made_from: str | None = spec("text", None, "note", required=False, filled_by="code")
 
 
 class Project(Item):

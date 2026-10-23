@@ -64,7 +64,7 @@ export function chapterNoteFor(project, chapterId) {
 }
 
 // ---- The end note: {forced: [{character, fields: [key]}], dropped: [key], problems} -------------------------------------
-export function setEndNote(project, { forced = [], dropped = [], problems = 0 }) {
+export function setEndNote(project, { forced = [], dropped = [], problems = 0, madeFrom }) {
   const ids = [];
   const next = () => { const id = newId(ids); ids.push(id); return id; };
   const note = {
@@ -72,7 +72,13 @@ export function setEndNote(project, { forced = [], dropped = [], problems = 0 })
     problems: Number(problems) || 0,
   };
   if (dropped.length) note.dropped = dropped.join(", ");
+  if (typeof madeFrom === "string" && madeFrom) note.made_from = madeFrom;
   project.end_note = note;
+}
+
+// The writer edited the copy: only the count of problems changes, the rest of what the model said stays.
+export function setEndProblems(project, problems) {
+  if (isObject(project.end_note)) project.end_note.problems = Number(problems) || 0;
 }
 
 export function endNoteFor(project) {
@@ -82,6 +88,7 @@ export function endNoteFor(project) {
     forced: lines(note.forced).map((f) => ({ character: String(f.character ?? ""), fields: words(f.fields) })),
     dropped: words(note.dropped),
     problems: Number(note.problems) || 0,
+    madeFrom: typeof note.made_from === "string" && note.made_from ? note.made_from : null,
   };
 }
 

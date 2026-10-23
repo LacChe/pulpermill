@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { schema } from "./helpers.mjs";
 import { newProject, projectSnapshot, readProject } from "../logic.js";
 import {
-  setPlanNote, planNoteFor, setChapterNote, chapterNoteFor, setEndNote, endNoteFor, copyNote, putNote, removeNote,
+  setPlanNote, planNoteFor, setChapterNote, chapterNoteFor, setEndNote, setEndProblems, endNoteFor, copyNote, putNote, removeNote,
   copyEndNote, putEndNote, pruneNotes,
 } from "../modelnotes.js";
 
@@ -20,7 +20,7 @@ test("the notes the page writes have exactly the fields of the shared example, w
     before: "The first version of the chapter.",
   });
   setChapterNote(project, "c0000002", {});
-  setEndNote(project, { forced: [{ character: "Suvi", fields: ["age", "appearance"] }], dropped: ["history"], problems: 2 });
+  setEndNote(project, { forced: [{ character: "Suvi", fields: ["age", "appearance"] }], dropped: ["history"], problems: 2, madeFrom: golden.end_note.made_from });
   assert.deepEqual(stripIds(project.plan_notes), stripIds(golden.plan_notes));
   assert.deepEqual(stripIds(project.chapter_notes), stripIds(golden.chapter_notes));
   assert.deepEqual(stripIds(project.end_note), stripIds(golden.end_note));
@@ -36,7 +36,11 @@ test("notes read back the way the panels show them", () => {
   setPlanNote(project, "b1", { thinking: "Think.", retried: false });
   assert.deepEqual(planNoteFor(project, "b1"), { thinking: "Think.", retried: false });
   setEndNote(project, { forced: [{ character: "Ola", fields: ["name"] }], dropped: [], problems: 0 });
-  assert.deepEqual(endNoteFor(project), { forced: [{ character: "Ola", fields: ["name"] }], dropped: [], problems: 0 });
+  assert.deepEqual(endNoteFor(project), { forced: [{ character: "Ola", fields: ["name"] }], dropped: [], problems: 0, madeFrom: null });
+  setEndNote(project, { problems: 1, madeFrom: "0badf00d" });
+  assert.equal(endNoteFor(project).madeFrom, "0badf00d");
+  setEndProblems(project, 4);
+  assert.deepEqual([project.end_note.problems, project.end_note.made_from], [4, "0badf00d"], "editing the copy changes only the count");
   assert.equal("dropped" in project.end_note, false, "nothing dropped, no key");
 });
 

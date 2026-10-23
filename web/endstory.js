@@ -145,6 +145,37 @@ export function afterStoryChanges(schema, project, after) {
   return out;
 }
 
+// ---- Editing the copy, and knowing when it is out of date -----------------------------------------
+
+// A short fingerprint (8 hex digits, FNV-1a) of what the model read at the end: every written chapter, and the records of what
+// happened and how people changed. A chapter written again changes the records even when its words come out the same; undoing
+// that puts the fingerprint back. The order things are stored in does not matter.
+export function chaptersFingerprint(project) {
+  const byId = (list) => [...(list ?? [])].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const text = JSON.stringify([
+    byId(project.chapters).map((c) => [c.id, c.text ?? ""]),
+    byId(project.summary_events?.entries),
+    byId(project.summary_shifts?.shifts),
+  ]);
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) { hash ^= text.charCodeAt(i); hash = Math.imul(hash, 0x01000193) >>> 0; }
+  return hash.toString(16).padStart(8, "0");
+}
+
+// True when the copy was made from chapters that have since been written again. A copy with no fingerprint (made before this was
+// kept) is never called out of date, since nothing says it is.
+export function afterStoryStale(project) {
+  const made = project.end_note?.made_from;
+  if (!project.after_story || typeof made !== "string" || !made) return false;
+  return made !== chaptersFingerprint(project);
+}
+
+// The project as the copy's cards should see it while the writer edits them: the same project, with the copy's style,
+// characters and world in place of the originals. The copy's own objects are shared, not duplicated, so editing a form edits the copy.
+export function afterStoryView(schema, project) {
+  return { ...settledProject(schema, project), style: project.after_story.style, characters: project.after_story.characters, world: project.after_story.world };
+}
+
 // Block problems in the copy, counted per card, so the review can say the copy is not as clean as the original.
 export function afterStoryProblems(schema, project, after) {
   const settled = { ...settledProject(schema, project), characters: after.characters, world: after.world };

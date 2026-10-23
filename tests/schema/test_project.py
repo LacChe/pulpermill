@@ -165,6 +165,7 @@ def test_the_notes_the_page_writes_are_valid_and_use_exactly_the_fields_the_sche
     for entry in VECTORS["end_note"]["forced"]:
         check(ForcedFields, entry)
     assert end.problems == VECTORS["end_note"]["problems"]
+    assert end.made_from == VECTORS["end_note"]["made_from"]
 
 
 def test_notes_round_trip_inside_a_project_with_ids_intact():

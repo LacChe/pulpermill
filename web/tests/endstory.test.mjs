@@ -6,7 +6,8 @@ import { createClient, planChapter, generateChapter, endStory } from "../client.
 import { lockStaticCards } from "../gate.js";
 import { placeBeat, suggestedCast } from "../plan.js";
 import { commitChapter } from "../generate.js";
-import { endGate, endStoryRequest, landEndStory, afterStoryChanges } from "../endstory.js";
+import { endGate, endStoryRequest, landEndStory, afterStoryChanges, afterStoryStale, afterStoryView, chaptersFingerprint } from "../endstory.js";
+import { setEndNote } from "../modelnotes.js";
 import { readEndStoryReply } from "../logic.js";
 
 async function finished(chapters = 2) {
@@ -92,4 +93,47 @@ test("a failed or stopped call changes nothing", async () => {
   mock.queue("busy");
   assert.equal((await endStory(client, schema, project).done).error.kind, "busy");
   assert.equal(project.after_story, undefined);
+});
+
+test("a chapter written again after the copy was made marks the copy out of date, and putting it back clears the mark", async () => {
+  const { project, client } = await finished(2);
+  const result = await endStory(client, schema, project).done;
+  project.after_story = result.after;
+  assert.equal(afterStoryStale(project), false, "no note, nothing says it is out of date");
+  setEndNote(project, { madeFrom: chaptersFingerprint(project) });
+  assert.equal(afterStoryStale(project), false);
+  const was = project.chapters[1].text;
+  project.chapters[1].text = "A different second chapter.";
+  assert.equal(afterStoryStale(project), true);
+  project.chapters[1].text = was;
+  assert.equal(afterStoryStale(project), false, "undoing the rewrite clears it");
+  project.chapters.reverse();
+  project.summary_events.entries.reverse();
+  assert.equal(afterStoryStale(project), false, "the order they are stored in does not matter");
+  project.summary_shifts.shifts.push({ id: "s0000009", beat: project.outline.beats[0].id, character: project.characters[0].id, decided: "Stay." });
+  assert.equal(afterStoryStale(project), true, "a changed record counts even when the words are the same");
+  project.summary_shifts.shifts.pop();
+  delete project.after_story;
+  project.chapters[0].text = "x";
+  assert.equal(afterStoryStale(project), false, "no copy, nothing to be out of date");
+});
+
+test("the fingerprint is eight hex digits and follows the text", async () => {
+  const { project } = await finished(1);
+  const a = chaptersFingerprint(project);
+  assert.match(a, /^[0-9a-f]{8}$/);
+  project.chapters[0].text += " ";
+  assert.notEqual(chaptersFingerprint(project), a);
+});
+
+test("the copy's forms edit the copy itself, and the originals stay as they are", async () => {
+  const { project, client } = await finished(2);
+  project.after_story = (await endStory(client, schema, project).done).after;
+  const view = afterStoryView(schema, project);
+  assert.equal(view.characters, project.after_story.characters, "the same objects, not duplicates");
+  assert.equal(view.world, project.after_story.world);
+  const original = JSON.stringify(project.characters);
+  view.characters[0].name = "Edited by hand";
+  assert.equal(project.after_story.characters[0].name, "Edited by hand");
+  assert.equal(JSON.stringify(project.characters), original);
 });

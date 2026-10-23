@@ -89,6 +89,8 @@ Any failure leaves nothing committed. Shape failures retry up to the same two at
 | Update Characters and World | M (grammar) | Always reads the Events and Shifts summaries (one sentence per event, so they stay small), never the full chapters, plus the current cards. Works like card creation. |
 | Force fixed fields (name, age, sex, appearance) back to their original values; keep ids | C |  |
 | Store as the after-story copy; originals untouched | C |  |
+| Edit the after-story copy by hand (the card forms, no model) | H | C keeps the copy and its review in step on leaving a field |
+| Notice the copy is out of date (a chapter or its records changed since it was made) | C | H decides: update it, or keep and edit it |
 | Review, edit, download | H | C keeps a display note of what it forced back or dropped, with the copy |
 
 ## 6. Export
