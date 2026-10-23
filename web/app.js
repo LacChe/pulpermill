@@ -7,7 +7,7 @@ import {
   RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering, projectStatus,
   noteFor, setNote, setExample, setCardValues,
 } from "./logic.js";
-import { renderCard, errorText, makeReadOnly, freezeItems, STRINGS as CARD_STRINGS } from "./render.js";
+import { renderCard, errorText, makeReadOnly, freezeItems, flagItems, STRINGS as CARD_STRINGS } from "./render.js";
 import { cardLocked } from "./gate.js";
 import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
@@ -18,7 +18,7 @@ import { createImportPanel } from "./importpanel.js";
 import { createWelcomeStrip } from "./welcomestrip.js";
 import { fileKind } from "./exporting.js";
 import { pruneNotes } from "./modelnotes.js";
-import { writtenBeatIds } from "./plan.js";
+import { writtenBeatIds, staleBeatIds } from "./plan.js";
 import { createMock } from "./mock.js";
 import {
   BACKEND_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
@@ -28,6 +28,8 @@ const LABELS = {
   addCharacter: "Add a character", deleteCharacter: "Delete this character?", remove: "Delete this character",
   unnamed: "Unnamed character", noCharacters: "No characters yet.", character: "Character",
   locked: "locked", lockMark: "🔒",
+  tabNames: { characters: "Characters" },     // a tab holds all of a many-per-project card, so it is named in the plural
+
   tabEmpty: "nothing in it yet", tabStarted: "started", tabReady: "nothing stops generating",
   markBlock: "✕ {n}", markWarn: "△ {n}", markReady: "✓", markStarted: "●",
 };
@@ -72,6 +74,7 @@ const STRINGS = {
   whereMock: "the built-in sample model, which writes placeholder text (nothing leaves this page)",
   working: "The model is working…",
   writtenBeat: "This beat was written from. To change the chapter, write it again below.",
+  staleBeat: "May no longer fit: an earlier chapter was written again after this beat was planned.",
   lockedBanner: "This card is locked because the story has started. You can read it, but not change it.",
   connection: { unknown: "Not checked yet", idle: "Ready", busy: "Busy with another job", unreachable: "Can’t reach the model" },
 };
@@ -426,6 +429,8 @@ function statusWords(status) {
   return parts.join(", ");
 }
 
+const tabName = (id) => LABELS.tabNames[id] ?? schema.cards[id].label;
+
 function optionText(name, status) {
   const marks = markNodes(status).map((node) => node.textContent);
   return [name || LABELS.unnamed, ...marks].join("  ");
@@ -435,12 +440,13 @@ function optionText(name, status) {
 function updateMarks() {
   if (!schema || !project) return;
   welcome?.draw();
+  planPanel?.sync();
   const { cards, instances } = projectStatus(schema, project, reviewFor);
   for (const node of cardsNav.querySelectorAll("[data-card]")) {
     const status = cards[node.dataset.card];
     node.querySelector(".tab-marks").replaceChildren(...markNodes(status));
     const words = cardLocked(project, node.dataset.card) ? `${statusWords(status)}, ${LABELS.locked}` : statusWords(status);
-    node.setAttribute("aria-label", `${schema.cards[node.dataset.card].label}: ${words}`);
+    node.setAttribute("aria-label", `${tabName(node.dataset.card)}: ${words}`);
     node.title = words;
   }
   const select = peopleNav.querySelector("select");
@@ -457,7 +463,7 @@ function drawNav() {
     const node = button("", () => { view.card = id; show(); }, { current: view.card === id });
     node.dataset.card = id;
     node.append(
-      Object.assign(document.createElement("span"), { className: "tab-label", textContent: schema.cards[id].label }),
+      Object.assign(document.createElement("span"), { className: "tab-label", textContent: tabName(id) }),
       Object.assign(document.createElement("span"), { className: "tab-marks" }),
       ...(cardLocked(project, id) ? [Object.assign(document.createElement("span"), { className: "tab-lock", textContent: LABELS.lockMark, title: LABELS.locked })] : []));
     return node;
@@ -530,6 +536,7 @@ function show() {
   });
   if (cardLocked(project, card.id)) makeReadOnly(main, STRINGS.lockedBanner);
   if (card.id === "outline") {
+    flagItems(main, staleBeatIds(project), STRINGS.staleBeat);
     freezeItems(main, writtenBeatIds(project), STRINGS.writtenBeat);
     planPanel?.draw(main);
     generatePanel?.draw(main);

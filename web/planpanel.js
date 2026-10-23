@@ -5,7 +5,7 @@ import { storyStarted } from "./gate.js";
 import { planChapter } from "./client.js";
 import { planNoteFor, setPlanNote, copyNote, putNote, removeNote } from "./modelnotes.js";
 import {
-  CAST_MAX, chapterInfo, beatForChapter, castChoices, suggestedCast, castProblem, pickSpotlight, shiftsForChapter, currentGoal,
+  CAST_MAX, castKey, chapterInfo, beatForChapter, castChoices, suggestedCast, castProblem, pickSpotlight, shiftsForChapter, currentGoal,
   openPlants, availableReveals, offstageDue, planIsStale, placeBeat,
 } from "./plan.js";
 
@@ -70,11 +70,26 @@ function node(tag, props = {}, ...children) {
 export function createPlanPanel(hooks) {
   let selection = null;                 // {project, chapter, ids}: who is ticked, per project and chapter
   let button = null;
+  let shownIn = null;                   // the card the panel was last drawn into, so it can be drawn again alone
 
+  // The ticks follow the plan's own Cast field: while the field is as it was, the writer's ticks stand; when it changes (by hand,
+  // by an undo, by a new plan) the ticks are taken from it again.
   function chosen(project, chapter, existing) {
-    if (selection && selection.project === project && selection.chapter === chapter) return selection;
-    selection = { project, chapter, ids: new Set(existing?.cast?.length ? existing.cast : suggestedCast(project, chapter)) };
+    const synced = castKey(existing?.cast);
+    if (selection && selection.project === project && selection.chapter === chapter && selection.synced === synced) return selection;
+    selection = { project, chapter, synced, ids: new Set(existing?.cast?.length ? existing.cast : suggestedCast(project, chapter)) };
     return selection;
+  }
+
+  // Run when the writer leaves a field: if the plan's Cast was changed, draws the panel again (the panel only, so the form keeps its place).
+  function sync() {
+    const project = hooks.getProject();
+    const panel = shownIn?.querySelector(".plan-panel");
+    if (!project || !panel || !selection || selection.project !== project) return;
+    const existing = beatForChapter(project, selection.chapter);
+    if (castKey(existing?.cast) === selection.synced) return;
+    panel.remove();
+    draw(shownIn);
   }
 
   const usedText = (c) => (c.uses === 0 ? STRINGS.usedNone : fill(c.uses === 1 ? STRINGS.usedOne : STRINGS.usedMany, { n: c.uses, last: c.last ?? "?" }));
@@ -146,6 +161,7 @@ export function createPlanPanel(hooks) {
   function draw(container) {
     const project = hooks.getProject();
     button = null;
+    shownIn = container;
     if (!project) return;
     const panel = node("section", { className: "plan-panel" }, node("h3", { textContent: STRINGS.title }));
     (container.querySelector(".summary")?.after(panel) ?? container.prepend(panel));
@@ -205,5 +221,5 @@ export function createPlanPanel(hooks) {
     }
   }
 
-  return { draw, refresh, reset() { selection = null; button = null; } };
+  return { draw, refresh, sync, reset() { selection = null; button = null; shownIn = null; } };
 }

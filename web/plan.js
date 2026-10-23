@@ -30,6 +30,16 @@ export function writtenBeatIds(project) {
   return new Set((project.chapters ?? []).map((c) => c.beat));
 }
 
+// The beats marked as possibly out of step (an earlier chapter was written again after they were planned): a set of ids.
+export function staleBeatIds(project) {
+  return new Set(beatsOf(project).filter((b) => b.stale === true).map((b) => b.id));
+}
+
+// Who is in a beat's cast, as one string that does not depend on the order: for telling whether the cast was changed.
+export function castKey(cast) {
+  return [...(Array.isArray(cast) ? cast : [])].sort().join("|");
+}
+
 export function chapterInfo(project) {
   const written = (project.chapters ?? []).length;
   const count = Number(project.setup?.chapter_count) || 0;

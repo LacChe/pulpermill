@@ -548,6 +548,15 @@ export function freezeItems(root, ids, note) {
   }
 }
 
+// Marks the list items with the given ids (a beat that may no longer fit): each is outlined and says why, at the top of the item.
+export function flagItems(root, ids, note) {
+  for (const row of root.querySelectorAll(".item[data-id]")) {
+    if (!ids.has(row.dataset.id)) continue;
+    row.classList.add("flagged");
+    row.prepend(el("p", { class: "flagged-note", role: "note", text: note }));
+  }
+}
+
 export function renderCard(root, card, values, ctx) {
   root.replaceChildren();
   const project = ctx.project ?? {};

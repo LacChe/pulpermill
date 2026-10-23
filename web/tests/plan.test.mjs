@@ -331,3 +331,13 @@ test("a complete mock plan passes the Outline card's blocking rules", async () =
   const { beat } = landBeat(schema, p, [suvi.id, ola.id], reply);
   assert.deepEqual(beatBlockers(schema, p, beat), []);
 });
+
+test("staleBeatIds names the beats marked as possibly out of step, and castKey ignores order", async () => {
+  const { staleBeatIds, castKey } = await import("../plan.js");
+  const project = { outline: { beats: [{ id: "b1", stale: true }, { id: "b2", stale: false }, { id: "b3" }] } };
+  assert.deepEqual([...staleBeatIds(project)], ["b1"]);
+  assert.equal(staleBeatIds({}).size, 0);
+  assert.equal(castKey(["b", "a"]), castKey(["a", "b"]));
+  assert.notEqual(castKey(["a"]), castKey(["a", "b"]));
+  assert.equal(castKey(undefined), "");
+});
