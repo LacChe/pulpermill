@@ -271,3 +271,14 @@ main.locked input:disabled, main.locked select:disabled, main.locked textarea:di
 .export-files { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .export-files li { display: flex; gap: 12px; align-items: center; }
 .export-label { font-weight: 600; min-width: 12rem; }
+
+.import-panel { max-width: 772px; margin: 12px auto 0; padding: 14px 18px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; display: grid; gap: 10px; }
+.import-panel[hidden] { display: none; }
+.import-panel h3 { margin: 0; font-size: 1.1rem; }
+.import-panel p, .import-panel ul { margin: 0; }
+.import-choice { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; display: grid; gap: 6px; }
+.import-choice legend { padding: 0 6px; color: var(--muted); font-size: 0.9rem; }
+.import-choice label { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.import-choice input[type="radio"] { accent-color: var(--accent); }
+.import-fields { padding-left: 20px; }
+.import-warn { color: var(--warn); }

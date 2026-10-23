@@ -845,7 +845,7 @@ export function resolveFillLinks(card, values, project) {
 }
 
 const withoutIds = (list) => JSON.stringify((list ?? []).map(({ id, ...rest }) => rest));
-const sameValue = (field, a, b) => (field.repeat ? withoutIds(a) === withoutIds(b) : JSON.stringify(a) === JSON.stringify(b));
+export const sameValue = (field, a, b) => (field.repeat ? withoutIds(a) === withoutIds(b) : JSON.stringify(a) === JSON.stringify(b));
 
 // What the card holds right now that a fill could replace: the keys of the fields with something in them.
 export function filledFieldKeys(card, values) {

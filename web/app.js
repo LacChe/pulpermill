@@ -14,6 +14,8 @@ import { createPlanPanel } from "./planpanel.js";
 import { createGeneratePanel } from "./generatepanel.js";
 import { createEndPanel } from "./endpanel.js";
 import { createExportPanel } from "./exportpanel.js";
+import { createImportPanel } from "./importpanel.js";
+import { fileKind } from "./exporting.js";
 import { writtenBeatIds } from "./plan.js";
 import { createMock } from "./mock.js";
 import {
@@ -38,6 +40,7 @@ const STRINGS = {
   unchanged: "Your current project is unchanged.",
   unreadable: "That file could not be read as a project.",
   notProject: "That file is not a Pulpermill project.",
+  isCard: "That file is a card, not a whole project. Use Import card… to bring it in.",
   newer: "That project was saved by a newer version of Pulpermill than this page, so it was not opened. Opening it here could lose parts of it.",
   damaged: "That project is damaged: its {card} card holds something it should not, so it was not opened.",
   confirmNew: "Start a new project? The one you are working on has unsaved changes, and they will be lost.",
@@ -76,6 +79,9 @@ const cardsNav = document.getElementById("cards");
 const peopleNav = document.getElementById("people");
 const main = document.getElementById("card");
 const openInput = document.getElementById("open-file");
+const importInput = document.getElementById("import-file");
+const importButton = document.getElementById("import");
+const importNode = document.getElementById("import-panel");
 const titleInput = document.getElementById("title");
 const stateNode = document.getElementById("save-state");
 const backendInput = document.getElementById("backend");
@@ -93,6 +99,7 @@ let planPanel;
 let generatePanel;
 let endPanel;
 let exportPanel;
+let importPanel;
 let view = { card: "style", characterId: null };
 // What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
 // switching cards. Cleared when another project is opened.
@@ -160,6 +167,7 @@ function replaceProject(next, savedAs = next) {
   planPanel?.reset();
   generatePanel?.reset();
   endPanel?.reset();
+  importPanel?.reset();
   view = { card: "style", characterId: null };
   titleInput.value = project.title;
   savedSnapshot = projectSnapshot(schema, savedAs);
@@ -224,11 +232,30 @@ openInput.addEventListener("change", async () => {
     showNotice(`${STRINGS.unreadable} ${STRINGS.unchanged}`, "notice-bad");
     return;
   }
+  // A card file has a schema_version too, so it would read as a project: ask what it is first.
+  if (fileKind(text) === "card") { showNotice(`${STRINGS.isCard} ${STRINGS.unchanged}`, "notice-bad"); return; }
   const read = readProject(text, schema);
   if (!read.ok) { showNotice(failureText(read), "notice-bad"); return; }
   if (isDirty() && !window.confirm(STRINGS.confirmOpen)) return;
   replaceProject(read.project);
   showNotice(`${fill(STRINGS.opened, { name: file.name })}${read.older ? ` ${STRINGS.older}` : ""}`);
+});
+
+// Import card: pick a card file; the import panel says what it would do and changes nothing until the writer says so.
+importButton.addEventListener("click", () => { if (schema) importInput.click(); });
+importInput.addEventListener("change", async () => {
+  const file = importInput.files[0];
+  importInput.value = "";
+  if (!file) return;
+  let text;
+  try {
+    text = await file.text();
+  } catch {
+    showNotice(`${STRINGS.unreadable} ${STRINGS.unchanged}`, "notice-bad");
+    return;
+  }
+  noticeNode.hidden = true;
+  importPanel.start(text, file.name);
 });
 
 titleInput.addEventListener("input", () => {
@@ -290,6 +317,7 @@ const backendWhere = () => (client.state.setting.kind === "mock" ? STRINGS.where
 function drawConnection() {
   const { working, connection } = client.state;
   stopButton.hidden = !working;
+  importButton.disabled = working;     // one job at a time: a card is not brought in while the model is working
   connectionNode.textContent = working ? STRINGS.working : STRINGS.connection[connection];
   connectionNode.dataset.state = working ? "busy" : connection;
 }
@@ -530,12 +558,19 @@ try {
     notice: (text, kind, action) => showNotice(text, kind, action),
   });
   exportPanel = createExportPanel({ schema, getProject: () => project });
+  importPanel = createImportPanel(importNode, {
+    schema, client, getProject: () => project,
+    goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId }; show(); },
+    forget: (cardId, instanceId, keys) => { const marked = draftsFor(`${cardId}:${instanceId ?? ""}`); for (const key of keys) marked.delete(key); },
+    changed: () => touchState(), redraw: () => show(),
+    notice: (text, kind, action) => showNotice(text, kind, action),
+  });
   endPanel = createEndPanel({
     schema, client, getProject: () => project, backendWhere, errorText,
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),
   });
-  client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); endPanel.refresh(); });
+  client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); endPanel.refresh(); importPanel.refresh(); });
   drawConnection();
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.
   const recovered = readRecovery(store.get() ?? "", schema);

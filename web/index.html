@@ -17,8 +17,10 @@
     <div class="bar-actions">
       <button type="button" id="new">New</button>
       <button type="button" id="open">Open…</button>
+      <button type="button" id="import">Import card…</button>
       <button type="button" id="save">Save</button>
       <input type="file" id="open-file" accept=".json,application/json" hidden>
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
     </div>
   </header>
   <div class="backend-bar">
@@ -32,6 +34,7 @@
   </div>
   <div id="recovery" class="notice" hidden></div>
   <div id="notice" class="notice" role="status" hidden></div>
+  <section id="import-panel" class="import-panel" aria-label="Bring in a card" hidden></section>
   <div id="story-bar" class="story-bar"></div>
   <nav id="cards" class="tabs" aria-label="Cards"></nav>
   <nav id="people" class="tabs people" aria-label="Characters" hidden></nav>
