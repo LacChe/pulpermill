@@ -11,10 +11,11 @@
 // by itself is ask the backend whether it is idle.
 
 import {
-  readOffstageReply, readPlanReply,
+  readOffstageReply, readPlanReply, readGenerateReply,
   failure, STORY_CALLS, readStatus, fillRequest, readFillReply, planFill, judgeRequest, readJudgeReply, styleFitRequest,
   readStyleFitReply,
 } from "./logic.js";
+import { generateGate, generateRequest, applyGenerated, inputsKey } from "./generate.js";
 import { planGate, offstageDue, offstageRequest, planRequest, landBeat, beatForChapter, beatBlockers } from "./plan.js";
 
 // ---- The backend setting ----------------------------------------------------
@@ -311,4 +312,26 @@ export function planChapter(client, schema, project, castIds) {
     return { ok: true, beat: landed.beat, thinking: read.thinking, offstage, unresolved: landed.unresolved, dropped: landed.dropped, blockers, retried, replaces };
   })();
   return { done, stop() { stopped = true; current?.stop(); } };
+}
+
+// Write the next chapter: one call that writes it and reads it twice. Nothing is changed: it resolves to
+// {ok: true, outcome, beat, stale} where `outcome` is applyGenerated's (the records, the changed Entanglements, the changes that
+// touch locked values) and the page commits it with commitChapter once the writer has answered any question.
+// {ok: false, reason} when the page cannot make the request (see generateGate), {ok: false, reason: "changed"} when the
+// Entanglements or the beat were edited while the model wrote, and the call's failure otherwise.
+export function generateChapter(client, schema, project) {
+  const gate = generateGate(schema, project);
+  if (!gate.ok) return { done: Promise.resolve({ ok: false, reason: gate.reason, problems: gate.problems }), stop() {} };
+  const key = inputsKey(schema, project, gate.beat);
+  const call = client.start(generateRequest(schema, project, gate.beat));
+  return {
+    stop: call.stop,
+    done: call.done.then((reply) => {
+      const read = readGenerateReply(reply);
+      if (!read.ok) return read;
+      const again = generateGate(schema, project);
+      if (!again.ok || inputsKey(schema, project, again.beat) !== key) return { ok: false, reason: "changed" };
+      return { ok: true, beat: gate.beat, stale: gate.stale, read, outcome: applyGenerated(schema, project, gate.beat, read, { overwriteLocked: true }) };
+    }),
+  };
 }

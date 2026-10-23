@@ -1222,6 +1222,7 @@ test("deleting a character takes that character's note with it", () => {
 const contractVectors = JSON.parse(readFileSync(new URL("./contract-vectors.json", import.meta.url), "utf8"));
 const vectorsApi = await import("../logic.js");
 const planApi = await import("../plan.js");
+const generateApi = await import("../generate.js");
 
 test("the golden requests are exactly what the page builds", () => {
   const project = {
@@ -1242,6 +1243,7 @@ test("the golden requests are exactly what the page builds", () => {
     style_fit: vectorsApi.styleFitRequest(schema, project).request,
     offstage: planApi.offstageRequest(schema, project, ["c0000001"]),
     plan: planApi.planRequest(schema, project, ["c0000001"]),
+    generate: generateApi.generateRequest(schema, project, { id: "b0000001", chapter: 1, cast: ["c0000001"], spotlight: "" }),
   };
   const golden = contractVectors.requests.filter((v) => v.golden);
   assert.deepEqual(golden.map((v) => v.golden).sort(), Object.keys(built).sort(), "every request the page makes has a golden case");

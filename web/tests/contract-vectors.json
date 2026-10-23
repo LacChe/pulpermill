@@ -859,6 +859,87 @@
         "offstage": null,
         "retry": null
       }
+    },
+    {
+      "name": "the page's generate request",
+      "golden": "generate",
+      "valid": true,
+      "data": {
+        "call": "generate",
+        "schema_version": 1,
+        "language": "en",
+        "chapter": 1,
+        "chapter_count": 0,
+        "style": {
+          "person": "first",
+          "tense": "",
+          "distance": "",
+          "humor": "",
+          "pacing": "",
+          "narrator_note": "",
+          "rhythm": "",
+          "diction": "",
+          "formality": "",
+          "imagery": "",
+          "edge": "",
+          "explicitness": "",
+          "sentences_note": "",
+          "attitude": "",
+          "stance_note": "",
+          "amount": "",
+          "directness": "",
+          "polish": "",
+          "voice_difference": "",
+          "dialogue_note": "",
+          "lens": "",
+          "genre": ""
+        },
+        "setup": {
+          "protagonist": "Suvi",
+          "normal": "",
+          "disruption": "",
+          "goal": "",
+          "stakes": "",
+          "chapter_count": null
+        },
+        "goal": null,
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi"
+          }
+        ],
+        "world": {
+          "name": "",
+          "era_and_technology": "",
+          "everyday_life": "",
+          "history": "",
+          "places": [],
+          "objects": [],
+          "powers": [],
+          "rules": [],
+          "terms": []
+        },
+        "entanglements": {
+          "ties": [],
+          "holdings": [],
+          "knowledge": [],
+          "pressures": []
+        },
+        "standing": [],
+        "earlier_events": [],
+        "previous_ending": null,
+        "beat": {
+          "id": "b0000001",
+          "chapter": 1,
+          "cast": [
+            "Suvi"
+          ],
+          "spotlight": ""
+        },
+        "open_plants": [],
+        "available_reveals": []
+      }
     }
   ],
   "replies": [

@@ -11,6 +11,7 @@ import { renderCard, errorText, makeReadOnly, STRINGS as CARD_STRINGS } from "./
 import { cardLocked } from "./gate.js";
 import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
+import { createGeneratePanel } from "./generatepanel.js";
 import { createMock } from "./mock.js";
 import {
   BACKEND_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
@@ -85,6 +86,7 @@ let client;
 let mock;
 let storyBar;
 let planPanel;
+let generatePanel;
 let view = { card: "style", characterId: null };
 // What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
 // switching cards. Cleared when another project is opened.
@@ -150,6 +152,7 @@ function replaceProject(next, savedAs = next) {
   reviews.clear();
   drafts.clear();
   planPanel?.reset();
+  generatePanel?.reset();
   view = { card: "style", characterId: null };
   titleInput.value = project.title;
   savedSnapshot = projectSnapshot(schema, savedAs);
@@ -483,7 +486,7 @@ function show() {
     reviewChanged: updateMarks,
   });
   if (cardLocked(project, card.id)) makeReadOnly(main, STRINGS.lockedBanner);
-  if (card.id === "outline") planPanel?.draw(main);
+  if (card.id === "outline") { planPanel?.draw(main); generatePanel?.draw(main); }
   storyBar?.draw();
 }
 
@@ -508,7 +511,12 @@ try {
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),
   });
-  client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); });
+  generatePanel = createGeneratePanel({
+    schema, client, getProject: () => project, backendWhere, errorText,
+    changed: () => touchState(), redraw: () => show(),
+    notice: (text, kind) => showNotice(text, kind),
+  });
+  client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); });
   drawConnection();
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.
   const recovered = readRecovery(store.get() ?? "", schema);

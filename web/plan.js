@@ -184,14 +184,14 @@ export function planGate(project, castIds) {
 
 const NAMED_SOURCES = ["characters", "world.places", "world.objects", "world.powers", "world.rules"];
 
-function nameMap(project) {
+export function nameMap(project) {
   const names = new Map(refOptions(project, NAMED_SOURCES, "").map((o) => [o.value, o.label || "(unnamed)"]));
   for (const e of eventsOf(project)) if (isFilled(e.planted)) names.set(e.id, e.planted.trim());   // a payoff names the plant it resolves
   return names;
 }
 
 // An item with every link field turned into a name (or a list of names). Its own id stays.
-function named(defs, item, names) {
+export function named(defs, item, names) {
   const out = { ...item };
   for (const def of defs) {
     if (!def.ref || !(def.key in item)) continue;
@@ -201,14 +201,14 @@ function named(defs, item, names) {
   return out;
 }
 
-function fieldDefs(schema, cardId, listKey) {
+export function fieldDefs(schema, cardId, listKey) {
   return schema.cards[cardId].fields.find((f) => f.key === listKey)?.item_fields ?? [];
 }
 
-const castCards = (project, castIds) => asList(castIds).map((id) => (project.characters ?? []).find((c) => c.id === id)).filter(Boolean);
+export const castCards = (project, castIds) => asList(castIds).map((id) => (project.characters ?? []).find((c) => c.id === id)).filter(Boolean);
 
 // The Entanglements the cast can see: ties they hold, what they hold, what they know, and (for the planner) every pressure.
-function entanglementsFor(schema, project, castIds, names, { allPressures }) {
+export function entanglementsFor(schema, project, castIds, names, { allPressures }) {
   const cast = asList(castIds);
   const e = settledProject(schema, project).entanglements;
   const out = (key, items) => items.map((i) => named(fieldDefs(schema, "entanglements", key), i, names));
@@ -236,7 +236,7 @@ function worldFor(schema, project, castIds, names) {
   };
 }
 
-function beatInWords(schema, project, beat, names) {
+export function beatInWords(schema, project, beat, names) {
   const defs = schema.cards.outline.fields.find((f) => f.key === "beats").item_fields;
   const out = named(defs, beat, names);
   const pressure = (project.entanglements?.pressures ?? []).find((p) => p.id === beat.spotlight);
@@ -245,7 +245,7 @@ function beatInWords(schema, project, beat, names) {
   return out;
 }
 
-function eventsInWords(project, upTo = Infinity) {
+export function eventsInWords(project, upTo = Infinity) {
   return eventsOf(project)
     .map((e) => ({ chapter: chapterOfBeat(project, e.beat), happened: e.happened, changed: e.changed ?? "", planted: e.planted ?? "" }))
     .filter((e) => e.chapter !== null && e.chapter <= upTo)
