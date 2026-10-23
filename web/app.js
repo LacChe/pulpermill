@@ -16,10 +16,7 @@ import { createEndPanel } from "./endpanel.js";
 import { createExportPanel } from "./exportpanel.js";
 import { createImportPanel } from "./importpanel.js";
 import { fileKind } from "./exporting.js";
-<<<<<<< Updated upstream
-=======
 import { pruneNotes } from "./modelnotes.js";
->>>>>>> Stashed changes
 import { writtenBeatIds } from "./plan.js";
 import { createMock } from "./mock.js";
 import {
