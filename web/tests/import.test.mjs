@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
 import { newProject, settledProject, addInstance, setNote, noteFor } from "../logic.js";
 import { lockStaticCards } from "../gate.js";
-import { cardFiles, readCardFile, fileKind, planImport, applyImport, linksLost, CARD_FILE_KEY } from "../exporting.js";
+import { cardFiles, readCardFile, fileKind, planImport, applyImport, linksLost, relinkMap, CARD_FILE_KEY } from "../exporting.js";
 
 const characters = schema.cards.characters;
 const filesOf = (project) => Object.fromEntries(cardFiles(schema, project).map((f) => [f.name.replace(/^.*?-(style|world|character-\d+)(-.*)?\.json$/, "$1"), f.text]));
@@ -127,11 +127,38 @@ test("replacing the World counts the links it would leave pointing at nothing, a
   assert.equal(planImport(schema, project, read(files.world)).lost, null, "the same world keeps every link");
 
   const stranger = JSON.parse(files.world);
-  stranger.values.objects = stranger.values.objects.map((o, i) => ({ ...o, id: `ffffff0${i}` }));
+  stranger.values.objects = stranger.values.objects.map((o, i) => ({ ...o, id: `ffffff0${i}`, name: `Other ${i}` }));
   const plan = planImport(schema, project, read(JSON.stringify(stranger)));
   assert.ok(plan.lost.count >= 1);
   assert.deepEqual(plan.lost.cards, ["Entanglements"]);
   assert.equal(linksLost(schema, project, project.world), null);
+});
+
+test("a replaced World with new ids but the same names keeps the links by re-pointing them, and Undo puts them back", async () => {
+  const project = await readyProject();
+  const files = filesOf(project);
+  const before = JSON.stringify(project);
+  const swapped = JSON.parse(files.world);
+  for (const key of ["places", "objects", "powers", "rules"]) swapped.values[key] = swapped.values[key].map((o, i) => ({ ...o, id: `ee${key[0]}00${i}` }));
+  const plan = planImport(schema, project, read(JSON.stringify(swapped)));
+  assert.equal(plan.lost, null, "every link has a same-named match");
+  assert.ok(plan.relinked >= 1);
+  const done = applyImport(schema, project, plan);
+  const ids = new Set(Object.values({ ...swapped.values }).flat().filter((x) => x && x.id).map((x) => x.id));
+  assert.equal(linksLost(schema, project, project.world), null);
+  assert.notEqual(JSON.stringify(project), before);
+  assert.ok(JSON.stringify(project).includes("ee"), [...ids].length ? "links now name the new ids" : "");
+  assert.equal(done.undo().done, true);
+  assert.equal(JSON.stringify(project), before);
+});
+
+test("names that match more than one thing, or none, are not relinked", async () => {
+  const project = await readyProject();
+  const world = JSON.parse(filesOf(project).world).values;
+  const twin = { ...world.objects[0], id: "twin0001" };
+  const next = { ...world, objects: [{ ...world.objects[0], id: "twin0000" }, twin] };
+  assert.deepEqual(relinkMap(project, next).objects, {}, "two same-named newcomers are ambiguous");
+  assert.deepEqual(relinkMap(project, { ...world, objects: [{ ...world.objects[0], id: "x0000001", name: "Nothing alike" }] }).objects, {});
 });
 
 test("what the writer exported comes back the same in a new project", async () => {

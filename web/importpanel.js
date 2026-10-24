@@ -120,6 +120,7 @@ export function createImportPanel(root, hooks) {
       parts.push(node("p", { className: "help", textContent: fill(plan.replaced.length ? STRINGS.replacesCard : plan.filled.length ? STRINGS.fillsEmpty : STRINGS.sameCard, { card: card.label }) }));
     }
     if (plan.replaced.length) parts.push(node("p", { textContent: fill(STRINGS.replacesFields, { fields: joinList(plan.replaced) }) }));
+    if (plan.relinked) parts.push(node("p", { className: "help", textContent: fill(STRINGS.relinked, { n: plan.relinked }) }));
     if (plan.lost) parts.push(node("p", { className: "import-warn", textContent: fill(STRINGS.lost, { cards: joinList(plan.lost.cards), n: plan.lost.count }) }));
     if (plan.ignored.length) parts.push(node("p", { className: "help", textContent: fill(STRINGS.ignored, { fields: joinList(plan.ignored) }) }));
     parts.push(node("p", { className: "note", textContent: STRINGS.safe }));

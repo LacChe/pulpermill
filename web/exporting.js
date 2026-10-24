@@ -142,33 +142,96 @@ export function readCardFile(text, schema) {
 // ---- Bringing a card in ------------------------------------------------------------------------
 const copy = (value) => JSON.parse(JSON.stringify(value));
 
-// Links from other cards into the world's places, things, groups and rules that a replaced world would leave pointing at
-// nothing: {count, cards: [labels]}, or null when none. A link to something the new world also holds (same id) stays good.
-export function linksLost(schema, project, nextWorld) {
-  const gone = new Map();
-  for (const key of ["places", "objects", "powers", "rules"]) {
-    const after = new Set((nextWorld[key] ?? []).map((i) => i.id));
-    gone.set(`world.${key}`, new Set((project.world?.[key] ?? []).map((i) => i.id).filter((id) => !after.has(id))));
-  }
-  let count = 0;
-  const cards = new Set();
-  const look = (cardId, def, value) => {
-    for (const one of Array.isArray(value) ? value : [value]) {
-      if (isFilled(one) && def.ref.some((source) => gone.get(source)?.has(one))) { count += 1; cards.add(schema.cards[cardId].label); }
-    }
-  };
+const WORLD_LISTS = { places: "name", objects: "name", powers: "name", rules: "statement" };
+const nameKey = (text) => String(text ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+
+// Calls visit(cardId, def, container, key) for every link from another card into the world: a field or a list item's field
+// that names a place, thing, group or rule. `container[key]` holds the id (or a list of ids).
+function walkWorldLinks(schema, project, visit) {
   for (const cardId of Object.keys(schema.cards)) {
     if (cardId === "world") continue;
     const card = schema.cards[cardId];
     for (const holder of card.many_per_project ? project[cardId] ?? [] : [project[cardId] ?? {}]) {
       for (const field of card.fields) {
         if (field.repeat) {
-          for (const item of holder[field.key] ?? []) for (const def of field.item_fields ?? []) if (def.ref) look(cardId, def, item[def.key]);
-        } else if (field.ref) look(cardId, field, holder[field.key]);
+          for (const item of holder[field.key] ?? []) for (const def of field.item_fields ?? []) if (def.ref) visit(cardId, def, item, def.key);
+        } else if (field.ref) visit(cardId, field, holder, field.key);
       }
     }
   }
+}
+
+// For a replaced world whose ids differ: what each thing the new world dropped (by id) is called in the new one. The match is
+// by name (ignoring case and spacing) and only when it is unambiguous on both sides. {places: {oldId: newId}, ...}
+export function relinkMap(project, nextWorld) {
+  const maps = {};
+  for (const [key, nameField] of Object.entries(WORLD_LISTS)) {
+    const before = project.world?.[key] ?? [];
+    const after = nextWorld[key] ?? [];
+    const kept = new Set(after.map((i) => i.id));
+    const held = new Set(before.map((i) => i.id));
+    const gone = before.filter((i) => !kept.has(i.id) && nameKey(i[nameField]));
+    const fresh = after.filter((i) => !held.has(i.id) && nameKey(i[nameField]));
+    const count = (list, name) => list.filter((i) => nameKey(i[nameField]) === name).length;
+    maps[key] = {};
+    for (const old of gone) {
+      const name = nameKey(old[nameField]);
+      if (count(gone, name) !== 1 || count(fresh, name) !== 1) continue;
+      maps[key][old.id] = fresh.find((i) => nameKey(i[nameField]) === name).id;
+    }
+  }
+  return maps;
+}
+
+// Links from other cards into the world's places, things, groups and rules that a replaced world would leave pointing at
+// nothing: {count, cards: [labels]}, or null when none. A link to something the new world also holds (same id) stays good,
+// and so does one the new world's same-named thing can take over (see relinkMap).
+export function linksLost(schema, project, nextWorld) {
+  const gone = new Map();
+  const maps = relinkMap(project, nextWorld);
+  for (const key of Object.keys(WORLD_LISTS)) {
+    const after = new Set((nextWorld[key] ?? []).map((i) => i.id));
+    gone.set(`world.${key}`, new Set((project.world?.[key] ?? []).map((i) => i.id).filter((id) => !after.has(id) && !(id in maps[key]))));
+  }
+  let count = 0;
+  const cards = new Set();
+  walkWorldLinks(schema, project, (cardId, def, container, key) => {
+    for (const one of Array.isArray(container[key]) ? container[key] : [container[key]]) {
+      if (isFilled(one) && def.ref.some((source) => gone.get(source)?.has(one))) { count += 1; cards.add(schema.cards[cardId].label); }
+    }
+  });
   return count ? { count, cards: [...cards] } : null;
+}
+
+// How many links from other cards a replaced world would re-point to a same-named thing.
+export function linksRelinked(schema, project, nextWorld) {
+  const maps = relinkMap(project, nextWorld);
+  let count = 0;
+  walkWorldLinks(schema, project, (cardId, def, container, key) => {
+    for (const one of Array.isArray(container[key]) ? container[key] : [container[key]]) {
+      if (isFilled(one) && def.ref.some((source) => maps[source.replace("world.", "")]?.[one])) count += 1;
+    }
+  });
+  return count;
+}
+
+// Re-points the links by `maps`; returns an undo that puts back each link still holding what this wrote.
+function relinkLinks(schema, project, maps) {
+  const changes = [];
+  walkWorldLinks(schema, project, (cardId, def, container, key) => {
+    const swap = (one) => {
+      for (const source of def.ref) { const to = maps[source.replace("world.", "")]?.[one]; if (to) return to; }
+      return one;
+    };
+    const before = copy(container[key]);
+    const after = Array.isArray(before) ? before.map(swap) : swap(before);
+    if (sameJson(before, after)) return;
+    container[key] = after;
+    changes.push({ container, key, before, after: copy(after) });
+  });
+  return () => {
+    for (const c of changes) if (sameJson(c.container[c.key], c.after)) c.container[c.key] = c.before;
+  };
 }
 
 // What bringing this card file in would do, without doing it. `read` is what readCardFile gave.
@@ -180,6 +243,7 @@ export function linksLost(schema, project, nextWorld) {
 //   filled    labels of the fields that are empty now and would get words
 //   ignored   labels of what in the file did not fit and was left out
 //   lost      for a replaced World: {count, cards} of links that would point at nothing, else null
+//   relinked  for a replaced World: how many links would be re-pointed to a same-named thing in the new World (relink: the map)
 // A character's id from the file is kept unless someone here already has it; list items keep their ids unless two share one.
 export function planImport(schema, project, read, choice = {}) {
   const card = schema.cards[read.card];
@@ -222,6 +286,8 @@ export function planImport(schema, project, read, choice = {}) {
     ok: true, card: card.id, mode, targetId: target?.id ?? null, id, name: card.many_per_project ? instanceName(next) : "",
     next, replaced, filled, ignored: [...new Set(read.ignored.map(label))],
     lost: card.id === "world" ? linksLost(schema, project, next) : null,
+    relinked: card.id === "world" ? linksRelinked(schema, project, next) : 0,
+    relink: card.id === "world" ? relinkMap(project, next) : null,
   };
 }
 
@@ -249,6 +315,7 @@ export function applyImport(schema, project, plan) {
   const keys = card.fields.filter((f) => !sameValue(f, target[f.key], plan.next[f.key])).map((f) => f.key);
   const before = Object.fromEntries(keys.map((key) => [key, copy(target[key])]));
   setCardValues(card, target, Object.fromEntries(keys.map((key) => [key, plan.next[key]])));
+  const unlink = plan.relink ? relinkLinks(schema, project, plan.relink) : () => {};
   const wrote = Object.fromEntries(keys.map((key) => [key, copy(target[key])]));
   const where = () => (card.many_per_project ? findInstance(project, card, plan.targetId) : project[card.id]);
   return {
@@ -258,6 +325,7 @@ export function applyImport(schema, project, plan) {
       const now = where();
       if (!now) return { done: true, skipped: [] };
       const back = untouched(now, wrote, keys);
+      if (back.length === keys.length) unlink();   // the links go back only with the whole world; a world edited since keeps the new ones
       setCardValues(card, now, Object.fromEntries(back.map((key) => [key, before[key]])));
       const skipped = keys.filter((key) => !back.includes(key));
       return { done: !keys.length || back.length > 0, skipped };

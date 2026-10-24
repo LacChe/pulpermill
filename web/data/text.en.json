@@ -431,7 +431,8 @@
       "no_target": "That character is not there any more."
     },
     "undoBlocked": "Undo would throw away what you changed since the card came in, so nothing was put back.",
-    "undonePartly": "Put back what the card changed, except {fields}, which you edited since."
+    "undonePartly": "Put back what the card changed, except {fields}, which you edited since.",
+    "relinked": "{n} link(s) elsewhere will follow to the thing of the same name in the new world."
   },
   "export": {
     "title": "Export",
