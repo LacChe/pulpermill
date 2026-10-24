@@ -19,6 +19,7 @@ Sources: `docs/what-feeds-what.md`, `docs/who-does-what.md`, `docs/backend-contr
 | D9 | `status` keeps the contract's stage names. All writing sections report `write`. Section progress goes to the backend log. | Proposal (the stage list is closed in `contract.py`) |
 | D10 | A section that fails (empty, wrong language) is retried once inside the backend. A chapter that is merely short is returned as written and its word count is logged. Any other failure throws everything away, as the contract says. | Proposal |
 | D11 | Prompts feed prose, not forms (section 3). | Your note, taken as a rule |
+| D12 | Findings F2 to F8 are confirmed as recommended. F1 is done in the front end (see section 6). D9 and D10 are confirmed. | Decided by you, 2026-10-25 |
 
 Open items for you are in section 6, each with a recommendation.
 
@@ -84,7 +85,7 @@ Runs once per section (D5). Blocks 1 to 9 are identical in every section so the 
 | --- | --- | --- | --- | --- |
 | 1 | Language, person, tense, distance, and what a good chapter is | `language`, `style.person`, `style.tense`, `style.distance`, backend text | rules + prose | Person and tense are hard rules. The craft text is written in phase 2. |
 | 2 | Style | `style` (all fields and the four notes) | prose | Two paragraphs, genre first (`RENDER_ORDER`). Each field becomes a concrete instruction. |
-| 3 | The world | `world`, `beat.where` | prose | All of World, hidden and myth rules and their truths included, grouped as what is common, what is hidden, what people wrongly believe. The beat's place in full, other places by name. Objects in the scene in full (see F1). A group's `felt` line always; `nature` and `hold` when it is in a tie or pressure on stage. Terms as vocabulary. |
+| 3 | The world | `world`, `beat.where` | prose | All of the World the page sends, hidden and myth rules and their truths included, grouped as what is common, what is hidden, what people wrongly believe. The beat's place in full, other places by name. Objects as the page trimmed them (F1). A group's `felt` line always; `nature` and `hold` when it is in a tie or pressure on stage. Terms as vocabulary. |
 | 4 | The people on stage | `cast` | prose | One portrait each: name, age, sex, appearance, sketch, wants, fear, flaw, values, behaviors, competence, vulnerability, speech, history. Fixed fields in full. |
 | 5 | Their entanglements | `entanglements` | prose | Ties, holdings, knowledge per person, pressures that touch the cast. A person who is not on stage is named only and marked "not present, may be mentioned or thought of". |
 | 6 | Where they stand now | `standing` | prose | Marked as overriding the cards. Left out when empty. |
@@ -181,11 +182,11 @@ Reply: `shifts` (only people who moved, at most five, each once, with at least o
 
 ## 6. Findings that need your decision
 
-Each is something the repo's own documents disagree about, or something a prompt needs that no request carries. My recommendation comes first. None of them is applied in the files I am sending, except where it says so.
+Each is something the repo's own documents disagree about, or something a prompt needs that no request carries. Confirmed on 2026-10-25: F2 to F8 as recommended, and F1 goes to the front end. The contract and page changes they imply are not applied in this documentation phase; they are done in part B.
 
 | # | Finding | Recommendation |
 | --- | --- | --- |
-| F1 | `what-feeds-what.md` says W sees the least-used behaviors and the objects "in the scene", chosen by code. The `generate` request carries no use counts, so the backend cannot rank them. | No contract change. Send each cast member's behaviors (at most five each, so at most 25) and let the model choose what the scene calls for. An object is "in the scene" if a cast member holds it, the beat's place holds it, or the beat names it. Revisit if W repeats the same behaviors. |
+| F1 | `what-feeds-what.md` says W sees the least-used behaviors and the objects "in the scene", chosen by code. The `generate` request carries no use counts, so the backend cannot rank them. | **Decided: the front end trims.** The page works out the least-used behaviors and the objects in the scene from the usage counts the project file holds, and sends only those. The backend renders what it is sent and does no trimming. Not urgent: until the page does it, the backend renders whatever lists arrive. The request shape (`cast`, `world`) does not change. |
 | F2 | The offstage request has no `spotlight`, yet O must never be about it, and a pressure from a group that bears on the protagonist can be the spotlight. | Add an optional `spotlight` (the pressure's text) to the offstage request. A small contract change (`contract.py`, vectors, `offstageRequest` in `web/plan.js`), done with part B step 1. |
 | F3 | `what-feeds-what.md` has no row for the style-fit check (S) in the Characters table, yet it must read the protagonist. | S sees the protagonist's name, sex, sketch, wants, fear, flaw, values, competence, vulnerability and speech. |
 | F4 | X2 reads only the chapter, Characters and Entanglements, so it cannot tell what is already recorded and may repeat it as a "shift". | X2 also sees `standing` (so it records only differences) and X1's `happened` and `reveals_landed` (so it knows what landed). Both are inside the backend, no contract change. |
