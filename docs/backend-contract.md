@@ -178,11 +178,13 @@ Reply:
  "events": {"happened": "...", "changed": "...", "planted": null, "paid_off": [], "reveals_landed": [],
             "behaviors_seen": [], "things_seen": [], "goal_landed": false},
  "shifts": [{"character": "Suvi", "decided": "Keep it secret."}],
- "changes": [{"section": "knowledge", "item": "k0000001", "field": "status", "value": "knows"}]}
+ "changes": [{"section": "knowledge", "item": "k0000001", "field": "status", "value": "knows"}],
+ "new_knowledge": [{"person": "Suvi", "status": "suspects", "rule": null, "fact": "The ledger is forged."}]}
 ```
 
 - `events` is what the text shows. A planned plant, payoff, reveal or goal change counts only when it is here; the page compares. `paid_off` and `reveals_landed` use the wording that was sent.
 - `shifts` has only characters who moved, with at least one of `believes`, `fears`, `wants`, `refuses`, `decided`. The page refuses an empty entry.
+- `new_knowledge` is optional (a reply without it means none): Knowledge lines the cards do not have yet, for someone who has come to know, suspect or be misled about something. `person` is a character's or group's name as sent; give exactly one of `rule` (a World rule's wording as sent) and `fact` (free text); `status` is `knows`, `suspects` or `misled`. The backend never makes an id. The page adds each entry as a change the writer can read in the chapter's review, and leaves one out, saying why, when the person or rule is not found, the person is a character who is not in the chapter, the entry gives both or neither of rule and fact, that person already has a line for it (a status that moves is a `changes` entry), or the chapter already added three. It asks first when a lock covers the Knowledge list. A malformed entry (wrong type, unknown status) makes the whole reply `bad_output`. Undo takes the entries out with the rest of the chapter.
 - `changes` are proposals to **live** Entanglements fields (`ties`, `holdings`, `knowledge`, `pressures`). `item` is an id the page sent; the backend never makes one. The page applies them, asks before touching anything locked, and warns if a reveal landed but no one's knowledge changed.
 
 ### `end_story`: update Characters and World

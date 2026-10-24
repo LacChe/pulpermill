@@ -79,7 +79,12 @@
     "knowledgeUnchanged": "A reveal landed, but nobody's knowledge changed. Check the Knowledge list in Entanglements.",
     "changeLeftOut": "A proposed change to {field} was left out: {why}.",
     "laterNoPlant": "A later chapter paid off something this chapter planted, and the new version plants nothing.",
-    "laterStale": "The {n} later chapter(s) were written from the old version. They stay as they are, and their beats are marked stale."
+    "laterStale": "The {n} later chapter(s) were written from the old version. They stay as they are, and their beats are marked stale.",
+    "newKnowledge": "New Knowledge entry",
+    "newKnowledgeTo": "{person} {status}: {what}",
+    "knowledgeTooMany": "a chapter adds at most {max} new Knowledge entries",
+    "knowledgeOneFact": "it must name either a World rule or a fact, not both and not neither",
+    "knowledgeHasEntry": "that person already has an entry for it; its status changes through that entry"
   },
   "endstory": {
     "untitled": "(untitled)",

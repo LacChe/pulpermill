@@ -982,6 +982,7 @@ export function readPlanReply(reply) {
 
 const SHIFT_TEXT = ["believes", "fears", "wants", "refuses", "decided"];
 const CHANGE_SECTIONS = ["ties", "holdings", "knowledge", "pressures"];
+export const KNOWLEDGE_STATUSES = ["knows", "suspects", "misled"];
 
 export function readGenerateReply(reply) {
   const checked = readReply(reply);
@@ -1006,12 +1007,21 @@ export function readGenerateReply(reply) {
       return bad("A proposed change does not say what to change.");
     }
   }
+  // New Knowledge entries are optional. Each says who, how they stand, and which rule or fact (the page checks the rest).
+  const proposed = checked.new_knowledge ?? [];
+  if (!Array.isArray(proposed)) return bad("The new knowledge entries are not a list.");
+  const newKnowledge = [];
+  for (const entry of proposed) {
+    if (!isObject(entry) || !isText(entry.person) || !entry.person.trim() || !KNOWLEDGE_STATUSES.includes(entry.status)) return bad("A new knowledge entry does not say who or how they stand.");
+    if (!isOptionalText(entry.rule) || !isOptionalText(entry.fact)) return bad("A new knowledge entry's rule or fact is not text.");
+    newKnowledge.push({ person: entry.person.trim(), status: entry.status, rule: entry.rule?.trim() || null, fact: entry.fact?.trim() || null });
+  }
   const events = {
     happened: e.happened.trim(), changed: e.changed?.trim() || null, planted: e.planted?.trim() || null,
     goal_landed: e.goal_landed === true,
   };
   for (const key of lists) events[key] = e[key] ?? [];
-  return { ok: true, chapter_text: checked.chapter_text, events, shifts, changes: checked.changes.map((c) => ({ section: c.section, item: c.item, field: c.field, value: c.value })) };
+  return { ok: true, chapter_text: checked.chapter_text, events, shifts, changes: checked.changes.map((c) => ({ section: c.section, item: c.item, field: c.field, value: c.value })), new_knowledge: newKnowledge };
 }
 
 export function readEndStoryReply(reply) {

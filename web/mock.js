@@ -133,6 +133,10 @@ export function createMock(schema, options = {}) {
       },
       shifts: who ? [{ character: who, decided: "Mock decision." }] : [],
       changes: pressure?.id ? [{ section: "pressures", item: pressure.id, field: "next_move", value: "Mock next move." }] : [],
+      // A line the cards do not have yet: someone comes to know a landed reveal, or suspects something (so the review has one to show).
+      new_knowledge: !who ? [] : beat.reveal_rule
+        ? [{ person: who, status: "knows", rule: beat.reveal_rule, fact: null }]
+        : request.chapter === 1 ? [{ person: who, status: "suspects", rule: null, fact: `Mock suspicion in chapter ${request.chapter}.` }] : [],
     };
   };
 
@@ -177,7 +181,7 @@ export function createMock(schema, options = {}) {
     : call === "judge" ? { ok: true, results: "none" }
     : call === "offstage" ? { ok: true, did: "Only half a move." }
     : call === "plan" ? { ok: true, thinking: "", beat: "not a beat" }
-    : call === "generate" ? { ok: true, chapter_text: "", events: {}, shifts: [], changes: [] }
+    : call === "generate" ? { ok: true, chapter_text: "", events: {}, shifts: [], changes: [], new_knowledge: [] }
     : call === "end_story" ? { ok: true, characters: "nobody", world: {} } : { ok: true, fits: "maybe" });
 
   // The stages a story call goes through, so status can say where it is. Each takes an equal share of the delay.

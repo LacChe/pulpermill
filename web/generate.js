@@ -16,6 +16,7 @@ import {
 
 export const PREVIOUS_ENDING_CHARS = 1500;   // how much of the last chapter's end the model is shown
 export const MAX_OPEN_PLANTS = 2;            // the schema's open_plants_max
+export const MAX_NEW_KNOWLEDGE = 3;          // new Knowledge entries one chapter may add
 export const MAX_SHIFTS = 5;                 // the schema's shifts_per_chapter_max
 
 const copyOf = (value) => JSON.parse(JSON.stringify(value));
@@ -189,6 +190,54 @@ function applyChanges(schema, project, changes, { overwriteLocked }) {
   return { entanglements: next, applied: kept, dropped, locked: kept.filter((a) => a.locks.length) };
 }
 
+// New Knowledge entries the model proposed (someone came to know, suspect or be misled about something with no line yet).
+// Each is checked and added to `next` (the copy of the Entanglements) or left out with its reason: the person must be found, and
+// if a character must be in this chapter; exactly one of a World rule or a fact; no entry for that person and thing yet
+// (a status that moves is a change to the entry that is there); at most MAX_NEW_KNOWLEDGE a chapter; and a lock on the whole
+// Knowledge list or card asks first, like any locked value. Returns {applied, dropped}; applied entries read like changes
+// (label, from "", to) so the review lists them with the rest.
+function addKnowledge(schema, project, next, proposals, cast, { overwriteLocked }) {
+  const applied = [];
+  const dropped = [];
+  const names = nameMap(project);
+  const statusDef = fieldDefs(schema, "entanglements", "knowledge").find((d) => d.key === "status");
+  const label = msg("records.newKnowledge");
+  const covering = (project.locks ?? []).filter((l) => lockCovers(l, { section: "knowledge" }));
+  const list = next.knowledge ?? (next.knowledge = []);
+  const taken = ["ties", "holdings", "knowledge", "pressures"].flatMap((k) => (next[k] ?? []).map((i) => i.id));
+  const people = new Set((project.characters ?? []).map((c) => c.id));
+  for (const p of proposals) {
+    const what = p.rule ?? p.fact ?? "";
+    const drop = (why) => dropped.push({ section: "knowledge", field: label, value: `${p.person}: ${what}`, why });
+    if (applied.length >= MAX_NEW_KNOWLEDGE) { drop(msg("records.knowledgeTooMany", { max: MAX_NEW_KNOWLEDGE })); continue; }
+    const who = wordsToId(project, ["characters", "world.powers"], p.person);
+    if (!who.id) { drop(msg(who.several ? "records.whyMatchesSeveral" : "records.whyMatchesNothing", { words: p.person })); continue; }
+    if (people.has(who.id) && !cast.includes(who.id)) { drop(msg("records.notInChapter", { name: p.person })); continue; }
+    if (Boolean(p.rule) === Boolean(p.fact)) { drop(msg("records.knowledgeOneFact")); continue; }
+    let ruleId = "";
+    if (p.rule) {
+      const found = wordsToId(project, ["world.rules"], p.rule);
+      if (!found.id) { drop(msg(found.several ? "records.whyMatchesSeveral" : "records.whyMatchesNothing", { words: p.rule })); continue; }
+      ruleId = found.id;
+    }
+    const same = list.find((k) => k.person === who.id && (ruleId ? k.rule === ruleId : squash(k.fact) === squash(p.fact)));
+    if (same) {
+      if (same.status !== p.status) drop(msg("records.knowledgeHasEntry"));
+      continue;
+    }
+    if (covering.length && !overwriteLocked) { drop(msg("records.whyLocked")); continue; }
+    const entry = { rule: ruleId, fact: ruleId ? "" : p.fact, person: who.id, status: p.status, id: newId(taken) };
+    taken.push(entry.id);
+    list.push(entry);
+    applied.push({
+      section: "knowledge", item: entry.id, field: "entry", label, was: null, now: entry, added: true,
+      from: "", to: msg("records.newKnowledgeTo", { person: names.get(who.id) ?? p.person, status: show(statusDef, p.status, names), what }),
+      locks: covering.map((l) => l.id),
+    });
+  }
+  return { applied, dropped };
+}
+
 // Everything one chapter adds to the project, worked out and checked, with nothing changed.
 //   read   the checked reply (readGenerateReply)
 //   opts.overwriteLocked  whether changes to locked values stay in (the writer's answer to the confirmation)
@@ -252,6 +301,10 @@ export function applyGenerated(schema, project, beat, read, { overwriteLocked = 
   }
 
   const changes = applyChanges(schema, project, read.changes, { overwriteLocked });
+  const added = addKnowledge(schema, project, changes.entanglements, read.new_knowledge ?? [], cast, { overwriteLocked });
+  changes.applied.push(...added.applied);
+  changes.dropped.push(...added.dropped);
+  changes.locked.push(...added.applied.filter((a) => a.locks.length));
   if (reveals.length && !changes.applied.some((a) => a.section === "knowledge")) {
     warnings.push({ kind: "knowledge", text: msg("records.knowledgeUnchanged") });
   }

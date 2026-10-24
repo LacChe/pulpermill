@@ -61,7 +61,7 @@
 | --- | --- | --- |
 | ties (bond, edge) | W, P, X2 | `bond` is the relationship. `edge` is a concrete aim between two people (wants to pass the teacher's test). X2 proposes changes to both. |
 | holdings | W, P, X2 | X2 proposes changes to `held_by`. |
-| knowledge | W (per person), P, X2, C | Measured against canon, which cannot be wrong: knows, suspects or misled. X2 proposes the status changes and C applies them. If a reveal landed but nobody's status changed, C warns. |
+| knowledge | W (per person), P, X2, C | Measured against canon, which cannot be wrong: knows, suspects or misled. X2 proposes the status changes and any new lines (a person and a rule or fact with no line yet), and C applies them. If a reveal landed but nobody's status changed or no line was added, C warns. |
 | pressures | W, P, X2 | X2 proposes changes to `what`, `next_move` and `bears_on`. |
 
 **One-sided links.** A tie is shown when the on-stage person is `tie_from`, labeled offstage and not present: a name only, never a description. It is skipped when the offstage person is `tie_from`, because that edge may be something the on-stage person does not know. Holdings and knowledge follow the same rule. The writer is told offstage people may be mentioned or thought of but do not appear.

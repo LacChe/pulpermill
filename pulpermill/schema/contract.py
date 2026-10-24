@@ -275,12 +275,23 @@ class Change(Strict):
     value: Any                              # a name for a link, a list of names for several, words for text
 
 
+class NewKnowledge(Strict):
+    """A proposed new Knowledge entry: someone who has come to know, suspect or be misled about something that has no line
+    yet. Exactly one of `rule` (the wording of a World rule) and `fact` (free text) is meant; the page drops an entry that
+    gives both or neither, and one whose person or rule it cannot find. The backend never makes an id."""
+    person: str
+    status: Literal["knows", "suspects", "misled"]
+    rule: str | None = None
+    fact: str | None = None
+
+
 class GenerateReply(Strict):
     ok: Literal[True]
     chapter_text: str
     events: EventsOut
     shifts: list[ShiftOut]
     changes: list[Change]
+    new_knowledge: list[NewKnowledge] = []      # optional: a reply without it is a reply with none
 
 
 class EndStoryReply(Strict):

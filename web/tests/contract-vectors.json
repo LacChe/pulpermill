@@ -1492,6 +1492,182 @@
       }
     },
     {
+      "name": "a chapter that also proposes new Knowledge entries",
+      "call": "generate",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "chapter_text": "Suvi walked.",
+        "events": {
+          "happened": "Suvi found a page.",
+          "changed": "She has the page.",
+          "planted": null,
+          "paid_off": [
+            "A torn page"
+          ],
+          "reveals_landed": [],
+          "behaviors_seen": [],
+          "things_seen": [
+            "The ledger"
+          ],
+          "goal_landed": false
+        },
+        "shifts": [
+          {
+            "character": "Suvi",
+            "decided": "Keep it secret."
+          }
+        ],
+        "changes": [
+          {
+            "section": "knowledge",
+            "item": "k0000001",
+            "field": "status",
+            "value": "knows"
+          }
+        ],
+        "new_knowledge": [
+          {
+            "person": "Suvi",
+            "status": "knows",
+            "rule": null,
+            "fact": "The ledger is forged."
+          },
+          {
+            "person": "Ola",
+            "status": "suspects",
+            "rule": "Nobody leaves the island",
+            "fact": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "new Knowledge entries that are an empty list",
+      "call": "generate",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "chapter_text": "Suvi walked.",
+        "events": {
+          "happened": "Suvi found a page.",
+          "changed": "She has the page.",
+          "planted": null,
+          "paid_off": [
+            "A torn page"
+          ],
+          "reveals_landed": [],
+          "behaviors_seen": [],
+          "things_seen": [
+            "The ledger"
+          ],
+          "goal_landed": false
+        },
+        "shifts": [
+          {
+            "character": "Suvi",
+            "decided": "Keep it secret."
+          }
+        ],
+        "changes": [
+          {
+            "section": "knowledge",
+            "item": "k0000001",
+            "field": "status",
+            "value": "knows"
+          }
+        ],
+        "new_knowledge": []
+      }
+    },
+    {
+      "name": "a new Knowledge entry with a status that does not exist",
+      "call": "generate",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "chapter_text": "Suvi walked.",
+        "events": {
+          "happened": "Suvi found a page.",
+          "changed": "She has the page.",
+          "planted": null,
+          "paid_off": [
+            "A torn page"
+          ],
+          "reveals_landed": [],
+          "behaviors_seen": [],
+          "things_seen": [
+            "The ledger"
+          ],
+          "goal_landed": false
+        },
+        "shifts": [
+          {
+            "character": "Suvi",
+            "decided": "Keep it secret."
+          }
+        ],
+        "changes": [
+          {
+            "section": "knowledge",
+            "item": "k0000001",
+            "field": "status",
+            "value": "knows"
+          }
+        ],
+        "new_knowledge": [
+          {
+            "person": "Suvi",
+            "status": "believes",
+            "fact": "x"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a new Knowledge entry that does not say who",
+      "call": "generate",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "chapter_text": "Suvi walked.",
+        "events": {
+          "happened": "Suvi found a page.",
+          "changed": "She has the page.",
+          "planted": null,
+          "paid_off": [
+            "A torn page"
+          ],
+          "reveals_landed": [],
+          "behaviors_seen": [],
+          "things_seen": [
+            "The ledger"
+          ],
+          "goal_landed": false
+        },
+        "shifts": [
+          {
+            "character": "Suvi",
+            "decided": "Keep it secret."
+          }
+        ],
+        "changes": [
+          {
+            "section": "knowledge",
+            "item": "k0000001",
+            "field": "status",
+            "value": "knows"
+          }
+        ],
+        "new_knowledge": [
+          {
+            "status": "knows",
+            "fact": "x"
+          }
+        ]
+      }
+    },
+    {
       "name": "updated cards",
       "call": "end_story",
       "valid": true,

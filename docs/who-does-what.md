@@ -104,7 +104,7 @@ H exports the story as markdown (required), the cards as a zip, and the project 
 - `Shifts.hides` is dropped.
 - A small project-file field for the hash a beat was planned from.
 - The resume-point rule is no longer needed because commits are atomic.
-- Knowledge changes are proposed by X2, so they need no new fields.
+- Knowledge changes are proposed by X2, so they need no new fields. X2 may also propose new Knowledge lines (a person and a rule or fact with no line yet). The page checks and adds them, lists them in the chapter's review, asks first when a lock covers the list, and Undo takes them out with the chapter.
 - The full list for the schema pass is at the end of the data-flow doc.
 
 ## Open or parked
