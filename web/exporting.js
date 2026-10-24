@@ -15,6 +15,7 @@ import {
   settledProject, instanceName, blankCard, blankItem, newId, isFilled, sameValue, ensureCard, findInstance, removeInstance, setCardValues,
 } from "./logic.js";
 import { cardLocked } from "./gate.js";
+import { msg } from "./text.js";
 import { chapterInfo } from "./plan.js";
 
 export const CARD_FILE_KEY = "pulpermill_card";
@@ -27,16 +28,16 @@ export function storyMarkdown(project) {
   const beats = project.outline?.beats ?? [];
   const number = (c) => Number(beats.find((b) => b.id === c.beat)?.chapter) || 0;
   const chapters = [...(project.chapters ?? [])].sort((a, b) => number(a) - number(b));
-  const title = String(project.title ?? "").trim() || "Untitled story";
-  return `${[`# ${title}`, ...chapters.map((c) => `## Chapter ${number(c)}\n\n${c.text.trim()}`)].join("\n\n")}\n`;
+  const title = String(project.title ?? "").trim() || msg("files.untitledStory");
+  return `${[`# ${title}`, ...chapters.map((c) => `## ${msg("files.chapterHeading", { n: number(c) })}\n\n${c.text.trim()}`)].join("\n\n")}\n`;
 }
 
 export function storyFileName(project) {
-  return `${slug(project.title, "untitled")}-story.md`;
+  return `${slug(project.title, msg("files.untitled"))}${msg("files.storySuffix")}.md`;
 }
 
 export function cardsZipName(project) {
-  return `${slug(project.title, "untitled")}-cards.zip`;
+  return `${slug(project.title, msg("files.untitled"))}${msg("files.cardsSuffix")}.zip`;
 }
 
 // One card as the text of a file.
@@ -47,21 +48,21 @@ export function cardFileText(schema, cardId, values) {
 // Every card file the project can give: [{name, label, text}].
 export function cardFiles(schema, project) {
   const settled = settledProject(schema, project);
-  const base = slug(project.title, "untitled");
+  const base = slug(project.title, msg("files.untitled"));
   const files = [];
   const add = (prefix, label, cardId, values, part) => files.push({
     name: `${base}${prefix ? `-${prefix}` : ""}${part}.json`, label, text: cardFileText(schema, cardId, values),
   });
   const set = (prefix, labelPrefix, cards) => {
-    add(prefix, `${labelPrefix}${schema.cards.style.label}`, "style", cards.style, "-style");
+    add(prefix, `${labelPrefix}${schema.cards.style.label}`, "style", cards.style, msg("files.stylePart"));
     cards.characters.forEach((c, at) => {
       const name = instanceName(c);
-      add(prefix, `${labelPrefix}${name || `Character ${at + 1}`}`, "characters", c, `-character-${at + 1}-${slug(name, "unnamed")}`);
+      add(prefix, `${labelPrefix}${name || msg("files.characterLabel", { n: at + 1 })}`, "characters", c, msg("files.characterPart", { n: at + 1, name: slug(name, msg("files.unnamed")) }));
     });
-    add(prefix, `${labelPrefix}${schema.cards.world.label}`, "world", cards.world, "-world");
+    add(prefix, `${labelPrefix}${schema.cards.world.label}`, "world", cards.world, msg("files.worldPart"));
   };
   set("", "", settled);
-  if (project.after_story) set("after-story", "After the story: ", { style: project.after_story.style, characters: project.after_story.characters, world: project.after_story.world });
+  if (project.after_story) set(msg("files.afterStory"), msg("files.afterStoryLabel"), { style: project.after_story.style, characters: project.after_story.characters, world: project.after_story.world });
   return files;
 }
 

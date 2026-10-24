@@ -6,46 +6,9 @@ import { generateChapter, regenerateChapter } from "./client.js";
 import { generateGate, applyGenerated, commitChapter, regenerateGate, applyRegenerated, commitRegenerated } from "./generate.js";
 import { chapterInfo } from "./plan.js";
 import { chapterNoteFor, setChapterNote, copyNote, putNote } from "./modelnotes.js";
+import { section, fill, joinList } from "./text.js";
 
-export const STRINGS = {
-  title: "Write the chapter",
-  chapterOf: "Chapter {n} of {total}",
-  chapterOnly: "Chapter {n}",
-  button: "Write chapter {n} with the model",
-  working: "The model is working…",
-  stages: { write: "The model is writing the chapter…", events: "The model is noting what happened…", shifts: "The model is noting how people changed…" },
-  sends: "Pressing the button sends the cast, the cards in play, the beat and the summaries of earlier chapters to {where}. Nothing is saved unless the whole chapter comes back.",
-  reasons: {
-    not_started: "Start the story first (the bar above).",
-    done: "Every chapter is written. Use the end-of-story step when you are ready.",
-    no_beat: "Plan the chapter first (the panel above).",
-    cast_empty: "The beat has no cast.", cast_too_many: "The beat has too many people in its cast.",
-    cast_no_protagonist: "The protagonist has to be in the beat's cast.", cast_unknown: "Someone in the beat's cast is not there any more.",
-    beat_blocked: "The beat has problems that stop generating. Fix them first:",
-    entanglements_blocked: "Entanglements has problems that stop generating. Fix them first:",
-    changed: "The Entanglements or the beat were edited while the model was writing, so the chapter was thrown away. Press the button again.",
-  },
-  stale: "This plan was made from older Entanglements. Write the chapter anyway? (Cancel, then plan it again, to use the new state.)",
-  locked: "The model wants to change values that are locked:\n{list}\n\nOK unlocks them and overwrites them. Cancel keeps them as they are, and the chapter is saved without those changes.",
-  done: "Chapter {n} is written and saved.",
-  droppedLocked: "Chapter {n} is written and saved. The locked values were left as they were.",
-  chapters: "Written chapters",
-  noChapters: "No chapter yet.",
-  chapterTitle: "Chapter {n}",
-  changes: "What changed in Entanglements",
-  noChanges: "Nothing in Entanglements changed.",
-  change: "{field}: {from} → {to}",
-  noticed: "What the page noticed",
-  again: "Write chapter {n} again",
-  againConfirm: "Write chapter {n} again?\n\nThe Entanglements go back to what this chapter was first written from, and what the model makes now replaces the Entanglements as they are. This chapter's text, events and shifts are replaced. {later}You can undo it afterwards.",
-  againLater: "The {k} later chapter(s) stay as they are, and their beats are marked stale. ",
-  againDone: "Chapter {n} is written again.",
-  undo: "Undo", undone: "Put chapter {n} back as it was.",
-  before: "Before", after: "After",
-  noChapterGate: "This chapter cannot be written again:",
-  reasonsAgain: { no_chapter: "There is no such chapter.", no_snapshot: "The Entanglements it was written from were not kept." },
-};
-const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
+export const STRINGS = section("generate");
 
 function node(tag, props = {}, ...children) {
   const made = Object.assign(document.createElement(tag), props);
@@ -82,7 +45,7 @@ export function createGeneratePanel(hooks) {
     let outcome = result.outcome;
     let leftLocked = false;
     if (outcome.changes.locked.length) {
-      const list = outcome.changes.locked.map((a) => `• ${a.label}: ${a.from} → ${a.to}`).join("\n");
+      const list = outcome.changes.locked.map((a) => fill(STRINGS.lockedItem, { field: a.label, from: a.from, to: a.to })).join("\n");
       if (!window.confirm(fill(STRINGS.locked, { list }))) {
         outcome = applyGenerated(hooks.schema, project, result.beat, result.read, { overwriteLocked: false });
         leftLocked = true;
@@ -105,14 +68,14 @@ export function createGeneratePanel(hooks) {
     if (hooks.getProject() !== project) return;
     if (result.reason) {
       const why = STRINGS.reasonsAgain[result.reason] ?? STRINGS.reasons[result.reason] ?? result.reason;
-      hooks.notice([why, ...(result.problems ?? [])].join(" "), "notice-bad");
+      hooks.notice(joinList([why, ...(result.problems ?? [])], "sentence"), "notice-bad");
       hooks.redraw();
       return;
     }
     if (!result.ok) { hooks.notice(hooks.errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); refresh(); return; }
     let outcome = result.outcome;
     if (outcome.changes.locked.length) {
-      const list = outcome.changes.locked.map((a) => `• ${a.label}: ${a.from} → ${a.to}`).join("\n");
+      const list = outcome.changes.locked.map((a) => fill(STRINGS.lockedItem, { field: a.label, from: a.from, to: a.to })).join("\n");
       if (!window.confirm(fill(STRINGS.locked, { list }))) outcome = applyRegenerated(hooks.schema, project, result.ctx, result.read, { overwriteLocked: false });
     }
     const { undo } = commitRegenerated(project, outcome);

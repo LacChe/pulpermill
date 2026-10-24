@@ -8,56 +8,9 @@ import {
   CAST_MAX, castKey, chapterInfo, beatForChapter, castChoices, suggestedCast, castProblem, pickSpotlight, shiftsForChapter, currentGoal,
   openPlants, availableReveals, offstageDue, planIsStale, placeBeat,
 } from "./plan.js";
+import { section, fill, msg, joinList } from "./text.js";
 
-export const STRINGS = {
-  title: "Plan the next chapter",
-  chapterOf: "Chapter {n} of {total}",
-  chapterOnly: "Chapter {n}",
-  notStarted: "Start the story first (the bar above). The plan is made from the cards as they will be locked.",
-  allDone: "Every chapter is written. Use the end-of-story step when you are ready.",
-  noPressure: "Entanglements has no pressure yet, so there is nothing to spotlight. Add one first.",
-  castTitle: "Who is in this chapter",
-  castHelp: "The protagonist is always in, and up to {max} people can be. The people used least so far are suggested, so everyone gets time.",
-  protagonist: "Protagonist, always in",
-  suggested: "Suggested",
-  usedNone: "not in a chapter yet",
-  usedOne: "in 1 chapter, last in chapter {last}",
-  usedMany: "in {n} chapters, last in chapter {last}",
-  startsFrom: "What the plan starts from",
-  spotlight: "Spotlight",
-  spotlightNone: "no pressure",
-  shifts: "Shift allowed",
-  shiftWords: { harder: "harder", easier: "easier" },
-  goal: "Current goal",
-  goalNone: "none: the goal has ended, so the story winds down",
-  plants: "Open plants",
-  plantsNone: "none",
-  reveals: "Reveals still available",
-  offstage: "Offstage change",
-  offstageYes: "due: the model first decides what the background groups and places do",
-  offstageNo: "not this chapter",
-  button: "Plan chapter {n} with the model",
-  again: "Plan chapter {n} again",
-  working: "The model is planning…",
-  sends: "Pressing the button sends the cast, the cards in play and the summaries of earlier chapters to {where}.",
-  planned: "Chapter {n} is planned. The beat is below: edit anything you like.",
-  retried: "The first try broke a rule, so the model tried again.",
-  stillBlocks: "It still has {n} problem(s) that stop generating. They are marked on the beat.",
-  unmatched: "The model named {names}, but nothing in your cards matches, so those links were left empty.",
-  dropped: "The model gave something that is not a choice here ({fields}), so it was left empty.",
-  undo: "Undo",
-  undone: "Put the plan back as it was.",
-  confirmReplan: "Plan this chapter again? The beat you have now will be replaced. You can undo it afterwards.",
-  stale: "The Entanglements have changed since this was planned. Plan it again to use the new state, or write the beat on as it is.",
-  thought: "How the model thought about this chapter",
-  thoughtKept: "This is kept with your project, and replaced when you plan the chapter again.",
-  reasons: {
-    not_started: "Start the story first.", done: "Every chapter is written.", no_pressure: "Entanglements has no pressure yet.",
-    cast_empty: "Pick who is in the chapter.", cast_too_many: "A chapter has at most {max} people.",
-    cast_no_protagonist: "The protagonist has to be in the chapter.", cast_unknown: "Someone in the cast is not there any more.",
-  },
-};
-const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
+export const STRINGS = section("plan");
 const copy = (value) => JSON.parse(JSON.stringify(value));
 
 function node(tag, props = {}, ...children) {
@@ -104,8 +57,8 @@ export function createPlanPanel(hooks) {
     const spotlight = pickSpotlight(project, ids, chapter);
     const goal = currentGoal(project);
     const rows = [
-      [STRINGS.spotlight, spotlight?.what ? (spotlight.what.length > 140 ? `${spotlight.what.slice(0, 140)}…` : spotlight.what) : STRINGS.spotlightNone],
-      [STRINGS.shifts, shiftsForChapter(project, chapter).map((s) => STRINGS.shiftWords[s]).join(", ")],
+      [STRINGS.spotlight, spotlight?.what ? (spotlight.what.length > 140 ? fill(STRINGS.truncated, { text: spotlight.what.slice(0, 140) }) : spotlight.what) : STRINGS.spotlightNone],
+      [STRINGS.shifts, joinList(shiftsForChapter(project, chapter).map((s) => STRINGS.shiftWords[s]))],
       [STRINGS.goal, goal ?? STRINGS.goalNone],
       [STRINGS.plants, String(openPlants(project).length || STRINGS.plantsNone)],
       [STRINGS.reveals, String(availableReveals(project).length)],
@@ -135,9 +88,9 @@ export function createPlanPanel(hooks) {
     if (result.retried) parts.push(STRINGS.retried);
     if (result.blockers.length) parts.push(fill(STRINGS.stillBlocks, { n: result.blockers.length }));
     const words = [...new Set(result.unresolved.map((u) => u.words))];
-    if (words.length) parts.push(fill(STRINGS.unmatched, { names: words.map((w) => `“${w}”`).join(", ") }));
-    if (result.dropped.length) parts.push(fill(STRINGS.dropped, { fields: result.dropped.join(", ") }));
-    hooks.notice(parts.join(" "), result.blockers.length ? "notice-bad" : "", {
+    if (words.length) parts.push(fill(STRINGS.unmatched, { names: joinList(words.map((w) => msg("common.quoted", { text: w }))) }));
+    if (result.dropped.length) parts.push(fill(STRINGS.dropped, { fields: joinList(result.dropped) }));
+    hooks.notice(joinList(parts, "sentence"), result.blockers.length ? "notice-bad" : "", {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
@@ -199,7 +152,7 @@ export function createPlanPanel(hooks) {
       });
       boxes.push([box, c.id]);
       const tags = [c.protagonist ? STRINGS.protagonist : null, c.suggested && !c.protagonist ? STRINGS.suggested : null].filter(Boolean);
-      list.append(node("label", { className: "plan-person" }, box, node("span", { className: "plan-name", textContent: c.name || "Unnamed" }),
+      list.append(node("label", { className: "plan-person" }, box, node("span", { className: "plan-name", textContent: c.name || STRINGS.unnamed }),
         node("span", { className: "plan-used", textContent: usedText(c) }),
         ...tags.map((t) => node("span", { className: "tag", textContent: t }))));
     }

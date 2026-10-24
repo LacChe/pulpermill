@@ -1,6 +1,8 @@
 // Deterministic page logic, written once and kept free of the DOM so Node can test it.
 // Everything here works on plain objects: the schema JSON and the project object.
 
+import { msg, joinList } from "./text.js";
+
 // A value counts as filled when the writer has put something in it.
 export function isFilled(value) {
   if (value === undefined || value === null || value === "") return false;
@@ -120,7 +122,7 @@ export function fillTemplate(template, values, resolve = (value) => String(value
     const value = values[key];
     if (!isFilled(value)) return "…";
     any = true;
-    return Array.isArray(value) ? value.map((v) => resolve(v, key)).join(", ") : resolve(value, key);
+    return Array.isArray(value) ? joinList(value.map((v) => resolve(v, key))) : resolve(value, key);
   });
   return any ? text : "";
 }
@@ -243,7 +245,7 @@ export function hasUnsavedChanges(schema, project, savedSnapshot) {
 }
 
 // The file name to offer when saving: the project's title, or a plain default when it has none yet.
-export function projectFileName(project, fallback = "pulpermill-project") {
+export function projectFileName(project, fallback = msg("files.project")) {
   const slug = String(project.title ?? "").toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/g, "");
   return `${slug || fallback}.json`;
@@ -336,7 +338,7 @@ function entryLabel(item, unnamed) {
 // Two sources are narrowed by what the story has already done:
 //   summary_events.entries  only entries that planted something and have not been paid off yet (an open plant)
 //   world.rules, when a filter is given  rules that have not already come to light (reveals_landed)
-export function refOptions(project, sources, unnamed = "Unnamed", options = {}) {
+export function refOptions(project, sources, unnamed = msg("common.unnamed"), options = {}) {
   const { where, keep = [] } = options;
   const paidOff = new Set((project.summary_events?.entries ?? []).flatMap((e) => e.paid_off ?? []));
   const landed = new Set((project.summary_events?.entries ?? []).flatMap((e) => e.reveals_landed ?? []));
@@ -384,7 +386,7 @@ export function blockedValues(card, listField, field, values) {
 }
 
 // The words for a stored value, for titles: an option's label, a linked entry's name, or the value itself.
-export function lookupLabel(project, itemField, value, unnamed = "Unnamed") {
+export function lookupLabel(project, itemField, value, unnamed = msg("common.unnamed")) {
   if (itemField?.options) return itemField.options.find((o) => o.value === value)?.label ?? String(value);
   if (itemField?.ref) return refOptions(project, itemField.ref, unnamed).find((o) => o.value === value)?.label ?? String(value);
   return String(value);
@@ -1194,7 +1196,7 @@ CHECKS.mentions_known_names = ({ card, rule, values, project }) => {
       const text = valueOf(target, def.key);
       if (typeof text !== "string" || !text.trim()) continue;
       const found = names.filter((name) => mentions(text, name));
-      if (found.length) hits.push({ ...place(target, def.key), tokens: { names: [...new Set(found)].join(", ") } });
+      if (found.length) hits.push({ ...place(target, def.key), tokens: { names: joinList([...new Set(found)]) } });
     }
   }
   return hits;
@@ -1246,10 +1248,17 @@ CHECKS.pressure_touches_cast = ({ card, rule, values, project }) => {
 
 // Two lines are "too similar" when most of their meaningful words are shared. A rough measure, tuned by this one number.
 export const SIMILARITY_LIMIT = 0.6;
-const STOP = new Set("the a an and or but of to in on at for with by from as is are was were be been it its this that these those he she they his her their them then than so not no".split(" "));
+// The little words that carry no meaning in the page's language ("the", "and"), read from the text bundle.
+let stopSet = null;
+function stopWords() {
+  const text = msg("language.stopWords");
+  if (stopSet?.text !== text) stopSet = { text, set: new Set(text.split(" ")) };
+  return stopSet.set;
+}
 
 function words(text) {
-  return new Set((String(text).toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length > 2 && !STOP.has(w)));
+  const stop = stopWords();
+  return new Set((String(text).toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length > 2 && !stop.has(w)));
 }
 
 export function similarity(a, b) {

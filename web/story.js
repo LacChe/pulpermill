@@ -4,26 +4,9 @@
 import { startGate, lockStaticCards, unlockStaticCards, storyStarted, canUnlock, STATIC_CARDS } from "./gate.js";
 import { checkStyleFit } from "./client.js";
 import { errorText } from "./render.js";
+import { section, fill } from "./text.js";
 
-export const STRINGS = {
-  intro: "When your cards are ready, start the story. That locks Style, Characters, World and Setup, so they stay as you wrote them while chapters are written. Entanglements and each chapter’s plan stay editable.",
-  start: "Start the story",
-  checking: "The model is checking that the protagonist suits the voice…",
-  fixFirst: "Fix these first. The story can’t start while a card has problems that stop generating.",
-  stop: "{card}: {n} to fix",
-  stopOne: "{card}, {name}: {n} to fix",
-  stopNone: "{card}: add at least one character",
-  noProtagonist: "Setup needs a protagonist before the model can check the voice.",
-  misfit: "The model thinks the protagonist may not suit the voice you chose:\n\n{message}\n\nStart the story anyway?",
-  misfitBare: "The model thinks the protagonist may not suit the voice you chose. Start the story anyway?",
-  started: "The story has started. Style, Characters, World and Setup are locked: you can read them, but not change them.",
-  startedKept: "The story has started. Style, Characters, World and Setup stay locked for the rest of the story, because chapters are written from them.",
-  unlock: "Unlock the cards",
-  confirmUnlock: "Unlock Style, Characters, World and Setup so you can edit them? You will need to start the story again.",
-  unlocked: "The cards are unlocked. Start the story again when you are ready.",
-  begun: "The story has started. Style, Characters, World and Setup are now locked.",
-};
-const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
+export const STRINGS = section("story");
 
 function node(tag, props = {}, ...children) {
   const made = Object.assign(document.createElement(tag), props);

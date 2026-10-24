@@ -7,6 +7,7 @@
 
 import { envelope, settledProject, wordsToId, isFilled, validate, newId } from "./logic.js";
 import { storyStarted } from "./gate.js";
+import { msg, joinList } from "./text.js";
 import {
   chapterInfo, beatForChapter, beatBlockers, castProblem, planIsStale, entanglementsHash, currentGoal, openPlants,
   availableReveals, latestShifts, nameMap, fieldDefs, entanglementsFor, castCards, beatInWords, eventsInWords,
@@ -36,7 +37,7 @@ export function generateGate(schema, project) {
   if (problems.length) return { ok: false, reason: "beat_blocked", problems };
   const settled = settledProject(schema, project);
   const held = validate(schema.cards.entanglements, settled.entanglements, settled, schema.common).problems.filter((p) => p.severity === "block");
-  if (held.length) return { ok: false, reason: "entanglements_blocked", problems: held.map((p) => [p.message, p.fix].filter(Boolean).join(" ")) };
+  if (held.length) return { ok: false, reason: "entanglements_blocked", problems: held.map((p) => joinList([p.message, p.fix].filter(Boolean), "sentence")) };
   return { ok: true, chapter: info.next, beat, stale: planIsStale(schema, project, beat) };
 }
 
@@ -110,7 +111,7 @@ const lockCovers = (lock, change) => lock.card === "entanglements" && !lock.owne
 // A value as words for the review: links by name.
 function show(def, value, names) {
   const one = (v) => names.get(v) ?? String(v ?? "");
-  if (Array.isArray(value)) return value.map(one).join(", ");
+  if (Array.isArray(value)) return joinList(value.map(one));
   const option = def.options?.find((o) => o.value === value);
   if (option) return option.label ?? option.value;
   return def.ref ? one(value) : String(value ?? "");
@@ -123,19 +124,19 @@ function resolveChangeValue(def, change, project) {
       const ids = [];
       for (const w of words) {
         const found = wordsToId(project, def.ref, w);
-        if (!found.id) return { why: `“${w}” matches nothing in the cards` };
+        if (!found.id) return { why: msg("records.whyMatchesNothing", { words: w }) };
         ids.push(found.id);
       }
-      return ids.length ? { value: ids } : { why: "an empty list" };
+      return ids.length ? { value: ids } : { why: msg("records.whyEmptyList") };
     }
-    if (typeof words !== "string") return { why: "not a name" };
+    if (typeof words !== "string") return { why: msg("records.whyNotName") };
     const found = wordsToId(project, def.ref, words);
-    return found.id ? { value: found.id } : { why: `“${words}” matches ${found.several ? "more than one entry" : "nothing"} in the cards` };
+    return found.id ? { value: found.id } : { why: msg(found.several ? "records.whyMatchesSeveral" : "records.whyMatchesNothing", { words }) };
   }
   if (def.options?.length) {
-    return def.options.some((o) => o.value === change.value) ? { value: change.value } : { why: `“${change.value}” is not one of the choices` };
+    return def.options.some((o) => o.value === change.value) ? { value: change.value } : { why: msg("records.whyNotChoice", { value: change.value }) };
   }
-  return typeof change.value === "string" && change.value.trim() ? { value: change.value.trim() } : { why: "no words" };
+  return typeof change.value === "string" && change.value.trim() ? { value: change.value.trim() } : { why: msg("records.whyNoWords") };
 }
 
 // Applies the proposed changes to a copy of the Entanglements. A change is dropped (and says why) when its item does not exist,
@@ -152,13 +153,13 @@ function applyChanges(schema, project, changes, { overwriteLocked }) {
     const item = next[change.section]?.find((i) => i.id === change.item);
     const def = fieldDefs(schema, "entanglements", change.section).find((d) => d.key === change.field);
     const drop = (why) => dropped.push({ ...change, why });
-    if (!item) { drop("there is no such entry"); continue; }
-    if (!def?.changes) { drop("that field does not change"); continue; }
+    if (!item) { drop(msg("records.whyNoEntry")); continue; }
+    if (!def?.changes) { drop(msg("records.whyNoChange")); continue; }
     const got = resolveChangeValue(def, change, project);
     if (got.why) { drop(got.why); continue; }
     if (JSON.stringify(item[change.field]) === JSON.stringify(got.value)) continue;       // no change at all
     const covering = locks.filter((l) => lockCovers(l, change));
-    if (covering.length && !overwriteLocked) { drop("it is locked"); continue; }
+    if (covering.length && !overwriteLocked) { drop(msg("records.whyLocked")); continue; }
     applied.push({
       section: change.section, item: change.item, field: change.field, label: def.label ?? def.key,
       was: item[change.field], now: got.value,
@@ -177,7 +178,7 @@ function applyChanges(schema, project, changes, { overwriteLocked }) {
     for (const a of applied.filter((x) => x.item === bad)) {
       const section = next[a.section].find((i) => i.id === bad);
       section[a.field] = a.was;
-      dropped.push({ section: a.section, item: a.item, field: a.field, value: a.to, why: `it would break a rule: ${why}` });
+      dropped.push({ section: a.section, item: a.item, field: a.field, value: a.to, why: msg("records.whyBreaksRule", { why }) });
     }
   }
   const kept = applied.filter((a) => !fresh.some((p) => p.item === a.item));
@@ -200,47 +201,47 @@ export function applyGenerated(schema, project, beat, read, { overwriteLocked = 
   // Names to ids. What matches nothing is left out and mentioned, never guessed.
   const link = (sources, words, what) => {
     const found = wordsToId(project, sources, words);
-    if (!found.id) warnings.push({ kind: "unmatched", text: `${what} “${words}” matches ${found.several ? "more than one entry" : "nothing"}, so it was left out.` });
+    if (!found.id) warnings.push({ kind: "unmatched", text: msg(found.several ? "records.unmatchedSeveral" : "records.unmatchedNone", { what, words }) });
     return found.id ?? null;
   };
   const plants = openPlants(project);
   const paid = [];
   for (const words of e.paid_off) {
     const plant = plants.find((p) => squash(p.text) === squash(words));
-    if (plant) paid.push(plant.id); else warnings.push({ kind: "unmatched", text: `The payoff “${words}” is not an open plant, so it was left out.` });
+    if (plant) paid.push(plant.id); else warnings.push({ kind: "unmatched", text: msg("records.payoffNotOpen", { words }) });
   }
   const availableIds = new Set(availableReveals(project).map((r) => r.id));
-  const reveals = e.reveals_landed.map((w) => link(["world.rules"], w, "The reveal")).filter((id) => {
-    if (id && !availableIds.has(id)) warnings.push({ kind: "unmatched", text: "A reveal that had already come to light was named again, so it was left out." });
+  const reveals = e.reveals_landed.map((w) => link(["world.rules"], w, msg("records.whatReveal"))).filter((id) => {
+    if (id && !availableIds.has(id)) warnings.push({ kind: "unmatched", text: msg("records.revealAgain") });
     return id && availableIds.has(id);
   });
   const behaviors = [];
   for (const w of e.behaviors_seen) {
     const found = behaviorMatch(project, cast, w);
-    if (found.id) behaviors.push(found.id); else warnings.push({ kind: "unmatched", text: `The behavior “${w}” matches ${found.several ? "more than one" : "no"} behavior of the cast, so it was left out.` });
+    if (found.id) behaviors.push(found.id); else warnings.push({ kind: "unmatched", text: msg(found.several ? "records.behaviorSeveral" : "records.behaviorNone", { words: w }) });
   }
-  const things = e.things_seen.map((w) => link(["world.objects"], w, "The thing")).filter(Boolean);
+  const things = e.things_seen.map((w) => link(["world.objects"], w, msg("records.whatThing"))).filter(Boolean);
 
   // A chapter plants at most one thing, and at most two plants stay open at once.
   let planted = e.planted;
   if (planted && plants.length - paid.length >= MAX_OPEN_PLANTS) {
-    warnings.push({ kind: "plant", text: `Two plants were already open, so what this chapter planted (“${planted}”) is not counted as a plant.` });
+    warnings.push({ kind: "plant", text: msg("records.plantsFull", { planted }) });
     planted = null;
   }
   const event = {
     id: fresh(), beat: beat.id, happened: e.happened, changed: e.changed ?? "", planted: planted ?? "",
     paid_off: paid, reveals_landed: reveals, behaviors_seen: behaviors, things_seen: things, goal_landed: e.goal_landed,
   };
-  if (beat.goal_change && !e.goal_landed) warnings.push({ kind: "goal", text: "The beat planned a change to the goal, but the chapter did not carry it out. It stays pending." });
-  if (beat.reveal_rule && !reveals.includes(beat.reveal_rule)) warnings.push({ kind: "reveal", text: "The beat planned a reveal that the chapter did not make, so it is still available." });
+  if (beat.goal_change && !e.goal_landed) warnings.push({ kind: "goal", text: msg("records.goalPending") });
+  if (beat.reveal_rule && !reveals.includes(beat.reveal_rule)) warnings.push({ kind: "reveal", text: msg("records.revealStillAvailable") });
 
   // Who moved: only people in the chapter, once each.
   const shifts = [];
   for (const s of read.shifts) {
-    const id = link(["characters"], s.character, "The character");
+    const id = link(["characters"], s.character, msg("records.whatCharacter"));
     if (!id) continue;
-    if (!cast.includes(id)) { warnings.push({ kind: "unmatched", text: `“${s.character}” moved, but was not in this chapter, so it was left out.` }); continue; }
-    if (shifts.some((x) => x.character === id)) { warnings.push({ kind: "unmatched", text: `“${s.character}” appeared twice in the shifts, so the second was left out.` }); continue; }
+    if (!cast.includes(id)) { warnings.push({ kind: "unmatched", text: msg("records.notInChapter", { name: s.character }) }); continue; }
+    if (shifts.some((x) => x.character === id)) { warnings.push({ kind: "unmatched", text: msg("records.shiftTwice", { name: s.character }) }); continue; }
     if (shifts.length >= MAX_SHIFTS) continue;
     const { character, ...texts } = s;
     shifts.push({ id: fresh(), beat: beat.id, character: id, ...texts });
@@ -248,9 +249,9 @@ export function applyGenerated(schema, project, beat, read, { overwriteLocked = 
 
   const changes = applyChanges(schema, project, read.changes, { overwriteLocked });
   if (reveals.length && !changes.applied.some((a) => a.section === "knowledge")) {
-    warnings.push({ kind: "knowledge", text: "A reveal landed, but nobody's knowledge changed. Check the Knowledge list in Entanglements." });
+    warnings.push({ kind: "knowledge", text: msg("records.knowledgeUnchanged") });
   }
-  for (const d of changes.dropped) warnings.push({ kind: "dropped", text: `A proposed change to ${d.field} was left out: ${d.why}.` });
+  for (const d of changes.dropped) warnings.push({ kind: "dropped", text: msg("records.changeLeftOut", { field: d.field, why: d.why }) });
 
   const settled = settledProject(schema, project);
   return {
@@ -349,10 +350,10 @@ export function applyRegenerated(schema, project, ctx, read, { overwriteLocked =
   // Later chapters were written from the old version.
   const lateEvents = (project.summary_events?.entries ?? []).filter((e) => chapterNumber(project, e.beat) > number);
   if (lateEvents.some((e) => (e.paid_off ?? []).includes(out.events.id)) && !out.events.planted) {
-    out.warnings.push({ kind: "later", text: "A later chapter paid off something this chapter planted, and the new version plants nothing." });
+    out.warnings.push({ kind: "later", text: msg("records.laterNoPlant") });
   }
   if (project.chapters.length > number) {
-    out.warnings.push({ kind: "later", text: `The ${project.chapters.length - number} later chapter(s) were written from the old version. They stay as they are, and their beats are marked stale.` });
+    out.warnings.push({ kind: "later", text: msg("records.laterStale", { n: project.chapters.length - number }) });
   }
   return out;
 }

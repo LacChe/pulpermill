@@ -11,6 +11,7 @@ import {
   findInstance,
 } from "./logic.js";
 import { storyStarted } from "./gate.js";
+import { joinList } from "./text.js";
 
 export const CAST_MAX = 5;               // the beat's cast, protagonist included (the schema's max_selected)
 export const SUGGEST_SIZE = 3;           // how many the page suggests: the protagonist and the two least used
@@ -397,6 +398,6 @@ export function beatBlockers(schema, project, beat) {
   const settled = settledProject(schema, trial);
   return validate(schema.cards.outline, settled.outline, settled, schema.common)
     .problems.filter((p) => p.severity === "block" && p.item === beat.id)
-    .map((p) => [p.message, p.fix].filter(Boolean).join(" "));
+    .map((p) => joinList([p.message, p.fix].filter(Boolean), "sentence"));
 }
 

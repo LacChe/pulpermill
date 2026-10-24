@@ -23,62 +23,10 @@ import { createMock } from "./mock.js";
 import {
   BACKEND_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
 } from "./client.js";
+import { section, fill, msg, joinList, setText, applyStaticText, TEXT_FILE, BOOT_FAILURE } from "./text.js";
 
-const LABELS = {
-  addCharacter: "Add a character", deleteCharacter: "Delete this character?", remove: "Delete this character",
-  unnamed: "Unnamed character", noCharacters: "No characters yet.", character: "Character",
-  locked: "locked", lockMark: "🔒",
-  tabNames: { characters: "Characters" },     // a tab holds all of a many-per-project card, so it is named in the plural
-
-  tabEmpty: "nothing in it yet", tabStarted: "started", tabReady: "nothing stops generating",
-  markBlock: "✕ {n}", markWarn: "△ {n}", markReady: "✓", markStarted: "●",
-};
-const STRINGS = {
-  untitled: "Untitled story",
-  clean: "No unsaved changes",
-  dirty: "Unsaved changes",
-  saved: "Downloaded as {file}. Keep that file: it is your project.",
-  opened: "Opened {name}.",
-  older: "This project was saved by an older version of Pulpermill. Anything newer than that version is blank.",
-  restored: "Restored. It is not saved yet, so save it when you can.",
-  unchanged: "Your current project is unchanged.",
-  unreadable: "That file could not be read as a project.",
-  notProject: "That file is not a Pulpermill project.",
-  isCard: "That file is a card, not a whole project. Use Import card… to bring it in.",
-  newer: "That project was saved by a newer version of Pulpermill than this page, so it was not opened. Opening it here could lose parts of it.",
-  damaged: "That project is damaged: its {card} card holds something it should not, so it was not opened.",
-  confirmNew: "Start a new project? The one you are working on has unsaved changes, and they will be lost.",
-  confirmOpen: "Open this file? The project you are working on has unsaved changes, and they will be lost.",
-  confirmRestore: "Restore the earlier work? The project you are working on has unsaved changes, and they will be lost.",
-  confirmThrowAway: "Throw away the unsaved work from {when}? It cannot be brought back.",
-  recoveryFound: "Your last session ended with unsaved work: {what}, from {when}.",
-  untitledStory: "an untitled story",
-  characterOne: "1 character",
-  characterMany: "{n} characters",
-  restore: "Restore it",
-  throwAway: "Throw it away",
-  close: "Close",
-  undo: "Undo",
-  undone: "Put back what those fields held before the fill.",
-  filled: "The model drafted: {fields}. They are marked “Model draft” until you edit them.",
-  nothingNew: "The model had nothing new to add to this card.",
-  declined: "Nothing was changed.",
-  dropped: "The project changed while the model was working, so its answer was thrown away.",
-  confirmReplace: "The model’s draft would replace your words in: {fields}. Go ahead? You can undo it afterwards.",
-  unmatched: "The model named {names}, but nothing in your cards matches, so those links were left empty.",
-  noSource: "Add a note for this card, or an example chapter, first. The model fills a card from one of them.",
-  noInstance: "That character isn’t there any more.",
-  more: "and {n} more",
-  backendBad: "That isn’t an address I can use. Type “mock”, or something like localhost:8000.",
-  backendMixed: "This page is served over https, so the browser won’t let it call a plain http address. Use an https address, or open the page from your own computer.",
-  whereMock: "the built-in sample model, which writes placeholder text (nothing leaves this page)",
-  working: "The model is working…",
-  writtenBeat: "This beat was written from. To change the chapter, write it again below.",
-  staleBeat: "May no longer fit: an earlier chapter was written again after this beat was planned.",
-  lockedBanner: "This card is locked because the story has started. You can read it, but not change it.",
-  connection: { unknown: "Not checked yet", idle: "Ready", busy: "Busy with another job", unreachable: "Can’t reach the model" },
-};
-const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
+const LABELS = section("labels");     // labels.tabNames: a tab holds all of a many-per-project card, so it is named in the plural
+const STRINGS = section("app");
 
 const cardsNav = document.getElementById("cards");
 const peopleNav = document.getElementById("people");
@@ -155,7 +103,7 @@ function refreshState() {
   const dirty = isDirty();
   stateNode.textContent = dirty ? STRINGS.dirty : STRINGS.clean;
   stateNode.classList.toggle("is-dirty", dirty);
-  document.title = `${dirty ? "● " : ""}${project.title?.trim() || STRINGS.untitled} — Pulpermill`;
+  document.title = fill(STRINGS.documentTitle, { mark: dirty ? STRINGS.dirtyMark : "", title: project.title?.trim() || STRINGS.untitled });
   if (offerPending) return;
   if (dirty) store.set(recoveryRecord(schema, project));
   else store.remove();
@@ -200,7 +148,7 @@ function failureText(read) {
     newer: STRINGS.newer,
     damaged: fill(STRINGS.damaged, { card: schema.cards[read.card]?.label ?? read.card }),
   }[read.reason] ?? STRINGS.unreadable;
-  return `${text} ${STRINGS.unchanged}`;
+  return joinList([text, STRINGS.unchanged], "sentence");
 }
 
 // ---- New, Open, Save ----------------------------------------------------------
@@ -238,16 +186,16 @@ openInput.addEventListener("change", async () => {
   try {
     text = await file.text();
   } catch {
-    showNotice(`${STRINGS.unreadable} ${STRINGS.unchanged}`, "notice-bad");
+    showNotice(joinList([STRINGS.unreadable, STRINGS.unchanged], "sentence"), "notice-bad");
     return;
   }
   // A card file has a schema_version too, so it would read as a project: ask what it is first.
-  if (fileKind(text) === "card") { showNotice(`${STRINGS.isCard} ${STRINGS.unchanged}`, "notice-bad"); return; }
+  if (fileKind(text) === "card") { showNotice(joinList([STRINGS.isCard, STRINGS.unchanged], "sentence"), "notice-bad"); return; }
   const read = readProject(text, schema);
   if (!read.ok) { showNotice(failureText(read), "notice-bad"); return; }
   if (isDirty() && !window.confirm(STRINGS.confirmOpen)) return;
   replaceProject(read.project);
-  showNotice(`${fill(STRINGS.opened, { name: file.name })}${read.older ? ` ${STRINGS.older}` : ""}`);
+  showNotice(joinList([fill(STRINGS.opened, { name: file.name }), ...(read.older ? [STRINGS.older] : [])], "sentence"));
 });
 
 // Import card: pick a card file; the import panel says what it would do and changes nothing until the writer says so.
@@ -261,7 +209,7 @@ importInput.addEventListener("change", async () => {
   try {
     text = await file.text();
   } catch {
-    showNotice(`${STRINGS.unreadable} ${STRINGS.unchanged}`, "notice-bad");
+    showNotice(joinList([STRINGS.unreadable, STRINGS.unchanged], "sentence"), "notice-bad");
     return;
   }
   noticeNode.hidden = true;
@@ -297,10 +245,10 @@ const when = (iso) => new Date(iso).toLocaleString([], { dateStyle: "medium", ti
 
 function offerRecovery(recovered) {
   offerPending = true;
-  const what = [
-    recovered.title ? `“${recovered.title}”` : STRINGS.untitledStory,
+  const what = joinList([
+    recovered.title ? msg("common.quoted", { text: recovered.title }) : STRINGS.untitledStory,
     recovered.characters === 1 ? STRINGS.characterOne : recovered.characters > 1 ? fill(STRINGS.characterMany, { n: recovered.characters }) : "",
-  ].filter(Boolean).join(", ");
+  ].filter(Boolean));
   const words = document.createElement("span");
   words.textContent = fill(STRINGS.recoveryFound, { what, when: when(recovered.savedAt) });
   const resolve = () => { offerPending = false; recoveryNode.hidden = true; recoveryNode.replaceChildren(); };
@@ -355,7 +303,7 @@ const sameView = (card, instanceId) => view.card === card.id && (!card.many_per_
 const copy = (value) => JSON.parse(JSON.stringify(value));
 
 function listOf(labels) {
-  return labels.length > 6 ? `${labels.slice(0, 6).join(", ")} ${fill(STRINGS.more, { n: labels.length - 6 })}` : labels.join(", ");
+  return labels.length > 6 ? fill(STRINGS.more, { list: joinList(labels.slice(0, 6)), n: labels.length - 6 }) : joinList(labels);
 }
 
 async function runFill(card, shown) {
@@ -378,8 +326,8 @@ async function runFill(card, shown) {
   }
   const keys = [...result.filled, ...result.replaced];
   const unmatched = [...new Set(result.unresolved.map((u) => u.words))];
-  const extra = unmatched.length ? ` ${fill(STRINGS.unmatched, { names: unmatched.map((n) => `“${n}”`).join(", ") })}` : "";
-  if (!keys.length) { showNotice(`${STRINGS.nothingNew}${extra}`); return; }
+  const extra = unmatched.length ? fill(STRINGS.unmatched, { names: joinList(unmatched.map((n) => msg("common.quoted", { text: n }))) }) : "";
+  if (!keys.length) { showNotice(joinList([STRINGS.nothingNew, extra].filter(Boolean), "sentence")); return; }
 
   // Only the fields the model drafted are written, and what they held a moment ago is what Undo puts back. Anything
   // else the writer typed while waiting is left alone.
@@ -391,7 +339,7 @@ async function runFill(card, shown) {
   if (sameView(card, instanceId)) show();
   touchState();
 
-  showNotice(`${fill(STRINGS.filled, { fields: listOf(keys.map(label)) })}${extra}`, "", {
+  showNotice(joinList([fill(STRINGS.filled, { fields: listOf(keys.map(label)) }), extra].filter(Boolean), "sentence"), "", {
     label: STRINGS.undo,
     run: () => {
       const now = project === here ? targetNow() : null;
@@ -426,7 +374,7 @@ function statusWords(status) {
   if (status.block) parts.push(countWords(CARD_STRINGS.blockOne, CARD_STRINGS.blockMany, status.block));
   if (status.warn) parts.push(countWords(CARD_STRINGS.warnOne, CARD_STRINGS.warnMany, status.warn));
   if (!parts.length) parts.push(status.ready ? LABELS.tabReady : status.started ? LABELS.tabStarted : LABELS.tabEmpty);
-  return parts.join(", ");
+  return joinList(parts);
 }
 
 const tabName = (id) => LABELS.tabNames[id] ?? schema.cards[id].label;
@@ -445,8 +393,8 @@ function updateMarks() {
   for (const node of cardsNav.querySelectorAll("[data-card]")) {
     const status = cards[node.dataset.card];
     node.querySelector(".tab-marks").replaceChildren(...markNodes(status));
-    const words = cardLocked(project, node.dataset.card) ? `${statusWords(status)}, ${LABELS.locked}` : statusWords(status);
-    node.setAttribute("aria-label", `${tabName(node.dataset.card)}: ${words}`);
+    const words = cardLocked(project, node.dataset.card) ? fill(LABELS.statusLocked, { words: statusWords(status), locked: LABELS.locked }) : statusWords(status);
+    node.setAttribute("aria-label", fill(LABELS.tabAria, { name: tabName(node.dataset.card), words }));
     node.title = words;
   }
   const select = peopleNav.querySelector("select");
@@ -488,7 +436,7 @@ function drawNav() {
   } else {
     items.push(Object.assign(document.createElement("span"), { textContent: LABELS.noCharacters }));
   }
-  items.push(button(`+ ${LABELS.addCharacter}`, () => {
+  items.push(button(LABELS.addCharacter, () => {
     view.characterId = addInstance(project, card).id;
     show();
     touchState();
@@ -548,6 +496,8 @@ function show() {
 }
 
 try {
+  setText(await (await fetch(TEXT_FILE)).json());
+  applyStaticText(document);
   schema = await (await fetch("data/schema.en.json")).json();
   let stored = null;
   try { stored = localStorage.getItem(BACKEND_KEY); } catch { /* no storage: the built-in model is used */ }
@@ -600,7 +550,7 @@ try {
   if (offerPending) offerRecovery(recovered);
   client.checkStatus();   // only asks whether the backend is free; no model runs
 } catch (error) {
-  main.textContent = "The page couldn't load its schema.";
+  main.textContent = BOOT_FAILURE;
 }
 window.pulpermill = {
   get project() { return project; }, get dirty() { return isDirty(); }, get client() { return client; }, get mock() { return mock; },

@@ -1,73 +1,18 @@
-// Draws one card as a form. Only this file touches the DOM. All wording comes from the schema JSON,
-// except the few page labels in STRINGS below, which move into the text files when languages are added.
+// Draws one card as a form. Only this file touches the DOM. The wording of the cards comes from the schema JSON, and the
+// page's own labels from the text bundle (web/data/text.en.json), through STRINGS below.
 import {
   FILLABLE, addItem, blockedValues, canAdd, chooseOneOf, fieldShown, filledFieldKeys, filledPaths, flagsUsed, groupedFields,
   isFilled, isItemEmpty, itemTitle, legalShifts, lookupLabel, modelRules, oneOfChoice, pickerSources, problemCounts,
   problemPath, refOptions, removeItem, showsOptionalTag, shownProblems, validate,
 } from "./logic.js";
+import { section, fill, joinList } from "./text.js";
 
-export const STRINGS = {
-  optional: "Optional",
-  tagLive: "Changes as the story runs",
-  tagLiveHelp: "What you write is the starting point. The model updates it as chapters are written, and you can edit it between chapters.",
-  tagFixed: "Never changes",
-  tagFixedHelp: "The model always gets this exactly as written and never changes it during the story.",
-  noteLive: "Fields tagged “{tag}” are where things start. The model updates them chapter by chapter, and you can edit them between chapters.",
-  noteFixed: "Fields tagged “{tag}” go to the model exactly as written, and it never changes them during the story.",
-  why: "Why this matters",
-  good: "Works well",
-  avoid: "Avoid",
-  newItem: "New item",
-  remove: "Delete",
-  unnamed: "Unnamed",
-  missing: "(no longer exists)",
-  characters: "Characters",
-  clear: "Clear choice",
-  setByCode: "Set by the system",
-  unsupported: "This field type isn't built yet.",
-  blocks: "Stops generating",
-  warns: "Worth a look",
-  blockOne: "1 problem stops generating",
-  blockMany: "{n} problems stop generating",
-  warnOne: "1 warning",
-  warnMany: "{n} warnings",
-  groupCount: "{n} to check",
-  clean: "Nothing wrong found on this page.",
-  validate: "Validate",
-  tagDraft: "Model draft",
-  tagDraftHelp: "The model wrote this. It stays marked until you edit it.",
-  modelOpinion: "The model’s opinion",
-  modelChecking: "The model is checking…",
-  modelNone: "The model flagged nothing.",
-  modelOne: "The model flagged 1 thing worth a look.",
-  modelMany: "The model flagged {n} things worth a look.",
-  modelUnanswered: "{n} of its checks got no answer, so they were not counted as passed.",
-  fillTitle: "Fill this card with the model",
-  fillHelp: "Write a few rough notes, or paste a chapter you like. The model drafts the fields and you edit them. It fills empty fields, asks before replacing anything you wrote, and you can undo it.",
-  noteLabel: "Your notes for this card",
-  noteLabelPerson: "Your notes about this character",
-  notePlaceholder: "Rough is fine: a few lines, or a pasted description.",
-  exampleLabel: "Example chapter (shared by every card)",
-  examplePlaceholder: "A chapter you wrote or like. The model learns the voice and the world from it.",
-  fillButton: "Fill with the model",
-  fillWorking: "The model is working…",
-  fillSends: "Pressing the button sends this card, the cards it reads, and your notes and example chapter to {where}.",
-  errors: {
-    busy: "The model is busy with another job, so nothing was changed. Try again in a moment.",
-    bad_output: "The model’s answer didn’t come out in the right shape, so nothing was changed. Press the button again.",
-    too_long: "There is too much text to send to the model in one go, so nothing was changed. Shorten the notes or the example chapter.",
-    stopped: "Stopped. Nothing was changed.",
-    server: "The model’s server had a problem, so nothing was changed.",
-    unreachable: "Couldn’t reach the model, so nothing was changed. Check the address and that it is running.",
-    timeout: "The model took too long to answer, so nothing was changed.",
-    bad_request: "The page sent something the model’s server didn’t understand, so nothing was changed.",
-  },
-};
+export const STRINGS = section("card");
 
 // The words for a failed call: what happened, and that nothing was changed.
 export function errorText(error) {
   const base = STRINGS.errors[error?.kind] ?? STRINGS.errors.server;
-  return error?.detail && ["server", "bad_request"].includes(error.kind) ? `${base} (${error.detail})` : base;
+  return error?.detail && ["server", "bad_request"].includes(error.kind) ? fill(STRINGS.withDetail, { text: base, detail: error.detail }) : base;
 }
 
 const TEXT_INPUTS = new Set(["text", "textarea", "number"]);
@@ -600,7 +545,7 @@ export function renderCard(root, card, values, ctx) {
     const parts = [];
     if (block) parts.push(countText(STRINGS.blockOne, STRINGS.blockMany, block));
     if (warn) parts.push(countText(STRINGS.warnOne, STRINGS.warnMany, warn));
-    count.textContent = parts.length ? parts.join(" · ") : review.validated ? STRINGS.clean : "";
+    count.textContent = parts.length ? joinList(parts, "dotted") : review.validated ? STRINGS.clean : "";
     count.hidden = !count.textContent;
     count.className = `problem-count${block ? " has-block" : warn ? " has-warn" : ""}`;
     for (const [id, view] of groupViews) {
@@ -624,10 +569,10 @@ export function renderCard(root, card, values, ctx) {
 
   // One line saying what the "changes" and "never changes" tags mean, only on a card that has them.
   const used = flagsUsed(card);
-  const noteText = [
+  const noteText = joinList([
     used.changes ? STRINGS.noteLive.replace("{tag}", STRINGS.tagLive) : "",
     used.fixed ? STRINGS.noteFixed.replace("{tag}", STRINGS.tagFixed) : "",
-  ].filter(Boolean).join(" ");
+  ].filter(Boolean), "sentence");
 
   const section = el("section", { class: "card", "data-card": card.id },
     el("h2", { text: card.label }),
@@ -666,10 +611,10 @@ export function renderCard(root, card, values, ctx) {
     if (!result.ok) { status.textContent = errorText(result.error); return; }
     review.model = result.problems.map((p) => ({ ...p, at: snapshotOf(values, p) }));
     const seen = update().filter((x) => x.p.kind === "model").length;
-    status.textContent = [
+    status.textContent = joinList([
       seen ? countText(STRINGS.modelOne, STRINGS.modelMany, seen) : STRINGS.modelNone,
       result.missing.length ? STRINGS.modelUnanswered.replace("{n}", String(result.missing.length)) : "",
-    ].filter(Boolean).join(" ");
+    ].filter(Boolean), "sentence");
   });
   section.append(el("div", { class: "validate-bar" }, validateButton, status));
 

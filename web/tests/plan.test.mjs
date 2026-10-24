@@ -1,3 +1,4 @@
+import "./text-setup.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { addInstance, addItem, readPlanReply } from "../logic.js";

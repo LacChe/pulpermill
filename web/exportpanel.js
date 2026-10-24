@@ -2,22 +2,9 @@
 // JSON file, and a pointer to Save for the project file. Nothing here calls the model.
 import { storyMarkdown, storyFileName, cardFiles, cardsZipName, storyCounts } from "./exporting.js";
 import { makeZip } from "./zip.js";
+import { section, fill } from "./text.js";
 
-export const STRINGS = {
-  title: "Export",
-  story: "The story",
-  storyHelp: "Every written chapter in one markdown file ({n} of {total} written).",
-  storyHelpNoTotal: "Every written chapter in one markdown file ({n} written).",
-  storyNone: "Nothing to export yet: no chapter is written.",
-  storyButton: "Download the story (.md)",
-  cards: "The cards",
-  cardsHelp: "Style, each character and the world, each as its own JSON file, so they can be used in another story. The other cards belong to this story only.",
-  download: "Download",
-  downloadAll: "Download all the card files (.zip)",
-  project: "The project",
-  projectHelp: "Use Save at the top. The project file holds everything, and opening it brings the story back as it was.",
-};
-const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
+export const STRINGS = section("export");
 
 function node(tag, props = {}, ...children) {
   const made = Object.assign(document.createElement(tag), props);

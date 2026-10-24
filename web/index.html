@@ -3,43 +3,43 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pulpermill</title>
+  <title data-text="page.title"></title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="bar">
-    <h1>Pulpermill</h1>
+    <h1 data-text="page.title"></h1>
     <label class="project-name">
-      <span class="visually-hidden">Project name</span>
-      <input type="text" id="title" class="text-control" placeholder="Untitled story" autocomplete="off">
+      <span class="visually-hidden" data-text="page.projectName"></span>
+      <input type="text" id="title" class="text-control" data-text-attrs="placeholder:app.untitled" autocomplete="off">
     </label>
     <span id="save-state" class="save-state" role="status"></span>
     <div class="bar-actions">
-      <button type="button" id="new">New</button>
-      <button type="button" id="open">Open…</button>
-      <button type="button" id="import">Import card…</button>
-      <button type="button" id="guide" aria-controls="welcome" aria-expanded="true">Guide</button>
-      <button type="button" id="save">Save</button>
+      <button type="button" id="new" data-text="page.new"></button>
+      <button type="button" id="open" data-text="page.open"></button>
+      <button type="button" id="import" data-text="page.import"></button>
+      <button type="button" id="guide" aria-controls="welcome" aria-expanded="true" data-text="page.guide"></button>
+      <button type="button" id="save" data-text="page.save"></button>
       <input type="file" id="open-file" accept=".json,application/json" hidden>
       <input type="file" id="import-file" accept=".json,application/json" hidden>
     </div>
   </header>
   <div class="backend-bar">
     <label class="backend">
-      <span>Model connection</span>
+      <span data-text="page.modelConnection"></span>
       <input type="text" id="backend" class="text-control" autocomplete="off" spellcheck="false">
     </label>
     <span id="connection" class="connection" role="status"></span>
-    <button type="button" id="check">Check</button>
-    <button type="button" id="stop" class="stop" hidden>Stop</button>
+    <button type="button" id="check" data-text="page.check"></button>
+    <button type="button" id="stop" class="stop" hidden data-text="page.stop"></button>
   </div>
   <div id="recovery" class="notice" hidden></div>
   <div id="notice" class="notice" role="status" hidden></div>
-  <section id="import-panel" class="import-panel" aria-label="Bring in a card" hidden></section>
-  <section id="welcome" class="welcome" aria-label="Welcome" hidden></section>
+  <section id="import-panel" class="import-panel" data-text-attrs="aria-label:import.title" hidden></section>
+  <section id="welcome" class="welcome" data-text-attrs="aria-label:page.welcomeLabel" hidden></section>
   <div id="story-bar" class="story-bar"></div>
-  <nav id="cards" class="tabs" aria-label="Cards"></nav>
-  <nav id="people" class="tabs people" aria-label="Characters" hidden></nav>
+  <nav id="cards" class="tabs" data-text-attrs="aria-label:page.cardsLabel"></nav>
+  <nav id="people" class="tabs people" data-text-attrs="aria-label:page.peopleLabel" hidden></nav>
   <main id="card"></main>
   <script type="module" src="app.js"></script>
 </body>

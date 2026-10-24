@@ -11,6 +11,7 @@
 
 import { envelope, settledProject, isFilled, itemTitle, newId, validate, instanceName } from "./logic.js";
 import { chapterInfo, eventsInWords, nameMap } from "./plan.js";
+import { msg, joinList } from "./text.js";
 
 const copyOf = (value) => JSON.parse(JSON.stringify(value));
 
@@ -112,8 +113,8 @@ export function landEndStory(schema, project, read) {
 
 // ---- What changed, for the review ---------------------------------------------------------------
 
-const titleOf = (field, item) => itemTitle(field, item) || ["name", "state", "statement", "term"].map((k) => item[k]).find(isFilled) || "(untitled)";
-const words = (value) => (Array.isArray(value) ? value.join(", ") : value === null || value === undefined ? "" : String(value));
+const titleOf = (field, item) => itemTitle(field, item) || ["name", "state", "statement", "term"].map((k) => item[k]).find(isFilled) || msg("endstory.untitled");
+const words = (value) => (Array.isArray(value) ? joinList(value) : value === null || value === undefined ? "" : String(value));
 
 // The differences between the cards now and the after-story copy, in words:
 //   [{card: "characters"|"world", who, field, label, kind: "changed"|"added", before, after}]
@@ -130,7 +131,7 @@ export function afterStoryChanges(schema, project, after) {
           if (!before) out.push({ card, who, field: field.key, label: field.label, kind: "added", before: "", after: title });
           else if (JSON.stringify(before) !== JSON.stringify(item)) {
             const keys = (field.item_fields ?? []).filter((d) => JSON.stringify(before[d.key]) !== JSON.stringify(item[d.key]));
-            for (const d of keys) out.push({ card, who, field: field.key, label: `${field.label}, ${title}: ${d.label ?? d.key}`, kind: "changed", before: words(before[d.key]), after: words(item[d.key]) });
+            for (const d of keys) out.push({ card, who, field: field.key, label: msg("endstory.partOf", { field: field.label, title, part: d.label ?? d.key }), kind: "changed", before: words(before[d.key]), after: words(item[d.key]) });
           }
         }
       } else if (JSON.stringify(was[field.key]) !== JSON.stringify(now[field.key])) {

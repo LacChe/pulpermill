@@ -3,51 +3,11 @@
 // model and the project file. It can be hidden, and the choice is remembered in this browser (and only there). It never calls
 // the model and never changes the project.
 import { welcomeSteps } from "./welcome.js";
+import { section, fill } from "./text.js";
 
 export const HIDE_KEY = "pulpermill.welcome.hidden";
 
-export const STRINGS = {
-  title: "Welcome to Pulpermill",
-  intro: "You write the story. The model drafts the parts you ask it for, and you decide what stays.",
-  way: "The way from a blank page to a finished story",
-  steps: {
-    cards: {
-      title: "Fill in the cards",
-      detail: "Style, Characters, World, Entanglements and Setup describe your story. Fill them in yourself, or write a note on a card and press Fill to have the model draft it. Start with whichever you know best.",
-    },
-    start: {
-      title: "Start the story",
-      detail: "When the cards have nothing that stops the story, press Start the story. That locks Style, Characters, World and Setup, so every chapter is written from the same foundations.",
-    },
-    chapters: {
-      title: "Plan and write each chapter",
-      detail: "On the Outline card the model plans a chapter, you change the plan as you like, and then the model writes it. Plans and rewrites can be undone.",
-    },
-    end: {
-      title: "End the story (optional)",
-      detail: "The model updates the characters and the world to show how the story changed them. The result is a separate copy you can edit. Your cards stay as they are.",
-    },
-    download: {
-      title: "Download your work",
-      detail: "At the bottom of the Outline card, Export gives you the story as a text file and your cards as files you can bring into another project.",
-    },
-  },
-  cardsGo: "Next: {card}",
-  cardsGoPerson: "Next: {card}, {name}",
-  noCharacter: "Add a character",
-  chaptersCount: "{written} of {count} written",
-  chaptersOnly: "{written} written",
-  states: { done: "done", next: "do this now", later: "later" },
-  know: "Good to know",
-  knowItems: [
-    "Nothing happens by itself. The model works only when you press a button, one job at a time, and Stop ends it.",
-    "What the model writes is shown to you and can be changed. Its drafts are marked until you edit them.",
-    "Save downloads your project as a file. That file is your story and your cards, so keep it somewhere safe. This page keeps only a short-term safety copy in this browser.",
-    "Until you give a model connection, the page uses a built-in sample model that writes placeholder text, so you can try everything first.",
-  ],
-  hide: "Hide this guide",
-};
-const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
+export const STRINGS = section("welcome");
 
 function node(tag, props = {}, ...children) {
   const made = Object.assign(document.createElement(tag), props);

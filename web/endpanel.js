@@ -7,36 +7,9 @@ import { endGate, afterStoryChanges, afterStoryProblems, afterStoryStale, afterS
 import { endNoteFor, setEndNote, setEndProblems, copyEndNote, putEndNote } from "./modelnotes.js";
 import { renderCard } from "./render.js";
 import { instanceName } from "./logic.js";
+import { section, fill, joinList } from "./text.js";
 
-export const STRINGS = {
-  title: "End of the story",
-  notDone: "Available once every chapter is written.",
-  help: "The model reads what happened and how people changed, and updates the characters and the world to match. The result is kept as a separate after-story copy. Your cards stay as they are.",
-  button: "Update the characters and world with the model",
-  buttonAgain: "Update them again",
-  working: "The model is updating the characters and the world…",
-  sends: "Pressing the button sends the characters, the world and the summaries of every chapter to {where}.",
-  confirmAgain: "Update them again? The after-story copy you have now will be replaced, along with any edits you made to it. You can undo it afterwards.",
-  editTitle: "Edit the after-story copy",
-  editHelp: "The copy is yours to correct. Change anything you like; nothing here goes to the model. Your cards above are not touched, and pressing the button again replaces the copy, edits and all.",
-  editStyle: "Style",
-  editWorld: "World",
-  editPerson: "Character: {name}",
-  unnamed: "Unnamed",
-  done: "The after-story copy is saved.",
-  undo: "Undo", undone: "Put the after-story copy back as it was.",
-  kept: "The model changed {what}. Those fixed fields were put back as they were.",
-  dropped: "The model gave something that did not fit ({fields}), so those fields kept their old value.",
-  problems: "The copy has {n} problem(s) that its card would stop generating on. It is a record of the story's end, so they are only noted.",
-  changes: "What the story changed",
-  noChanges: "The model changed nothing.",
-  added: "{who}: {label}: new, {after}",
-  changed: "{who}: {label}: {before} → {after}",
-  worldWho: "World",
-  stale: "A chapter was written again after this copy was made, so it may be out of date. Update it again to refresh it, or keep it and edit it by hand. Your own edits are replaced if you update it.",
-  reasons: { not_done: "Every chapter has to be written first." },
-};
-const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
+export const STRINGS = section("end");
 const copy = (value) => JSON.parse(JSON.stringify(value));
 
 function node(tag, props = {}, ...children) {
@@ -106,10 +79,10 @@ export function createEndPanel(hooks) {
       }))));
     }
     if (note?.forced.length) {
-      const what = note.forced.map((f) => `${f.fields.join(", ")} of ${f.character}`).join("; ");
+      const what = joinList(note.forced.map((f) => fill(STRINGS.forcedOf, { fields: joinList(f.fields), character: f.character })), "semicolon");
       parts.push(node("p", { className: "help", textContent: fill(STRINGS.kept, { what }) }));
     }
-    if (note?.dropped.length) parts.push(node("p", { className: "help", textContent: fill(STRINGS.dropped, { fields: note.dropped.join(", ") }) }));
+    if (note?.dropped.length) parts.push(node("p", { className: "help", textContent: fill(STRINGS.dropped, { fields: joinList(note.dropped) }) }));
     if (note?.problems) parts.push(node("p", { className: "help", textContent: fill(STRINGS.problems, { n: note.problems }) }));
     box.replaceChildren(...parts);
   }

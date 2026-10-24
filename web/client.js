@@ -17,6 +17,7 @@ import {
 } from "./logic.js";
 import { generateGate, generateRequest, applyGenerated, inputsKey, regenerateGate, regenerateKey, applyRegenerated } from "./generate.js";
 import { endGate, endStoryRequest, landEndStory } from "./endstory.js";
+import { msg } from "./text.js";
 import { planGate, offstageDue, offstageRequest, planRequest, landBeat, beatForChapter, beatBlockers } from "./plan.js";
 
 // ---- The backend setting ----------------------------------------------------
@@ -80,7 +81,7 @@ async function post(fetchImpl, url, request, signal) {
   let body = null;
   try { body = await response.json(); } catch { /* not JSON */ }
   if (body && typeof body === "object" && !Array.isArray(body) && typeof body.ok === "boolean") return body;
-  if (!response.ok) return failure(STATUS_FAILURES[response.status] ?? "server", `The backend answered ${response.status}.`);
+  if (!response.ok) return failure(STATUS_FAILURES[response.status] ?? "server", msg("backend.answered", { status: response.status }));
   return failure("bad_output", "The backend's answer was not JSON.");
 }
 

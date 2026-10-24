@@ -4,47 +4,9 @@
 // Nothing here calls the model. The rules are in exporting.js.
 import { fileKind, readCardFile, planImport, applyImport } from "./exporting.js";
 import { instanceName } from "./logic.js";
+import { section, fill, joinList } from "./text.js";
 
-export const STRINGS = {
-  title: "Bring in a card",
-  whatCharacter: "“{name}”, a character, from {file}.",
-  whatCharacterUnnamed: "A character with no name yet, from {file}.",
-  whatCard: "The {card} card, from {file}.",
-  how: "How should it come in?",
-  addNew: "Add it as a new character",
-  replaceOne: "Put it in place of one of your characters:",
-  unnamed: "Unnamed character",
-  addWords: "It is added to your characters. Nothing else changes.",
-  replaceWords: "It takes {name}’s place. {name}’s notes, ties and place in the story stay with them.",
-  fillsEmpty: "Your {card} card is empty, so this fills it.",
-  replacesCard: "This replaces what is in your {card} card.",
-  sameCard: "Nothing in the file differs from your {card} card.",
-  replacesFields: "Your words in these would change: {fields}.",
-  lost: "Links from {cards} point at {n} thing(s) in your current world that the new one does not have. They will show as “(no longer exists)” until you point them somewhere else.",
-  ignored: "Some parts of the file did not fit and are left out: {fields}.",
-  safe: "Nothing changes until you press the button, and you can undo it afterwards.",
-  bring: "Bring it in",
-  cancel: "Cancel",
-  addedCharacter: "Added {name} to your characters.",
-  addedUnnamed: "Added a new character to your characters.",
-  replacedCharacter: "{name} now has the words from the file.",
-  filledCard: "Your {card} card now has the words from the file.",
-  undo: "Undo",
-  undone: "Put things back as they were before the card came in.",
-  unchanged: "Your current project is unchanged.",
-  reasons: {
-    unreadable: "That file could not be read as a card.",
-    not_card_file: "That file is not a Pulpermill card file.",
-    unknown_card: "That card file is for a card this page does not have.",
-    not_portable: "Only Style, Characters and World can be brought in. The other cards belong to one story.",
-    newer: "That card was saved by a newer version of Pulpermill than this page, so it was not brought in.",
-    damaged: "That card file is damaged, so it was not brought in.",
-    project: "That file is a whole project, not a card. Use Open… to open it.",
-    locked: "{card} is locked because the story has started, so nothing can be brought into it.",
-    no_target: "That character is not there any more.",
-  },
-};
-const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
+export const STRINGS = section("import");
 
 function node(tag, props = {}, ...children) {
   const made = Object.assign(document.createElement(tag), props);
@@ -57,7 +19,7 @@ export function createImportPanel(root, hooks) {
   let session = null;         // {project, read, file, choice}
   let bring = null;
 
-  const refuse = (reason, card) => hooks.notice(`${fill(STRINGS.reasons[reason], { card: card ? hooks.schema.cards[card].label : "" })} ${STRINGS.unchanged}`, "notice-bad");
+  const refuse = (reason, card) => hooks.notice(joinList([fill(STRINGS.reasons[reason], { card: card ? hooks.schema.cards[card].label : "" }), STRINGS.unchanged], "sentence"), "notice-bad");
 
   function close() {
     session = null;
@@ -155,9 +117,9 @@ export function createImportPanel(root, hooks) {
     } else {
       parts.push(node("p", { className: "help", textContent: fill(plan.replaced.length ? STRINGS.replacesCard : plan.filled.length ? STRINGS.fillsEmpty : STRINGS.sameCard, { card: card.label }) }));
     }
-    if (plan.replaced.length) parts.push(node("p", { textContent: fill(STRINGS.replacesFields, { fields: plan.replaced.join(", ") }) }));
-    if (plan.lost) parts.push(node("p", { className: "import-warn", textContent: fill(STRINGS.lost, { cards: plan.lost.cards.join(", "), n: plan.lost.count }) }));
-    if (plan.ignored.length) parts.push(node("p", { className: "help", textContent: fill(STRINGS.ignored, { fields: plan.ignored.join(", ") }) }));
+    if (plan.replaced.length) parts.push(node("p", { textContent: fill(STRINGS.replacesFields, { fields: joinList(plan.replaced) }) }));
+    if (plan.lost) parts.push(node("p", { className: "import-warn", textContent: fill(STRINGS.lost, { cards: joinList(plan.lost.cards), n: plan.lost.count }) }));
+    if (plan.ignored.length) parts.push(node("p", { className: "help", textContent: fill(STRINGS.ignored, { fields: joinList(plan.ignored) }) }));
     parts.push(node("p", { className: "note", textContent: STRINGS.safe }));
     bring = node("button", { type: "button", className: "validate", textContent: STRINGS.bring });
     bring.addEventListener("click", accept);
