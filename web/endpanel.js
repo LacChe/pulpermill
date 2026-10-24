@@ -8,6 +8,7 @@ import { endNoteFor, setEndNote, setEndProblems, copyEndNote, putEndNote } from 
 import { renderCard } from "./render.js";
 import { instanceName } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
+import { ask } from "./dialog.js";
 
 export const STRINGS = section("end");
 const copy = (value) => JSON.parse(JSON.stringify(value));
@@ -32,7 +33,7 @@ export function createEndPanel(hooks) {
   }
 
   async function press(project, replaces) {
-    if (replaces && !window.confirm(STRINGS.confirmAgain)) return;
+    if (replaces && !(await ask(STRINGS.confirmAgain))) return;
     mine = true;
     refresh();
     const result = await endStory(hooks.client, hooks.schema, project).done;

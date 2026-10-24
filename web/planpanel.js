@@ -9,6 +9,7 @@ import {
   openPlants, availableReveals, offstageDue, planIsStale, placeBeat,
 } from "./plan.js";
 import { section, fill, msg, joinList } from "./text.js";
+import { ask } from "./dialog.js";
 
 export const STRINGS = section("plan");
 const copy = (value) => JSON.parse(JSON.stringify(value));
@@ -68,7 +69,7 @@ export function createPlanPanel(hooks) {
   }
 
   async function press(project, existing, ids) {
-    if (existing && !window.confirm(STRINGS.confirmReplan)) return;
+    if (existing && !(await ask(STRINGS.confirmReplan))) return;
     hooks.notice(STRINGS.working);
     const call = planChapter(hooks.client, hooks.schema, project, [...ids]);
     const result = await call.done;

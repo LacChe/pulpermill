@@ -5,6 +5,7 @@ import { startGate, lockStaticCards, unlockStaticCards, storyStarted, canUnlock,
 import { checkStyleFit } from "./client.js";
 import { errorText } from "./render.js";
 import { section, fill } from "./text.js";
+import { ask } from "./dialog.js";
 
 export const STRINGS = section("story");
 
@@ -31,8 +32,8 @@ export function createStoryBar(root, hooks) {
     if (result.reason) { hooks.notice(STRINGS.noProtagonist, "notice-bad"); draw(); return; }
     if (!result.ok) { hooks.notice(errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); draw(); return; }
     if (!result.fits) {
-      const ask = result.message ? fill(STRINGS.misfit, { message: result.message }) : STRINGS.misfitBare;
-      if (!window.confirm(ask)) { draw(); return; }
+      const question = result.message ? fill(STRINGS.misfit, { message: result.message }) : STRINGS.misfitBare;
+      if (!(await ask(question))) { draw(); return; }
     }
     lockStaticCards(project);
     hooks.notice(STRINGS.begun);
@@ -40,8 +41,8 @@ export function createStoryBar(root, hooks) {
     hooks.redraw();
   }
 
-  function unlock() {
-    if (!window.confirm(STRINGS.confirmUnlock)) return;
+  async function unlock() {
+    if (!(await ask(STRINGS.confirmUnlock))) return;
     unlockStaticCards(hooks.getProject());
     message = null;
     hooks.notice(STRINGS.unlocked);

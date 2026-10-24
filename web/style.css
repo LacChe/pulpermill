@@ -309,3 +309,12 @@ main.locked input:disabled, main.locked select:disabled, main.locked textarea:di
 .welcome-know ul { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 4px; }
 .welcome-next { color: var(--accent); border-color: var(--accent); }
 .welcome-done { color: var(--good); border-color: var(--good); }
+
+/* In-page question (dialog.js) */
+dialog.ask {
+  max-width: 480px; width: calc(100% - 48px); padding: 20px 22px;
+  background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px;
+}
+dialog.ask::backdrop { background: rgba(0, 0, 0, 0.35); }
+.ask-words { margin: 0 0 18px; white-space: pre-line; overflow-wrap: anywhere; }
+.ask-buttons { display: flex; justify-content: flex-end; gap: 10px; }

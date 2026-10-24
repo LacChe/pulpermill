@@ -6,6 +6,7 @@ import {
   problemPath, refOptions, removeItem, showsOptionalTag, shownProblems, validate,
 } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
+import { ask } from "./dialog.js";
 
 export const STRINGS = section("card");
 
@@ -375,8 +376,8 @@ function itemRow(field, item, list, ctx, redraw) {
   const itemPath = `${field.key}.${item.id}`;
   const row = el("div", { class: compact ? "item item-compact" : "item", "data-id": item.id, "data-path": itemPath });
   const remove = el("button", { type: "button", class: "remove", text: "×", "aria-label": STRINGS.remove, title: STRINGS.remove });
-  remove.addEventListener("click", () => {
-    if (!isItemEmpty(item) && field.delete_confirm && !window.confirm(field.delete_confirm)) return;
+  remove.addEventListener("click", async () => {
+    if (!isItemEmpty(item) && field.delete_confirm && !(await ask(field.delete_confirm))) return;
     removeItem(list, item.id);
     redraw();
     ctx.changed();

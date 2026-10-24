@@ -9,6 +9,7 @@ import {
 } from "./logic.js";
 import { renderCard, errorText, makeReadOnly, freezeItems, flagItems, STRINGS as CARD_STRINGS } from "./render.js";
 import { cardLocked } from "./gate.js";
+import { ask } from "./dialog.js";
 import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
 import { createGeneratePanel } from "./generatepanel.js";
@@ -167,9 +168,9 @@ function save() {
   showNotice(fill(STRINGS.saved, { file }));
 }
 
-function startNew() {
+async function startNew() {
   if (!schema) return;
-  if (isDirty() && !window.confirm(STRINGS.confirmNew)) return;
+  if (isDirty() && !(await ask(STRINGS.confirmNew))) return;
   noticeNode.hidden = true;
   replaceProject(newProject(schema));
 }
@@ -193,7 +194,7 @@ openInput.addEventListener("change", async () => {
   if (fileKind(text) === "card") { showNotice(joinList([STRINGS.isCard, STRINGS.unchanged], "sentence"), "notice-bad"); return; }
   const read = readProject(text, schema);
   if (!read.ok) { showNotice(failureText(read), "notice-bad"); return; }
-  if (isDirty() && !window.confirm(STRINGS.confirmOpen)) return;
+  if (isDirty() && !(await ask(STRINGS.confirmOpen))) return;
   replaceProject(read.project);
   showNotice(joinList([fill(STRINGS.opened, { name: file.name }), ...(read.older ? [STRINGS.older] : [])], "sentence"));
 });
@@ -252,14 +253,14 @@ function offerRecovery(recovered) {
   const words = document.createElement("span");
   words.textContent = fill(STRINGS.recoveryFound, { what, when: when(recovered.savedAt) });
   const resolve = () => { offerPending = false; recoveryNode.hidden = true; recoveryNode.replaceChildren(); };
-  const restore = button(STRINGS.restore, () => {
-    if (isDirty() && !window.confirm(STRINGS.confirmRestore)) return;
+  const restore = button(STRINGS.restore, async () => {
+    if (isDirty() && !(await ask(STRINGS.confirmRestore))) return;
     resolve();
     replaceProject(recovered.project, newProject(schema));   // saved as "blank", so it counts as unsaved until saved
     showNotice(STRINGS.restored);
   }, { className: "validate" });
-  const discard = button(STRINGS.throwAway, () => {
-    if (!window.confirm(fill(STRINGS.confirmThrowAway, { when: when(recovered.savedAt) }))) return;
+  const discard = button(STRINGS.throwAway, async () => {
+    if (!(await ask(fill(STRINGS.confirmThrowAway, { when: when(recovered.savedAt) })))) return;
     store.remove();
     resolve();
     refreshState();
@@ -320,7 +321,7 @@ async function runFill(card, shown) {
   if (!result.ok) { showNotice(errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); return; }
 
   const label = (key) => card.fields.find((f) => f.key === key)?.label ?? key;
-  if (result.replaced.length && !window.confirm(fill(STRINGS.confirmReplace, { fields: listOf(result.replaced.map(label)) }))) {
+  if (result.replaced.length && !(await ask(fill(STRINGS.confirmReplace, { fields: listOf(result.replaced.map(label)) })))) {
     showNotice(STRINGS.declined);
     return;
   }
@@ -442,8 +443,8 @@ function drawNav() {
     touchState();
   }, { className: "add" }));
   if (view.characterId) {
-    items.push(button(LABELS.remove, () => {
-      if (!window.confirm(LABELS.deleteCharacter)) return;
+    items.push(button(LABELS.remove, async () => {
+      if (!(await ask(LABELS.deleteCharacter))) return;
       removeInstance(project, card, view.characterId);
       view.characterId = project[card.id][0]?.id ?? null;
       show();

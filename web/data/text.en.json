@@ -26,6 +26,10 @@
     "unnamed": "Unnamed",
     "quoted": "“{text}”"
   },
+  "dialog": {
+    "ok": "Continue",
+    "cancel": "Cancel"
+  },
   "language": {
     "stopWords": "the a an and or but of to in on at for with by from as is are was were be been it its this that these those he she they his her their them then than so not no"
   },

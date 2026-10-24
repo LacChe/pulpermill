@@ -7,6 +7,7 @@ import { generateGate, applyGenerated, commitChapter, regenerateGate, applyRegen
 import { chapterInfo } from "./plan.js";
 import { chapterNoteFor, setChapterNote, copyNote, putNote } from "./modelnotes.js";
 import { section, fill, joinList } from "./text.js";
+import { ask } from "./dialog.js";
 
 export const STRINGS = section("generate");
 
@@ -33,7 +34,7 @@ export function createGeneratePanel(hooks) {
   async function press(project) {
     const gate = generateGate(hooks.schema, project);
     if (!gate.ok) return;
-    if (gate.stale && !window.confirm(STRINGS.stale)) return;
+    if (gate.stale && !(await ask(STRINGS.stale))) return;
     mine = true;
     refresh();
     const result = await generateChapter(hooks.client, hooks.schema, project).done;
@@ -46,7 +47,7 @@ export function createGeneratePanel(hooks) {
     let leftLocked = false;
     if (outcome.changes.locked.length) {
       const list = outcome.changes.locked.map((a) => fill(STRINGS.lockedItem, { field: a.label, from: a.from, to: a.to })).join("\n");
-      if (!window.confirm(fill(STRINGS.locked, { list }))) {
+      if (!(await ask(fill(STRINGS.locked, { list })))) {
         outcome = applyGenerated(hooks.schema, project, result.beat, result.read, { overwriteLocked: false });
         leftLocked = true;
       }
@@ -60,7 +61,7 @@ export function createGeneratePanel(hooks) {
   }
 
   async function again(project, number, later) {
-    if (!window.confirm(fill(STRINGS.againConfirm, { n: number, later: later ? fill(STRINGS.againLater, { k: later }) : "" }))) return;
+    if (!(await ask(fill(STRINGS.againConfirm, { n: number, later: later ? fill(STRINGS.againLater, { k: later }) : "" })))) return;
     mine = true;
     refresh();
     const result = await regenerateChapter(hooks.client, hooks.schema, project, number).done;
@@ -76,7 +77,7 @@ export function createGeneratePanel(hooks) {
     let outcome = result.outcome;
     if (outcome.changes.locked.length) {
       const list = outcome.changes.locked.map((a) => fill(STRINGS.lockedItem, { field: a.label, from: a.from, to: a.to })).join("\n");
-      if (!window.confirm(fill(STRINGS.locked, { list }))) outcome = applyRegenerated(hooks.schema, project, result.ctx, result.read, { overwriteLocked: false });
+      if (!(await ask(fill(STRINGS.locked, { list })))) outcome = applyRegenerated(hooks.schema, project, result.ctx, result.read, { overwriteLocked: false });
     }
     const { undo } = commitRegenerated(project, outcome);
     const earlier = copyNote(project, "chapter", outcome.chapter.id);
