@@ -12,7 +12,8 @@
 11. **Eval harness** (fixed test stories to compare versions)
 
 **Requirements from the PoC**
-- What failed or was flat (checklist feel, repetition, drift)
+- No list of PoC failures was kept. One rule stands in its place: checklist-shaped input gives a checklist-shaped story. Prompts feed the model prose and ask for good storytelling, not for a list of items to cover.
+- Still to avoid: repetition from chapter to chapter, and drift in person or tense.
 
 **Prompt and param versioning**
 - Prompts stored as files

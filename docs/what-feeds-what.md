@@ -1,6 +1,6 @@
 # Pulpermill data flow: what feeds what
 
-*Draft audit of the schema zip against the pipeline, 2026-10-20.*
+*Draft audit of the schema zip against the pipeline, 2026-10-20. The four open items were settled on 2026-10-25.*
 
 ## Legend
 
@@ -23,8 +23,8 @@
 | --- | --- | --- |
 | person, tense | W (rules), S, C | C can check drift in the output. |
 | distance, narrator\_note | W, S |  |
-| genre, lens | W | Suggest P sees them too (S1). |
-| humor, attitude, pacing | W | Suggest P sees them too (S1). |
+| genre, lens | W, P | Decided: P sees them too. |
+| humor, attitude, pacing | W, P | Decided: P sees them too. |
 | rhythm, diction, register, imagery, edge, explicitness, amount, directness, polish, voice\_difference, and the four notes | W only | Sentence-level craft. P and the extractors do not need it. |
 
 ## Characters (cast only)
@@ -38,9 +38,9 @@
 | fear, flaw | W, P, X2 |  |
 | values | W, P | The costly choice is a want or a value. |
 | behaviors | W (least-used subset), X1 (pick-list), C (counts) | A full round trip. |
-| competence, vulnerability | W | Suggest P sees them (S2). |
+| competence, vulnerability | W, P | Decided: P sees them too. |
 | speech | W only |  |
-| history | W, E | Suggest P sees it (S2). |
+| history | W, P, E | Decided: P sees it too. |
 
 ## World
 
@@ -85,7 +85,7 @@
 | when\_time, when\_gap | W, P | W anchors the opening. P sees the earlier beats' times as a timeline. |
 | cast | W, X2, C | Chosen by the human before Plan (code suggests). Counts and last-appeared come from here. |
 | collision\_goal, collision\_block | W, J | The scene engine. |
-| choice\_a, choice\_b | W, J | Open item: X2 should see them so `decided` records which was taken. |
+| choice\_a, choice\_b | W, X2, J | Decided: X2 sees them so `decided` records which was taken. |
 | turn | W, J, P (as earlier turns) |  |
 | shift (harder or easier) | W, C | C limits the legal values. |
 | ends\_on | W, J |  |
@@ -132,14 +132,9 @@
 
 ## Decided and still open
 
-**Folded in above:** the offstage pass, precedence, the plant, payoff and goal fields, landed checks for reveals, plants and goals, the one-sided link rule, `hides` dropped, the writer seeing all canon, X2 proposing knowledge changes, confirmation before overwriting locked values, English-only model text, and one sentence per event in Events.
+**Folded in above:** the offstage pass, precedence, the plant, payoff and goal fields, landed checks for reveals, plants and goals, the one-sided link rule, `hides` dropped, the writer seeing all canon, X2 proposing knowledge changes, confirmation before overwriting locked values, English-only model text, and one sentence per event in Events. Settled on 2026-10-25: P also sees genre, lens, attitude, humor and pacing; P also sees competence, vulnerability and history for the cast; X2 sees the beat's choices so `decided` records which was taken; and the cast suggestion also uses the pressures' `bears_on` (done in `castChoices`, `web/plan.js`).
 
-**Still open:**
-
-- P also sees genre, lens, attitude, humor and pacing.
-- P also sees competence, vulnerability and history for the cast.
-- X2 sees the beat's choices so `decided` records which was taken.
-- C pre-selects the cast from the pressures' `bears_on` as well as the least-used characters.
+**Still open:** none. Gaps found while writing the prompt inventory are listed in `docs/prompts/01-inventory.md`, section 6.
 
 **Schema changes this implies (for the schema pass):**
 
