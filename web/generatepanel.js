@@ -8,6 +8,7 @@ import { chapterInfo } from "./plan.js";
 import { chapterNoteFor, setChapterNote, copyNote, putNote } from "./modelnotes.js";
 import { section, fill, joinList } from "./text.js";
 import { ask } from "./dialog.js";
+import { removeNote } from "./modelnotes.js";
 
 export const STRINGS = section("generate");
 
@@ -53,9 +54,19 @@ export function createGeneratePanel(hooks) {
       }
     }
     const n = Number(result.beat.chapter);
-    commitChapter(project, outcome);
+    const { undo } = commitChapter(project, outcome);
     setChapterNote(project, outcome.chapter.id, { applied: outcome.changes.applied, warnings: outcome.warnings });
-    hooks.notice(fill(leftLocked ? STRINGS.droppedLocked : STRINGS.done, { n }), "");
+    hooks.notice(fill(leftLocked ? STRINGS.droppedLocked : STRINGS.done, { n }), "", {
+      label: STRINGS.undo,
+      run: () => {
+        if (hooks.getProject() !== project) return;
+        if (!undo()) { hooks.notice(fill(STRINGS.undoBlocked, { n }), "notice-bad"); return; }
+        removeNote(project, "chapter", outcome.chapter.id);
+        hooks.changed();
+        hooks.redraw();
+        hooks.notice(fill(STRINGS.undoneGenerate, { n }));
+      },
+    });
     hooks.changed();
     hooks.redraw();
   }
@@ -86,7 +97,7 @@ export function createGeneratePanel(hooks) {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
-        undo();
+        if (!undo()) { hooks.notice(fill(STRINGS.undoBlocked, { n: number }), "notice-bad"); return; }
         putNote(project, "chapter", outcome.chapter.id, earlier);
         hooks.changed();
         hooks.redraw();

@@ -10,6 +10,7 @@ import {
 } from "./plan.js";
 import { section, fill, msg, joinList } from "./text.js";
 import { ask } from "./dialog.js";
+import { sameValue } from "./undo.js";
 
 export const STRINGS = section("plan");
 const copy = (value) => JSON.parse(JSON.stringify(value));
@@ -91,10 +92,13 @@ export function createPlanPanel(hooks) {
     const words = [...new Set(result.unresolved.map((u) => u.words))];
     if (words.length) parts.push(fill(STRINGS.unmatched, { names: joinList(words.map((w) => msg("common.quoted", { text: w }))) }));
     if (result.dropped.length) parts.push(fill(STRINGS.dropped, { fields: joinList(result.dropped) }));
+    const wrote = copy(project.outline.beats.find((b) => b.id === result.beat.id));
     hooks.notice(joinList(parts, "sentence"), result.blockers.length ? "notice-bad" : "", {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
+        const now = project.outline?.beats?.find((b) => b.id === result.beat.id);
+        if (!sameValue(now, wrote)) { hooks.notice(STRINGS.undoBlocked, "notice-bad"); return; }   // the plan was changed since
         if (previous) {
           placeBeat(project, previous);
           putNote(project, "plan", previous.id, previousThought);

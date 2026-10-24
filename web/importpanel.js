@@ -68,10 +68,12 @@ export function createImportPanel(root, hooks) {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
-        done.undo();
+        const back = done.undo();
+        if (!back.done) { hooks.notice(STRINGS.undoBlocked, "notice-bad"); return; }
         hooks.changed();
         hooks.redraw();
-        hooks.notice(STRINGS.undone);
+        const label = (key) => card.fields.find((f) => f.key === key)?.label ?? key;
+        hooks.notice(back.skipped.length ? fill(STRINGS.undonePartly, { fields: joinList(back.skipped.map(label)) }) : STRINGS.undone);
       },
     });
   }

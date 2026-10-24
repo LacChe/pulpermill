@@ -7,6 +7,7 @@
 
 import { envelope, settledProject, wordsToId, isFilled, validate, newId } from "./logic.js";
 import { storyStarted } from "./gate.js";
+import { watch } from "./undo.js";
 import { msg, joinList } from "./text.js";
 import {
   chapterInfo, beatForChapter, beatBlockers, castProblem, planIsStale, entanglementsHash, currentGoal, openPlants,
@@ -18,6 +19,9 @@ export const MAX_OPEN_PLANTS = 2;            // the schema's open_plants_max
 export const MAX_SHIFTS = 5;                 // the schema's shifts_per_chapter_max
 
 const copyOf = (value) => JSON.parse(JSON.stringify(value));
+
+// The parts of the project a chapter and its records live in: what an Undo of Generate or Write again puts back.
+const CHAPTER_PARTS = ["chapters", "summary_events", "summary_shifts", "entanglements_history", "entanglements", "locks"];
 const asList = (value) => (Array.isArray(value) ? value : isFilled(value) ? [value] : []);
 const squash = (text) => String(text ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -270,7 +274,10 @@ export function applyGenerated(schema, project, beat, read, { overwriteLocked = 
 // Puts a chapter and everything that goes with it into the project, all at once: the chapter, its events and shifts, the
 // Entanglements it was written from, and the new Entanglements. Locks that stood in the way of an overwrite the writer
 // agreed to are taken off. The outcome is used up: build a new one rather than committing it twice.
+// Returns {project, undo}: undo takes the chapter and everything with it out again and answers true, or answers false and
+// changes nothing when any of those parts has been changed since.
 export function commitChapter(project, outcome) {
+  const undo = watch(project, CHAPTER_PARTS);
   const events = project.summary_events ?? { entries: [] };
   const shifts = project.summary_shifts ?? { shifts: [] };
   const history = project.entanglements_history ?? { states: [] };
@@ -283,7 +290,8 @@ export function commitChapter(project, outcome) {
     summary_events: events, summary_shifts: shifts, entanglements_history: history,
     chapters: [...chapters, outcome.chapter], entanglements: outcome.entanglements, locks,
   });
-  return project;
+  undo.settle();
+  return { project, undo: () => undo.undo() };
 }
 
 // ---- Writing a chapter again ---------------------------------------------------------------------
@@ -359,12 +367,10 @@ export function applyRegenerated(schema, project, ctx, read, { overwriteLocked =
 }
 
 // Replaces chapter N's text, events, shifts and history with the new ones, sets the Entanglements to the new result and
-// marks every later beat stale, all at once. Returns an undo that puts everything back as it was.
+// marks every later beat stale, all at once. Returns an undo that puts everything back as it was, unless the writer has changed
+// any of it since.
 export function commitRegenerated(project, outcome) {
-  const keep = copyOf({
-    chapters: project.chapters, summary_events: project.summary_events, summary_shifts: project.summary_shifts,
-    entanglements_history: project.entanglements_history, entanglements: project.entanglements, outline: project.outline, locks: project.locks ?? [],
-  });
+  const undo = watch(project, [...CHAPTER_PARTS, "outline"]);
   const beat = outcome.chapter.beat;
   const number = chapterNumber(project, beat);
   const stale = (project.outline.beats ?? []).map((b) => (Number(b.chapter) > number ? { ...b, stale: true } : b));
@@ -377,5 +383,6 @@ export function commitRegenerated(project, outcome) {
     outline: { ...project.outline, beats: stale },
     locks: (project.locks ?? []).filter((l) => !outcome.unlock.includes(l.id)),
   });
-  return { undo() { Object.assign(project, copyOf(keep)); } };
+  undo.settle();
+  return { undo: () => undo.undo() };      // true, or false (and nothing changed) when any of those parts was changed since
 }

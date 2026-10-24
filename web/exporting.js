@@ -16,6 +16,7 @@ import {
 } from "./logic.js";
 import { cardLocked } from "./gate.js";
 import { msg } from "./text.js";
+import { sameValue as sameJson, untouched } from "./undo.js";
 import { chapterInfo } from "./plan.js";
 
 export const CARD_FILE_KEY = "pulpermill_card";
@@ -231,13 +232,35 @@ export function applyImport(schema, project, plan) {
   if (plan.mode === "add") {
     const list = ensureCard(project, card);
     list.push(copy(plan.next));
-    return { instanceId: plan.id, keys: card.fields.map((f) => f.key), undo: () => removeInstance(project, card, plan.id) };
+    const wrote = copy(list[list.length - 1]);
+    return {
+      instanceId: plan.id, keys: card.fields.map((f) => f.key),
+      // Takes the new character out again, unless it was edited since: then it stays, and the answer is {done: false}.
+      undo: () => {
+        const now = findInstance(project, card, plan.id);
+        if (now && !sameJson(now, wrote)) return { done: false, skipped: [] };
+        if (now) removeInstance(project, card, plan.id);
+        return { done: true, skipped: [] };
+      },
+    };
   }
   const held = ensureCard(project, card);   // fills any field the project has not drawn yet, so every value can be compared and put back
   const target = card.many_per_project ? findInstance(project, card, plan.targetId) : held;
   const keys = card.fields.filter((f) => !sameValue(f, target[f.key], plan.next[f.key])).map((f) => f.key);
   const before = Object.fromEntries(keys.map((key) => [key, copy(target[key])]));
   setCardValues(card, target, Object.fromEntries(keys.map((key) => [key, plan.next[key]])));
+  const wrote = Object.fromEntries(keys.map((key) => [key, copy(target[key])]));
   const where = () => (card.many_per_project ? findInstance(project, card, plan.targetId) : project[card.id]);
-  return { instanceId: card.many_per_project ? plan.targetId : null, keys, undo: () => { const now = where(); if (now) setCardValues(card, now, before); } };
+  return {
+    instanceId: card.many_per_project ? plan.targetId : null, keys,
+    // Puts back the fields still holding what the import wrote; a field edited since keeps the edit, and is named in `skipped`.
+    undo: () => {
+      const now = where();
+      if (!now) return { done: true, skipped: [] };
+      const back = untouched(now, wrote, keys);
+      setCardValues(card, now, Object.fromEntries(back.map((key) => [key, before[key]])));
+      const skipped = keys.filter((key) => !back.includes(key));
+      return { done: !keys.length || back.length > 0, skipped };
+    },
+  };
 }

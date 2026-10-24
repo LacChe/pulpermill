@@ -4,7 +4,8 @@
 // except that one button.
 import { endStory } from "./client.js";
 import { endGate, afterStoryChanges, afterStoryProblems, afterStoryStale, afterStoryView, chaptersFingerprint } from "./endstory.js";
-import { endNoteFor, setEndNote, setEndProblems, copyEndNote, putEndNote } from "./modelnotes.js";
+import { endNoteFor, setEndNote, setEndProblems } from "./modelnotes.js";
+import { watch } from "./undo.js";
 import { renderCard } from "./render.js";
 import { instanceName } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
@@ -41,20 +42,19 @@ export function createEndPanel(hooks) {
     if (hooks.getProject() !== project) return;
     if (result.reason) { hooks.notice(STRINGS.reasons[result.reason] ?? result.reason, "notice-bad"); hooks.redraw(); return; }
     if (!result.ok) { hooks.notice(hooks.errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); refresh(); return; }
-    const previous = project.after_story ? copy(project.after_story) : null;
-    const previousNote = copyEndNote(project);
+    const undo = watch(project, ["after_story", "end_note"]);
     project.after_story = result.after;
     reviews = new Map();
     setEndNote(project, {
       forced: result.forced, dropped: result.dropped, problems: afterStoryProblems(hooks.schema, project, result.after),
       madeFrom: chaptersFingerprint(project),
     });
+    undo.settle();
     hooks.notice(STRINGS.done, "", {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
-        if (previous) project.after_story = previous; else delete project.after_story;
-        putEndNote(project, previousNote);
+        if (!undo.undo()) { hooks.notice(STRINGS.undoBlocked, "notice-bad"); return; }
         hooks.changed();
         hooks.redraw();
         hooks.notice(STRINGS.undone);

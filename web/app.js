@@ -10,6 +10,7 @@ import {
 import { renderCard, errorText, makeReadOnly, freezeItems, flagItems, STRINGS as CARD_STRINGS } from "./render.js";
 import { cardLocked } from "./gate.js";
 import { ask } from "./dialog.js";
+import { untouched } from "./undo.js";
 import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
 import { createGeneratePanel } from "./generatepanel.js";
@@ -112,6 +113,7 @@ function refreshState() {
 
 // Called on every edit. Waits a moment so typing does not do the work on every key.
 function touchState() {
+  if (project) pruneNotes(project);     // a note about a beat or chapter that is gone has nothing to point at
   clearTimeout(timer);
   timer = setTimeout(refreshState, 400);
 }
@@ -335,6 +337,7 @@ async function runFill(card, shown) {
   const target = targetNow();
   const before = Object.fromEntries(keys.map((key) => [key, copy(target[key])]));
   setCardValues(card, target, Object.fromEntries(keys.map((key) => [key, result.next[key]])));
+  const wrote = Object.fromEntries(keys.map((key) => [key, copy(target[key])]));
   const marked = draftsFor(`${card.id}:${target.id ?? ""}`);
   for (const key of keys) marked.add(key);
   if (sameView(card, instanceId)) show();
@@ -345,11 +348,15 @@ async function runFill(card, shown) {
     run: () => {
       const now = project === here ? targetNow() : null;
       if (!now) return;
-      setCardValues(card, now, before);
-      for (const key of keys) marked.delete(key);
+      // A field the writer has edited since keeps their edit.
+      const back = untouched(now, wrote, keys);
+      if (!back.length) { showNotice(STRINGS.undoBlocked, "notice-bad"); return; }
+      setCardValues(card, now, Object.fromEntries(back.map((key) => [key, before[key]])));
+      for (const key of back) marked.delete(key);
       if (sameView(card, instanceId)) show();
       touchState();
-      showNotice(STRINGS.undone);
+      const skipped = keys.filter((key) => !back.includes(key));
+      showNotice(skipped.length ? fill(STRINGS.undonePartly, { fields: listOf(skipped.map(label)) }) : STRINGS.undone);
     },
   });
 }

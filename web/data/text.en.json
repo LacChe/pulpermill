@@ -157,7 +157,9 @@
       "unreachable": "Can’t reach the model"
     },
     "documentTitle": "{mark}{title} — Pulpermill",
-    "dirtyMark": "● "
+    "dirtyMark": "● ",
+    "undoBlocked": "Undo would throw away words you changed since the fill, so nothing was put back.",
+    "undonePartly": "Put back what the fill changed, except {fields}, which you edited since."
   },
   "card": {
     "optional": "Optional",
@@ -289,7 +291,8 @@
       "cast_unknown": "Someone in the cast is not there any more."
     },
     "truncated": "{text}…",
-    "unnamed": "Unnamed"
+    "unnamed": "Unnamed",
+    "undoBlocked": "Undo would throw away what you changed in this plan since, so nothing was put back."
   },
   "generate": {
     "title": "Write the chapter",
@@ -338,7 +341,9 @@
       "no_chapter": "There is no such chapter.",
       "no_snapshot": "The Entanglements it was written from were not kept."
     },
-    "lockedItem": "• {field}: {from} → {to}"
+    "lockedItem": "• {field}: {from} → {to}",
+    "undoBlocked": "Undo can't put chapter {n} back as it was: the chapters, records or Entanglements have changed since. Nothing was changed.",
+    "undoneGenerate": "Took chapter {n} out again and put the story back as it was."
   },
   "end": {
     "title": "End of the story",
@@ -370,7 +375,8 @@
     "reasons": {
       "not_done": "Every chapter has to be written first."
     },
-    "forcedOf": "{fields} of {character}"
+    "forcedOf": "{fields} of {character}",
+    "undoBlocked": "Undo would throw away edits you made to the after-story copy since, so nothing was put back."
   },
   "import": {
     "title": "Bring in a card",
@@ -409,7 +415,9 @@
       "project": "That file is a whole project, not a card. Use Open… to open it.",
       "locked": "{card} is locked because the story has started, so nothing can be brought into it.",
       "no_target": "That character is not there any more."
-    }
+    },
+    "undoBlocked": "Undo would throw away what you changed since the card came in, so nothing was put back.",
+    "undonePartly": "Put back what the card changed, except {fields}, which you edited since."
   },
   "export": {
     "title": "Export",
