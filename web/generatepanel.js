@@ -141,6 +141,8 @@ export function createGeneratePanel(hooks) {
         redo.addEventListener("click", () => again(project, numberOf(c), gate.later));
         parts.push(node("div", { className: "plan-actions" }, redo));
         againButtons.push(redo);
+      } else if (gate.reason === "outline_locked") {
+        parts.push(node("p", { className: "help", textContent: STRINGS.reasonsAgain.outline_locked }));
       }
       box.append(node("details", { className: "chapter", open: at === ordered.length - 1 }, ...parts));
     });

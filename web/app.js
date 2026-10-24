@@ -8,7 +8,7 @@ import {
   noteFor, setNote, setExample, setCardValues,
 } from "./logic.js";
 import { renderCard, errorText, makeReadOnly, freezeItems, flagItems, STRINGS as CARD_STRINGS } from "./render.js";
-import { cardLocked } from "./gate.js";
+import { cardLocked, lockedByStory, lockedByWriter, setWriterLock } from "./gate.js";
 import { ask } from "./dialog.js";
 import { untouched } from "./undo.js";
 import { createStoryBar } from "./story.js";
@@ -361,6 +361,23 @@ async function runFill(card, shown) {
   });
 }
 
+// The lock button at the top of every card. The writer's lock is theirs to put on and take off. While the story's own lock is
+// on a card, the story bar is where it comes off, so the button is not offered.
+function drawLockButton(card) {
+  if (lockedByStory(project, card.id)) return;
+  const on = lockedByWriter(project, card.id);
+  const toggle = button(on ? STRINGS.unlockCard : STRINGS.lockCard, () => {
+    setWriterLock(project, card.id, !on);
+    show();
+    touchState();
+  }, { className: "lock-toggle" });
+  toggle.title = on ? STRINGS.unlockCardHelp : STRINGS.lockCardHelp;
+  toggle.setAttribute("aria-pressed", String(on));
+  const bar = Object.assign(document.createElement("div"), { className: "lock-bar" });
+  bar.append(toggle);
+  main.prepend(bar);
+}
+
 // ---- Navigation ---------------------------------------------------------------
 const countWords = (one, many, n) => (n === 1 ? one : many.replace("{n}", String(n)));
 
@@ -476,6 +493,7 @@ function show() {
   if (!values) { main.replaceChildren(); return; }
   const key = `${card.id}:${values.id ?? ""}`;
   const instanceId = card.many_per_project ? values.id : null;
+  main.classList.remove("locked");
   renderCard(main, card, values, {
     project,
     schema,
@@ -490,7 +508,8 @@ function show() {
     changed: touchState,
     reviewChanged: updateMarks,
   });
-  if (cardLocked(project, card.id)) makeReadOnly(main, STRINGS.lockedBanner);
+  if (cardLocked(project, card.id)) makeReadOnly(main, lockedByStory(project, card.id) ? STRINGS.lockedBanner : STRINGS.writerLockedBanner);
+  drawLockButton(card);
   if (card.id === "outline") {
     flagItems(main, staleBeatIds(project), STRINGS.staleBeat);
     freezeItems(main, writtenBeatIds(project), STRINGS.writtenBeat);

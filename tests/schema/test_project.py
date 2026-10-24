@@ -125,7 +125,7 @@ def test_notes_and_locks_point_only_at_cards_the_user_fills_in():
 def test_a_lock_reads_outside_in_and_only_the_card_is_required():
     required = {n for n, f in fields_of(Lock).items() if f.is_required()}
     assert required == {"card"}
-    assert list(fields_of(Lock)) == ["card", "owner", "field", "item", "part"]
+    assert list(fields_of(Lock)) == ["card", "owner", "field", "item", "part", "by"]
 
 
 # ---- What the model said ------------------------------------------------------------------------------------

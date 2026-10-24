@@ -3,7 +3,11 @@
 // Starting the story locks Style, Characters, World and Setup: from then on only the live fields of Entanglements and
 // each chapter's plan change. A lock is an entry in the project's `locks` list, so the project file says what is
 // locked and the backend reads the same thing. A card is locked by a lock that names the card and nothing narrower.
-// The story has started when all four static cards are locked.
+//
+// Two kinds of whole-card lock, told apart by `by`: the story's own (no `by`), which starting the story sets on the four
+// static cards, and the writer's (`by: "writer"`), which the lock button on any of the six cards sets so nothing is changed
+// by accident. Either one makes the card read-only. The story has started when all four static cards carry the story's lock,
+// so locking cards by hand never starts it.
 //
 // Before the lock, the gate asks two things. The first is code: every card must be free of blocking problems.
 // The second is the model's (the style-fit check, in client.js), and it is only an opinion: the writer can go on anyway.
@@ -15,28 +19,47 @@ export const STATIC_CARDS = ["style", "characters", "world", "setup"];
 // Every card the gate checks. Entanglements stays editable, but it has to be sound when the story starts.
 export const GATE_CARDS = ["style", "characters", "world", "entanglements", "setup"];
 
-const wholeCard = (lock, cardId) => lock.card === cardId && !lock.owner && !lock.field && !lock.item && !lock.part;
+export const WRITER = "writer";
 
+const wholeCard = (lock, cardId) => lock.card === cardId && !lock.owner && !lock.field && !lock.item && !lock.part;
+const storyLock = (lock, cardId) => wholeCard(lock, cardId) && lock.by !== WRITER;
+const writerLock = (lock, cardId) => wholeCard(lock, cardId) && lock.by === WRITER;
+
+// Locked by anyone: the story or the writer.
 export function cardLocked(project, cardId) {
   return (project.locks ?? []).some((lock) => wholeCard(lock, cardId));
 }
 
+export const lockedByStory = (project, cardId) => (project.locks ?? []).some((lock) => storyLock(lock, cardId));
+export const lockedByWriter = (project, cardId) => (project.locks ?? []).some((lock) => writerLock(lock, cardId));
+
 export function storyStarted(project) {
-  return STATIC_CARDS.every((id) => cardLocked(project, id));
+  return STATIC_CARDS.every((id) => lockedByStory(project, id));
 }
 
-// Adds a lock for each static card that has none. Locks the writer set by hand stay as they are.
-export function lockStaticCards(project) {
+// The writer's lock button: locks a card, or takes the writer's own lock off it. Never touches the story's lock.
+export function setWriterLock(project, cardId, on) {
   const locks = project.locks ?? (project.locks = []);
-  for (const card of STATIC_CARDS) {
-    if (!cardLocked(project, card)) locks.push({ id: newId(locks.map((l) => l.id)), card });
+  if (on) {
+    if (!lockedByWriter(project, cardId)) locks.push({ id: newId(locks.map((l) => l.id)), card: cardId, by: WRITER });
+  } else {
+    project.locks = locks.filter((lock) => !writerLock(lock, cardId));
   }
   return project;
 }
 
-// Takes the whole-card locks off the static cards. Narrower locks (one field, one item) stay.
+// Adds the story's lock to each static card that has none. Locks the writer set by hand stay as they are.
+export function lockStaticCards(project) {
+  const locks = project.locks ?? (project.locks = []);
+  for (const card of STATIC_CARDS) {
+    if (!lockedByStory(project, card)) locks.push({ id: newId(locks.map((l) => l.id)), card });
+  }
+  return project;
+}
+
+// Takes the story's locks off the static cards. Locks the writer set (whole-card or narrower) stay.
 export function unlockStaticCards(project) {
-  project.locks = (project.locks ?? []).filter((lock) => !STATIC_CARDS.some((card) => wholeCard(lock, card)));
+  project.locks = (project.locks ?? []).filter((lock) => !STATIC_CARDS.some((card) => storyLock(lock, card)));
   return project;
 }
 

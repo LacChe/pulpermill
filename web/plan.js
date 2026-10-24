@@ -10,7 +10,7 @@ import {
   envelope, blankItem, refOptions, resolveFillLinks, validate, legalShifts, instanceName, isFilled, settledProject,
   findInstance,
 } from "./logic.js";
-import { storyStarted } from "./gate.js";
+import { storyStarted, cardLocked } from "./gate.js";
 import { joinList } from "./text.js";
 
 export const CAST_MAX = 5;               // the beat's cast, protagonist included (the schema's max_selected)
@@ -181,6 +181,7 @@ export function planIsStale(schema, project, beat) {
 // {ok, chapter} or {ok: false, reason}: not_started, done, no_pressure, cast (with `why`).
 export function planGate(project, castIds) {
   if (!storyStarted(project)) return { ok: false, reason: "not_started" };
+  if (cardLocked(project, "outline")) return { ok: false, reason: "outline_locked" };    // planning writes into the Outline card
   const info = chapterInfo(project);
   if (info.done) return { ok: false, reason: "done" };
   if (!(project.entanglements?.pressures ?? []).length) return { ok: false, reason: "no_pressure" };

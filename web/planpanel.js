@@ -1,7 +1,7 @@
 // The plan panel: shown at the top of the Outline card. The writer picks who is in the chapter, sees what the plan starts
 // from (worked out in plan.js), and presses a button; the model thinks and fills the beat, and the beat lands in the
 // outline below, where it can be edited like any other. Nothing here calls the model except that one button.
-import { storyStarted } from "./gate.js";
+import { storyStarted, cardLocked } from "./gate.js";
 import { planChapter } from "./client.js";
 import { planNoteFor, setPlanNote, copyNote, putNote, removeNote } from "./modelnotes.js";
 import {
@@ -126,6 +126,7 @@ export function createPlanPanel(hooks) {
     if (!storyStarted(project)) { panel.append(node("p", { className: "help", textContent: STRINGS.notStarted })); return; }
     const info = chapterInfo(project);
     if (info.done) { panel.append(node("p", { className: "help", textContent: STRINGS.allDone })); return; }
+    if (cardLocked(project, "outline")) { panel.append(node("p", { className: "help", textContent: STRINGS.reasons.outline_locked })); return; }
     if (!(project.entanglements?.pressures ?? []).length) { panel.append(node("p", { className: "help", textContent: STRINGS.noPressure })); return; }
 
     const existing = beatForChapter(project, info.next);

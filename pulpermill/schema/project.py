@@ -46,12 +46,16 @@ class Lock(Item):
     (removing the lock is how it is edited again).
     It reads from the outside in: card, then (for Characters) which character, then a field, then one list item
     in that field, then one box inside that item. Each level left empty means the lock covers everything beneath
-    it, so card alone locks the whole card, and card + field locks a whole list."""
+    it, so card alone locks the whole card, and card + field locks a whole list.
+    `by` says who set it: "writer" for a lock the user put on with the lock button, empty for the story's own lock
+    (starting the story locks Style, Characters, World and Setup). Only the story's locks on all four of those cards
+    mean the story has started."""
     card: UserCard = spec("select", None, "note")
     owner: str | None = spec("select", None, "note", required=False, ref=["characters"])   # only when card is "characters"
     field: str | None = spec("text", None, "note", required=False)       # a field key on the card
     item: str | None = spec("text", None, "note", required=False)        # the id of one list item in that field
     part: str | None = spec("text", None, "note", required=False)        # a box key inside that item
+    by: str | None = spec("text", None, "note", required=False)          # "writer" when the user set it; empty for the story's lock
 
 
 class Chapter(Item):
@@ -193,7 +197,7 @@ PROJECT_RULES = [
          check="required_if", params={"field": "item", "when_present": "part"}),
     Rule(id="lock_unique", severity="block", fields=["locks"],
          when="the same thing is locked twice",
-         check="unique_across_items", params={"fields": ["card", "owner", "field", "item", "part"]}),
+         check="unique_across_items", params={"fields": ["card", "owner", "field", "item", "part", "by"]}),
     Rule(id="lock_target_exists", severity="block", fields=["locks"],
          when="a lock points at a card, field, list item or box that does not exist (an edit removed it)",
          check="lock_target_exists", context=["card_fields", "item_ids"]),

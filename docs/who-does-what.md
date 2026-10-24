@@ -7,7 +7,7 @@
 - The backend is stateless. The page holds the project file. Every call sends everything it needs and returns everything it produced.
 - The page commits a result all or nothing. A failed or stopped call changes nothing, and retrying means pressing the button again.
 - Static cards (Style, Characters, World, Setup) are locked once the story starts. Between chapters only the live fields of Entanglements and the next beat can be edited.
-- Locks stop edits by anyone. When a model output would change a locked value, the page shows a confirmation (these values will be unlocked and overwritten) before committing. Confirming is the normal answer; declining drops that change.
+- Locks stop edits by anyone. The writer can lock any of the six cards with the lock button on the card (a lock marked `by: "writer"`), so nothing is changed or erased by accident; only the story's own locks on the four static cards mean the story has started. When a model output would change a locked value, the page shows a confirmation (these values will be unlocked and overwritten) before committing. Confirming is the normal answer; declining drops that change.
 - Output language equals the UI language. M is told the target language in English. Model-facing text (expansions, lead-ins, templates, judge prompts) is not translated; only the human-facing text is. C checks the output language and retries once if it drifted.
 - Structured output: grammar forces valid JSON in the schema's shape. C then maps names to ids and checks the links. Only shape failures force a retry.
 - Validation uses change tracking: C keeps a hash of each card and field as of its last successful check and rechecks only what differs. Model-judged warnings are cached by value hash.

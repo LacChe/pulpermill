@@ -6,7 +6,7 @@
 // here changes the project until commitChapter, which changes all of it at once.
 
 import { envelope, settledProject, wordsToId, isFilled, validate, newId } from "./logic.js";
-import { storyStarted } from "./gate.js";
+import { storyStarted, cardLocked } from "./gate.js";
 import { watch } from "./undo.js";
 import { msg, joinList } from "./text.js";
 import {
@@ -315,10 +315,11 @@ export function projectBefore(project, number) {
   return trial;
 }
 
-// {ok, number, beat, trial, later} or {ok: false, reason}: not_started, no_chapter, no_snapshot, cast_<why>, beat_blocked (with `problems`).
+// {ok, number, beat, trial, later} or {ok: false, reason}: not_started, outline_locked, no_chapter, no_snapshot, cast_<why>, beat_blocked (with `problems`).
 // `later` is how many chapters come after this one.
 export function regenerateGate(schema, project, number) {
   if (!storyStarted(project)) return { ok: false, reason: "not_started" };
+  if (cardLocked(project, "outline")) return { ok: false, reason: "outline_locked" };    // it marks the later beats stale
   const written = project.chapters ?? [];
   const chapter = written.find((c) => chapterNumber(project, c.beat) === number);
   if (!chapter) return { ok: false, reason: "no_chapter" };

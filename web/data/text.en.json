@@ -159,7 +159,12 @@
     "documentTitle": "{mark}{title} — Pulpermill",
     "dirtyMark": "● ",
     "undoBlocked": "Undo would throw away words you changed since the fill, so nothing was put back.",
-    "undonePartly": "Put back what the fill changed, except {fields}, which you edited since."
+    "undonePartly": "Put back what the fill changed, except {fields}, which you edited since.",
+    "lockCard": "🔒 Lock this card",
+    "unlockCard": "Unlock this card",
+    "lockCardHelp": "Lock this card so nothing in it can be changed or erased by accident. You can unlock it at any time.",
+    "unlockCardHelp": "You locked this card. Unlock it to change it again.",
+    "writerLockedBanner": "You locked this card, so it can't be changed by accident. Unlock it to edit."
   },
   "card": {
     "optional": "Optional",
@@ -288,7 +293,8 @@
       "cast_empty": "Pick who is in the chapter.",
       "cast_too_many": "A chapter has at most {max} people.",
       "cast_no_protagonist": "The protagonist has to be in the chapter.",
-      "cast_unknown": "Someone in the cast is not there any more."
+      "cast_unknown": "Someone in the cast is not there any more.",
+      "outline_locked": "The Outline card is locked. Unlock it first, since planning writes into it."
     },
     "truncated": "{text}…",
     "unnamed": "Unnamed",
@@ -339,7 +345,8 @@
     "after": "After",
     "reasonsAgain": {
       "no_chapter": "There is no such chapter.",
-      "no_snapshot": "The Entanglements it was written from were not kept."
+      "no_snapshot": "The Entanglements it was written from were not kept.",
+      "outline_locked": "The Outline card is locked. Unlock it first, since writing a chapter again marks the later beats stale."
     },
     "lockedItem": "• {field}: {from} → {to}",
     "undoBlocked": "Undo can't put chapter {n} back as it was: the chapters, records or Entanglements have changed since. Nothing was changed.",
@@ -413,7 +420,7 @@
       "newer": "That card was saved by a newer version of Pulpermill than this page, so it was not brought in.",
       "damaged": "That card file is damaged, so it was not brought in.",
       "project": "That file is a whole project, not a card. Use Open… to open it.",
-      "locked": "{card} is locked because the story has started, so nothing can be brought into it.",
+      "locked": "{card} is locked, so nothing can be brought into it.",
       "no_target": "That character is not there any more."
     },
     "undoBlocked": "Undo would throw away what you changed since the card came in, so nothing was put back.",
