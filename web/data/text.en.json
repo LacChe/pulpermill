@@ -254,7 +254,7 @@
     "allDone": "Every chapter is written. Use the end-of-story step when you are ready.",
     "noPressure": "Entanglements has no pressure yet, so there is nothing to spotlight. Add one first.",
     "castTitle": "Who is in this chapter",
-    "castHelp": "The protagonist is always in, and up to {max} people can be. The people used least so far are suggested, so everyone gets time.",
+    "castHelp": "The protagonist is always in, and up to {max} people can be. People in the next pressure are suggested first, then the people used least so far, so everyone gets time.",
     "protagonist": "Protagonist, always in",
     "suggested": "Suggested",
     "usedNone": "not in a chapter yet",
@@ -303,7 +303,9 @@
     },
     "truncated": "{text}…",
     "unnamed": "Unnamed",
-    "undoBlocked": "Undo would throw away what you changed in this plan since, so nothing was put back."
+    "undoBlocked": "Undo would throw away what you changed in this plan since, so nothing was put back.",
+    "suggestedPressure": "Suggested: in the next pressure",
+    "castDue": "The pressure that has had the least attention so far is “{what}”, so the people in it are suggested first. This is only a suggestion: tick who you like."
   },
   "generate": {
     "title": "Write the chapter",

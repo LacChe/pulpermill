@@ -6,7 +6,7 @@ import { createMock } from "../mock.js";
 import { lockStaticCards } from "../gate.js";
 import { schema, readyProject } from "./helpers.mjs";
 import {
-  CAST_MAX, chapterInfo, currentGoal, openPlants, availableReveals, useCounts, castChoices, suggestedCast, castProblem,
+  CAST_MAX, chapterInfo, currentGoal, openPlants, availableReveals, useCounts, castChoices, duePressure, suggestedCast, castProblem,
   pickSpotlight, shiftsForChapter, offstageDue, entanglementsHash, planIsStale, planGate, planRequest, offstageRequest,
   latestShifts, landBeat, placeBeat, beatBlockers, beatForChapter,
 } from "../plan.js";
@@ -83,12 +83,14 @@ test("the cast suggestion is the protagonist and the two least-used others, and 
   const [suvi, ola, mia] = p.characters;
   const extra = addInstance(p, schema.cards.characters);
   extra.name = "Dov";
+  p.entanglements.pressures[0].source_agent = suvi.id;      // a pressure that involves only the protagonist, so use counts decide
+  p.entanglements.pressures[0].bears_on = [suvi.id];
   assert.deepEqual(suggestedCast(p, 1).sort(), [suvi.id, ola.id, mia.id].sort(), "a fresh story: the first two others in order");
   writeChapter(p, 1, { cast: [suvi.id, ola.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id });
   const choices = castChoices(p, 2);
   assert.deepEqual(choices.map((c) => c.name), ["Suvi", "Ola", "Mia", "Dov"]);
   assert.deepEqual(choices.filter((c) => c.suggested).map((c) => c.name), ["Suvi", "Mia", "Dov"], "Ola was used, so Mia and Dov come first");
-  assert.deepEqual(choices.find((c) => c.name === "Ola"), { id: ola.id, name: "Ola", uses: 1, last: 1, protagonist: false, suggested: false });
+  assert.deepEqual(choices.find((c) => c.name === "Ola"), { id: ola.id, name: "Ola", uses: 1, last: 1, protagonist: false, inPressure: false, suggested: false });
   assert.equal(choices.find((c) => c.protagonist).id, suvi.id);
 });
 
@@ -341,4 +343,32 @@ test("staleBeatIds names the beats marked as possibly out of step, and castKey i
   assert.equal(castKey(["b", "a"]), castKey(["a", "b"]));
   assert.notEqual(castKey(["a"]), castKey(["a", "b"]));
   assert.equal(castKey(undefined), "");
+});
+
+test("the suggestion puts the people in the least-spotlit pressure first, and it stays a suggestion", async () => {
+  const p = await started();
+  const [suvi, ola, mia] = p.characters;
+  const dov = addInstance(p, schema.cards.characters);
+  dov.name = "Dov";
+  const [first] = p.entanglements.pressures;
+  first.source_agent = suvi.id; first.bears_on = [suvi.id];
+  const second = { ...JSON.parse(JSON.stringify(first)), id: "pressure2", what: "Dov is owed a debt.", source_agent: dov.id, bears_on: [dov.id, suvi.id] };
+  p.entanglements.pressures.push(second);
+  writeChapter(p, 1, { cast: [suvi.id, ola.id, dov.id], where: p.world.places[0].id, spotlight: first.id });
+  assert.equal(duePressure(p, 2).id, "pressure2", "the first one has been the spotlight, the second has not");
+  const choices = castChoices(p, 2);
+  assert.deepEqual(choices.filter((c) => c.suggested).map((c) => c.name), ["Suvi", "Mia", "Dov"], "Dov is in the due pressure, so he is suggested ahead of Ola, who has been used just as often");
+  assert.deepEqual(choices.filter((c) => c.inPressure).map((c) => c.name), ["Suvi", "Dov"]);
+  assert.equal(choices.find((c) => c.name === "Mia").inPressure, false);
+  assert.ok(pickSpotlight(p, suggestedCast(p, 2), null), "the suggested cast has a pressure to turn on");
+  assert.equal(pickSpotlight(p, suggestedCast(p, 2), 2).id, "pressure2");
+});
+
+test("with no pressure, or one that names nobody else, the suggestion is by use alone", async () => {
+  const p = await started();
+  const [suvi, ola, mia] = p.characters;
+  assert.equal(duePressure({ ...p, entanglements: { ...p.entanglements, pressures: [] } }), null);
+  p.entanglements.pressures[0].source_agent = suvi.id; p.entanglements.pressures[0].bears_on = [suvi.id];
+  assert.deepEqual(castChoices(p, 1).filter((c) => c.inPressure).map((c) => c.name), ["Suvi"]);
+  assert.deepEqual(suggestedCast(p, 1).sort(), [suvi.id, ola.id, mia.id].sort());
 });

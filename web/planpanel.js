@@ -5,7 +5,7 @@ import { storyStarted, cardLocked } from "./gate.js";
 import { planChapter } from "./client.js";
 import { planNoteFor, setPlanNote, copyNote, putNote, removeNote } from "./modelnotes.js";
 import {
-  CAST_MAX, castKey, chapterInfo, beatForChapter, castChoices, suggestedCast, castProblem, pickSpotlight, shiftsForChapter, currentGoal,
+  CAST_MAX, castKey, chapterInfo, beatForChapter, castChoices, duePressure, suggestedCast, castProblem, pickSpotlight, shiftsForChapter, currentGoal,
   openPlants, availableReveals, offstageDue, planIsStale, placeBeat,
 } from "./plan.js";
 import { section, fill, msg, joinList } from "./text.js";
@@ -145,6 +145,8 @@ export function createPlanPanel(hooks) {
     const drawFacts = () => factsBox.replaceChildren(node("h4", { textContent: STRINGS.startsFrom }), facts(project, [...pick.ids], info.next));
 
     const choices = castChoices(project, info.next);
+    const due = duePressure(project, info.next);
+    const hinted = Boolean(due?.what) && choices.some((c) => c.suggested && c.inPressure && !c.protagonist);
     const list = node("div", { className: "plan-cast" });
     const boxes = [];
     for (const c of choices) {
@@ -157,13 +159,16 @@ export function createPlanPanel(hooks) {
         startable();
       });
       boxes.push([box, c.id]);
-      const tags = [c.protagonist ? STRINGS.protagonist : null, c.suggested && !c.protagonist ? STRINGS.suggested : null].filter(Boolean);
+      const tags = [c.protagonist ? STRINGS.protagonist : null,
+        c.suggested && !c.protagonist ? (c.inPressure ? STRINGS.suggestedPressure : STRINGS.suggested) : null].filter(Boolean);
       list.append(node("label", { className: "plan-person" }, box, node("span", { className: "plan-name", textContent: c.name || STRINGS.unnamed }),
         node("span", { className: "plan-used", textContent: usedText(c) }),
         ...tags.map((t) => node("span", { className: "tag", textContent: t }))));
     }
     panel.append(node("fieldset", { className: "plan-cast-box" }, node("legend", { textContent: STRINGS.castTitle }),
-      node("p", { className: "help", textContent: fill(STRINGS.castHelp, { max: CAST_MAX }) }), list), status, factsBox);
+      node("p", { className: "help", textContent: fill(STRINGS.castHelp, { max: CAST_MAX }) }),
+      ...(hinted ? [node("p", { className: "help plan-due", textContent: fill(STRINGS.castDue, { what: due.what.length > 100 ? fill(STRINGS.truncated, { text: due.what.slice(0, 100) }) : due.what }) })] : []),
+      list), status, factsBox);
     drawFacts();
 
     button = node("button", { type: "button", className: "validate", textContent: fill(existing ? STRINGS.again : STRINGS.button, { n: info.next }) });

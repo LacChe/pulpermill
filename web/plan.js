@@ -106,16 +106,38 @@ export function useCounts(project, except = null) {
   return counts;
 }
 
+// How often each pressure has been the spotlight of a planned beat. `except` leaves out the chapter being planned.
+function spotlightUse(project, except = null) {
+  const used = {};
+  for (const beat of beatsOf(project)) if (except === null || Number(beat.chapter) !== except) used[beat.spotlight] = (used[beat.spotlight] ?? 0) + 1;
+  return used;
+}
+
+// The pressure that has had the least attention so far (ties go to the one listed first), or null when there is none.
+// It is the one the next chapter should turn on, so the people in it are the ones worth having on stage.
+export function duePressure(project, except = null) {
+  const pressures = project.entanglements?.pressures ?? [];
+  if (!pressures.length) return null;
+  const used = spotlightUse(project, except);
+  return pressures.map((p, order) => ({ p, order }))
+    .sort((a, b) => (used[a.p.id] ?? 0) - (used[b.p.id] ?? 0) || a.order - b.order)[0].p;
+}
+
 // Every character as a choice for the cast, with how much they have been used, and a suggestion: the protagonist and
-// the least-used others (fewest chapters, then the longest since they last appeared). {id, name, uses, last, protagonist, suggested}
+// two others. The others are the people in the pressure that has had the least attention (see duePressure) first, then the
+// least-used (fewest chapters, then the longest since they last appeared). It is only a suggestion: the ticks start there and
+// the writer changes them freely. Plain code, no model. {id, name, uses, last, protagonist, inPressure, suggested}
 export function castChoices(project, chapter) {
   const counts = useCounts(project, chapter);
   const lead = project.setup?.protagonist;
+  const due = duePressure(project, chapter);
+  const inDue = new Set(due ? [due.source_agent, ...asList(due.bears_on)].filter(Boolean) : []);
   const all = (project.characters ?? []).map((c, order) => ({
-    id: c.id, name: instanceName(c), uses: counts.characters[c.id] ?? 0, last: counts.lastSeen[c.id] ?? null, protagonist: c.id === lead, order,
+    id: c.id, name: instanceName(c), uses: counts.characters[c.id] ?? 0, last: counts.lastSeen[c.id] ?? null, protagonist: c.id === lead,
+    inPressure: inDue.has(c.id), order,
   }));
   const others = all.filter((c) => !c.protagonist)
-    .sort((a, b) => a.uses - b.uses || (a.last ?? 0) - (b.last ?? 0) || a.order - b.order)
+    .sort((a, b) => Number(b.inPressure) - Number(a.inPressure) || a.uses - b.uses || (a.last ?? 0) - (b.last ?? 0) || a.order - b.order)
     .slice(0, Math.max(0, SUGGEST_SIZE - 1));
   const suggested = new Set([...all.filter((c) => c.protagonist), ...others].map((c) => c.id));
   return all.map(({ order, ...c }) => ({ ...c, suggested: suggested.has(c.id) }));
@@ -140,8 +162,7 @@ export function castProblem(project, castIds) {
 export function pickSpotlight(project, castIds, except = null) {
   const pressures = project.entanglements?.pressures ?? [];
   if (!pressures.length) return null;
-  const used = {};
-  for (const beat of beatsOf(project)) if (except === null || Number(beat.chapter) !== except) used[beat.spotlight] = (used[beat.spotlight] ?? 0) + 1;
+  const used = spotlightUse(project, except);
   const involves = (p) => [p.source_agent, ...asList(p.bears_on)].some((id) => asList(castIds).includes(id));
   const pool = pressures.filter(involves);
   return (pool.length ? pool : pressures)
