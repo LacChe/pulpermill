@@ -371,6 +371,10 @@ function memoryFor(values) {
 
 // ---- Lists -----------------------------------------------------------------
 
+// Only the Outline's beats are deleted last-first and folded; `folded` remembers which beats the writer has folded, per list.
+const folds = new WeakMap();
+const isBeats = (field, ctx) => field.key === "beats" && ctx.card?.id === "outline";
+
 function itemRow(field, item, list, ctx, redraw) {
   const compact = field.item_fields.length === 1;
   const itemPath = `${field.key}.${item.id}`;
@@ -382,6 +386,11 @@ function itemRow(field, item, list, ctx, redraw) {
     redraw();
     ctx.changed();
   });
+  const beats = isBeats(field, ctx);
+  if (beats && list[list.length - 1]?.id !== item.id) {
+    remove.disabled = true;   // makeReadOnly only ever switches controls off, so it cannot turn this one on
+    remove.title = STRINGS.removeLastOnly;
+  }
 
   if (compact) {
     const inner = { ...field.item_fields[0], examples: undefined, help: undefined };
@@ -394,8 +403,25 @@ function itemRow(field, item, list, ctx, redraw) {
   const title = el("span", { class: "item-title" });
   const setTitle = () => { title.textContent = itemTitle(field, item, ctx.lookup) || STRINGS.newItem; };
   setTitle();
-  row.append(el("div", { class: "item-head" }, title, remove), problemBox(itemPath, ctx));
+  const head = el("div", { class: "item-head" }, title, remove);
   const body = el("div", { class: "item-body" });
+  if (beats) {
+    if (!folds.has(list)) folds.set(list, new Set());
+    const folded = folds.get(list);
+    const toggle = el("button", { type: "button", class: "fold" });
+    const show = () => {
+      const shut = folded.has(item.id);
+      body.hidden = shut;
+      row.classList.toggle("folded", shut);
+      toggle.textContent = shut ? "▸" : "▾";
+      toggle.setAttribute("aria-expanded", String(!shut));
+      toggle.title = toggle.ariaLabel = shut ? STRINGS.expand : STRINGS.collapse;
+    };
+    toggle.addEventListener("click", () => { if (folded.has(item.id)) folded.delete(item.id); else folded.add(item.id); show(); });
+    show();
+    head.prepend(toggle);
+  }
+  row.append(head, problemBox(itemPath, ctx));
   row.append(body);
   fieldsInto(body, field.item_fields, item, `${field.key}.${item.id}.`, {
     ...ctx, list, changed: () => { setTitle(); for (const fn of ctx.siblings ?? []) fn(); ctx.changed(); },
@@ -442,8 +468,11 @@ function fillPanel(card, values, ctx) {
     const box = el("textarea", { class: "text-control", rows, placeholder, "aria-label": label });
     box.value = get() ?? "";
     box.addEventListener("input", () => set(box.value));
-    return el("label", { class: "fill-field" }, el("span", { class: "field-label", text: label }), box);
+    box.setAttribute("aria-label", label);
+    return el("div", { class: "fill-field" }, box);
   };
+  // Each text sits in a fold of its own, open to start with.
+  const section = (title, body) => el("details", { class: "fill-section", open: true }, el("summary", {}, el("span", { class: "field-label", text: title })), body);
   const button = el("button", { type: "button", class: "fill-button", text: STRINGS.fillButton });
   button.addEventListener("click", async () => {
     button.disabled = true;
@@ -455,8 +484,8 @@ function fillPanel(card, values, ctx) {
     el("summary", {}, el("span", { class: "group-label", text: STRINGS.fillTitle })),
     el("div", { class: "fill-body" },
       el("p", { class: "help", text: STRINGS.fillHelp }),
-      area(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, STRINGS.notePlaceholder, 4, ctx.notes.get, ctx.notes.set),
-      area(STRINGS.exampleLabel, STRINGS.examplePlaceholder, 6, ctx.example.get, ctx.example.set),
+      section(STRINGS.exampleLabel, area(STRINGS.exampleLabel, STRINGS.examplePlaceholder, 6, ctx.example.get, ctx.example.set)),
+      section(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, area(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, STRINGS.notePlaceholder, 4, ctx.notes.get, ctx.notes.set)),
       el("div", { class: "fill-actions" }, button),
       el("p", { class: "note", text: STRINGS.fillSends.replace("{where}", where) })));
 }

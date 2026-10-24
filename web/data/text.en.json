@@ -226,7 +226,10 @@
       "timeout": "The model took too long to answer, so nothing was changed.",
       "bad_request": "The page sent something the model’s server didn’t understand, so nothing was changed."
     },
-    "withDetail": "{text} ({detail})"
+    "withDetail": "{text} ({detail})",
+    "removeLastOnly": "Beats are deleted from the last one backwards. Delete the later ones first.",
+    "collapse": "Fold this beat",
+    "expand": "Open this beat"
   },
   "story": {
     "intro": "When your cards are ready, start the story. That locks Style, Characters, World and Setup, so they stay as you wrote them while chapters are written. Entanglements and each chapter’s plan stay editable.",

@@ -323,3 +323,14 @@ dialog.ask::backdrop { background: rgba(0, 0, 0, 0.35); }
 .lock-bar { display: flex; justify-content: flex-end; margin: 0 0 8px; }
 .lock-toggle { font-size: 0.85rem; padding: 3px 12px; color: var(--muted); }
 .lock-toggle[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+
+.fold { border: 0; background: none; color: var(--muted); padding: 0 6px 0 0; cursor: pointer; }
+.item-head .item-title { flex: 1; }
+.item.folded { padding-bottom: 6px; }
+.remove:disabled { opacity: 0.35; cursor: not-allowed; }
+.fill-section { border-top: 1px solid var(--line); padding-top: 8px; }
+.fill-section > summary { cursor: pointer; list-style: none; display: flex; gap: 8px; }
+.fill-section > summary::-webkit-details-marker { display: none; }
+.fill-section > summary::before { content: "▸"; color: var(--muted); width: 1em; }
+.fill-section[open] > summary::before { content: "▾"; }
+.fill-section .fill-field { margin-top: 8px; display: block; }
