@@ -463,3 +463,34 @@ test("Stop ends the plan and no second call is made", async () => {
   assert.equal(result.error.kind, "stopped");
   assert.equal(mock.seen.length, 1);
 });
+
+test("every request to a real backend skips the ngrok warning, and carries the token only when one is set", async () => {
+  const send = async (token) => {
+    const fetchImpl = fakeFetch(() => json({ ok: true, state: "idle" }));
+    const client = createClient({ setting: parseBackendSetting("localhost:8000"), token, fetchImpl, sleep: noSleep });
+    await client.checkStatus();
+    return fetchImpl.calls[0].init.headers;
+  };
+  assert.deepEqual(await send(""), { "content-type": "application/json", "ngrok-skip-browser-warning": "1" });
+  assert.deepEqual(await send("  s3cret "), { "content-type": "application/json", "ngrok-skip-browser-warning": "1", "x-pulpermill-token": "s3cret" });
+  const fetchImpl = fakeFetch(() => json({ ok: true, state: "idle" }));
+  const client = createClient({ setting: parseBackendSetting("localhost:8000"), fetchImpl, sleep: noSleep });
+  client.setToken("later");
+  await client.checkStatus();
+  assert.equal(fetchImpl.calls[0].init.headers["x-pulpermill-token"], "later");
+});
+
+test("a wrong token reads as unauthorized, from the body or from the 401 status", async () => {
+  const p = project();
+  const kind = async (handler) => (await checkStyleFit(realClient(fakeFetch(handler)), schema, p).done).error.kind;
+  assert.equal(await kind(() => json({ ok: false, error: { kind: "unauthorized", detail: "" } }, 401)), "unauthorized");
+  assert.equal(await kind(() => json(null, 401)), "unauthorized");
+});
+
+test("the mock can be told to answer unauthorized, and the page has words for it", async () => {
+  const mock = createMock(schema, { delay: 0 });
+  mock.queue("unauthorized");
+  const client = createClient({ mock });
+  const result = await checkStyleFit(client, schema, project()).done;
+  assert.equal(result.error.kind, "unauthorized");
+});

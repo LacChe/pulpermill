@@ -27,7 +27,9 @@ If this document and the vectors disagree, the vectors are right, because tests 
 
 Every call is one `POST` of one JSON object to `<address>/api`, with `content-type: application/json`. The call is named inside the object (`"call": "fill"`). There is one address, so a proxy or a mock needs one route.
 
-The page is served from another origin (GitHub Pages, or `localhost` while building), so the backend must answer the browser's cross-origin check: reply to the `OPTIONS` preflight, and send `access-control-allow-origin` (the page's origin, or `*`), `access-control-allow-methods: POST` and `access-control-allow-headers: content-type`. A backend without this looks like `unreachable` to the page.
+The page is served from another origin (GitHub Pages, or `localhost` while building), so the backend must answer the browser's cross-origin check: reply to the `OPTIONS` preflight, and send `access-control-allow-origin` (the page's origin, or `*`), `access-control-allow-methods: POST` and `access-control-allow-headers: content-type, ngrok-skip-browser-warning, x-pulpermill-token`. A backend without this looks like `unreachable` to the page.
+
+**Headers the page sends.** Every request to a real backend carries `ngrok-skip-browser-warning: 1`, which skips ngrok's browser warning page, and, when the writer has typed an access token, `x-pulpermill-token` with that token. The token is a shared secret, because a tunnel address is public. When the backend has a token configured it checks it, in constant time, on **every `POST`, including `status`**, and answers `unauthorized` (401) when it is missing or wrong. It answers the `OPTIONS` preflight **without** the token, because the browser does not attach custom headers to a preflight. The token is never logged or put in a reply. A backend with no token configured ignores the header.
 
 A page served over `https` may not call a plain `http` address, except one on the writer's own computer (`localhost`, `127.0.0.1`). The page refuses such an address when the writer types it.
 
@@ -49,6 +51,7 @@ The page reads the body first. When the body is not an answer it falls back on t
 | `too_long` | backend | 413 | The prompt does not fit the model's context. Checked before the call, so it fails fast. | There is too much text to send to the model in one go, so nothing was changed. Shorten the notes or the example chapter. |
 | `stopped` | backend | 409 | The writer pressed Stop and the call ended. The page has usually stopped listening, so this is rarely read. | Stopped. Nothing was changed. |
 | `server` | backend | 500 | Anything else. `detail` is shown, in plain words. | The model's server had a problem, so nothing was changed. |
+| `unauthorized` | backend | 401 | The access token is missing or wrong. | The model's server didn't accept the access token, so nothing was changed. Check the token beside the address. |
 | `unreachable` | **page** | none | Nothing answered. Never sent by a backend. | Couldn't reach the model, so nothing was changed. Check the address and that it is running. |
 | `timeout` | **page** | none | No answer in time (below). Never sent by a backend. | The model took too long to answer, so nothing was changed. |
 

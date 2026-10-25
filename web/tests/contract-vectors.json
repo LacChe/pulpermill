@@ -1051,6 +1051,22 @@
       }
     },
     {
+      "name": "an unauthorized failure",
+      "call": "fill",
+      "valid": true,
+      "card": "world",
+      "page": {
+        "kind": "unauthorized"
+      },
+      "data": {
+        "ok": false,
+        "error": {
+          "kind": "unauthorized",
+          "detail": ""
+        }
+      }
+    },
+    {
       "name": "a stopped failure",
       "call": "fill",
       "valid": true,

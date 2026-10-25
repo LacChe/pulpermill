@@ -18,12 +18,12 @@ UserCard = Literal["style", "characters", "world", "entanglements", "setup", "ou
 # What a backend may answer with. The page makes two more by itself, so a backend never sends them:
 #   unreachable  nothing answered at all
 #   timeout      no answer in time
-BackendErrorKind = Literal["busy", "bad_request", "bad_output", "too_long", "stopped", "server"]
+BackendErrorKind = Literal["busy", "bad_request", "bad_output", "too_long", "stopped", "server", "unauthorized"]
 PAGE_ERROR_KINDS = ("unreachable", "timeout")
 
 # The HTTP status that goes with each error, so a plain HTTP client can tell them apart. The body is what the page
 # reads first; the status is the fallback for a body that is not an answer.
-HTTP_STATUS = {"busy": 503, "bad_request": 400, "bad_output": 502, "too_long": 413, "stopped": 409, "server": 500}
+HTTP_STATUS = {"busy": 503, "bad_request": 400, "bad_output": 502, "too_long": 413, "stopped": 409, "server": 500, "unauthorized": 401}
 
 
 class Strict(BaseModel):

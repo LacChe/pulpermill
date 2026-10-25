@@ -12,6 +12,8 @@
     "guide": "Guide",
     "save": "Save",
     "modelConnection": "Model connection",
+    "tokenLabel": "Access token",
+    "tokenHelp": "The shared secret the model's server asks for. Leave it empty if the server asks for none.",
     "check": "Check",
     "stop": "Stop",
     "welcomeLabel": "Welcome",
@@ -224,7 +226,8 @@
       "server": "The model’s server had a problem, so nothing was changed.",
       "unreachable": "Couldn’t reach the model, so nothing was changed. Check the address and that it is running.",
       "timeout": "The model took too long to answer, so nothing was changed.",
-      "bad_request": "The page sent something the model’s server didn’t understand, so nothing was changed."
+      "bad_request": "The page sent something the model’s server didn’t understand, so nothing was changed.",
+      "unauthorized": "The model’s server didn’t accept the access token, so nothing was changed. Check the token beside the address."
     },
     "withDetail": "{text} ({detail})",
     "removeLastOnly": "Beats are deleted from the last one backwards. Delete the later ones first.",

@@ -24,6 +24,17 @@ import { planGate, offstageDue, offstageRequest, planRequest, landBeat, beatForC
 // "mock" (the default, so the page works with nothing running) or the address of a backend.
 
 export const BACKEND_KEY = "pulpermill-backend";
+// The shared secret lives beside the address, never inside it, so it is not shown in the status line or in an error.
+export const TOKEN_KEY = "pulpermill-token";
+
+// The headers every request to a real backend carries. The first skips ngrok's browser warning page. The second is
+// the writer's token, sent only when one is set.
+export function requestHeaders(token) {
+  const headers = { "content-type": "application/json", "ngrok-skip-browser-warning": "1" };
+  const secret = String(token ?? "").trim();
+  if (secret) headers["x-pulpermill-token"] = secret;
+  return headers;
+}
 
 export function parseBackendSetting(text) {
   const raw = String(text ?? "").trim();
@@ -64,15 +75,15 @@ export const DEFAULT_TIMEOUTS = {
 };
 
 // The fallback when the body is not an answer. It agrees with HTTP_STATUS in pulpermill/schema/contract.py.
-const STATUS_FAILURES = { 400: "bad_request", 409: "stopped", 413: "too_long", 429: "busy", 502: "bad_output", 503: "busy" };
+const STATUS_FAILURES = { 400: "bad_request", 401: "unauthorized", 409: "stopped", 413: "too_long", 429: "busy", 502: "bad_output", 503: "busy" };
 
 // One call to a real backend: POST the request as JSON to <url>/api. The backend answers in the contract's shapes,
 // with an HTTP status that agrees. A body that is not an answer falls back on the status.
-async function post(fetchImpl, url, request, signal) {
+async function post(fetchImpl, url, request, signal, token) {
   let response;
   try {
     response = await fetchImpl(`${url}/api`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request), signal,
+      method: "POST", headers: requestHeaders(token), body: JSON.stringify(request), signal,
     });
   } catch (error) {
     if (error?.name === "AbortError") throw error;
@@ -87,14 +98,16 @@ async function post(fetchImpl, url, request, signal) {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// options: {setting, mock, fetchImpl, timeouts, sleep, pollEvery, lostAfter}
+// options: {setting, token, mock, fetchImpl, timeouts, sleep, pollEvery, lostAfter}
 //   setting    from parseBackendSetting
+//   token      the writer's shared secret, sent to a real backend when set (client.setToken changes it)
 //   mock       the object from createMock, used when the setting is "mock"
 //   sleep      how to wait between the idle checks after a Stop or a timeout (tests pass a fast one)
 //   pollEvery  while a story call runs, how often to ask status (ms): it shows the stage and notices a lost connection
 //   lostAfter  how many status checks in a row may fail before the call is given up as unreachable
-export function createClient({ setting = { kind: "mock" }, mock = null, fetchImpl = globalThis.fetch, timeouts = {}, sleep = wait, pollEvery = 1000, lostAfter = 3 } = {}) {
+export function createClient({ setting = { kind: "mock" }, token = "", mock = null, fetchImpl = globalThis.fetch, timeouts = {}, sleep = wait, pollEvery = 1000, lostAfter = 3 } = {}) {
   let current = setting;
+  let secret = token;
   let running = null;                 // the model call this page has going, if any
   let connection = "unknown";         // unknown | idle | busy | unreachable
   let stage = null;                   // what the backend says it is doing, while a story call runs
@@ -107,7 +120,7 @@ export function createClient({ setting = { kind: "mock" }, mock = null, fetchImp
 
   function transport(request, signal) {
     if (current.kind === "mock") return mock.send(request, { signal });
-    return post(fetchImpl, current.url, request, signal);
+    return post(fetchImpl, current.url, request, signal, secret);
   }
 
   // While a story call runs, ask status every `pollEvery` ms. It shows the stage the backend names, and it is how the
@@ -195,6 +208,7 @@ export function createClient({ setting = { kind: "mock" }, mock = null, fetchImp
     // End whatever call this page has going. Does nothing when there is none.
     stop() { running?.stop(); },
     setSetting(next) { current = next; connection = "unknown"; judgeCache.clear(); changed(); },
+    setToken(next) { secret = String(next ?? ""); connection = "unknown"; changed(); },
     onChange(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     // What the page needs to draw: whether this page is waiting on a call, and what the backend last said.
     get state() { return { working: Boolean(running), connection, setting: current, stage }; },

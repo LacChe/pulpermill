@@ -10,7 +10,7 @@
 //   mock.queue("busy", "bad_output")  the next calls (not status checks) fail in this order, then it behaves again
 //   mock.queue("unreachable")         nothing answers: rejects like a network error
 //   mock.queue("timeout")             never answers; only an abort ends it
-//   other kinds ("too_long", "server", "stopped") come back as that error
+//   other kinds ("too_long", "server", "stopped", "unauthorized") come back as that error
 // Writing "FLAG ME" in a card makes the judge and the style-fit check complain about it, so the writer can see a
 // model's warning appear on demand.
 

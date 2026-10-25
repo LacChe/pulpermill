@@ -683,9 +683,9 @@ export const FILLABLE = ["style", "characters", "world", "entanglements", "setup
 
 // Errors from the backend: busy (try again when idle), bad_request (the page sent something wrong),
 // bad_output (the model's answer did not fit the shape; the backend already retried), too_long (the context does
-// not fit the model), stopped (the writer pressed Stop), server (anything else).
+// not fit the model), stopped (the writer pressed Stop), server (anything else), unauthorized (the token is missing or wrong).
 // Made by the page itself: unreachable (nothing answered), timeout (no answer in time).
-export const ERROR_KINDS = ["busy", "bad_request", "bad_output", "too_long", "stopped", "server", "unreachable", "timeout"];
+export const ERROR_KINDS = ["busy", "bad_request", "bad_output", "too_long", "stopped", "server", "unauthorized", "unreachable", "timeout"];
 
 // The calls that take long enough to show progress for, and the stages a busy backend may name.
 export const STORY_CALLS = ["offstage", "plan", "generate", "end_story"];

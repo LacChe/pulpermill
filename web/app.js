@@ -23,7 +23,7 @@ import { pruneNotes } from "./modelnotes.js";
 import { writtenBeatIds, staleBeatIds } from "./plan.js";
 import { createMock } from "./mock.js";
 import {
-  BACKEND_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
+  BACKEND_KEY, TOKEN_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
 } from "./client.js";
 import { section, fill, msg, joinList, setText, applyStaticText, TEXT_FILE, BOOT_FAILURE } from "./text.js";
 
@@ -42,6 +42,7 @@ const guideButton = document.getElementById("guide");
 const titleInput = document.getElementById("title");
 const stateNode = document.getElementById("save-state");
 const backendInput = document.getElementById("backend");
+const tokenInput = document.getElementById("token");
 const connectionNode = document.getElementById("connection");
 const stopButton = document.getElementById("stop");
 const noticeNode = document.getElementById("notice");
@@ -296,6 +297,12 @@ function chooseBackend(text) {
 }
 
 backendInput.addEventListener("change", () => chooseBackend(backendInput.value));
+tokenInput.addEventListener("change", () => {
+  const token = tokenInput.value.trim();
+  try { if (token) localStorage.setItem(TOKEN_KEY, token); else localStorage.removeItem(TOKEN_KEY); } catch { /* not remembered */ }
+  client.setToken(token);
+  client.checkStatus();
+});
 document.getElementById("check").addEventListener("click", () => client.checkStatus());
 stopButton.addEventListener("click", () => client.stop());
 
@@ -531,8 +538,11 @@ try {
   let setting = readStoredSetting(stored);
   if (blockedByPage(setting, location.protocol)) setting = { ok: true, kind: "mock" };
   mock = createMock(schema, { delay: 700 });
-  client = createClient({ setting, mock });
+  let token = "";
+  try { token = localStorage.getItem(TOKEN_KEY) ?? ""; } catch { /* no storage: no token */ }
+  client = createClient({ setting, token, mock });
   backendInput.value = settingText(setting);
+  tokenInput.value = token;
   storyBar = createStoryBar(storyNode, {
     schema, client, getProject: () => project,
     goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId }; show(); },
