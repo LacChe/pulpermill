@@ -1,0 +1,108 @@
+# Model-facing sentences that frame the rendered cards and records. English always (the output language is told to the
+# model separately). Phrased positively. Tokens in {braces} are filled by pulpermill/prompts/render.py.
+
+# ---- People ----
+portraits_note: "These are the people on stage. Use their wants, fears, flaws and values to decide what they choose, and show the choice. Let a flaw cost someone something. Let competence show in how a person handles a task. Let each person's way of speaking show in what they say. Dispositions are tendencies: draw on the one the moment calls for, and let the others rest."
+sketch: "Who {name} is: {value}"
+offstage_marker: "[offstage]"
+offstage_note: "People and groups marked [offstage] are somewhere else. They may be mentioned or thought of; only the people on stage appear in the scene."
+knowledge_note: "Some of what is true here is hidden from the people in it. What each person knows, suspects or wrongly believes is listed below. Write each person from their own knowledge. The narration says only what the point-of-view character could know. A hidden truth enters the story in the moment the scene gives it."
+knowledge_item: "{person} {status}: {thing}"
+# Three lines of the Characters wording rewritten so that they agree with the person's sex (she, he or they). The schema's
+# own lead-ins say "themselves" and "they" for everyone, which reads wrongly beside a named woman or man.
+portrait_fear: "{name} avoids and protects {themselves} from: {value}"
+portrait_flaw: "{name} holds a false belief or blind spot that sabotages {their} own aims: {value}"
+portrait_behavior: "when {state}, the tendency is to {tendency}"
+
+# ---- World ----
+places_other: "Other places in {name}: {items}."
+object_held: "Held by {held_by}."
+uses_none: "Not used in any chapter yet."
+uses_some: "Used in {n} earlier chapter{s}."
+rules_grouped_note: "What is common knowledge, what only a few know, and what people wrongly believe is marked on each line."
+power_felt_only: "{name}: Ordinary people feel it as {felt}"
+
+# ---- Standing ----
+standing_lead: "Where they stand now. This is where each person stands at the start of the chapter. It is newer than their portrait; where the two differ, follow this."
+standing_parts:
+  believes: "now believes {value}"
+  fears: "now fears {value}"
+  wants: "now wants {value}"
+  refuses: "refuses to {value}"
+  decided: "has decided {value}"
+
+# ---- The story so far ----
+story_lead: "The story so far:"
+story_chapter: "Chapter {chapter}. {happened}"
+story_changed: "By its end: {changed}"
+story_older: "Chapter {chapter}: {text}"
+story_older_lead: "Earlier chapters, in brief:"
+story_none: "This is the first chapter."
+chapter_of: "This is chapter {n} of {total}."
+chapter_of_unknown: "This is chapter {n}."
+chapter_last: "This is the last chapter. Bring the story to its close and settle what the story set in motion, then stop."
+goal_ended: "The protagonist's goal has ended. The story is winding down."
+chapter_one_normal: "Open the story where ordinary life was: {value}"
+chapter_one_break: "What just broke it: {value}"
+
+# ---- The scene (the beat as a situation, not a list) ----
+scene_open: "The chapter opens at {where}, {when}."
+scene_gap: "Time has passed since the last chapter: {gap}."
+scene_present: "{names} {be} there."
+scene_goal: "What {name} is after: {value}"
+scene_block: "What stands in the way: {value}"
+scene_choice: "{name} has to choose, and either choice costs {them} the other:"
+scene_choice_a: "one way: {value}"
+scene_choice_b: "the other: {value}"
+scene_turn: "By the end of the chapter something has changed: {value}"
+scene_shift:
+  harder: "This chapter is harder than what came before: let the pressure rise."
+  easier: "This chapter is a breath: let things ease a little, though something must still change."
+scene_end: "The chapter stops on this moment: {value}"
+scene_end_hold: "Stop there, with the question hanging."
+scene_reveal_hidden: "In this chapter something hidden comes to light: {statement} Who learns it: {learners}. Let it arrive through something that happens in the scene, in one clear moment, so that no narrator has to explain it."
+scene_reveal_myth: "In this chapter the truth comes out behind something people believe. The belief: {statement} The truth: {truth} Who learns it: {learners}. Let it arrive through something that happens in the scene, in one clear moment, so that no narrator has to explain it."
+scene_plant: "Set this up for later, in passing and with a light touch: {value}"
+scene_payoff: "Pay off what was set up earlier: {value}. Let it land as a consequence of what the characters do here."
+scene_payoff_item: "{text}, set up in chapter {chapter}"
+scene_offstage: "While the cast were elsewhere, {did} It reaches {name} like this: {reach} Work it into the scene as something they run into."
+scene_goal_change:
+  achieved: "By the end of the chapter the protagonist's goal has been achieved."
+  redefined: "By the end of the chapter the protagonist's goal has changed to: {goal_now}"
+  abandoned: "By the end of the chapter the protagonist has abandoned the goal."
+scene_spotlight: "The pressure in focus is: {value} Keep it present in the scene, felt in what people do."
+scene_shape: "This is the shape of the scene. Find your own way through it: the people, the dialogue and the small events that carry the chapter from its opening to its last moment are yours to invent."
+
+# ---- What the planner is told the code has set ----
+code_spotlight: "The pressure the chapter turns on: {value}"
+code_shifts: "This chapter may be: {value}."
+code_no_shifts: "Either kind of chapter is allowed."
+code_plants: "Plants still open (a payoff resolves one of these):"
+code_plant_item: "{text} (set up in chapter {chapter})"
+code_no_plants: "No plants are open."
+code_reveals: "Hidden truths that may still come to light:"
+code_reveal_item: "{statement}"
+code_reveal_item_myth: "People believe: {statement} The truth: {truth}"
+code_no_reveals: "No hidden truth is waiting to come to light."
+code_cast_seen: "How recently each person on stage has appeared: {items}."
+code_cast_item_never: "{name} has not appeared yet"
+code_cast_item_last: "{name} last in chapter {last}"
+planner_beats_lead: "Earlier chapters' plans, as a timeline:"
+planner_beat_item: "Chapter {chapter}: at {where}, {when}. It turned on: {turn} ({shift})"
+planner_offstage: "While the cast were elsewhere, {did} It reaches the protagonist like this: {reach} Plan around it."
+planner_tone_lead: "Plan scenes that suit this story."
+
+# ---- Headings and the last chapter's ending ----
+previous_ending_lead: "How the last chapter ended. Open this chapter at its own place and time, with fresh images."
+titles:
+  style: "How to tell it"
+  world: "The world"
+  people: "The people on stage"
+  entanglements: "How they are tied together"
+  standing: ""
+  story: "Where the story stands"
+  last_ending: ""
+  scene: "This chapter"
+  tone: "The tone"
+  code: "What is set for this chapter"
+  offstage: "Elsewhere"

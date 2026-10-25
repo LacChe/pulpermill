@@ -1,0 +1,69 @@
+# Model-facing wording for the chapter writer. One concrete, checkable line per Style option, added after the option's
+# existing expansion in schema/text/en/style.yaml. Drafted in docs/prompts/02-writers-brief.md, section 2.3.
+# Every line says what to do (positive phrasing). The numbers (twelve words, one comparison a page) are first guesses
+# and are tuned after the first real chapters.
+directives:
+  distance:
+    external: "Report what can be seen and heard, and let gesture and speech carry what people feel."
+    close: "Give the protagonist's perceptions and plain thoughts in the narrator's own words."
+    deep: "Let the protagonist's mind colour every sentence: what they notice, misread and remember is the description."
+  humor:
+    none: "Keep the narration earnest, and let any lightness come from the characters' warmth."
+    dry: "Put the humor in understatement and exact observation, and keep it out of punchlines."
+    absurd: "Meet the absurd with a straight face, so the narration plays it as ordinary."
+    dark: "Find the joke inside the grim thing, and let it end quickly."
+  pacing:
+    lingering: "Spend a full paragraph on at least two moments that matter, with sensory detail."
+    balanced: "Slow down for the choice and the turn, and cover everything else briskly."
+    brisk: "Open on action, cut transitions, and end each paragraph on forward motion."
+  rhythm:
+    terse: "Keep most sentences under twelve words, and welcome fragments."
+    varied: "Match sentence length to the moment: short for action and shock, longer for thought."
+    flowing: "Link clauses into long sentences, and keep a short one for emphasis."
+  diction:
+    plain: "Prefer the ordinary word, with strong verbs, exact nouns and few adjectives."
+    ornate: "Choose rare, layered words, and let a sentence carry two images."
+  formality:
+    formal: "Keep the narration grammatical and composed, and let characters speak in full sentences."
+    casual: "Use contractions, idiom and an easy voice, in the narration as well as in speech."
+  imagery:
+    literal: "Name things as they are, in direct description."
+    occasional: "Use at most one comparison a page, placed at the moment that matters most."
+    lush: "Use a comparison or a sensory detail in nearly every paragraph."
+  edge:
+    clean: "Keep the vocabulary gentle even when events are rough."
+    coarse: "Let characters swear and the narration be blunt and earthy where it fits them."
+  explicitness:
+    implied: "Cut away at the peak of an intense moment, and let the aftermath tell it."
+    shown: "Stay in the room for intense moments and describe them plainly."
+  attitude:
+    earnest: "Show the narrator's sincerity by taking every stake at face value and meeting serious moments seriously."
+    warm: "Show the narrator's affection by noticing small kindnesses and forgiving the characters their mistakes in the telling."
+    wry: "Show the narrator's amusement in the angle of an observation, a sideways comparison or a precise understatement."
+    sardonic: "Show the narrator's edge in sharp, specific observations that puncture pretence, most of all where a person or an institution takes itself seriously."
+    clinical: "Show the narrator's detachment by recording what is observed in exact, neutral terms, even at the saddest moment."
+    melancholic: "Show the narrator's sense of loss by noticing what is ending, worn or already gone, and by closing a moment on what it cost."
+    wondering: "Show the narrator's curiosity by dwelling on what is strange or beautiful and describing it as if seen for the first time."
+  amount:
+    sparse: "Give a line of dialogue only where someone must speak, and let narration carry the rest."
+    abundant: "Carry the scene mainly through conversation."
+  directness:
+    direct: "Let people say what they mean."
+    subtext: "Let people say something near the point and leave the point itself unsaid."
+  polish:
+    naturalistic: "Let people interrupt, trail off and talk over each other."
+    stylised: "Give dialogue shape: rhythm, wit and lines worth quoting."
+  voice_difference:
+    distinct: "Give each speaker a different sentence length, vocabulary and habit, so each line is recognisable as theirs before the tag arrives."
+    uniform: "Give the cast one shared way of speaking."
+
+# Added after the lead-in of a free-text style field. The genre lead-in already says it, so only the lens has one.
+lead_in_extra:
+  lens: "Let this decide what the narrator notices, in every scene."
+
+# The four group notes, passed through exactly as written, each labelled with the group it belongs to.
+notes:
+  narrator_note: "About the narrator: {value}"
+  sentences_note: "About the sentences: {value}"
+  stance_note: "About the narrator's stance: {value}"
+  dialogue_note: "About dialogue: {value}"

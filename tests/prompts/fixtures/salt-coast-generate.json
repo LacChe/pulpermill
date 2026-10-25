@@ -1,0 +1,145 @@
+{
+  "call": "generate", "schema_version": 1, "language": "en",
+  "chapter": 5, "chapter_count": 8,
+  "style": {
+    "person": "first", "tense": "past", "distance": "close", "humor": "dry", "pacing": "balanced",
+    "narrator_note": "The narrator is Suvi a few years on, and a little embarrassed by how much she once trusted paper.",
+    "rhythm": "varied", "diction": "plain", "formality": "casual", "imagery": "occasional", "edge": "clean", "explicitness": "implied",
+    "sentences_note": "",
+    "attitude": "wry", "stance_note": "",
+    "amount": "sparse", "directness": "subtext", "polish": "naturalistic", "voice_difference": "distinct",
+    "dialogue_note": "Pekka never finishes a sentence he does not like.",
+    "lens": "She notices what people do with their hands when they lie.",
+    "genre": "Harbour noir, small-town and damp"
+  },
+  "setup": {
+    "protagonist": "Suvi", "goal": "Find the ledger before the harbour board does.",
+    "stakes": "If the board finds it first, the shop and everyone who drinks there go under.", "chapter_count": 8
+  },
+  "goal": "Find the ledger before the harbour board does.",
+  "cast": [
+    {"id": "c0000001", "name": "Suvi", "age": 34, "sex": "female",
+     "appearance": "Short and broad-shouldered, with salt-cracked hands and a dark braid she keeps pinned under a cap.",
+     "sketch": "Runs the harbour shop her mother left her. Counts everything twice and trusts nothing she has not counted.",
+     "wants": [{"id": "w1", "text": "Keep the shop open"}, {"id": "w2", "text": "Know the truth about her mother's death"}],
+     "fear": "Being the one who lets the shop fall.",
+     "flaw": "Believes that anyone who is kind to her wants something.",
+     "values": [{"id": "v1", "text": "A debt paid in full"}, {"id": "v2", "text": "Telling the truth to her face"}],
+     "behaviors": [
+       {"id": "b1", "state": "she is calm and the shop is quiet", "tendency": "recount the till for no reason"},
+       {"id": "b2", "state": "someone offers help", "tendency": "ask what it will cost"},
+       {"id": "b3", "state": "she is cornered", "tendency": "go very polite and very slow"}
+     ],
+     "competence": "Reads a ledger the way other people read faces.",
+     "vulnerability": "A kind word from someone she has already written off.",
+     "speech": "Short, flat sentences. Dry. Swears only in Finnish and only when alone.",
+     "history": "Grew up behind the counter. Her mother died the winter the harbour board changed the dock rules."},
+    {"id": "c0000002", "name": "Aino", "age": 29, "sex": "male",
+     "appearance": "Tall and thin, always in a borrowed coat that is too short in the arms.",
+     "sketch": "A dock clerk who talks too much when he is nervous and too little when he is sure.",
+     "wants": [{"id": "w3", "text": "A post at the harbour board"}, {"id": "w4", "text": "Be trusted by someone"}],
+     "fear": "Being found out as a man who reads other people's letters.",
+     "flaw": "Cannot leave a secret alone once he has found it.",
+     "values": [{"id": "v3", "text": "Loyalty to whoever fed him first"}],
+     "behaviors": [{"id": "b4", "state": "he is among friends", "tendency": "tell the same long story again"}],
+     "competence": "Remembers every name on every crate that has crossed the docks.",
+     "vulnerability": "Anyone who says they believe in him.",
+     "speech": "Fast, full of qualifiers, trails off.",
+     "history": "Came up from the south on a coal barge at sixteen."},
+    {"id": "c0000003", "name": "Pekka", "age": 61, "sex": "male",
+     "appearance": "Heavy and slow, with a grey moustache stained yellow at the ends.",
+     "sketch": "Owns the building and the rooms above the shop. Sells what he knows by the spoonful.",
+     "wants": [{"id": "w5", "text": "A quiet old age"}, {"id": "w6", "text": "To be paid on time"}],
+     "fear": "The board taking the building.",
+     "flaw": "Believes every favour is a loan.",
+     "values": [{"id": "v4", "text": "Keeping his own counsel"}],
+     "behaviors": [{"id": "b5", "state": "he is pressed for an answer", "tendency": "talk about the weather"}],
+     "competence": "Knows who owes whom along the whole waterfront.",
+     "vulnerability": "Talk of his late wife.",
+     "speech": "Slow, mumbled, never finishes a sentence he does not like.",
+     "history": "Has let rooms on this street for forty years."}
+  ],
+  "world": {
+    "name": "The Salt Coast",
+    "era_and_technology": "Late steam age: coal barges, telegraph lines to the capital, oil lamps on the quay, no telephones.",
+    "everyday_life": "Everything arrives by water and is taxed twice. Rent is paid weekly in coin, and a missed week is remembered for years.",
+    "history": "The harbour board took over the docks after the great fire and has written its own rules ever since.",
+    "places": [
+      {"id": "p1", "name": "The Docks", "description": "Wet planks, coal dust and shouting. Crates stacked three high along the quay.", "effect": "Everyone is watched, and everyone pretends not to watch.", "uses": 2},
+      {"id": "p2", "name": "The Shop", "description": "A narrow harbour shop with a stove, a counter and a back door to the yard.", "effect": "It makes people talk, because it is warm.", "uses": 3},
+      {"id": "p3", "name": "The Board House", "description": "A grey stone building at the head of the quay, with one lit window at all hours.", "effect": "People lower their voices as they pass.", "uses": 1}
+    ],
+    "objects": [
+      {"id": "o1", "name": "The ledger", "description": "A fat black ledger with a cracked spine and a ribbon marker.", "significance": "It records who really paid for the dock repairs, and who did not.", "uses": 2, "held_by": "Pekka"},
+      {"id": "o2", "name": "The brass key", "description": "A small brass key on a leather cord.", "significance": "It opens the cellar under the shop.", "uses": 0, "held_by": "Suvi"}
+    ],
+    "powers": [
+      {"id": "g1", "name": "The Harbour Board", "nature": "Seven men who govern the waterfront.", "hold": "Licensing every boat, crate and cellar.", "felt": "A fee, a stamp and a visit on the first of the month."},
+      {"id": "g2", "name": "The Dockhands' Brotherhood", "nature": "A loose union of dock workers.", "hold": "Slowing the work down when it is crossed.", "felt": "A hush in the tavern when a board man walks in."}
+    ],
+    "rules": [
+      {"id": "r1", "statement": "Rent is due on the first of the week.", "cost": "A missed week is a debt the landlord can call in at any time.", "status": "common", "when_broken": "It is punished: the landlord may take the goods.", "truth": null},
+      {"id": "r2", "statement": "The dock repairs were paid for by the shopkeepers, not the board.", "cost": "Saying so out loud invites a visit from the board.", "status": "uncommon", "when_broken": "It is punished: licences are pulled.", "truth": null},
+      {"id": "r3", "statement": "The cellar under the shop floods on the spring tide.", "cost": "Anything stored there is lost.", "status": "false_belief", "when_broken": "It is shameful: the story is kept alive.", "truth": "The cellar was sealed to hide the board's old accounts and has never flooded."}
+    ],
+    "terms": [
+      {"id": "t1", "term": "the first-day visit", "meaning": "the board's monthly inspection"}
+    ]
+  },
+  "entanglements": {
+    "ties": [
+      {"id": "T1", "tie_from": "Suvi", "tie_to": "Aino", "bond": "She tolerates him and half-trusts him.", "edge": "She wants to know whom he reports to."},
+      {"id": "T2", "tie_from": "Suvi", "tie_to": "Pekka", "bond": "Tenant and landlord of forty years' standing.", "edge": "She owes him two weeks' rent and needs him to talk about the ledger."},
+      {"id": "T3", "tie_from": "Aino", "tie_to": "The Harbour Board", "bond": "He works for them and wants to belong.", "edge": "He has been asked to report who visits the shop."}
+    ],
+    "holdings": [
+      {"id": "H1", "holdee": "The ledger", "held_by": "Pekka"},
+      {"id": "H2", "holdee": "The brass key", "held_by": "Suvi"}
+    ],
+    "knowledge": [
+      {"id": "K1", "person": "Pekka", "status": "knows", "rule": "The dock repairs were paid for by the shopkeepers, not the board.", "fact": null},
+      {"id": "K2", "person": "Suvi", "status": "misled", "rule": "The cellar under the shop floods on the spring tide.", "fact": null},
+      {"id": "K3", "person": "Aino", "status": "suspects", "rule": null, "fact": "The ledger is in Pekka's rooms."}
+    ],
+    "pressures": [
+      {"id": "P1", "what": "The board wants the ledger before the next first-day visit and will close the shop to get it.", "source_agent": "The Harbour Board", "source_circumstance": null, "bears_on": ["Suvi", "Pekka"], "next_move": "Send a clerk to count the shop's stock on Friday."},
+      {"id": "P2", "what": "Winter is coming and the shop has not yet paid its coal.", "source_agent": null, "source_circumstance": "the season", "bears_on": ["Suvi"], "next_move": null}
+    ]
+  },
+  "standing": [
+    {"character": "Suvi", "believes": "Pekka sold the ledger's location to the board", "decided": "to keep the key to herself"},
+    {"character": "Aino", "fears": "that Suvi has seen him reading her letters"}
+  ],
+  "earlier_events": [
+    {"chapter": 1, "happened": "Suvi finds the shop's stock miscounted by a crate. She suspects the board's clerk. Aino mentions a ledger in passing.", "changed": "Suvi knows someone has been in the shop at night.", "planted": "The brass key goes missing from its nail."},
+    {"chapter": 2, "happened": "Suvi questions Aino on the docks. He lets slip that the board wants a ledger. She finds the brass key in her coat pocket and does not know how it got there.", "changed": "Suvi now has the key and a reason to doubt her own memory.", "planted": ""},
+    {"chapter": 3, "happened": "Suvi and Pekka argue over the rent. Pekka hints that he can talk about the old repairs for a price. A board clerk visits and leaves with nothing.", "changed": "Pekka has named a price.", "planted": ""},
+    {"chapter": 4, "happened": "Aino warns Suvi that the board will count the stock on Friday. Suvi searches the cellar with the key and finds it dry. She tells no one.", "changed": "The cellar story is false, and Suvi alone knows it.", "planted": "A second lock on the cellar's inner door."}
+  ],
+  "previous_ending": "The lamp guttered and went out. Somewhere under my boots, the water that was not supposed to be there was not there at all. I stood in the dark with the key warm in my fist and thought: someone wanted me to believe in a flood.",
+  "beat": {
+    "id": "b0000005", "chapter": 5, "cast": ["Suvi", "Aino", "Pekka"],
+    "where": "The Docks", "when_time": "Tuesday, just after the shop opens", "when_gap": "Three days later",
+    "collision_goal": "Get Pekka to say where the ledger is",
+    "collision_block": "Pekka will talk only if Suvi stays quiet about the rent she owes",
+    "choice_a": "Keep Pekka's goodwill by saying nothing about the rent",
+    "choice_b": "Learn where the ledger is by pressing him in front of Aino",
+    "turn": "Suvi learns the ledger is in the cellar, but Aino now knows she is asking",
+    "shift": "harder",
+    "ends_on": "Suvi finds her own initials in the ledger's last entry",
+    "reveal_rule": "The cellar under the shop floods on the spring tide.", "reveal_learners": ["Suvi", "Aino"],
+    "plant": "Pekka keeps a locked back room",
+    "payoff": ["A second lock on the cellar's inner door."],
+    "offstage_did": "The board closed the east market gate.", "offstage_reach": "Suvi has to take the long way round the docks.",
+    "goal_change": "redefined", "goal_now": "Find the ledger in the cellar before Friday's count",
+    "spotlight": "The board wants the ledger before the next first-day visit and will close the shop to get it."
+  },
+  "open_plants": [
+    {"text": "The brass key goes missing from its nail.", "chapter": 1},
+    {"text": "A second lock on the cellar's inner door.", "chapter": 4}
+  ],
+  "available_reveals": [
+    {"statement": "The dock repairs were paid for by the shopkeepers, not the board.", "truth": "", "status": "uncommon"},
+    {"statement": "The cellar under the shop floods on the spring tide.", "truth": "The cellar was sealed to hide the board's old accounts and has never flooded.", "status": "false_belief"}
+  ]
+}
