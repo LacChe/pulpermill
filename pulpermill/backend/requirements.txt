@@ -1,7 +1,9 @@
-# What the server needs (the notebook installs these; llama-cpp-python is added in M2).
+# What the server needs (the notebook installs these; llama-cpp-python is installed separately, with CUDA).
 pydantic>=2
 starlette
 uvicorn
 pyyaml
+huggingface_hub
+pyngrok
 # Only for the tests:
 requests
