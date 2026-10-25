@@ -2,7 +2,7 @@
 reminder at the end are added in phase 4 (the prompt files); this is everything in between, and what the golden prompts
 in phase 5 are made from."""
 from . import textfiles as tx
-from .render import (Report, render_style, render_cast, render_world, render_entanglements, render_setup, render_standing,
+from .render import (clip, Report, render_style, render_cast, render_world, render_entanglements, render_setup, render_standing,
                      render_story_so_far, render_scene, render_earlier_beats, render_code_numbers, groups_in_play, s)
 
 
@@ -33,7 +33,7 @@ def writer_blocks(req: dict, report: Report | None = None) -> list[tuple[str, st
                                in_play=groups_in_play(ent), report=report)),
         ("people", render_cast(cast, scope="writer", report=report)),
         ("entanglements", render_entanglements(ent, _cast_names(cast), scope="writer", report=report)),
-        ("standing", render_standing(req.get("standing") or [])),
+        ("standing", render_standing(req.get("standing") or [], report=report)),
         ("story", "\n\n".join(x for x in story if x)),
         ("last_ending", (tx.prompt_text("frames")["previous_ending_lead"] + "\n" + ending) if ending else ""),
         ("scene", render_scene(beat, protagonist=protagonist, sex=_sex_of(cast, protagonist),
@@ -54,13 +54,15 @@ def planner_blocks(req: dict, report: Report | None = None) -> list[tuple[str, s
              render_story_so_far(req.get("earlier_events") or [], chapter, keep_full=lim["full_chapters_planner"], report=report),
              render_earlier_beats(req.get("earlier_beats") or [])]
     off = req.get("offstage") or {}
-    offstage = fr["planner_offstage"].format(did=s(off.get("did")), reach=s(off.get("reach"))) if s(off.get("did")) else ""
+    cap = tx.limits()["offstage"]["field"]
+    offstage = (fr["planner_offstage"].format(did=clip(off.get("did"), cap, "offstage.did", report), reach=clip(off.get("reach"), cap, "offstage.reach", report))
+                if s(off.get("did")) else "")
     blocks = [
         ("tone", (tone + "\n" + fr["planner_tone_lead"]) if tone else ""),
         ("world", render_world(req.get("world") or {}, scope="planner", report=report)),
         ("people", render_cast(cast, scope="planner", report=report)),
         ("entanglements", render_entanglements(req.get("entanglements") or {}, _cast_names(cast), scope="planner", report=report)),
-        ("standing", render_standing(req.get("latest_shifts") or [])),
+        ("standing", render_standing(req.get("latest_shifts") or [], report=report)),
         ("story", "\n\n".join(x for x in story if x)),
         ("offstage", offstage),
         ("code", render_code_numbers(req, report=report)),

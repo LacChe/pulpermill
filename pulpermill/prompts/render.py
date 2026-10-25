@@ -417,11 +417,12 @@ def render_setup(setup: dict, goal: str | None, chapter: int, chapter_count: int
     return "\n".join(lines)
 
 
-def render_standing(standing: list[dict]) -> str:
+def render_standing(standing: list[dict], report: Report | None = None) -> str:
     fr = tx.prompt_text("frames")
+    cap = tx.limits()["standing"]["field"]
     rows = []
     for row in standing or []:
-        parts = [fill(tmpl, {"value": s(row.get(key)).rstrip(".")}) for key, tmpl in fr["standing_parts"].items() if s(row.get(key))]
+        parts = [fill(tmpl, {"value": clip(row.get(key), cap, f"standing.{s(row.get('character'))}.{key}", report).rstrip(".")}) for key, tmpl in fr["standing_parts"].items() if s(row.get(key))]
         if parts:
             rows.append(f"{s(row.get('character'))} " + "; ".join(parts) + ".")
     return fr["standing_lead"] + "\n" + "\n".join(rows) if rows else ""
@@ -544,21 +545,25 @@ def render_scene(beat: dict, *, protagonist: str, sex: str = "other", open_plant
 
 def render_code_numbers(req: dict, *, report: Report | None = None) -> str:
     fr = tx.prompt_text("frames")
+    lim = tx.limits()
     lines = []
     spot = req.get("spotlight") or {}
     if s(spot.get("what")):
-        lines.append(fr["code_spotlight"].format(value=sentence(s(spot["what"]))))
+        lines.append(fr["code_spotlight"].format(value=sentence(clip(spot["what"], lim["entanglements"]["pressure_what"], "spotlight", report))))
     shifts = req.get("legal_shifts") or []
     lines.append(fr["code_shifts"].format(value=" or ".join(shifts)) if shifts and len(shifts) < 2 else fr["code_no_shifts"])
     plants = req.get("open_plants") or []
     if plants:
-        lines.append(fr["code_plants"] + "\n" + "\n".join(fr["code_plant_item"].format(text=s(p.get("text")).rstrip("."), chapter=p.get("chapter")) for p in plants))
+        lines.append(fr["code_plants"] + "\n" + "\n".join(fr["code_plant_item"].format(text=clip(p.get("text"), lim["code"]["plant"], "plant", report).rstrip("."), chapter=p.get("chapter")) for p in plants))
     else:
         lines.append(fr["code_no_plants"])
     reveals = req.get("available_reveals") or []
     if reveals:
-        rows = [fr["code_reveal_item_myth"].format(statement=sentence(s(r.get("statement"))), truth=sentence(s(r.get("truth"))))
-                if s(r.get("status")) == "false_belief" and s(r.get("truth")) else fr["code_reveal_item"].format(statement=sentence(s(r.get("statement"))))
+        w = lim["world"]
+        rows = [fr["code_reveal_item_myth"].format(statement=sentence(clip(r.get("statement"), w["rule_statement"], "reveal", report)),
+                                                   truth=sentence(clip(r.get("truth"), w["rule_truth"], "reveal", report)))
+                if s(r.get("status")) == "false_belief" and s(r.get("truth")) else
+                fr["code_reveal_item"].format(statement=sentence(clip(r.get("statement"), w["rule_statement"], "reveal", report)))
                 for r in reveals]
         lines.append(fr["code_reveals"] + "\n" + "\n".join(rows))
     else:

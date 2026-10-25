@@ -386,7 +386,8 @@ def test_limits_cover_every_field_the_renderers_clip():
                         "entanglements": ("bond", "edge", "pressure_what", "next_move", "fact"),
                         "setup": ("normal", "disruption", "goal", "stakes"),
                         "events": ("happened", "changed", "full_chapters_writer", "full_chapters_planner"),
-                        "beat": ("field",)}.items():
+                        "beat": ("field",),
+                        "standing": ("field",), "code": ("plant",), "offstage": ("field",)}.items():
         for key in keys:
             assert isinstance(limits[group][key], int) and limits[group][key] > 0, f"{group}.{key}"
     assert "appearance" not in limits["characters"]                      # fixed fields have no cap

@@ -1,4 +1,6 @@
 """Loads the wording and the limits. Cached, read-only."""
+import copy
+from contextlib import contextmanager
 from functools import lru_cache
 from pathlib import Path
 import yaml
@@ -32,8 +34,39 @@ def template(name: str, lang: str = "en") -> dict:
 
 
 @lru_cache(maxsize=None)
-def limits() -> dict:
+def _base_limits() -> dict:
     return _load(HERE / "limits.yaml")
+
+
+# Counts and switches, not lengths: a squeeze (phase 5) leaves these as they are.
+_NOT_LENGTHS = {("characters", "max_behaviors"), ("events", "full_chapters_writer"), ("events", "full_chapters_planner")}
+_scale = 1.0
+
+
+def limits() -> dict:
+    """The length caps. Inside `squeeze(f)` every length is multiplied by f, so a very large story can be made to fit."""
+    base = _base_limits()
+    if _scale == 1.0:
+        return base
+    out = copy.deepcopy(base)
+    for section, values in out.items():
+        if section == "chapter":
+            continue
+        for key, value in values.items():
+            if isinstance(value, int) and (section, key) not in _NOT_LENGTHS:
+                values[key] = max(40, int(value * _scale))
+    return out
+
+
+@contextmanager
+def squeeze(factor: float):
+    """Every length cap in limits.yaml, times `factor`, for the code inside the block."""
+    global _scale
+    before, _scale = _scale, factor
+    try:
+        yield
+    finally:
+        _scale = before
 
 
 def field(card: str, key: str) -> dict:

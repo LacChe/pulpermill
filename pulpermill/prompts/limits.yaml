@@ -51,6 +51,15 @@ events:
   full_chapters_planner: 4
 beat:
   field: 500
+code:
+  # Numbers and facts the code hands the planner: open plants come from earlier chapters' events, which a model wrote.
+  plant: 250
+offstage:
+  # What happened out of sight (a model's reply): each of the two sentences is cut to this.
+  field: 350
+standing:
+  # Where each person stands now: the Shifts extractor writes these, so they are model text and get a cap too.
+  field: 300
 chapter:
   # The section-by-section writer (inventory D5). The backend uses these; the prompts only need the words per section.
   target_words: 3000
