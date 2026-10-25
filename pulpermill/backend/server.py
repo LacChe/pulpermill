@@ -1,0 +1,163 @@
+"""The HTTP layer: one route, CORS, the token, the busy lock, status, Stop, and the mapping from failures to the
+contract's error replies. Nothing here knows how a call is answered; that is pipelines.run.
+
+Why it is built this way:
+- The model call runs in its own thread, so the event loop is always free to answer `status` and to notice that the
+  client went away (Stop). That is the property most likely to be broken by accident, so it has its own tests.
+- The lock is taken before the thread starts and released by the thread itself as its very last step, whatever
+  happened. `status` therefore says "idle" only after inference has really ended.
+- A client that disconnects sets the cancel flag. The call then answers nothing the page can use and changes nothing."""
+import asyncio
+import hmac
+import logging
+import threading
+import time
+from typing import Any, Callable
+
+from pydantic import ValidationError
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+from starlette.routing import Route
+
+from pulpermill.schema import contract
+from pulpermill.schema.project import SCHEMA_VERSION
+
+from . import pipelines as default_pipelines
+from .config import Config
+from .engine.base import CancelFlag, Engine
+from .errors import BackendError, Cancelled
+from .pipelines.context import RunContext
+
+log = logging.getLogger("pulpermill")
+
+CORS = {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "POST",
+    "access-control-allow-headers": "content-type, ngrok-skip-browser-warning, x-pulpermill-token",
+    "access-control-max-age": "600",
+}
+TOKEN_HEADER = "x-pulpermill-token"
+
+
+def _fail(kind: str, detail: str = "") -> JSONResponse:
+    return JSONResponse(contract.error_reply(kind, detail), status_code=contract.HTTP_STATUS[kind], headers=CORS)
+
+
+def _short(error: ValidationError) -> str:
+    """The first problem in plain words: where it is and what is wrong. Never the value, which may be the writer's text."""
+    first = error.errors(include_input=False, include_url=False)[0]
+    where = ".".join(str(part) for part in first.get("loc", ()))
+    return f"{where}: {first.get('msg', 'invalid')}"[:300]
+
+
+class Job:
+    """Whether a model call is running, and what stage it says it is in. The only state the server keeps."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._stage: str | None = None
+
+    def try_begin(self) -> bool:
+        return self._lock.acquire(blocking=False)
+
+    def end(self) -> None:
+        self._stage = None
+        self._lock.release()
+
+    @property
+    def busy(self) -> bool:
+        return self._lock.locked()
+
+    @property
+    def stage(self) -> str | None:
+        return self._stage if self.busy else None
+
+    def set_stage(self, stage: str | None) -> None:
+        if stage is None or stage in contract.STAGES:
+            self._stage = stage
+
+
+def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], dict] | None = None) -> Starlette:
+    """`run(request_model, ctx) -> reply dict` answers one model call. It defaults to the pipelines package."""
+    run = run or default_pipelines.run
+    job = Job()
+
+    def token_ok(request: Request) -> bool:
+        if not config.token:
+            return True
+        given = request.headers.get(TOKEN_HEADER, "")
+        return hmac.compare_digest(given.encode(), config.token.encode())
+
+    def work(model, cancel: CancelFlag, loop, done: "asyncio.Future") -> None:
+        """The model call, in a thread. Always ends by releasing the lock, then hands the outcome to the handler."""
+        started = time.monotonic()
+        outcome: tuple[str, Any]
+        try:
+            ctx = RunContext(engine=engine, cancel=cancel, set_stage=job.set_stage, config=config)
+            reply = run(model, ctx)
+            cancel.raise_if_cancelled()
+            try:
+                contract.parse_reply(model.call, reply)
+            except ValidationError as error:
+                log.error("call=%s reply failed the contract: %s", model.call, _short(error))
+                raise BackendError("bad_output", "") from None
+            outcome = ("ok", reply)
+        except Cancelled:
+            outcome = ("fail", ("stopped", ""))
+        except BackendError as error:
+            outcome = ("fail", (error.kind, error.detail))
+        except Exception:
+            log.exception("call=%s failed", model.call)
+            outcome = ("fail", ("server", "The model's server hit an unexpected problem."))
+        finally:
+            seconds = time.monotonic() - started
+            job.end()
+        log.info("call=%s done secs=%.2f result=%s", model.call, seconds, outcome[0] if outcome[0] == "ok" else outcome[1][0])
+        try:
+            loop.call_soon_threadsafe(lambda: done.done() or done.set_result(outcome))
+        except RuntimeError:
+            pass    # the loop is gone (shutting down); nobody is waiting
+
+    async def api(request: Request) -> Response:
+        if request.method == "OPTIONS":
+            return Response(status_code=204, headers=CORS)         # the preflight never carries the token
+        if not token_ok(request):
+            return _fail("unauthorized")
+        raw = await request.body()
+        try:
+            data = await asyncio.to_thread(_loads, raw)
+            model = contract.parse_request(data)
+        except ValueError:
+            return _fail("bad_request", "The request was not JSON.")
+        except ValidationError as error:
+            return _fail("bad_request", _short(error))
+        if model.call == "status":
+            body: dict[str, Any] = {"ok": True, "state": "busy" if job.busy else "idle"}
+            if job.stage:
+                body["stage"] = job.stage
+            return JSONResponse(body, headers=CORS)
+        if model.schema_version > SCHEMA_VERSION:
+            return _fail("bad_request", f"This server knows project files up to version {SCHEMA_VERSION}, not {model.schema_version}.")
+        if not job.try_begin():
+            return _fail("busy")
+        cancel = CancelFlag()
+        loop = asyncio.get_running_loop()
+        done: asyncio.Future = loop.create_future()
+        threading.Thread(target=work, args=(model, cancel, loop, done), daemon=True, name=f"call-{model.call}").start()
+        while not done.done():
+            await asyncio.wait({done}, timeout=config.poll_interval)
+            if not done.done() and not cancel.cancelled and await request.is_disconnected():
+                log.info("call=%s client went away: cancelling", model.call)
+                cancel.set()
+        kind, value = done.result()
+        if kind == "ok" and not cancel.cancelled:
+            return JSONResponse(value, headers=CORS)
+        return _fail(*(value if kind == "fail" else ("stopped", "")))
+
+    return Starlette(routes=[Route("/api", api, methods=["POST", "OPTIONS"])])
+
+
+def _loads(raw: bytes) -> Any:
+    import json
+    return json.loads(raw)

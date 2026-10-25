@@ -1,0 +1,7 @@
+# What the server needs (the notebook installs these; llama-cpp-python is added in M2).
+pydantic>=2
+starlette
+uvicorn
+pyyaml
+# Only for the tests:
+requests
