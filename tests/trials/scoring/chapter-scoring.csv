@@ -1,0 +1,13 @@
+trial,run,prompt_version,model_and_settings,words,voice_match,reads_as_story,beat_landed,person_tense,continuity,secrets_kept,freshness,people_alive,ending,total_0_to_18,flags_that_fired,flags_that_were_right,calls_failed_or_retried,graded_by,notes
+T1-pressure,1,,,,,,,,,,,,,,,,,,
+T1-pressure,2,,,,,,,,,,,,,,,,,,
+T1-pressure,3,,,,,,,,,,,,,,,,,,
+T2-quiet,1,,,,,,,,,,,,,,,,,,
+T2-quiet,2,,,,,,,,,,,,,,,,,,
+T2-quiet,3,,,,,,,,,,,,,,,,,,
+T3-fast,1,,,,,,,,,,,,,,,,,,
+T3-fast,2,,,,,,,,,,,,,,,,,,
+T3-fast,3,,,,,,,,,,,,,,,,,,
+T4-opening,1,,,,,,,,,,,,,,,,,,
+T4-opening,2,,,,,,,,,,,,,,,,,,
+T4-opening,3,,,,,,,,,,,,,,,,,,
