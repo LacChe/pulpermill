@@ -1,0 +1,123 @@
+[events events-0.1, stage: events]
+
+Read the chapter below and say what it shows happened. Count only what is on the page.
+Write "happened" as short plain narration: one sentence per event, in the order it happened, usually 4 to 8 sentences. An event is a moment that changes who knows what, who holds what, or where people stand. Name the people and say what they did.
+Write "changed" as one short sentence: what is different for the protagonist now.
+For the plant, the payoff, the hidden truths, the dispositions and the objects, answer only from the lists given, copying the wording exactly, and only when it is clearly there in the text. Leave out anything the beat planned that the text does not show.
+Say that the goal changed only if the text shows it.
+
+What the beat planned for this chapter:
+A hidden truth, or a false belief, to be brought to light: The cellar under the shop floods on the spring tide.
+Something to set up: Pekka keeps a locked back room.
+Something to pay off: A second lock on the cellar's inner door.
+A goal change: redefined: Find the ledger in the cellar before Friday's count
+
+The lists to answer from (copy the wording exactly):
+
+Plants still open (the chapter may pay one off):
+- The brass key goes missing from its nail.
+- A second lock on the cellar's inner door.
+
+Hidden truths and false beliefs that may come to light:
+- The dock repairs were paid for by the shopkeepers, not the board.
+- The cellar under the shop floods on the spring tide.
+
+Dispositions the people on stage have (say which showed):
+- she is calm and the shop is quiet
+- someone offers help
+- she is cornered
+- he is among friends
+- he is pressed for an answer
+
+Objects that matter (say which appeared):
+- The ledger
+- The brass key
+
+The chapter:
+[the chapter would be here]
+
+Now say what the chapter shows happened, as the reply format asks.
+
+---- reply shape ----
+{
+ "type": "object",
+ "properties": {
+  "happened": {
+   "type": "string"
+  },
+  "changed": {
+   "type": "string"
+  },
+  "planted": {
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "null"
+    }
+   ]
+  },
+  "paid_off": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "The brass key goes missing from its nail.",
+     "A second lock on the cellar's inner door."
+    ]
+   },
+   "maxItems": 2
+  },
+  "reveals_landed": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "The dock repairs were paid for by the shopkeepers, not the board.",
+     "The cellar under the shop floods on the spring tide."
+    ]
+   },
+   "maxItems": 5
+  },
+  "behaviors_seen": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "she is calm and the shop is quiet",
+     "someone offers help",
+     "she is cornered",
+     "he is among friends",
+     "he is pressed for an answer"
+    ]
+   },
+   "maxItems": 5
+  },
+  "things_seen": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "The ledger",
+     "The brass key"
+    ]
+   },
+   "maxItems": 5
+  },
+  "goal_landed": {
+   "type": "boolean"
+  }
+ },
+ "required": [
+  "happened",
+  "changed",
+  "planted",
+  "paid_off",
+  "reveals_landed",
+  "behaviors_seen",
+  "things_seen",
+  "goal_landed"
+ ],
+ "additionalProperties": false
+}

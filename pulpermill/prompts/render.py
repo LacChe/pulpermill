@@ -155,6 +155,7 @@ def render_person(person: dict, *, scope: str = "writer", report: Report | None 
     c = tx.limits()["characters"]
     name = s(person.get("name"))
     writer = scope == "writer"
+    speaks = scope in ("writer", "fit")                      # the style-fit check also needs how the person speaks
     frames = tx.prompt_text("frames")
     chars = tx.schema_text("characters")["fields"]
     lines: list[str] = []
@@ -202,7 +203,7 @@ def render_person(person: dict, *, scope: str = "writer", report: Report | None 
 
     # texture and past
     texture = []
-    for key in ("competence", "vulnerability") + (("speech",) if writer else ()) + ("history",):
+    for key in ("competence", "vulnerability") + (("speech",) if speaks else ()) + ("history",):
         if s(person.get(key)):
             texture.append(lead("characters", key, name=name, value=clip(person[key], c[key], f"{name}.{key}", report)))
     put(texture)
@@ -568,3 +569,94 @@ def render_code_numbers(req: dict, *, report: Report | None = None) -> str:
                  for c in seen]
         lines.append(fr["code_cast_seen"].format(items="; ".join(items)))
     return "\n".join(lines)
+
+
+# ---- Short forms for the extractors and the card calls --------------------------------------------------------------
+
+def render_person_brief(person: dict, *, report: Report | None = None) -> str:
+    """One short paragraph: who, and what drives them. For the Shifts extractor, which compares the chapter with where a
+    person started."""
+    c = tx.limits()["characters"]
+    name = s(person.get("name"))
+    she = {"female": "she/her", "male": "he/him"}.get(s(person.get("sex")), "they/them")
+    wants = [clip(w.get("text"), c["want_item"], f"{name}.wants", report) for w in person.get("wants") or []]
+    parts = [f"{name} ({she})."]
+    if wants:
+        parts.append("Wants: " + "; ".join(wants) + ".")
+    for key, label in (("fear", "Fear"), ("flaw", "Flaw")):
+        if s(person.get(key)):
+            parts.append(f"{label}: {sentence(clip(person[key], c[key], f'{name}.{key}', report))}")
+    return " ".join(parts)
+
+
+def render_handles(entanglements: dict, handles: dict[str, dict], cast_names: Iterable[str], *,
+                   report: Report | None = None) -> str:
+    """The live entanglements, each item behind its handle (T1, H1, K1, P1), grouped by what may change."""
+    c = tx.limits()["entanglements"]
+    fr = tx.prompt_text("frames")
+    heads = tx.template("shifts")["may_change"]
+    cast = {s(n) for n in cast_names}
+
+    def who(name: str) -> str:
+        name = s(name)
+        return f"{name} {fr['offstage_marker']}" if name and name not in cast else name
+
+    by_section: dict[str, list[str]] = {}
+    index = {(i["section"], i["id"]): h for h, i in handles.items()}
+    for section in ("ties", "holdings", "knowledge", "pressures"):
+        for item in entanglements.get(section) or []:
+            handle = index.get((section, item.get("id")))
+            if not handle:
+                continue
+            if section == "ties":
+                line = (f"{handle}. {who(item.get('tie_from'))} toward {who(item.get('tie_to'))}. Bond: {sentence(clip(item.get('bond'), c['bond'], 'tie', report))} "
+                        f"Edge: {sentence(clip(item.get('edge'), c['edge'], 'tie', report))}")
+            elif section == "holdings":
+                line = f"{handle}. {s(item.get('holdee'))} is held by {who(item.get('held_by'))}."
+            elif section == "knowledge":
+                status = tx.schema_text("entanglements")["fields"]["knowledge"]["item_fields"]["status"]["options"].get(s(item.get("status")), {}).get("expand", s(item.get("status")))
+                line = f"{handle}. {s(item.get('person'))} {status}: {sentence(clip(item.get('rule') or item.get('fact'), c['fact'], 'knowledge', report))}"
+            else:
+                bears = ", ".join(who(b) for b in item.get("bears_on") or [])
+                source = who(item.get("source_agent")) or s(item.get("source_circumstance"))
+                line = f"{handle}. {clip(item.get('what'), c['pressure_what'], 'pressure', report).rstrip('.')} (from {source}; bears on {bears})."
+                if s(item.get("next_move")):
+                    line += f" Next move: {sentence(clip(item['next_move'], c['next_move'], 'pressure', report))}"
+            by_section.setdefault(section, []).append(line)
+    return "\n\n".join(heads[sec] + ":\n" + "\n".join(lines) for sec, lines in by_section.items())
+
+
+def render_shifts_history(shifts: list[dict], *, report: Report | None = None) -> str:
+    """How people changed, chapter by chapter, for the end-of-story update."""
+    fr = tx.prompt_text("frames")
+    rows = []
+    for row in sorted(shifts or [], key=lambda r: int(r.get("chapter") or 0)):
+        parts = [fill(tmpl, {"value": s(row.get(key)).rstrip(".")}) for key, tmpl in fr["standing_parts"].items() if s(row.get(key))]
+        if parts:
+            rows.append(tx.template("end_story")["shift_line"].format(chapter=row.get("chapter"), character=s(row.get("character")), parts="; ".join(parts)) + ".")
+    return "\n".join(rows)
+
+
+def names_by_id(related: dict) -> dict[str, str]:
+    """Id to name for everything a card can link to, from the cards a fill or judge request carries."""
+    world = related.get("world") or {}
+    characters = related.get("characters") or []
+    if isinstance(characters, dict):
+        characters = [characters]
+    out = {c["id"]: s(c.get("name")) for c in characters if c.get("id")}
+    for key, label in (("places", "name"), ("objects", "name"), ("powers", "name"), ("rules", "statement")):
+        out.update({i["id"]: s(i.get(label)) for i in world.get(key) or [] if i.get("id")})
+    return out
+
+
+def in_words(items: list[dict], extras: dict[str, dict], names: dict[str, str]) -> list[dict]:
+    """Items whose link fields hold ids, with each id turned into the name it stands for."""
+    out = []
+    for item in items or []:
+        row = dict(item)
+        for key, spec in extras.items():
+            if spec.get("ref") and key in row:
+                value = row[key]
+                row[key] = [names.get(v, v) for v in value] if isinstance(value, list) else names.get(value, value) if value else value
+        out.append(row)
+    return out

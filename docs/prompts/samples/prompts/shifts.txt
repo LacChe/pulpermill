@@ -1,0 +1,328 @@
+[shifts shifts-0.1, stage: shifts]
+
+Read the chapter below and say who moved. Only people whose belief, fear, want, refusal or decision changed in this chapter count, and only what changed, so compare with where each person stood at the start. At most five people.
+For each person who moved, fill in only the boxes that changed:
+- believes: a conviction they now hold, which the story could prove wrong
+- fears: a fear that is new or different
+- wants: an abstract desire that changed (a concrete aim toward one person belongs on a tie's edge)
+- refuses: something they now will not do
+- decided: what they decided; for the protagonist, say which of the two choices the chapter posed they took, or what they did instead
+Then say what changed in the live entanglements, using the handle given for each item. Add a new knowledge line (at most three) only when someone has learned, suspected or been misled about something that has no line yet. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
+
+The people on stage:
+Suvi (she/her). Wants: Keep the shop open; Know the truth about her mother's death. Fear: Being the one who lets the shop fall. Flaw: Believes that anyone who is kind to her wants something.
+Aino (he/him). Wants: A post at the harbour board; Be trusted by someone. Fear: Being found out as a man who reads other people's letters. Flaw: Cannot leave a secret alone once he has found it.
+Pekka (he/him). Wants: A quiet old age; To be paid on time. Fear: The board taking the building. Flaw: Believes every favour is a loan.
+
+The chapter posed this choice for Suvi:
+One: Keep Pekka's goodwill by saying nothing about the rent.
+The other: Learn where the ledger is by pressing him in front of Aino.
+
+The beat planned for this to come to light: The cellar under the shop floods on the spring tide. Planned to be learned by: Suvi and Aino.
+
+Where they stand now. This is where each person stands at the start of the chapter. It is newer than their portrait; where the two differ, follow this.
+Suvi now believes Pekka sold the ledger's location to the board; has decided to keep the key to herself.
+Aino now fears that Suvi has seen him reading her letters.
+
+What a first reading of the chapter found:
+What happened: [what the Events pass found]
+
+The live entanglements, each with its handle:
+Ties (you may change: bond, edge):
+T1. Suvi toward Aino. Bond: She tolerates him and half-trusts him. Edge: She wants to know whom he reports to.
+T2. Suvi toward Pekka. Bond: Tenant and landlord of forty years' standing. Edge: She owes him two weeks' rent and needs him to talk about the ledger.
+T3. Aino toward The Harbour Board [offstage]. Bond: He works for them and wants to belong. Edge: He has been asked to report who visits the shop.
+
+Holdings (you may change: held_by):
+H1. The ledger is held by Pekka.
+H2. The brass key is held by Suvi.
+
+Knowledge (you may change: status, to knows, suspects or misled):
+K1. Pekka knows: The dock repairs were paid for by the shopkeepers, not the board.
+K2. Suvi has been misled about: The cellar under the shop floods on the spring tide.
+K3. Aino suspects: The ledger is in Pekka's rooms.
+
+Pressures (you may change: what, next_move, bears_on):
+P1. The board wants the ledger before the next first-day visit and will close the shop to get it (from The Harbour Board [offstage]; bears on Suvi, Pekka). Next move: Send a clerk to count the shop's stock on Friday.
+P2. Winter is coming and the shop has not yet paid its coal (from the season; bears on Suvi).
+
+The chapter:
+[the chapter would be here]
+
+Now say who moved and what changed, as the reply format asks.
+
+---- reply shape ----
+{
+ "type": "object",
+ "properties": {
+  "shifts": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "character": {
+      "type": "string",
+      "enum": [
+       "Suvi",
+       "Aino",
+       "Pekka"
+      ]
+     },
+     "believes": {
+      "type": "string"
+     },
+     "fears": {
+      "type": "string"
+     },
+     "wants": {
+      "type": "string"
+     },
+     "refuses": {
+      "type": "string"
+     },
+     "decided": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "character"
+    ],
+    "additionalProperties": false
+   },
+   "maxItems": 5
+  },
+  "changes": {
+   "type": "array",
+   "items": {
+    "anyOf": [
+     {
+      "type": "object",
+      "properties": {
+       "section": {
+        "const": "ties"
+       },
+       "item": {
+        "type": "string",
+        "enum": [
+         "T1",
+         "T2",
+         "T3"
+        ]
+       },
+       "field": {
+        "type": "string",
+        "enum": [
+         "bond",
+         "edge"
+        ]
+       },
+       "value": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "section",
+       "item",
+       "field",
+       "value"
+      ],
+      "additionalProperties": false
+     },
+     {
+      "type": "object",
+      "properties": {
+       "section": {
+        "const": "holdings"
+       },
+       "item": {
+        "type": "string",
+        "enum": [
+         "H1",
+         "H2"
+        ]
+       },
+       "field": {
+        "type": "string",
+        "enum": [
+         "held_by"
+        ]
+       },
+       "value": {
+        "type": "string",
+        "enum": [
+         "Suvi",
+         "Aino",
+         "Pekka",
+         "The Harbour Board",
+         "The Dockhands' Brotherhood",
+         "The Docks",
+         "The Shop",
+         "The Board House"
+        ]
+       }
+      },
+      "required": [
+       "section",
+       "item",
+       "field",
+       "value"
+      ],
+      "additionalProperties": false
+     },
+     {
+      "type": "object",
+      "properties": {
+       "section": {
+        "const": "knowledge"
+       },
+       "item": {
+        "type": "string",
+        "enum": [
+         "K1",
+         "K2",
+         "K3"
+        ]
+       },
+       "field": {
+        "type": "string",
+        "enum": [
+         "status"
+        ]
+       },
+       "value": {
+        "type": "string",
+        "enum": [
+         "knows",
+         "suspects",
+         "misled"
+        ]
+       }
+      },
+      "required": [
+       "section",
+       "item",
+       "field",
+       "value"
+      ],
+      "additionalProperties": false
+     },
+     {
+      "type": "object",
+      "properties": {
+       "section": {
+        "const": "pressures"
+       },
+       "item": {
+        "type": "string",
+        "enum": [
+         "P1",
+         "P2"
+        ]
+       },
+       "field": {
+        "type": "string",
+        "enum": [
+         "what",
+         "next_move",
+         "bears_on"
+        ]
+       },
+       "value": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "array",
+          "items": {
+           "type": "string",
+           "enum": [
+            "Suvi",
+            "Aino",
+            "Pekka",
+            "The Harbour Board",
+            "The Dockhands' Brotherhood"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      "required": [
+       "section",
+       "item",
+       "field",
+       "value"
+      ],
+      "additionalProperties": false
+     }
+    ]
+   }
+  },
+  "new_knowledge": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "person": {
+      "type": "string",
+      "enum": [
+       "Suvi",
+       "Aino",
+       "Pekka",
+       "The Harbour Board",
+       "The Dockhands' Brotherhood"
+      ]
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "knows",
+       "suspects",
+       "misled"
+      ]
+     },
+     "rule": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "Rent is due on the first of the week.",
+         "The dock repairs were paid for by the shopkeepers, not the board.",
+         "The cellar under the shop floods on the spring tide."
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fact": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "person",
+     "status",
+     "rule",
+     "fact"
+    ],
+    "additionalProperties": false
+   },
+   "maxItems": 3
+  }
+ },
+ "required": [
+  "shifts",
+  "changes",
+  "new_knowledge"
+ ],
+ "additionalProperties": false
+}

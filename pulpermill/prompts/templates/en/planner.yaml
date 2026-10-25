@@ -1,0 +1,52 @@
+# The planner (P): think in free text, then fill the beat. Drafted in docs/prompts/02-writers-brief.md, section 3.
+name: planner
+version: "planner-0.1"
+
+job: |
+  You are planning one chapter of a novel. A chapter is a scene, not a summary: someone wants something, something stands in the way, they have to choose, and by the end something is different. A writer will write the chapter from your plan, so make the plan a scene the writer can play, with people who act from who they are.
+  Below is everything that is true so far. Plan the next chapter.
+
+# Short lines the planner is given about how to use the numbers the code worked out.
+use_of_numbers: |
+  Lean towards the places and things that have been used least, when they fit the scene.
+  Bring a hidden truth to light only when the story is ready for it.
+  A payoff resolves one of the open plants, and a chapter that gives it a natural home is the one to choose.
+
+arc:
+  early: "This is an early chapter: open doors, set up what the story will lean on, and let the protagonist commit."
+  middle: "This is a middle chapter: tighten the squeeze, and let what the protagonist chose earlier cost them."
+  late: "This is a late chapter: pay off what was set up, and let the story's threads pull together."
+  last: "This is the last chapter: bring the story to its close and settle what the story set in motion."
+goal_ended: "The goal has ended. Plan a chapter that winds the story down, with no goal change."
+
+think_steps: |
+  Think in these steps, briefly, in plain sentences, about 300 words in all.
+  1. Where the story stands: what the protagonist wants, what has changed, and what the chapter after this one needs to be possible.
+  2. Three directions for this chapter, one line each. Each should put the protagonist's want against something specific in this world.
+  3. Pick one and say why: what makes it fresh, and why it follows from the last chapter's turn instead of repeating it.
+  4. The choice: the two things the protagonist wants or values that cannot both be had, and what each one costs.
+  5. What is different at the end, and the last moment of the chapter.
+  6. Whether to plant something for later, pay off an open plant, or bring a hidden truth to light, and why now.
+  7. In one line, how the chapter should be told: where to slow down.
+
+your_plan_lead: "Your plan for this chapter:"
+
+beat_guide: |
+  Fill the beat from your plan. Write each field as a plain sentence a writer could act on, with the names of people and places.
+  - The opening place and time put the scene already in motion.
+  - What the protagonist is after is a goal they can act on in scenes, such as getting, finding or stopping something. It narrows one of their wants.
+  - What blocks it grows out of the last chapter's turn, or out of the pressure in focus.
+  - Each choice is something the protagonist wants or values. Picking one costs the other.
+  - The turn says what is different by the end, and it differs from the earlier turns.
+  - The ending is a moment that leaves a question open.
+  - Use a shift from the allowed list, a reveal from the hidden truths still waiting, and a payoff from the open plants.
+  - A reveal names who learns it. A goal change appears only when the story moves its goal, and a redefined goal says what it has become.
+  Reply with the beat only.
+
+retry: |
+  Your first plan was refused for these reasons:
+  {problems}
+  Here is your first plan:
+  {thinking}
+  {beat}
+  Keep what worked, and change only what the reasons say.

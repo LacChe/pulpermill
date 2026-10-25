@@ -51,3 +51,9 @@ events:
   full_chapters_planner: 4
 beat:
   field: 500
+chapter:
+  # The section-by-section writer (inventory D5). The backend uses these; the prompts only need the words per section.
+  target_words: 3000
+  sections: 4
+  tail_words: 300            # how much of the chapter so far each later section is shown
+  short_ratio: 0.8           # an extra section is added when the words so far are under this share of the pace

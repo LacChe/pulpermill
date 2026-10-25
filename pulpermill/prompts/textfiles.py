@@ -26,6 +26,12 @@ def prompt_text(name: str, lang: str = "en") -> dict:
 
 
 @lru_cache(maxsize=None)
+def template(name: str, lang: str = "en") -> dict:
+    """One prompt template file (templates/en/<name>.yaml). Its `version` is recorded with every evaluation result."""
+    return _load(HERE / "templates" / lang / f"{name}.yaml")
+
+
+@lru_cache(maxsize=None)
 def limits() -> dict:
     return _load(HERE / "limits.yaml")
 

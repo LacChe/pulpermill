@@ -1,0 +1,30 @@
+[style_fit style_fit-0.1, stage: None]
+
+A story is about to start, and its voice has been chosen. Decide whether the protagonist can carry a story told this way. A very guarded protagonist is hard to tell in the first person, a very talkative one is hard to tell in a clinical, external voice, and a protagonist with no inner life is hard to tell from deep inside their mind. Judge only the fit between the person and the voice.
+Say whether it fits. When it does not, say in one sentence which part to look at, in English.
+
+How the story will be told:
+Narrate in the first person, from inside the protagonist's own voice, knowing only what they know.
+
+The protagonist:
+The character's name is Suvi.
+
+Now say whether the protagonist fits the voice, as the reply format asks.
+
+---- reply shape ----
+{
+ "type": "object",
+ "properties": {
+  "fits": {
+   "type": "boolean"
+  },
+  "message": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "fits",
+  "message"
+ ],
+ "additionalProperties": false
+}

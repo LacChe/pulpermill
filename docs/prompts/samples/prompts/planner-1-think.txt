@@ -1,0 +1,113 @@
+[planner_think planner-0.1, stage: think]
+
+You are planning one chapter of a novel. A chapter is a scene, not a summary: someone wants something, something stands in the way, they have to choose, and by the end something is different. A writer will write the chapter from your plan, so make the plan a scene the writer can play, with people who act from who they are.
+Below is everything that is true so far. Plan the next chapter.
+
+The tone
+The genre and feeling of this story: Harbour noir, small-town and damp. Let it shape mood, conventions and texture, while events follow from the characters and situation. The narrator's habit of attention: She notices what people do with their hands when they lie. Meaning emerges from what the narrator notices and how it is weighed, and themes stay implicit in the telling. Let this decide what the narrator notices, in every scene. Humor is dry: understated, deadpan, found in precise observation. The narrator is wry: amused, observant, with a sideways view of events. Balance action and reflection, slowing for what matters and moving on quickly otherwise.
+Plan scenes that suit this story.
+
+The world
+The setting is called The Salt Coast. Era and technology in The Salt Coast: Late steam age: coal barges, telegraph lines to the capital, oil lamps on the quay, no telephones. Everyday life in The Salt Coast: Everything arrives by water and is taxed twice. Rent is paid weekly in coin, and a missed week is remembered for years.
+
+Places in The Salt Coast, each shaping the people in it:
+The Docks: Wet planks, coal dust and shouting. Crates stacked three high along the quay. What it does to people there: Everyone is watched, and everyone pretends not to watch. Used in 2 earlier chapters.
+The Shop: A narrow harbour shop with a stove, a counter and a back door to the yard. What it does to people there: It makes people talk, because it is warm. Used in 3 earlier chapters.
+The Board House: A grey stone building at the head of the quay, with one lit window at all hours. What it does to people there: People lower their voices as they pass. Used in 1 earlier chapter.
+
+Things that matter in The Salt Coast:
+The ledger: A fat black ledger with a cracked spine and a ribbon marker. Why it matters: It records who really paid for the dock repairs, and who did not. Held by Pekka. Used in 2 earlier chapters.
+The brass key: A small brass key on a leather cord. Why it matters: It opens the cellar under the shop. Held by Suvi. Not used in any chapter yet.
+
+Groups with power in The Salt Coast:
+The Harbour Board: Seven men who govern the waterfront. It holds power by Licensing every boat, crate and cellar. Ordinary people feel it as a fee, a stamp and a visit on the first of the month.
+The Dockhands' Brotherhood: A loose union of dock workers. It holds power by Slowing the work down when it is crossed. Ordinary people feel it as a hush in the tavern when a board man walks in.
+
+What is true in The Salt Coast:
+Rent is due on the first of the week (common knowledge). Cost: A missed week is a debt the landlord can call in at any time. When broken: It is punished: the landlord may take the goods.
+The dock repairs were paid for by the shopkeepers, not the board (known only to a few). Cost: Saying so out loud invites a visit from the board. When broken: It is punished: licences are pulled.
+The cellar under the shop floods on the spring tide (widely believed but false; the truth is: the cellar was sealed to hide the board's old accounts and has never flooded). Cost: Anything stored there is lost. When broken: It is shameful: the story is kept alive.
+
+The people on stage
+The character's name is Suvi. Suvi is a woman, referred to as she and her. Who Suvi is: Runs the harbour shop her mother left her. Counts everything twice and trusts nothing she has not counted.
+Suvi wants several things that cannot all be satisfied at once: Keep the shop open; Know the truth about her mother's death. Suvi avoids and protects herself from: Being the one who lets the shop fall. Suvi holds a false belief or blind spot that sabotages her own aims: Believes that anyone who is kind to her wants something. Suvi holds sacred, and keeps faith with: A debt paid in full; Telling the truth to her face.
+Suvi is good at: Reads a ledger the way other people read faces. Suvi can be hurt or caught out by: A kind word from someone she has already written off. Formative background: Grew up behind the counter. Her mother died the winter the harbour board changed the dock rules.
+
+The character's name is Aino. Aino is a man, referred to as he and him. Who Aino is: A dock clerk who talks too much when he is nervous and too little when he is sure.
+Aino wants several things that cannot all be satisfied at once: A post at the harbour board; Be trusted by someone. Aino avoids and protects himself from: Being found out as a man who reads other people's letters. Aino holds a false belief or blind spot that sabotages his own aims: Cannot leave a secret alone once he has found it. Aino holds sacred, and keeps faith with: Loyalty to whoever fed him first.
+Aino is good at: Remembers every name on every crate that has crossed the docks. Aino can be hurt or caught out by: Anyone who says they believe in him. Formative background: Came up from the south on a coal barge at sixteen.
+
+The character's name is Pekka. Pekka is a man, referred to as he and him. Who Pekka is: Owns the building and the rooms above the shop. Sells what he knows by the spoonful.
+Pekka wants several things that cannot all be satisfied at once: A quiet old age; To be paid on time. Pekka avoids and protects himself from: The board taking the building. Pekka holds a false belief or blind spot that sabotages his own aims: Believes every favour is a loan. Pekka holds sacred, and keeps faith with: Keeping his own counsel.
+Pekka is good at: Knows who owes whom along the whole waterfront. Pekka can be hurt or caught out by: Talk of his late wife. Formative background: Has let rooms on this street for forty years.
+
+How they are tied together
+Ties between people and groups:
+Suvi toward Aino: She tolerates him and half-trusts him. Right now, she wants to know whom he reports to.
+Suvi toward Pekka: Tenant and landlord of forty years' standing. Right now, she owes him two weeks' rent and needs him to talk about the ledger.
+Aino toward The Harbour Board: He works for them and wants to belong. Right now, he has been asked to report who visits the shop.
+
+Who holds or controls what:
+Pekka holds or controls The ledger.
+Suvi holds or controls The brass key.
+
+What each person can and cannot act on, given what they know:
+Pekka knows: The dock repairs were paid for by the shopkeepers, not the board.
+Suvi has been misled about: The cellar under the shop floods on the spring tide.
+Aino suspects: The ledger is in Pekka's rooms.
+
+Pressures on the story:
+The board wants the ledger before the next first-day visit and will close the shop to get it (from The Harbour Board; bears on Suvi, Pekka). Next move: Send a clerk to count the shop's stock on Friday.
+Winter is coming and the shop has not yet paid its coal (from the season; bears on Suvi).
+Aino is feeding the board names (from Aino; bears on Suvi). Next move: Report who visited the shop on Friday.
+
+Where they stand now. This is where each person stands at the start of the chapter. It is newer than their portrait; where the two differ, follow this.
+Suvi now believes Pekka sold the ledger's location to the board.
+
+Where the story stands
+The story follows Suvi.
+The protagonist is now trying to: Find the ledger before the harbour board does.
+If the protagonist does nothing or quits: If the board finds it first, the shop and everyone who drinks there go under.
+This is chapter 5 of 8.
+
+The story so far:
+Chapter 1. Suvi finds the shop's stock miscounted by a crate. She suspects the board's clerk. Aino mentions a ledger in passing. By its end: Suvi knows someone has been in the shop at night.
+Chapter 2. Suvi questions Aino on the docks. He lets slip that the board wants a ledger. She finds the brass key in her coat pocket and does not know how it got there. By its end: Suvi now has the key and a reason to doubt her own memory.
+Chapter 3. Suvi and Pekka argue over the rent. Pekka hints that he can talk about the old repairs for a price. A board clerk visits and leaves with nothing. By its end: Pekka has named a price.
+Chapter 4. Aino warns Suvi that the board will count the stock on Friday. Suvi searches the cellar with the key and finds it dry. She tells no one. By its end: The cellar story is false, and Suvi alone knows it.
+
+Earlier chapters' plans, as a timeline:
+Chapter 3: at The Docks, Monday noon. It turned on: Pekka names a price. (easier)
+Chapter 4: at The Shop, Friday night. It turned on: Suvi finds the cellar dry. (harder)
+
+Elsewhere
+While the cast were elsewhere, The board closed the east market gate. It reaches the protagonist like this: Suvi has to take the long way round. Plan around it.
+
+What is set for this chapter
+The pressure the chapter turns on: The board wants the ledger before the next first-day visit and will close the shop to get it.
+Either kind of chapter is allowed.
+Plants still open (a payoff resolves one of these):
+The brass key goes missing from its nail (set up in chapter 1)
+A second lock on the cellar's inner door (set up in chapter 4)
+Hidden truths that may still come to light:
+The dock repairs were paid for by the shopkeepers, not the board.
+People believe: The cellar under the shop floods on the spring tide. The truth: The cellar was sealed to hide the board's old accounts and has never flooded.
+How recently each person on stage has appeared: Suvi last in chapter 4; Aino last in chapter 4; Pekka has not appeared yet.
+
+Lean towards the places and things that have been used least, when they fit the scene.
+Bring a hidden truth to light only when the story is ready for it.
+A payoff resolves one of the open plants, and a chapter that gives it a natural home is the one to choose.
+
+This is a middle chapter: tighten the squeeze, and let what the protagonist chose earlier cost them.
+
+Think in these steps, briefly, in plain sentences, about 300 words in all.
+1. Where the story stands: what the protagonist wants, what has changed, and what the chapter after this one needs to be possible.
+2. Three directions for this chapter, one line each. Each should put the protagonist's want against something specific in this world.
+3. Pick one and say why: what makes it fresh, and why it follows from the last chapter's turn instead of repeating it.
+4. The choice: the two things the protagonist wants or values that cannot both be had, and what each one costs.
+5. What is different at the end, and the last moment of the chapter.
+6. Whether to plant something for later, pay off an open plant, or bring a hidden truth to light, and why now.
+7. In one line, how the chapter should be told: where to slow down.
+
+---- reply shape ----
+(free text)

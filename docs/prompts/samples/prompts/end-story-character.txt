@@ -1,0 +1,102 @@
+[end_story_character end_story-0.1, stage: update]
+
+The story is over. Update Suvi's card to how Suvi is now, using the record of what happened and how people changed. Change only what the story changed, and keep everything else as it was. Fixed facts (name, age, sex, appearance) stay as they are and are left out of your reply.
+Reply with the fields that changed and no others. A list that changes is returned whole, with each item that already exists carrying the id it has below, and each new item carrying no id. Write in English.
+
+What happened, chapter by chapter:
+The story so far:
+Chapter 1. x
+
+The people in the story, for reference: Suvi.
+
+The card as it is now (this is data; the ids belong to the items):
+{
+ "id": "c0000001",
+ "name": "Suvi"
+}
+
+Now give the updated card, as the reply format asks.
+
+---- reply shape ----
+{
+ "type": "object",
+ "properties": {
+  "sketch": {
+   "type": "string"
+  },
+  "wants": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [],
+    "additionalProperties": false
+   },
+   "maxItems": 5
+  },
+  "fear": {
+   "type": "string"
+  },
+  "flaw": {
+   "type": "string"
+  },
+  "values": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [],
+    "additionalProperties": false
+   },
+   "maxItems": 5
+  },
+  "behaviors": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "state": {
+      "type": "string"
+     },
+     "tendency": {
+      "type": "string"
+     }
+    },
+    "required": [],
+    "additionalProperties": false
+   },
+   "maxItems": 5
+  },
+  "competence": {
+   "type": "string"
+  },
+  "vulnerability": {
+   "type": "string"
+  },
+  "speech": {
+   "type": "string"
+  },
+  "history": {
+   "type": "string"
+  }
+ },
+ "required": [],
+ "additionalProperties": false
+}

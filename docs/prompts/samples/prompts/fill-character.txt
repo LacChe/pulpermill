@@ -1,0 +1,126 @@
+[fill fill-0.1, stage: None]
+
+You are filling in one card of a story-planning tool from the writer's own words. The writer will read and edit every field, so fill what the words support, and write each field the way the field's guide asks.
+Write in English. Fill a field only when the words give you something for it, and leave the rest out. Name people, places and things by their names.
+
+This card. You may invent: The person themselves. Leave out: Other people, places, objects and relationships (they belong to other cards).
+
+The card is Character. Its fields:
+- name: What the narration calls them.
+- age: A concrete number, so the story never drifts.
+- sex: Fixes pronouns and avoids contradictions. One of: female (Female), male (Male), other (Other).
+- appearance: Concrete, checkable details: build, hair, face, distinguishing marks, usual dress. State facts, not impressions. For example: Tall and thin, close-cropped grey hair, a burn scar across the left wrist.
+- sketch: One or two sentences on what this person is like. Describe the person, not just a role, and if you can, include one contradiction that doesn't fit the type (a brutal enforcer who keeps bees). For example: A brutal enforcer who keeps bees; A soft-spoken forger who talks to her plants when she thinks she is alone.
+- wants: Two to five abstract desires that can't all be satisfied at once (succeed at school, be left alone). Nothing concrete and nobody else: aims toward a particular person live in Entanglements. The conflict between them is what drives the character.
+    - text: One desire, in a few words. For example: be left alone; succeed at school.
+- fear: What they avoid or protect themselves from.
+- flaw: A false belief or blind spot that sabotages what they want.
+- values: What they hold sacred or will not betray, phrased positively ('keeps their word even when it ruins them').
+    - text: One thing they protect, phrased positively. For example: keeps their word even when it ruins them.
+- behaviors: How they act in different inner states. Include at least one calm or happy state.
+    - state: An inner or broad social state, like 'feels watched', 'is being praised' or 'is out of their depth'. Not a specific situation. For example: feels watched; is being praised.
+    - tendency: A leaning or habit, like 'go quiet' or 'busy their hands'. Not one particular act. For example: go quiet; busy their hands.
+- competence: What they're good at.
+- vulnerability: Where they can be hurt or caught out, including shame that shapes behavior.
+- speech: How they talk: rhythm, vocabulary, what they never say.
+- history: Short, formative background that explains the flaw and the wants. No named people, places or objects from any story. For example: Raised in a boarding house where nothing was ever hers to keep.
+
+The card as it stands now (keep what is already written unless the words say otherwise):
+name: Suvi
+
+The writer's note for this card:
+An archivist.
+
+Now fill the card, as the reply format asks.
+
+---- reply shape ----
+{
+ "type": "object",
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "age": {
+   "type": "integer"
+  },
+  "sex": {
+   "type": "string",
+   "enum": [
+    "female",
+    "male",
+    "other"
+   ]
+  },
+  "appearance": {
+   "type": "string"
+  },
+  "sketch": {
+   "type": "string"
+  },
+  "wants": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [],
+    "additionalProperties": false
+   },
+   "maxItems": 5
+  },
+  "fear": {
+   "type": "string"
+  },
+  "flaw": {
+   "type": "string"
+  },
+  "values": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [],
+    "additionalProperties": false
+   },
+   "maxItems": 5
+  },
+  "behaviors": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "state": {
+      "type": "string"
+     },
+     "tendency": {
+      "type": "string"
+     }
+    },
+    "required": [],
+    "additionalProperties": false
+   },
+   "maxItems": 5
+  },
+  "competence": {
+   "type": "string"
+  },
+  "vulnerability": {
+   "type": "string"
+  },
+  "speech": {
+   "type": "string"
+  },
+  "history": {
+   "type": "string"
+  }
+ },
+ "required": [],
+ "additionalProperties": false
+}

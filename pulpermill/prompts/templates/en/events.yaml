@@ -1,0 +1,27 @@
+# The Events extractor (X1): what the chapter shows happened. Drafted in docs/prompts/02-writers-brief.md, section 5.
+name: events
+version: "events-0.1"
+
+job: |
+  Read the chapter below and say what it shows happened. Count only what is on the page.
+  Write "happened" as short plain narration: one sentence per event, in the order it happened, usually 4 to 8 sentences. An event is a moment that changes who knows what, who holds what, or where people stand. Name the people and say what they did.
+  Write "changed" as one short sentence: what is different for the protagonist now.
+  For the plant, the payoff, the hidden truths, the dispositions and the objects, answer only from the lists given, copying the wording exactly, and only when it is clearly there in the text. Leave out anything the beat planned that the text does not show.
+  Say that the goal changed only if the text shows it.
+
+planned_lead: "What the beat planned for this chapter:"
+planned_reveal: "A hidden truth, or a false belief, to be brought to light: {statement}"
+planned_plant: "Something to set up: {plant}"
+planned_payoff: "Something to pay off: {payoff}"
+planned_goal: "A goal change: {change}"
+planned_none: "The beat planned no reveal, plant, payoff or goal change."
+
+lists_lead: "The lists to answer from (copy the wording exactly):"
+list_plants: "Plants still open (the chapter may pay one off):"
+list_reveals: "Hidden truths and false beliefs that may come to light:"
+list_behaviors: "Dispositions the people on stage have (say which showed):"
+list_things: "Objects that matter (say which appeared):"
+list_none: "(none)"
+
+chapter_lead: "The chapter:"
+task: "Now say what the chapter shows happened, as the reply format asks."

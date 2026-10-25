@@ -1,0 +1,14 @@
+# Offstage pass (O): what the background does between chapters. Drafted in docs/prompts/02-writers-brief.md, section 4.
+name: offstage
+version: "offstage-0.1"
+
+job: |
+  Between chapters the world moves without the protagonist. Choose one thing a group or a place does that the main cast has not seen, and say how it reaches the protagonist this chapter (a rumour, a notice, a changed price, a closed road).
+  It is about a group or a place, and the main cast stays out of it. Pick something that raises or reshapes the pressure, and let it come from what that group wants. Write each part in one or two plain sentences, in {language_name}.
+  This is chapter {chapter}{of_total}.
+
+spotlight_line: "The pressure in focus this chapter is: {value} Choose a move that lives outside it."
+cast_lead: "The people on stage this chapter: {names}."
+groups_lead: "The groups and places that may change:"
+last_lead: "What just happened in the last chapter:"
+task: "Now say what the background did and how it reaches the protagonist, as the reply format asks."

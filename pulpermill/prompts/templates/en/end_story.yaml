@@ -1,0 +1,18 @@
+# End of story (E): update the characters and the world to how they are after the story. It reads the summaries only.
+name: end_story
+version: "end_story-0.1"
+
+job_character: |
+  The story is over. Update {name}'s card to how {name} is now, using the record of what happened and how people changed. Change only what the story changed, and keep everything else as it was. Fixed facts (name, age, sex, appearance) stay as they are and are left out of your reply.
+  Reply with the fields that changed and no others. A list that changes is returned whole, with each item that already exists carrying the id it has below, and each new item carrying no id. Write in {language_name}.
+
+job_world: |
+  The story is over. Update the world to how it is now, using the record of what happened. Change only what the story changed, and keep everything else as it was.
+  Reply with the fields that changed and no others. A list that changes is returned whole, with each item that already exists carrying the id it has below, and each new item carrying no id. Write in {language_name}.
+
+story_lead: "What happened, chapter by chapter:"
+shifts_lead: "How people changed, chapter by chapter:"
+shift_line: "Chapter {chapter}, {character}: {parts}"
+card_lead: "The card as it is now (this is data; the ids belong to the items):"
+cast_lead: "The people in the story, for reference: {names}."
+task: "Now give the updated card, as the reply format asks."

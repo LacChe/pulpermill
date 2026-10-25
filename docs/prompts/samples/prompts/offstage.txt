@@ -1,0 +1,35 @@
+[offstage offstage-0.1, stage: offstage]
+
+Between chapters the world moves without the protagonist. Choose one thing a group or a place does that the main cast has not seen, and say how it reaches the protagonist this chapter (a rumour, a notice, a changed price, a closed road).
+It is about a group or a place, and the main cast stays out of it. Pick something that raises or reshapes the pressure, and let it come from what that group wants. Write each part in one or two plain sentences, in English.
+This is chapter 2 of 8.
+
+The people on stage this chapter: Suvi.
+
+The groups and places that may change:
+Groups with power in this world:
+The Harbour Board:
+
+What just happened in the last chapter:
+The story so far:
+Chapter 1. Suvi found the ledger's cover.
+
+Now say what the background did and how it reaches the protagonist, as the reply format asks.
+
+---- reply shape ----
+{
+ "type": "object",
+ "properties": {
+  "did": {
+   "type": "string"
+  },
+  "reach": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "did",
+  "reach"
+ ],
+ "additionalProperties": false
+}
