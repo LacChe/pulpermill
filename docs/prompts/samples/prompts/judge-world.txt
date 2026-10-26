@@ -1,24 +1,24 @@
-[judge judge-0.2, stage: None]
+[judge judge-0.3, stage: None]
 
-You are checking one rule on part of a story-planning card. Read the rule, look at the items, and name only the items that break the rule. An item that keeps the rule is left out. When every item keeps the rule, name none.
+You are checking one rule on part of a story-planning card. Read the rule, then check each item on its own: does it keep the rule or break it?
 Write nothing but the reply the format asks for.
 
-The rule: everyday life says nothing is scarce, expensive or contested, so there is no normal for the story to break
+The rule is broken when: everyday life says nothing is scarce, expensive or contested, so there is no normal for the story to break
 
 The question to ask of each item: Does this text say what is scarce, expensive or contested in ordinary life?
 
-An item breaks the rule when its answer to that question is no. An item whose answer is the other one keeps the rule and is left out.
+An item keeps the rule when its answer to that question is yes. Any other answer means it breaks the rule.
 
 The items to check, each with its handle:
 Everyday life: Ordinary.
 
-Now name the items that break the rule, as the reply format asks.
+Now give one check for each item, as the reply format asks: its field, its handle if it has one, and whether it keeps the rule.
 
 ---- reply shape ----
 {
  "type": "object",
  "properties": {
-  "hits": {
+  "checks": {
    "type": "array",
    "items": {
     "type": "object",
@@ -38,18 +38,22 @@ Now name the items that break the rule, as the reply format asks.
         "type": "null"
        }
       ]
+     },
+     "keeps_the_rule": {
+      "type": "boolean"
      }
     },
     "required": [
      "field",
-     "item"
+     "item",
+     "keeps_the_rule"
     ],
     "additionalProperties": false
    }
   }
  },
  "required": [
-  "hits"
+  "checks"
  ],
  "additionalProperties": false
 }

@@ -257,8 +257,11 @@ def shifts_schema(req: dict, handles: dict[str, dict]) -> Schema:
 # ---- The rest -------------------------------------------------------------------------------------------------------
 
 def judge_schema(fields: list[str], handles: list[str]) -> Schema:
-    hit = obj({"field": one_of(fields), "item": maybe(one_of(handles)) if handles else maybe(text())})
-    return obj({"hits": {"type": "array", "items": hit}})
+    """One check per item, each saying outright whether it keeps the rule. The model sees only the key names (the grammar
+    forces them), so they say what is asked: a list named "hits" was read as "the items that match the question"."""
+    check = obj({"field": one_of(fields), "item": maybe(one_of(handles)) if handles else maybe(text()),
+                 "keeps_the_rule": {"type": "boolean"}})
+    return obj({"checks": {"type": "array", "items": check}})
 
 
 def style_fit_schema() -> Schema:

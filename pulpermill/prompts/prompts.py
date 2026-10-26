@@ -410,7 +410,7 @@ def judge_prompts(req: dict) -> list[Prompt]:
             elif value not in (None, "", []):
                 blocks.append(f"{head} {s(value)}")
         context = _judge_context(rule, related, names)
-        parts = [j["job"], j["rule_lead"].format(when=rule.when), j["question_lead"].format(question=question), j["breaks_lead"].format(answer=breaks)]
+        parts = [j["job"], j["rule_lead"].format(when=rule.when), j["question_lead"].format(question=question), j["keeps_lead"].format(answer="yes" if breaks == "no" else "no")]
         if context:
             parts.append(j["context_lead"] + "\n" + "\n".join(context))
         parts += [j["items_lead"] + "\n" + "\n\n".join(blocks), j["task"]]
@@ -424,9 +424,11 @@ def assemble_judge_reply(prompts: list[Prompt], answers: list[dict]) -> dict:
     results = []
     for prompt, answer in zip(prompts, answers):
         hits = []
-        for hit in answer.get("hits") or []:
-            item = prompt.meta["handles"].get(hit.get("item")) if hit.get("item") else None
-            hits.append({"field": hit["field"], "item": item, "key": None})
+        for check in answer.get("checks") or []:
+            if check.get("keeps_the_rule") is not False:           # a hit is an item that breaks the rule
+                continue
+            item = prompt.meta["handles"].get(check.get("item")) if check.get("item") else None
+            hits.append({"field": check["field"], "item": item, "key": None})
         results.append({"rule": prompt.meta["rule"], "hits": hits})
     return {"ok": True, "results": results}
 

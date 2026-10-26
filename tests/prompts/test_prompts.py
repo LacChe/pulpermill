@@ -220,8 +220,8 @@ def test_judge_prompts_one_per_rule_with_handles():
     for p in prompts:
         no_leaks(p.text)
         assert p.meta["rule"] in {r["id"] for r in req["rules"]} and p.version.startswith("judge-")
-        assert valid({"hits": []}, p.schema)
-    out = P.assemble_judge_reply(prompts, [{"hits": []}] * len(prompts))
+        assert valid({"checks": []}, p.schema)
+    out = P.assemble_judge_reply(prompts, [{"checks": []}] * len(prompts))
     parsed = contract.parse_reply("judge", out)
     assert [r.rule for r in parsed.results] == [r["id"] for r in req["rules"]]
 
@@ -233,8 +233,8 @@ def test_judge_hits_point_at_ids():
     prompts = P.judge_prompts(req)
     p = prompts[0]
     assert p.meta["handles"] == {"wants.1": "w1", "wants.2": "w2"}
-    out = P.assemble_judge_reply(prompts, [{"hits": [{"field": "wants", "item": "wants.2"}]}])
-    assert out["results"][0]["hits"][0]["item"] == "w2"
+    out = P.assemble_judge_reply(prompts, [{"checks": [{"field": "wants", "item": "wants.1", "keeps_the_rule": True}, {"field": "wants", "item": "wants.2", "keeps_the_rule": False}]}])
+    assert out["results"][0]["hits"] == [{"field": "wants", "item": "w2", "key": None}]
 
 
 def test_style_fit_and_offstage_prompts():

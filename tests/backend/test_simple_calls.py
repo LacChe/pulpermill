@@ -59,17 +59,17 @@ def test_a_character_fill_reads_its_list_fields():
 
 def test_judge_gives_one_result_per_rule_and_each_pass_is_measured_first():
     request = vector("judge_world")
-    ctx, engine = ctx_with(json.dumps({"hits": [{"field": "everyday_life", "item": None}]}))
+    ctx, engine = ctx_with(json.dumps({"checks": [{"field": "everyday_life", "item": None, "keeps_the_rule": False}]}))
     reply = simple.judge(request, ctx)
     contract.parse_reply("judge", reply)
     assert [r["rule"] for r in reply["results"]] == [rule.id for rule in request.rules]
     assert reply["results"][0]["hits"] == [{"field": "everyday_life", "item": None, "key": None}]
-    ctx, _ = ctx_with(json.dumps({"hits": []}))
+    ctx, _ = ctx_with(json.dumps({"checks": [{"field": "everyday_life", "item": None, "keeps_the_rule": True}]}))
     assert simple.judge(request, ctx)["results"][0]["hits"] == []
 
 
 def test_judge_with_a_field_the_rule_did_not_ask_about_is_retried():
-    ctx, engine = ctx_with(json.dumps({"hits": [{"field": "elsewhere", "item": None}]}), json.dumps({"hits": []}))
+    ctx, engine = ctx_with(json.dumps({"checks": [{"field": "elsewhere", "item": None, "keeps_the_rule": False}]}), json.dumps({"checks": []}))
     assert simple.judge(vector("judge_world"), ctx)["results"][0]["hits"] == [] and engine.calls == 2
 
 
