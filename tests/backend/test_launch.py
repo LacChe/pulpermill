@@ -5,7 +5,7 @@ try:
     import uvicorn  # noqa: F401
     import requests
 except ImportError:
-    pytest.skip("uvicorn and requests are needed")
+    pytest.skip("uvicorn and requests are needed", allow_module_level=True)
 
 from pulpermill.backend.config import Config
 from pulpermill.backend.engine import FakeEngine
