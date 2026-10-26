@@ -71,7 +71,7 @@ export function blockedByPage(setting, pageProtocol) {
 
 export const DEFAULT_TIMEOUTS = {
   status: 5000, fill: 180000, judge: 180000, style_fit: 120000,
-  offstage: 120000, plan: 300000, generate: 900000, end_story: 600000,
+  offstage: 120000, plan: 300000, generate: 1800000, end_story: 600000,
 };
 
 // The fallback when the body is not an answer. It agrees with HTTP_STATUS in pulpermill/schema/contract.py.

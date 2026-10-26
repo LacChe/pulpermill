@@ -50,7 +50,9 @@ class Config:
     host: str = "127.0.0.1"
     port: int = 8000
     poll_interval: float = 0.1              # how often a running call looks for a client that went away (seconds)
-    prompt_version_note: str = ""           # free text recorded with run records (M6)
+    prompt_version_note: str = ""           # free text recorded in the run log's first line
+    log_path: str | None = None            # one JSON line per call (runlog.py); None = keep in memory only. The launcher sets it.
+    max_body_bytes: int = 4_000_000         # a request larger than this is bad_request; the biggest real project is far below it
     model: ModelSettings = field(default_factory=ModelSettings)
     prose: Sampling = field(default_factory=Sampling)          # the writer pass
     thinking: Sampling = field(default_factory=Sampling)       # the planner's first pass

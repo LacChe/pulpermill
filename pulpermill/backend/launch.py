@@ -63,12 +63,13 @@ def banner(url: str | None, port: int, token_set: bool) -> str:
 
 def launch(*, token: str | None = None, ngrok_authtoken: str | None = None, overrides: dict[str, Any] | None = None,
            port: int = 8000, tunnel: Callable[[int, str | None], str] | None = open_tunnel, serve: bool = True,
-           engine: Engine | None = None, downloader: Callable | None = None, wait_for_server: float = 30.0) -> dict[str, Any]:
+           engine: Engine | None = None, downloader: Callable | None = None, wait_for_server: float = 30.0,
+           log_path: str | None = "/kaggle/working/pulpermill-runs.jsonl") -> dict[str, Any]:
     """Returns {"url", "server", "engine", "config"} (when serve is False; otherwise blocks until the server stops).
     `engine` lets a test skip the real model; `tunnel=None` skips ngrok."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", stream=sys.stdout)
     model = replace(Config().model, **(overrides or {}))
-    config = Config(token=token or None, host="0.0.0.0", port=port, model=model)
+    config = Config(token=token or None, host="0.0.0.0", port=port, model=model, log_path=log_path)
     log.info("settings: %s n_ctx=%d", config.describe(), model.n_ctx)
     check_settings(config)
     if engine is None:

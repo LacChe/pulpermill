@@ -55,7 +55,7 @@ The page reads the body first. When the body is not an answer it falls back on t
 | `unreachable` | **page** | none | Nothing answered. Never sent by a backend. | Couldn't reach the model, so nothing was changed. Check the address and that it is running. |
 | `timeout` | **page** | none | No answer in time (below). Never sent by a backend. | The model took too long to answer, so nothing was changed. |
 
-The page gives up after 5 seconds for `status`, 180 seconds for `fill` and `judge`, 120 seconds for `style_fit` and `offstage`, 300 seconds for `plan`, 600 seconds for `end_story` and 900 seconds for `generate`.
+The page gives up after 5 seconds for `status`, 180 seconds for `fill` and `judge`, 120 seconds for `style_fit` and `offstage`, 300 seconds for `plan`, 600 seconds for `end_story` and 1800 seconds for `generate`.
 
 ## Status and Stop
 

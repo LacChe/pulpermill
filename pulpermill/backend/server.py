@@ -24,6 +24,7 @@ from pulpermill.schema import contract
 from pulpermill.schema.project import SCHEMA_VERSION
 
 from . import pipelines as default_pipelines
+from . import runlog
 from .config import Config
 from .engine.base import CancelFlag, Engine
 from .errors import BackendError, Cancelled
@@ -82,6 +83,7 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
     """`run(request_model, ctx) -> reply dict` answers one model call. It defaults to the pipelines package."""
     run = run or default_pipelines.run
     job = Job()
+    runs = runlog.RunLog(config.log_path, config)
 
     def token_ok(request: Request) -> bool:
         if not config.token:
@@ -92,9 +94,11 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
     def work(model, cancel: CancelFlag, loop, done: "asyncio.Future") -> None:
         """The model call, in a thread. Always ends by releasing the lock, then hands the outcome to the handler."""
         started = time.monotonic()
+        started_at = time.time()
         outcome: tuple[str, Any]
+        stages = runlog.Stages(job.set_stage)
+        ctx = RunContext(engine=engine, cancel=cancel, set_stage=stages, config=config)
         try:
-            ctx = RunContext(engine=engine, cancel=cancel, set_stage=job.set_stage, config=config)
             reply = run(model, ctx)
             cancel.raise_if_cancelled()
             try:
@@ -112,8 +116,20 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
             outcome = ("fail", ("server", "The model's server hit an unexpected problem."))
         finally:
             seconds = time.monotonic() - started
-            job.end()
-        log.info("call=%s done secs=%.2f result=%s", model.call, seconds, outcome[0] if outcome[0] == "ok" else outcome[1][0])
+            stages.close()
+            result = "server"
+            try:
+                result = outcome[0] if outcome[0] == "ok" else outcome[1][0]
+                log.info("call=%s done secs=%.2f result=%s retries=%s", model.call, seconds, result,
+                         sum(max(len(p.get("attempts", [])) - 1, 0) for p in ctx.notes.get("passes", [])))
+                runs.add(runlog.build(model.call, started_at, seconds, result, stages.done, ctx.notes))     # before the lock is released: idle means the record is written
+                if runs.failed:
+                    log.warning("the run log could not be written (%s); records are kept in memory only", runs.failed)
+                    runs.path, runs.failed = None, None
+            except Exception:
+                log.exception("the run record for call=%s could not be written", model.call)
+            finally:
+                job.end()
         try:
             loop.call_soon_threadsafe(lambda: done.done() or done.set_result(outcome))
         except RuntimeError:
@@ -125,6 +141,8 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
         if not token_ok(request):
             return _fail("unauthorized")
         raw = await request.body()
+        if len(raw) > config.max_body_bytes:
+            return _fail("bad_request", "The request is too large.")
         try:
             data = await asyncio.to_thread(_loads, raw)
             model = contract.parse_request(data)
@@ -155,7 +173,9 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
             return JSONResponse(value, headers=CORS)
         return _fail(*(value if kind == "fail" else ("stopped", "")))
 
-    return Starlette(routes=[Route("/api", api, methods=["POST", "OPTIONS"])])
+    app = Starlette(routes=[Route("/api", api, methods=["POST", "OPTIONS"])])
+    app.state.runs = runs
+    return app
 
 
 def _loads(raw: bytes) -> Any:
