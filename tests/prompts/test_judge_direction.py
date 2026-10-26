@@ -5,7 +5,7 @@ import yaml
 from pulpermill.prompts.prompts import judge_question
 
 # Rules whose question is asked the other way round: "yes" means the item breaks the rule.
-YES_BREAKS = {"char_no_relationships", "wants_conflict", "object_unowned", "power_no_current_goals"}
+YES_BREAKS = {"char_no_relationships", "object_unowned", "power_no_current_goals"}
 
 
 def _all_rules():
@@ -23,7 +23,7 @@ def test_lens_question_breaks_on_no_and_loses_the_rewrite_request():
 
 def test_reversed_questions_break_on_yes():
     assert judge_question("Does any group's text state what it wants? Answer yes or no for each. Rewrite any that do so that they describe only what the group is.")[1] == "yes"
-    assert judge_question("Can all of these wants be fully satisfied at the same time? Answer yes or no. If yes, propose one opposing want.")[1] == "yes"
+    assert judge_question("Does this text name a particular person? Answer yes or no. If yes, rewrite it.")[1] == "yes"
 
 
 def test_every_rule_has_a_question_and_no_answer_instruction_is_left():

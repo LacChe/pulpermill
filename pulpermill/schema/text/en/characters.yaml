@@ -134,7 +134,7 @@ rules:
   char_no_relationships:
     message: "This describes a relationship to someone else. A character has to stand alone."
     fix: "Rephrase as a trait of this person, like 'distrusts family'. Ties between people are recorded in Entanglements."
-    judge_prompt: "Does this text mention a relationship to another person, such as a sibling, partner, boss or friend? Answer yes or no. If yes, rewrite it as a trait of this person alone."
+    judge_prompt: "Does this text name a particular person in the character's life (a sibling, partner, boss or friend), rather than a feeling or habit about people in general such as 'feels overlooked' or 'distrusts family'? Answer yes or no. If yes, rewrite it as a trait of this person alone."
   sketch_describes_person:
     message: "This reads as a role, not a person."
     fix: "Say what this person is like. A role gives the model a stereotype to fall back on."
@@ -149,7 +149,7 @@ rules:
   wants_conflict:
     message: "These wants don't clearly pull against each other."
     fix: "Add a want that conflicts with the others. A suggestion can be offered for you to accept or reject."
-    judge_prompt: "Can all of these wants be fully satisfied at the same time? Answer yes or no. If yes, propose one opposing want that cannot be satisfied alongside the others."
+    judge_prompt: "Does pursuing this want make at least one of the other wants harder to pursue, because they compete for the character's time, effort, safety or loyalty? Answer yes or no. If no for every want, propose one opposing want that cannot be satisfied alongside the others."
   values_positive:
     message: "A value reads as a rule against something."
     fix: "Phrase it as what they protect, like 'keeps their word even when it ruins them'."
@@ -161,7 +161,7 @@ rules:
   behaviors_include_calm:
     message: "Every state is stressful. Add a calm or happy one."
     fix: "Add a state like 'feels at ease' or 'is among people they trust'."
-    judge_prompt: "Is at least one 'when' state calm or happy? Answer yes or no. If no, suggest one."
+    judge_prompt: "Is the 'when' of this item a calm or happy state, as opposed to a stressful one? Answer yes or no. If no for every item, suggest a calm or happy state to add."
   behavior_is_tendency:
     message: "A 'They' box describes one specific act."
     fix: "Use a habit or leaning, so a fresh version can be written each time."

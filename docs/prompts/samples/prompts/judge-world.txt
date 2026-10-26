@@ -23,20 +23,10 @@ Now give one check for each item, as the reply format asks: its field, its handl
    "items": {
     "type": "object",
     "properties": {
-     "field": {
+     "item": {
       "type": "string",
       "enum": [
        "everyday_life"
-      ]
-     },
-     "item": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
       ]
      },
      "keeps_the_rule": {
@@ -44,12 +34,13 @@ Now give one check for each item, as the reply format asks: its field, its handl
      }
     },
     "required": [
-     "field",
      "item",
      "keeps_the_rule"
     ],
     "additionalProperties": false
-   }
+   },
+   "minItems": 1,
+   "maxItems": 1
   }
  },
  "required": [

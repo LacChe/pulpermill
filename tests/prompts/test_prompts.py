@@ -220,21 +220,46 @@ def test_judge_prompts_one_per_rule_with_handles():
     for p in prompts:
         no_leaks(p.text)
         assert p.meta["rule"] in {r["id"] for r in req["rules"]} and p.version.startswith("judge-")
-        assert valid({"checks": []}, p.schema)
     out = P.assemble_judge_reply(prompts, [{"checks": []}] * len(prompts))
     parsed = contract.parse_reply("judge", out)
     assert [r.rule for r in parsed.results] == [r["id"] for r in req["rules"]]
 
 
+def _judge_req(rule, fields, values):
+    return {"call": "judge", "schema_version": 1, "language": "en", "card": "characters", "instance": "c1",
+            "rules": [{"id": rule, "fields": fields}], "related": {}, "values": values}
+
+
 def test_judge_hits_point_at_ids():
-    req = {"call": "judge", "schema_version": 1, "language": "en", "card": "characters", "instance": "c1",
-           "rules": [{"id": "wants_conflict", "fields": ["wants"]}], "related": {},
-           "values": {"wants": [{"id": "w1", "text": "keep the shop"}, {"id": "w2", "text": "keep the shop open"}]}}
-    prompts = P.judge_prompts(req)
-    p = prompts[0]
-    assert p.meta["handles"] == {"wants.1": "w1", "wants.2": "w2"}
-    out = P.assemble_judge_reply(prompts, [{"checks": [{"field": "wants", "item": "wants.1", "keeps_the_rule": True}, {"field": "wants", "item": "wants.2", "keeps_the_rule": False}]}])
-    assert out["results"][0]["hits"] == [{"field": "wants", "item": "w2", "key": None}]
+    req = _judge_req("values_positive", ["values"], {"values": [{"id": "v1", "text": "keeps their word"}, {"id": "v2", "text": "never lies"}]})
+    p = P.judge_prompts(req)[0]
+    assert p.meta["handles"] == {"values.1": "v1", "values.2": "v2"}
+    out = P.assemble_judge_reply([p], [{"checks": [{"item": "values.1", "keeps_the_rule": True}, {"item": "values.2", "keeps_the_rule": False}]}])
+    assert out["results"][0]["hits"] == [{"field": "values", "item": "v2", "key": None}]
+
+
+def test_a_set_rule_is_broken_only_when_no_item_keeps_it():
+    wants = {"wants": [{"id": "w1", "text": "find a place to stay"}, {"id": "w2", "text": "map the whole valley"}]}
+    p = P.judge_prompts(_judge_req("wants_conflict", ["wants"], wants))[0]
+    keeps = {"checks": [{"item": "wants.1", "keeps_the_rule": True}, {"item": "wants.2", "keeps_the_rule": False}]}
+    assert P.assemble_judge_reply([p], [keeps])["results"][0]["hits"] == []
+    none = {"checks": [{"item": "wants.1", "keeps_the_rule": False}, {"item": "wants.2", "keeps_the_rule": False}]}
+    assert P.assemble_judge_reply([p], [none])["results"][0]["hits"] == [{"field": "wants", "item": None, "key": None}]
+    one = P.judge_prompts(_judge_req("wants_conflict", ["wants"], {"wants": wants["wants"][:1]}))[0]
+    assert P.assemble_judge_reply([one], [{"checks": [{"item": "wants.1", "keeps_the_rule": False}]}])["results"][0]["hits"] == []
+
+
+def test_one_happy_state_satisfies_the_calm_rule():
+    values = {"behaviors": [{"id": "b1", "when": "feels happy", "they": "whistle"}]}
+    p = P.judge_prompts(_judge_req("behaviors_include_calm", ["behaviors"], values))[0]
+    assert P.assemble_judge_reply([p], [{"checks": [{"item": "behaviors.1", "keeps_the_rule": True}]}])["results"][0]["hits"] == []
+    assert P.assemble_judge_reply([p], [{"checks": [{"item": "behaviors.1", "keeps_the_rule": False}]}])["results"][0]["hits"] == [{"field": "behaviors", "item": None, "key": None}]
+
+
+def test_the_judge_schema_asks_for_exactly_one_check_per_item():
+    p = P.judge_prompts(_judge_req("values_positive", ["values"], {"values": [{"id": "v1", "text": "a"}, {"id": "v2", "text": "b"}]}))[0]
+    ok = {"checks": [{"item": "values.1", "keeps_the_rule": True}, {"item": "values.2", "keeps_the_rule": True}]}
+    assert valid(ok, p.schema) and not valid({"checks": ok["checks"][:1]}, p.schema) and not valid({"checks": []}, p.schema)
 
 
 def test_style_fit_and_offstage_prompts():

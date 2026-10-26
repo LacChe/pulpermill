@@ -256,12 +256,16 @@ def shifts_schema(req: dict, handles: dict[str, dict]) -> Schema:
 
 # ---- The rest -------------------------------------------------------------------------------------------------------
 
-def judge_schema(fields: list[str], handles: list[str]) -> Schema:
+def judge_schema(handles: list[str]) -> Schema:
     """One check per item, each saying outright whether it keeps the rule. The model sees only the key names (the grammar
-    forces them), so they say what is asked: a list named "hits" was read as "the items that match the question"."""
-    check = obj({"field": one_of(fields), "item": maybe(one_of(handles)) if handles else maybe(text()),
-                 "keeps_the_rule": {"type": "boolean"}})
-    return obj({"checks": {"type": "array", "items": check}})
+    forces them), so they say what is asked: a list named "hits" was read as "the items that match the question". The
+    handle names the field too ("behaviors.2"), so a check is only two keys: fewer tokens to write, and the reply is
+    exactly one check per item."""
+    check = obj({"item": one_of(handles), "keeps_the_rule": {"type": "boolean"}})
+    items: Schema = {"type": "array", "items": check}
+    if handles:
+        items.update({"minItems": len(handles), "maxItems": len(handles)})
+    return obj({"checks": items})
 
 
 def style_fit_schema() -> Schema:

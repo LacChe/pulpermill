@@ -383,6 +383,11 @@ def judge_question(text: str) -> tuple[str, str]:
     return head.strip(), breaks
 
 
+# Rules about the field as a whole ("at least one", "some pair"): each item is asked its own question, and the rule is broken
+# only when no item keeps it. The number is how many items the field needs before the rule is worth asking.
+SET_RULES = {"wants_conflict": 2, "behaviors_include_calm": 1}
+
+
 def judge_prompts(req: dict) -> list[Prompt]:
     """One prompt per rule asked about. The rule's own question comes from the schema's text file."""
     j = _t("judge")
@@ -408,13 +413,14 @@ def judge_prompts(req: dict) -> list[Prompt]:
                     rows.append(f"{handle}: {_item_text(card, key, item)}")
                 blocks.append(head + "\n" + "\n".join(rows))
             elif value not in (None, "", []):
+                handles[key] = None
                 blocks.append(f"{head} {s(value)}")
         context = _judge_context(rule, related, names)
         parts = [j["job"], j["rule_lead"].format(when=rule.when), j["question_lead"].format(question=question), j["keeps_lead"].format(answer="yes" if breaks == "no" else "no")]
         if context:
             parts.append(j["context_lead"] + "\n" + "\n".join(context))
         parts += [j["items_lead"] + "\n" + "\n\n".join(blocks), j["task"]]
-        prompts.append(Prompt("judge", j["version"], _join(*parts), schemas.judge_schema(list(asked["fields"]), list(handles)), None,
+        prompts.append(Prompt("judge", j["version"], _join(*parts), schemas.judge_schema(list(handles)), None,
                               {"rule": rule.id, "handles": handles}))
     return prompts
 
@@ -423,13 +429,15 @@ def assemble_judge_reply(prompts: list[Prompt], answers: list[dict]) -> dict:
     """The contract's reply for `judge`: one result per rule asked, each hit pointing at the item id the page sent."""
     results = []
     for prompt, answer in zip(prompts, answers):
-        hits = []
-        for check in answer.get("checks") or []:
-            if check.get("keeps_the_rule") is not False:           # a hit is an item that breaks the rule
-                continue
-            item = prompt.meta["handles"].get(check.get("item")) if check.get("item") else None
-            hits.append({"field": check["field"], "item": item, "key": None})
-        results.append({"rule": prompt.meta["rule"], "hits": hits})
+        rule, handles = prompt.meta["rule"], prompt.meta["handles"]
+        checks = [c for c in answer.get("checks") or [] if c.get("item") in handles]
+        broken = [c for c in checks if c.get("keeps_the_rule") is False]
+        if rule in SET_RULES:                                      # one hit on the field, only when no item keeps the rule
+            enough = len(handles) >= SET_RULES[rule]
+            hits = [{"field": broken[0]["item"].split(".")[0], "item": None, "key": None}] if enough and checks and len(broken) == len(checks) else []
+        else:
+            hits = [{"field": c["item"].split(".")[0], "item": handles[c["item"]], "key": None} for c in broken]
+        results.append({"rule": rule, "hits": hits})
     return {"ok": True, "results": results}
 
 
