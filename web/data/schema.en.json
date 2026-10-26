@@ -213,7 +213,7 @@
      "input": "textarea",
      "kind": "note",
      "group": "narrator",
-     "required": true,
+     "required": false,
      "placeholder": "e.g. Knows more than it tells; sometimes speaks to the reader."
     },
     {
@@ -365,7 +365,7 @@
      "input": "textarea",
      "kind": "note",
      "group": "sentences",
-     "required": true,
+     "required": false,
      "placeholder": "e.g. Avoid semicolons; favour concrete nouns."
     },
     {
@@ -422,7 +422,7 @@
      "input": "textarea",
      "kind": "note",
      "group": "stance",
-     "required": true,
+     "required": false,
      "placeholder": "e.g. Fond of the characters, never sentimental."
     },
     {
@@ -520,7 +520,7 @@
      "input": "textarea",
      "kind": "note",
      "group": "dialogue",
-     "required": true,
+     "required": false,
      "placeholder": "e.g. People interrupt each other; no speeches."
     },
     {

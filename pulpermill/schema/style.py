@@ -48,7 +48,7 @@ VoiceDifference = Literal["distinct", "uniform"]
 
 
 class Style(BaseModel):
-    # Everything is required for now (the human will loosen this later).
+    # Everything is required for now (the human will loosen this later), except the four notes: they are extras the writer may leave empty.
     # Narration: the only mechanical rules. Setup's protagonist must fit them.
     person: Person = spec("select", "narration", "rule")
     tense: Tense = spec("select", "narration", "rule")
@@ -57,7 +57,7 @@ class Style(BaseModel):
     distance: Distance = spec("select", "narrator", "axis")
     humor: Humor = spec("select", "narrator", "axis")
     pacing: Pacing = spec("select", "narrator", "axis")
-    narrator_note: str = spec("textarea", "narrator", "note")
+    narrator_note: str | None = spec("textarea", "narrator", "note", required=False)
 
     # Sentences and words
     rhythm: Rhythm = spec("select", "sentences", "axis")
@@ -66,18 +66,18 @@ class Style(BaseModel):
     imagery: Imagery = spec("select", "sentences", "axis")
     edge: Edge = spec("select", "sentences", "axis")
     explicitness: Explicitness = spec("select", "sentences", "axis")
-    sentences_note: str = spec("textarea", "sentences", "note")
+    sentences_note: str | None = spec("textarea", "sentences", "note", required=False)
 
     # Stance
     attitude: Attitude = spec("select", "stance", "axis")
-    stance_note: str = spec("textarea", "stance", "note")
+    stance_note: str | None = spec("textarea", "stance", "note", required=False)
 
     # Dialogue
     amount: Amount = spec("select", "dialogue", "axis")
     directness: Directness = spec("select", "dialogue", "axis")
     polish: Polish = spec("select", "dialogue", "axis")
     voice_difference: VoiceDifference = spec("select", "dialogue", "axis")
-    dialogue_note: str = spec("textarea", "dialogue", "note")
+    dialogue_note: str | None = spec("textarea", "dialogue", "note", required=False)
 
     # Free text
     lens: str = spec("textarea", "free", "free")
