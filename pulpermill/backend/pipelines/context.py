@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 from ..config import Config
@@ -13,3 +13,4 @@ class RunContext:
     cancel: CancelFlag
     set_stage: Callable[[str | None], None]
     config: Config
+    notes: dict = field(default_factory=dict)   # what a pipeline wants kept with the run's record (squeeze, words per section, flags, attempts)

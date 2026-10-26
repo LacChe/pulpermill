@@ -42,3 +42,12 @@ are filled in from `tools/measure_engine.py` output on the Kaggle T4 x2.
 - `style_fit`: `fits`, and the message only when it does not fit.
 - `python -m pulpermill.backend --fake` and the server tests now use the canned replies (`pipelines.run_canned`), since the fake engine's words are not JSON.
 - **Card-fill runs:** `node tools/run_cardfill.mjs <address> --token T --runs 3 --label <prompt-version>` fills every fixture in `tests/cardfill/fixtures` through the page's own client and rules and writes `tests/cardfill/results/<label>/` (one JSON per fixture and run, plus `summary.csv` with the rules that fired). It does not grade: grade by hand with `tests/cardfill/03-scoring-protocol.md`. The run record per call (prompt version, parameter set, retries) comes with M6.
+
+## M5: the story calls (`pulpermill/backend/pipelines/story.py`)
+
+- **Length first.** `generate` measures every writer section and the Events and Shifts prompts (on a stand-in chapter of `chapter_words_worst_case` words) before the first token, and picks the lightest squeeze at which all fit (`budget.fit`). If none fits it answers `too_long` at once. After the chapter is written, Events and Shifts are rebuilt on the real text at that squeeze and measured again.
+- **The chapter** follows `tools/run_trials.py::run_chapter`: four sections, one extra before the close when the chapter is under pace, free text, no early stop, the prose sampling. The language check can write one section again. The code checks (`chapter_checks.run_checks`) run on the whole chapter and are only recorded.
+- **Order:** sections, then Events, then Shifts (told what Events found). `plan`: free thinking (thinking sampling), then the beat, constrained. `offstage`: both parts or a retry. `end_story`: one pass per character, then the world.
+- **Language is not checked** for `plan`, Events and Shifts, because their prompts do not ask for a language (`planner.yaml`, `events.yaml`, `shifts.yaml` have no `{language_name}`). For a non-English story they may answer in English or in the story's language. Tell the prompts owner. The check stays on the writer, fill, style_fit, offstage and end_story.
+- **The run's record** is in `ctx.notes` (squeeze, words per section, words, code flags, and one entry per pass with its prompt version, prompt tokens and each attempt's seconds and engine record). M6 writes it to the log.
+- **For the prompts work:** `pulpermill.backend.complete.make_complete(engine)` is the `complete(text) -> str` for `run_chapter`; the notebook has a cell for it.

@@ -1,11 +1,11 @@
 """One module per call. Each pipeline is `run(request, ctx) -> reply dict`. `canned` answers every call with a valid sample
 reply and exists so the server and the page can be exercised with no model; the real pipelines replace it call by call."""
 from .context import RunContext
-from . import canned, simple
+from . import canned, simple, story
 
 PIPELINES = {
-    "fill": simple.fill, "judge": simple.judge, "style_fit": simple.style_fit, "offstage": canned.offstage,
-    "plan": canned.plan, "generate": canned.generate, "end_story": canned.end_story,
+    "fill": simple.fill, "judge": simple.judge, "style_fit": simple.style_fit, "offstage": story.offstage,
+    "plan": story.plan, "generate": story.generate, "end_story": story.end_story,
 }
 
 

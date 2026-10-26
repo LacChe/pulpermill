@@ -82,13 +82,17 @@ def with_note(prompt: Prompt, problem: str) -> Prompt:
     return replace(prompt, text=prompt.text.rstrip() + "\n\n" + note)
 
 
-def run_prompt(ctx: RunContext, prompt: Prompt, parse: Callable[[str], Any], *, constrain_first: bool | None = None) -> Result:
+def run_prompt(ctx: RunContext, prompt: Prompt, parse: Callable[[str], Any], *, constrain_first: bool | None = None,
+               params: Any = None) -> Result:
     """Run one prompt through the two-attempt rule. `parse(text)` returns the usable value or raises Unusable.
-    `constrain_first` False writes the first attempt free; the retry is then constrained (a prompt with no schema never is)."""
+    `constrain_first` False writes the first attempt free; the retry is then constrained (a prompt with no schema never is).
+    `params` is the sampling for this call: the config's `structured` for a prompt with a schema, its `prose` otherwise."""
     m = fit_check(ctx, prompt)
     if constrain_first is None:
         constrain_first = ctx.config.constrain == "always"
     result = Result(None, prompt, m)
+    entry = {"prompt": prompt.name, "version": prompt.version, "prompt_tokens": m.tokens, "attempts": []}
+    ctx.notes.setdefault("passes", []).append(entry)       # the run's record: what ran, in order, and how each attempt went
     problem = None
     for number in range(1, MAX_ATTEMPTS + 1):
         ctx.cancel.raise_if_cancelled()
@@ -102,18 +106,20 @@ def run_prompt(ctx: RunContext, prompt: Prompt, parse: Callable[[str], Any], *, 
             ctx.set_stage(prompt.stage)
         started = time.monotonic()
         text = ctx.engine.generate(current.text, m.max_output, constraint=prompt.schema if constrained else None,
-                                   cancel=ctx.cancel, params=ctx.config.structured if prompt.schema is not None else None)
+                                   cancel=ctx.cancel, params=params or (ctx.config.structured if prompt.schema is not None else ctx.config.prose))
         attempt = Attempt(number, constrained, time.monotonic() - started, run=dict(getattr(ctx.engine, "last_run", None) or {}) or None)
         result.attempts.append(attempt)
+        entry["attempts"].append({"constrained": constrained, "seconds": round(attempt.seconds, 2), "run": attempt.run})
         try:
             result.value = parse(text)
             return result
         except Unusable as e:
             problem = attempt.problem = short(e)
+            entry["attempts"][-1]["problem"] = problem
     raise BackendError("bad_output", problem or "")
 
 
-def json_parser(prompt: Prompt, language: str, validate: Callable[[Any], str | None] | None = None) -> Callable[[str], Any]:
+def json_parser(prompt: Prompt, language: str | None, validate: Callable[[Any], str | None] | None = None) -> Callable[[str], Any]:
     """Reads a reply as the prompt's JSON. `validate(value)` may return a problem of the caller's own (content the schema
     cannot say); the language of the longer sentences is checked last."""
     def parse(text: str):
@@ -128,28 +134,29 @@ def json_parser(prompt: Prompt, language: str, validate: Callable[[Any], str | N
         own = validate(value) if validate else None
         if own:
             raise Unusable(own)
-        wrong = lang.check_value(value, language)
+        wrong = lang.check_value(value, language) if language else None
         if wrong:
             raise Unusable(f"{wrong}; write in the language the story is told in")
         return value
     return parse
 
 
-def text_parser(language: str) -> Callable[[str], str]:
+def text_parser(language: str | None) -> Callable[[str], str]:
     def parse(text: str):
         if not text.strip():
             raise Unusable("the reply was empty")
-        wrong = lang.check(text, language)
+        wrong = lang.check(text, language) if language else None
         if wrong:
             raise Unusable(f"{wrong}; write in the language the story is told in")
         return text
     return parse
 
 
-def run_json(ctx: RunContext, prompt: Prompt, language: str, validate: Callable[[Any], str | None] | None = None,
-             constrain_first: bool | None = None) -> Result:
-    return run_prompt(ctx, prompt, json_parser(prompt, language, validate), constrain_first=constrain_first)
+def run_json(ctx: RunContext, prompt: Prompt, language: str | None, validate: Callable[[Any], str | None] | None = None,
+             constrain_first: bool | None = None, params: Any = None) -> Result:
+    """`language` None skips the language check (for a call whose prompt does not ask for a language)."""
+    return run_prompt(ctx, prompt, json_parser(prompt, language, validate), constrain_first=constrain_first, params=params)
 
 
-def run_text(ctx: RunContext, prompt: Prompt, language: str) -> Result:
-    return run_prompt(ctx, prompt, text_parser(language), constrain_first=False)
+def run_text(ctx: RunContext, prompt: Prompt, language: str | None, params: Any = None) -> Result:
+    return run_prompt(ctx, prompt, text_parser(language), constrain_first=False, params=params)

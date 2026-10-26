@@ -97,3 +97,13 @@ def test_a_prompt_that_is_too_long_is_refused_before_inference():
     with pytest.raises(BackendError) as e:
         simple.fill(request, ctx)
     assert e.value.kind == "too_long" and engine.calls == 0
+
+
+def test_complete_runs_one_prompt_and_records_the_sampling():
+    from pulpermill.backend.complete import make_complete
+    engine = FakeEngine()
+    engine.script("Some prose.")
+    rows = []
+    assert make_complete(engine, record=rows)("Write something.") == "Some prose."
+    assert engine.prompts == ["Write something."] and engine.constraints == [None]
+    assert rows[0]["sampling"]["temperature"] == 1.0
