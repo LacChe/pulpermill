@@ -54,6 +54,8 @@ class Config:
     model: ModelSettings = field(default_factory=ModelSettings)
     prose: Sampling = field(default_factory=Sampling)          # the writer pass
     thinking: Sampling = field(default_factory=Sampling)       # the planner's first pass
+    constrain: str = "always"               # "always": every JSON call is grammar-constrained. "repair": the first attempt is
+                                            # free (about twice as fast, measured on the old setup) and only the retry is constrained.
     structured: Sampling = field(default_factory=lambda: Sampling(temperature=0.2, repeat_penalty=1.0, frequency_penalty=0.0))   # constrained JSON
 
     @classmethod

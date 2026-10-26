@@ -26,3 +26,11 @@ are filled in from `tools/measure_engine.py` output on the Kaggle T4 x2.
 5. **Cancellation** during generation and during prefill: _to measure_. Prefill is done by hand in n_batch-sized steps so Stop can land between steps; this relies on llama-cpp-python reusing the evaluated prefix, which the speed table shows (a prefill much slower than the second run would mean it did not).
 6. **The long request through ngrok** (a `generate` call of 15 minutes or more): _to measure_. The page's `generate` timeout is still 900 s in `web/client.js`; the handoff suggests 1,800 s (change it there and in `docs/backend-contract.md` together).
 7. **CORS and both headers from the real https page** through the tunnel: _to check_
+
+## M3: how a JSON call runs (`pulpermill/backend/pipelines/structured.py`)
+
+- `fit_check` answers `too_long` (413) before any inference. It counts with the page's tokenizer files when they are installed and with the engine's own count when they are not.
+- Two attempts at most. The second adds the note from `pulpermill/prompts/templates/en/retry.yaml` (new file, added for the backend; the prompts owner should know for the golden test and tuning) with one short line saying what was wrong. The first reply is not shown to the model. Both failing is `bad_output` (502). Stop is never retried.
+- A reply fails when it is not valid JSON in the prompt's shape (a reply cut off at `max_tokens` is one of these, and the note says so), when the caller's own check fails, or when the longer sentences are not in the requested language (`language.py`: script share for Chinese, Japanese and Korean; function words for en, fr, de, es; short texts and other languages pass).
+- `Config.constrain`: `"always"` (default) constrains every JSON call. `"repair"` writes the first attempt free and constrains only the retry. The old setup measured about 4.5 tok/s constrained against about 10 free, so after the speed table from `measure_engine.py` is in, decide which default stays.
+- Not wired yet: different sampling for Chinese (`language` does not pick a parameter set).

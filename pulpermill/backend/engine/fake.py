@@ -19,6 +19,8 @@ class FakeEngine(Engine):
         self.finished = 0                          # generate calls that ended, by any path
         self.cancelled_calls = 0
         self.prompts: list[str] = []
+        self.constraints: list[Any] = []           # the constraint each generate call was given
+        self._outputs: list[str] = []
         self._failures: list[BaseException] = []
         self._lock = threading.Lock()
 
@@ -26,6 +28,11 @@ class FakeEngine(Engine):
         """The next generate calls raise these, in order, then it behaves again."""
         with self._lock:
             self._failures.extend(errors)
+
+    def script(self, *outputs: str) -> None:
+        """The next generate calls return these texts, in order, then it makes up words again."""
+        with self._lock:
+            self._outputs.extend(outputs)
 
     def count_tokens(self, text: str) -> int:
         return len(text.split())                   # one word, one token: only for tests
@@ -37,12 +44,18 @@ class FakeEngine(Engine):
             self.calls += 1
             self.active = True
             self.prompts.append(prompt)
+            self.constraints.append(constraint)
+            scripted = self._outputs.pop(0) if self._outputs else None
             failure = self._failures.pop(0) if self._failures else None
         try:
             if cancel:
                 cancel.raise_if_cancelled()
             if failure:
                 raise failure
+            if scripted is not None:
+                if on_token:
+                    on_token(scripted)
+                return scripted
             made = []
             for i in range(min(max_tokens, self.tokens_per_call)):
                 if self.seconds_per_token:
