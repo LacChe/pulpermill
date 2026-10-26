@@ -1,11 +1,13 @@
-[judge judge-0.1, stage: None]
+[judge judge-0.2, stage: None]
 
 You are checking one rule on part of a story-planning card. Read the rule, look at the items, and name only the items that break the rule. An item that keeps the rule is left out. When every item keeps the rule, name none.
 Write nothing but the reply the format asks for.
 
 The rule: everyday life says nothing is scarce, expensive or contested, so there is no normal for the story to break
 
-The question to answer for each item: Does this text say what is scarce, expensive or contested in ordinary life? Answer yes or no. If no, suggest one.
+The question to ask of each item: Does this text say what is scarce, expensive or contested in ordinary life?
+
+An item breaks the rule when its answer to that question is no. An item whose answer is the other one keeps the rule and is left out.
 
 The items to check, each with its handle:
 Everyday life: Ordinary.

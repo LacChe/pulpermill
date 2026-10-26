@@ -373,6 +373,16 @@ def _item_text(card_id: str, field_name: str, item: dict) -> str:
     return rows[0][1] if len(rows) == 1 else "; ".join(f"{k.replace('_', ' ')}: {v}" for k, v in rows)
 
 
+def judge_question(text: str) -> tuple[str, str]:
+    """Split a rule's judge text into the question and the answer that means the item BREAKS the rule.
+    The texts end with what to do for a failing item ("If no, suggest...", "If yes, rewrite...", "Rewrite any that fail",
+    "any that do so"). That tail also tells which answer fails. The answer instruction and the rewrite request are
+    dropped: the reply holds only the items that break the rule (F5)."""
+    head, _, tail = text.partition("Answer yes or no")
+    breaks = "yes" if re.search(r"\bIf yes\b|any that do so", tail) else "no"
+    return head.strip(), breaks
+
+
 def judge_prompts(req: dict) -> list[Prompt]:
     """One prompt per rule asked about. The rule's own question comes from the schema's text file."""
     j = _t("judge")
@@ -384,7 +394,7 @@ def judge_prompts(req: dict) -> list[Prompt]:
     prompts = []
     for asked in req["rules"]:
         rule = rule_def(card, asked["id"])
-        question = tx.schema_text(card)["rules"][rule.id]["judge_prompt"]
+        question, breaks = judge_question(tx.schema_text(card)["rules"][rule.id]["judge_prompt"])
         handles: dict[str, str | None] = {}
         blocks = []
         for key in asked["fields"]:
@@ -400,7 +410,7 @@ def judge_prompts(req: dict) -> list[Prompt]:
             elif value not in (None, "", []):
                 blocks.append(f"{head} {s(value)}")
         context = _judge_context(rule, related, names)
-        parts = [j["job"], j["rule_lead"].format(when=rule.when), j["question_lead"].format(question=question)]
+        parts = [j["job"], j["rule_lead"].format(when=rule.when), j["question_lead"].format(question=question), j["breaks_lead"].format(answer=breaks)]
         if context:
             parts.append(j["context_lead"] + "\n" + "\n".join(context))
         parts += [j["items_lead"] + "\n" + "\n\n".join(blocks), j["task"]]

@@ -1,13 +1,14 @@
 # Model-judged rules (J). One rule per call. The rule's own question lives in the schema's text files (judge_prompt).
 name: judge
-version: "judge-0.1"
+version: "judge-0.2"
 
 job: |
   You are checking one rule on part of a story-planning card. Read the rule, look at the items, and name only the items that break the rule. An item that keeps the rule is left out. When every item keeps the rule, name none.
   Write nothing but the reply the format asks for.
 
 rule_lead: "The rule: {when}"
-question_lead: "The question to answer for each item: {question}"
+question_lead: "The question to ask of each item: {question}"
+breaks_lead: "An item breaks the rule when its answer to that question is {answer}. An item whose answer is the other one keeps the rule and is left out."
 context_lead: "What the rule is measured against:"
 items_lead: "The items to check, each with its handle:"
 field_lead: "{label}:"
