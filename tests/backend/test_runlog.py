@@ -38,7 +38,7 @@ def test_the_log_starts_with_the_settings_and_has_one_line_per_call(tmp_path):
     rows = lines(path)
     assert [r["record"] for r in rows] == ["settings", "call", "call"]
     settings = rows[0]
-    assert set(settings["sampling"]) == {"prose", "thinking", "structured"} and settings["constrain"] == "always"
+    assert set(settings["sampling"]) == {"prose", "prose_zh", "thinking", "structured"} and settings["constrain"] == "always"
     assert settings["sampling"]["structured"]["temperature"] == 0.2 and settings["model"]["n_ctx"] == 12288
     call = rows[1]
     assert call["call"] == "fill" and call["result"] == "ok" and call["seconds"] >= 0 and call["retries"] == 0

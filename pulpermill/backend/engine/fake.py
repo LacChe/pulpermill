@@ -19,6 +19,7 @@ class FakeEngine(Engine):
         self.finished = 0                          # generate calls that ended, by any path
         self.cancelled_calls = 0
         self.prompts: list[str] = []
+        self.params: list[Any] = []
         self.constraints: list[Any] = []           # the constraint each generate call was given
         self._outputs: list[str] = []
         self._failures: list[BaseException] = []
@@ -44,6 +45,7 @@ class FakeEngine(Engine):
             self.calls += 1
             self.active = True
             self.prompts.append(prompt)
+            self.params.append(params)
             self.constraints.append(constraint)
             scripted = self._outputs.pop(0) if self._outputs else None
             failure = self._failures.pop(0) if self._failures else None

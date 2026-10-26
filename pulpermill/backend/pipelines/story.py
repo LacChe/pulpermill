@@ -74,7 +74,7 @@ def _write(ctx: RunContext, req: dict, language: str, target: int) -> list[str]:
         if not extra and i == len(plan) - 1 and needs_extra(len(chapter_checks.words(" ".join(sections))), i):
             plan, extra = writer_plan(extra=True), True
         prompt = writer_prompt(req, plan, i, "\n\n".join(sections), target)
-        sections.append(st.run_text(ctx, prompt, language, params=ctx.config.prose).value.strip())
+        sections.append(st.run_text(ctx, prompt, language, params=ctx.config.prose_for(language)).value.strip())
         i += 1
     return sections
 

@@ -58,7 +58,15 @@ class Config:
     thinking: Sampling = field(default_factory=Sampling)       # the planner's first pass
     constrain: str = "always"               # "always": every JSON call is grammar-constrained. "repair": the first attempt is
                                             # free (about twice as fast, measured on the old setup) and only the retry is constrained.
+    # Chinese writes a name or a term as one or two single-character tokens, so a repeat penalty works against the words a story
+    # has to repeat, and a hot sampler picks look-alike characters (the old setup produced 张期 for 张强). The previous version's
+    # values for the writer pass; a starting point, tune by looking at a chapter. Used for `language == "zh"` only.
+    prose_zh: Sampling = field(default_factory=lambda: Sampling(temperature=0.8, top_p=0.9, top_k=40, repeat_penalty=1.0, frequency_penalty=0.0))
     structured: Sampling = field(default_factory=lambda: Sampling(temperature=0.2, repeat_penalty=1.0, frequency_penalty=0.0))   # constrained JSON
+
+    def prose_for(self, language: str | None) -> Sampling:
+        """The writer pass's sampling for the story's language: Chinese has its own set, every other language uses `prose`."""
+        return self.prose_zh if language == "zh" else self.prose
 
     @classmethod
     def from_env(cls, **overrides) -> "Config":

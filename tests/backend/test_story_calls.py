@@ -198,3 +198,16 @@ def test_end_story_updates_every_character_then_the_world_and_keeps_their_ids():
     contract.parse_reply("end_story", reply)
     assert engine.calls == len(prompts) and [c["id"] for c in reply["characters"]] == [c["id"] for c in req["characters"]]
     assert set(stages) == {"update"}
+
+
+def test_chinese_is_written_with_its_own_sampling_and_other_languages_with_the_prose_set():
+    zh = "她走到河边，水很冷，她没有回头看那座房子。" * 40
+    request = vector("generate").model_dump()
+    ctx, engine, _ = make(*[zh] * 6)
+    story._write(ctx, request, "zh", 3000)
+    assert engine.params and all(p is ctx.config.prose_zh for p in engine.params)
+    assert (ctx.config.prose_zh.temperature, ctx.config.prose_zh.top_p, ctx.config.prose_zh.top_k, ctx.config.prose_zh.repeat_penalty) == (0.8, 0.9, 40, 1.0)
+    ctx, engine, _ = make(*chapter_outputs(vector("generate"))[:4])
+    story._write(ctx, request, "en", 3000)
+    assert all(p is ctx.config.prose for p in engine.params)
+    assert ctx.config.prose_for("fr") is ctx.config.prose and ctx.config.prose_for(None) is ctx.config.prose

@@ -14,8 +14,7 @@ are filled in from `tools/measure_engine.py` output on the Kaggle T4 x2.
 - Sampling used for chapters: temperature 1.0 (mlabonne's recommendation for this model), repeat_penalty 1.05,
   frequency_penalty 0.05, top_p 0.95, top_k 64. Summaries and extraction ran cold (0.2 to 0.3). These are the starting values in
   `pulpermill/backend/config.py`; the writer's own values replace them.
-- Chinese needed different sampling (temperature 0.8, top_p 0.9, top_k 40, no repeat penalty). Not wired up here yet: the
-  request's `language` is not used to pick sampling. Say if it should be.
+- Chinese needed different sampling (temperature 0.8, top_p 0.9, top_k 40, no repeat penalty). Wired in M6+: `Config.prose_zh`, chosen by `Config.prose_for(language)` for the writer pass when the story's language is `zh`. Plan, Events, Shifts and the JSON calls use their usual sets in every language (the old setup changed only the chapter pass).
 
 ## M2 checks (to measure, on Kaggle)
 
@@ -33,7 +32,7 @@ are filled in from `tools/measure_engine.py` output on the Kaggle T4 x2.
 - Two attempts at most. The second adds the note from `pulpermill/prompts/templates/en/retry.yaml` (new file, added for the backend; the prompts owner should know for the golden test and tuning) with one short line saying what was wrong. The first reply is not shown to the model. Both failing is `bad_output` (502). Stop is never retried.
 - A reply fails when it is not valid JSON in the prompt's shape (a reply cut off at `max_tokens` is one of these, and the note says so), when the caller's own check fails, or when the longer sentences are not in the requested language (`language.py`: script share for Chinese, Japanese and Korean; function words for en, fr, de, es; short texts and other languages pass).
 - `Config.constrain`: `"always"` (default) constrains every JSON call. `"repair"` writes the first attempt free and constrains only the retry. The old setup measured about 4.5 tok/s constrained against about 10 free, so after the speed table from `measure_engine.py` is in, decide which default stays.
-- Not wired yet: different sampling for Chinese (`language` does not pick a parameter set).
+- Chinese writer sampling: see `Config.prose_zh`.
 
 ## M4: the simple calls (`pulpermill/backend/pipelines/simple.py`)
 
@@ -65,7 +64,6 @@ are filled in from `tools/measure_engine.py` output on the Kaggle T4 x2.
 
 - Everything under "M2 checks" is unmeasured: only a GPU run settles it.
 - `constrain` default (`always` or `repair`) waits for the speed table.
-- Chinese-specific sampling is not wired.
 - The spotlight contract change is not done.
 - `docs/backend-contract.md` says `id` for a judge hit where the code uses `item`.
 - No language check on plan, Events and Shifts until their prompts take a language.

@@ -22,7 +22,7 @@ def settings_line(config: Config) -> dict[str, Any]:
     return {
         "record": "settings",
         "model": asdict(config.model),
-        "sampling": {"prose": config.prose.as_dict(), "thinking": config.thinking.as_dict(), "structured": config.structured.as_dict()},
+        "sampling": {"prose": config.prose.as_dict(), "prose_zh": config.prose_zh.as_dict(), "thinking": config.thinking.as_dict(), "structured": config.structured.as_dict()},
         "constrain": config.constrain,
         "prompt_version_note": config.prompt_version_note,
     }
