@@ -12,7 +12,7 @@ try:
     import starlette  # noqa: F401
     import uvicorn  # noqa: F401
 except ImportError:  # the server's own dependencies are not installed: skip, as the tokenizer tests do
-    pytest.skip("starlette, uvicorn and requests are needed")
+    pytest.skip("starlette, uvicorn and requests are needed", allow_module_level=True)
 
 from pulpermill.backend.config import Config
 from pulpermill.backend.engine import FakeEngine
