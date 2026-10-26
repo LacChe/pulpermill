@@ -137,6 +137,32 @@ def test_status_answers_fast_while_a_slow_call_runs_and_a_second_call_is_busy():
         assert "stage" not in post(base, {"call": "status"}).json()
 
 
+def test_a_call_that_runs_long_is_answered_as_a_stream_the_page_can_still_read():
+    config = Config(stream_after=0.2, heartbeat=0.1)
+    with running(config, engine=FakeEngine(seconds_per_token=0.05, tokens_per_call=20)) as (base, _):
+        response = post(base, _of("generate"), timeout=30)
+        assert response.status_code == 200 and response.text.startswith(" ")
+        contract.parse_reply("generate", response.json())
+        assert wait_idle(base)
+
+
+def test_a_failure_in_a_streamed_call_still_reaches_the_page_as_the_contracts_error():
+    def boom(model, ctx):
+        time.sleep(0.5)
+        raise BackendError("bad_output", "")
+    with running(Config(stream_after=0.1, heartbeat=0.1), run=boom) as (base, _):
+        body = post(base, _of("generate"), timeout=30).json()
+        assert body["ok"] is False and body["error"]["kind"] == "bad_output"
+        assert wait_idle(base)
+
+
+def test_stop_during_a_streamed_call_still_cancels_inference():
+    with running(Config(stream_after=0.1, heartbeat=0.1), engine=FakeEngine(seconds_per_token=0.2, tokens_per_call=200)) as (base, engine):
+        with pytest.raises(requests.exceptions.ReadTimeout):
+            post(base, _of("generate"), timeout=0.1)
+        assert wait_idle(base, seconds=10) and engine.cancelled_calls >= 1
+
+
 def test_the_stage_moves_through_write_events_shifts():
     with running(engine=FakeEngine(seconds_per_token=0.03)) as (base, _):
         seen = []

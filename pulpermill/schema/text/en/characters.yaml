@@ -134,7 +134,7 @@ rules:
   char_no_relationships:
     message: "This describes a relationship to someone else. A character has to stand alone."
     fix: "Rephrase as a trait of this person, like 'distrusts family'. Ties between people are recorded in Entanglements."
-    judge_prompt: "Does this text name a particular person in the character's life (a sibling, partner, boss or friend), rather than a feeling or habit about people in general such as 'feels overlooked' or 'distrusts family'? Answer yes or no. If yes, rewrite it as a trait of this person alone."
+    judge_prompt: "A feeling or habit about people in general ('feels overlooked', 'being told her methods are wrong', 'distrusts family') is a trait of this person. Is this text free of any particular relative, partner, boss, friend or rival in the character's life? Answer yes or no. If no, rewrite it as a trait of this person alone."
   sketch_describes_person:
     message: "This reads as a role, not a person."
     fix: "Say what this person is like. A role gives the model a stereotype to fall back on."

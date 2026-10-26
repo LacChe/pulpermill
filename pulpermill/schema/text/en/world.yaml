@@ -135,7 +135,7 @@ rules:
   history_no_people:
     message: "This history involves specific individuals."
     fix: "Describe events and forces, and put anything tied to particular people in Entanglements."
-    judge_prompt: "Does this history describe events and forces that stand on their own, with no specific individuals? Answer yes or no. If no, rewrite it without the individuals."
+    judge_prompt: "Things, places, institutions and groups of people are not specific individuals. Is this history free of any particular named person or character? Answer yes or no. If no, rewrite it without the individuals."
   era_is_fact_not_mood:
     message: "This reads as mood. Era and technology works best as facts."
     fix: "Say what people can and can't do, and the scale. Mood belongs to Style."

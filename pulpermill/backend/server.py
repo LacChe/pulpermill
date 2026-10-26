@@ -9,6 +9,7 @@ Why it is built this way:
 - A client that disconnects sets the cancel flag. The call then answers nothing the page can use and changes nothing."""
 import asyncio
 import hmac
+import json
 import logging
 import threading
 import time
@@ -17,7 +18,7 @@ from typing import Any, Callable
 from pydantic import ValidationError
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, Response, StreamingResponse
 from starlette.routing import Route
 
 from pulpermill.schema import contract
@@ -163,15 +164,40 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
         loop = asyncio.get_running_loop()
         done: asyncio.Future = loop.create_future()
         threading.Thread(target=work, args=(model, cancel, loop, done), daemon=True, name=f"call-{model.call}").start()
+        begun = loop.time()
         while not done.done():
             await asyncio.wait({done}, timeout=config.poll_interval)
             if not done.done() and not cancel.cancelled and await request.is_disconnected():
                 log.info("call=%s client went away: cancelling", model.call)
                 cancel.set()
+            if not done.done() and not cancel.cancelled and loop.time() - begun >= config.stream_after:
+                return StreamingResponse(_stream(model.call, done, cancel), media_type="application/json", headers=CORS)
         kind, value = done.result()
         if kind == "ok" and not cancel.cancelled:
             return JSONResponse(value, headers=CORS)
         return _fail(*(value if kind == "fail" else ("stopped", "")))
+
+    async def _stream(call: str, done: "asyncio.Future", cancel: CancelFlag):
+        """A slow call's answer: a blank at once (so the headers go out) and every `heartbeat` seconds, then the reply as the
+        JSON body. A JSON parser ignores the leading blanks. The status is 200 whatever the outcome: the page reads the
+        contract's `ok` and `error.kind` from the body, which are the same as the status would have said."""
+        try:
+            yield b" "
+            while not done.done():
+                await asyncio.wait({done}, timeout=config.heartbeat)
+                if not done.done():
+                    yield b" "
+            kind, value = done.result()
+            if kind == "ok" and not cancel.cancelled:
+                body = value
+            else:
+                body = contract.error_reply(*(value if kind == "fail" else ("stopped", "")))
+            yield json.dumps(body).encode()
+        except (asyncio.CancelledError, GeneratorExit):
+            if not cancel.cancelled:
+                log.info("call=%s client went away: cancelling", call)
+                cancel.set()
+            raise
 
     app = Starlette(routes=[Route("/api", api, methods=["POST", "OPTIONS"])])
     app.state.runs = runs
@@ -179,5 +205,4 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
 
 
 def _loads(raw: bytes) -> Any:
-    import json
     return json.loads(raw)

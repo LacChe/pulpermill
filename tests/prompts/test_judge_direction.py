@@ -5,7 +5,7 @@ import yaml
 from pulpermill.prompts.prompts import judge_question
 
 # Rules whose question is asked the other way round: "yes" means the item breaks the rule.
-YES_BREAKS = {"char_no_relationships", "object_unowned", "power_no_current_goals"}
+YES_BREAKS = {"object_unowned", "power_no_current_goals"}
 
 
 def _all_rules():
