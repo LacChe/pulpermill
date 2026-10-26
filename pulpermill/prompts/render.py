@@ -393,7 +393,8 @@ def render_entanglements(ent: dict, cast_names: Iterable[str] = (), *, scope: st
 
 # ---- Setup, standing, the story so far ------------------------------------------------------------------------------
 
-def render_setup(setup: dict, goal: str | None, chapter: int, chapter_count: int | None, *, report: Report | None = None) -> str:
+def render_setup(setup: dict, goal: str | None, chapter: int, chapter_count: int | None, *, report: Report | None = None,
+                 goal_state: str | None = None) -> str:
     c = tx.limits()["setup"]
     fr = tx.prompt_text("frames")
     lines = []
@@ -407,7 +408,7 @@ def render_setup(setup: dict, goal: str | None, chapter: int, chapter_count: int
     if s(goal):
         lines.append(lead("setup", "goal", value=clip(goal, c["goal"], "goal", report)))
     else:
-        lines.append(fr["goal_ended"])
+        lines.append(fr["goal_between"] if goal_state == "needs_goal" else fr["goal_ended"])
     if s(setup.get("stakes")):
         lines.append(lead("setup", "stakes", value=clip(setup["stakes"], c["stakes"], "setup.stakes", report)))
     total = int(chapter_count or 0)
@@ -543,10 +544,35 @@ def render_scene(beat: dict, *, protagonist: str, sex: str = "other", open_plant
 
 # ---- What the planner is told the code has set ----------------------------------------------------------------------
 
+def _goal_lines(req: dict, fr: dict, lim: dict, report: Report | None) -> list[str]:
+    """What the goal arc says about this chapter: the story's goal, how long the goal has stood, why a new goal is needed or
+    advised, the goals so far, and the directions a new goal could take. All of it comes from the page."""
+    plan = req.get("goal_plan") or {}
+    cap = lim["setup"]["goal"]
+    lines = []
+    if s(req.get("story_goal")):
+        lines.append(fr["code_story_goal"].format(value=sentence(clip(req["story_goal"], cap, "story_goal", report))))
+    end = plan.get("last_end") or {}
+    if s(plan.get("state")) == "needs_goal" and s(end.get("kind")) in fr["code_goal_set"]:
+        lines.append(fr["code_goal_set"][s(end["kind"])].format(goal=sentence(clip(end.get("goal"), cap, "last_goal", report))))
+    elif s(req.get("goal")) and int(plan.get("age") or 0) >= 1:
+        lines.append(fr["code_goal_age"].format(age=int(plan["age"]), since=int(plan.get("since") or 1)))
+    due = s(plan.get("due"))
+    if due in fr["code_goal_due"]:
+        lines.append(fr["code_goal_due"][due])
+    earlier = [clip(g, cap, "earlier_goal", report).rstrip(".") for g in plan.get("earlier_goals") or [] if s(g)]
+    if earlier and (due or s(plan.get("state")) == "needs_goal"):
+        lines.append(fr["code_goals_so_far"].format(items="; ".join(earlier)))
+    directions = [s(d.get("text")) for d in plan.get("directions") or [] if s(d.get("text"))]
+    if directions:
+        lines.append(fr["code_directions"] + "\n" + "\n".join(fr["code_direction_item"].format(text=sentence(clip(d, cap * 2, "direction", report))) for d in directions))
+    return lines
+
+
 def render_code_numbers(req: dict, *, report: Report | None = None) -> str:
     fr = tx.prompt_text("frames")
     lim = tx.limits()
-    lines = []
+    lines = _goal_lines(req, fr, lim, report)
     spot = req.get("spotlight") or {}
     if s(spot.get("what")):
         lines.append(fr["code_spotlight"].format(value=sentence(clip(spot["what"], lim["entanglements"]["pressure_what"], "spotlight", report))))

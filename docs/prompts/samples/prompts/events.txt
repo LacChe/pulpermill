@@ -51,7 +51,10 @@ Now say what the chapter shows happened, as the reply format asks.
   "planted": {
    "anyOf": [
     {
-     "type": "string"
+     "type": "string",
+     "enum": [
+      "Pekka keeps a locked back room"
+     ]
     },
     {
      "type": "null"

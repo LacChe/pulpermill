@@ -140,6 +140,7 @@ test("a plant is not counted when two are already open; a reveal with no knowled
     { id: "e0000002", beat: "gone2", happened: "b", planted: "Second thing.", paid_off: [] },
   ] };
   assert.equal(openPlants(project).length, 2);
+  beat.plant = "Third thing.";      // only the plant the beat planned can land
   const out = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "Third thing.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false } }));
   assert.equal(out.events.planted, "");
   assert.ok(out.warnings.some((w) => w.kind === "plant"));
@@ -197,4 +198,35 @@ test("the inputs key changes when the beat changes", async () => {
   const { project, beat } = await planned();
   const a = inputsKey(schema, project, beat);
   assert.notEqual(a, inputsKey(schema, project, { ...beat, turn: "Different." }));
+});
+
+test("an extractor that echoes an open plant plants nothing, and a beat plant that duplicates one is not counted", async () => {
+  const { project, beat } = await planned();
+  project.summary_events = { entries: [{ id: "e0000001", beat: "gone", happened: "a", planted: "The pond is warm.", paid_off: [] }] };
+  beat.plant = "";
+  const echo = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "The pond is warm.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false } }));
+  assert.equal(echo.events.planted, "", "the beat planned nothing");
+  beat.plant = "The pond is warm.";
+  const again = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "The pond is warm.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false } }));
+  assert.equal(again.events.planted, "", "the same words are already open");
+});
+
+test("two plants with the same words get different labels, so a payoff names one of them", async () => {
+  const { project, beat } = await planned();
+  project.outline.beats[0].chapter = 1;
+  project.summary_events = { entries: [
+    { id: "e0000001", beat: project.outline.beats[0].id, happened: "a", planted: "The pond is warm.", paid_off: [] },
+    { id: "e0000002", beat: "later", happened: "b", planted: "The pond is warm.", paid_off: [] },
+  ] };
+  const texts = openPlants(project).map((p) => p.text);
+  assert.equal(new Set(texts).size, 2);
+  const out = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: null, paid_off: [openPlants(project).find((p) => p.id === "e0000002").text], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false } }));
+  assert.deepEqual(out.events.paid_off, ["e0000002"]);
+});
+
+test("a change value written as old -> new keeps only the new words", async () => {
+  const { project, beat } = await planned();
+  const tie = project.entanglements.ties[0];
+  const out = applyGenerated(schema, project, beat, reply({ changes: [{ section: "ties", item: tie.id, field: "bond", value: `${tie.bond} -> grown close` }] }));
+  assert.equal(out.entanglements.ties.find((x) => x.id === tie.id).bond, "grown close");
 });

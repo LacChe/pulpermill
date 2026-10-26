@@ -265,7 +265,7 @@ def describe_fields(card_id: str) -> str:
         line = f"{indent}- {key}: {s(d.get('help'))}"
         options = d.get("options")
         if options:
-            line += " One of: " + ", ".join(f"{v} ({o.get('label', v)})" for v, o in options.items()) + "."
+            line += " One of: " + "; ".join(f"{v} ({o.get('description') or o.get('label', v)})" for v, o in options.items()) + "."
         good = (d.get("examples") or {}).get("good")
         if good:
             line += " For example: " + "; ".join(good[:2]) + "."
@@ -324,7 +324,8 @@ def fill_prompt(req: dict) -> Prompt:
     link_lines = [f"{label_}: {', '.join(found)}" for label_, key in (("People", "characters"), ("Places", "world.places"), ("Things", "world.objects"),
                                                                        ("Groups", "world.powers"), ("Rules", "world.rules")) if (found := link[key])]
     current = _values_lines(req.get("values") or {}, names)
-    parts = [f["job"].format(language_name=language), f["scope_line"].format(**scope),
+    guidance = f.get("card_guidance", {}).get(card)
+    parts = [f["job"].format(language_name=language), f["scope_line"].format(**scope)] + ([guidance.strip()] if guidance else []) + [
              f["card_lead"].format(label=label) + "\n" + describe_fields(card)]
     if shown:
         parts.append(f["other_cards_lead"] + "\n\n" + "\n\n".join(shown))

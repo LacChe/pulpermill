@@ -7,7 +7,7 @@ For each person who moved, fill in only the boxes that changed:
 - wants: an abstract desire that changed (a concrete aim toward one person belongs on a tie's edge)
 - refuses: something they now will not do
 - decided: what they decided; for the protagonist, say which of the two choices the chapter posed they took, or what they did instead
-Then say what changed in the live entanglements, using the handle given for each item. Add a new knowledge line (at most three) only when someone has learned, suspected or been misled about something that has no line yet. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
+Then say what changed in the live entanglements, using the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. Add a new knowledge line (at most three) only when someone has learned, suspected or been misled about something that has no line yet. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
 
 The people on stage:
 Suvi (she/her). Wants: Keep the shop open; Know the truth about her mother's death. Fear: Being the one who lets the shop fall. Flaw: Believes that anyone who is kind to her wants something.
@@ -262,59 +262,77 @@ Now say who moved and what changed, as the reply format asks.
   "new_knowledge": {
    "type": "array",
    "items": {
-    "type": "object",
-    "properties": {
-     "person": {
-      "type": "string",
-      "enum": [
-       "Suvi",
-       "Aino",
-       "Pekka",
-       "The Harbour Board",
-       "The Dockhands' Brotherhood"
-      ]
-     },
-     "status": {
-      "type": "string",
-      "enum": [
-       "knows",
-       "suspects",
-       "misled"
-      ]
-     },
-     "rule": {
-      "anyOf": [
-       {
+    "anyOf": [
+     {
+      "type": "object",
+      "properties": {
+       "person": {
+        "type": "string",
+        "enum": [
+         "Suvi",
+         "Aino",
+         "Pekka",
+         "The Harbour Board",
+         "The Dockhands' Brotherhood"
+        ]
+       },
+       "status": {
+        "type": "string",
+        "enum": [
+         "knows",
+         "suspects",
+         "misled"
+        ]
+       },
+       "rule": {
         "type": "string",
         "enum": [
          "Rent is due on the first of the week.",
          "The dock repairs were paid for by the shopkeepers, not the board.",
          "The cellar under the shop floods on the spring tide."
         ]
-       },
-       {
-        "type": "null"
        }
-      ]
+      },
+      "required": [
+       "person",
+       "status",
+       "rule"
+      ],
+      "additionalProperties": false
      },
-     "fact": {
-      "anyOf": [
-       {
-        "type": "string"
+     {
+      "type": "object",
+      "properties": {
+       "person": {
+        "type": "string",
+        "enum": [
+         "Suvi",
+         "Aino",
+         "Pekka",
+         "The Harbour Board",
+         "The Dockhands' Brotherhood"
+        ]
        },
-       {
-        "type": "null"
+       "status": {
+        "type": "string",
+        "enum": [
+         "knows",
+         "suspects",
+         "misled"
+        ]
+       },
+       "fact": {
+        "type": "string"
        }
-      ]
+      },
+      "required": [
+       "person",
+       "status",
+       "fact"
+      ],
+      "additionalProperties": false
      }
-    },
-    "required": [
-     "person",
-     "status",
-     "rule",
-     "fact"
-    ],
-    "additionalProperties": false
+    ]
    },
    "maxItems": 3
   }

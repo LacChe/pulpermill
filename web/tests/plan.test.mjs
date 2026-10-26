@@ -372,3 +372,55 @@ test("with no pressure, or one that names nobody else, the suggestion is by use 
   assert.deepEqual(castChoices(p, 1).filter((c) => c.inPressure).map((c) => c.name), ["Suvi"]);
   assert.deepEqual(suggestedCast(p, 1).sort(), [suvi.id, ola.id, mia.id].sort());
 });
+
+// ---- The goal arc -------------------------------------------------------------------------------------------------
+import { goalArc, goalDue, goalDirections, goalWarnings } from "../plan.js";
+
+test("a goal that ends mid-story does not end the story: the next plan needs a new goal, and a late one winds down", async () => {
+  const p = await started();
+  p.setup.chapter_count = 6;
+  const [suvi] = p.characters;
+  const common = { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id };
+  writeChapter(p, 1, { ...common, beat: { goal_change: "abandoned" }, events: { goal_landed: true } });
+  let arc = goalArc(p);
+  assert.equal(arc.state, "needs_goal");
+  assert.deepEqual(arc.lastEnd, { kind: "abandoned", goal: "Find the ledger." });
+  assert.equal(goalDue(p, 2).due, "set");
+  writeChapter(p, 2, { ...common, beat: { goal_change: "redefined", goal_now: "Hide the ledger from the board." }, events: { goal_landed: true } });
+  arc = goalArc(p);
+  assert.equal(arc.state, "active");
+  assert.equal(arc.goal, "Hide the ledger from the board.");
+  assert.equal(arc.since, 3);
+  assert.deepEqual(arc.goals, ["Find the ledger.", "Hide the ledger from the board."]);
+  writeChapter(p, 3, { ...common, beat: { goal_change: "achieved" }, events: { goal_landed: true } });
+  writeChapter(p, 4, { ...common, beat: { goal_change: "redefined", goal_now: "Learn who paid for the dock." }, events: { goal_landed: true } });
+  writeChapter(p, 5, { ...common, beat: { goal_change: "achieved" }, events: { goal_landed: true } });
+  assert.equal(goalArc(p).state, "ended", "one chapter is left, so the story winds down");
+});
+
+test("the goal arc advises, and never forbids: due, directions and warnings", async () => {
+  const p = await started();
+  p.setup.chapter_count = 6;
+  assert.equal(goalDue(p, 1).due, null);
+  assert.equal(goalDue(p, 3).due, "twist", "the middle of the story, goal unchanged");
+  assert.equal(goalDue(p, 6).due, "settle");
+  const [suvi] = p.characters;
+  const dirs = goalDirections(p, [suvi.id], 3);
+  assert.ok(dirs.length >= 2 && dirs.length <= 3);
+  assert.equal(new Set(dirs.map((d) => d.kind)).size, dirs.length, "different kinds");
+  assert.notDeepEqual(goalDirections(p, [suvi.id], 4).map((d) => d.kind), dirs.map((d) => d.kind), "the first kind moves on each chapter");
+  const beat = { id: "b", chapter: 6, goal_change: "", collision_goal: "x" };
+  assert.ok(goalWarnings(p, beat, 6).length >= 1, "the last chapter should settle the story's goal");
+  assert.equal(goalWarnings(p, { ...beat, goal_change: "achieved" }, 6).length, 0);
+  assert.ok(goalWarnings(p, { ...beat, goal_change: "achieved" }, 2).length >= 1, "the story's own goal achieved with 4 chapters left");
+});
+
+test("a goal and a scene aim that repeat an earlier one are noticed", async () => {
+  const p = await started();
+  p.setup.chapter_count = 6;
+  const [suvi] = p.characters;
+  const common = { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id };
+  writeChapter(p, 1, { ...common, beat: { collision_goal: "Suvi wants to prove the beechwood loaf can rise quickly", goal_change: "redefined", goal_now: "Prove that beechwood bakes a reliable loaf" }, events: { goal_landed: true } });
+  const again = { id: "next", chapter: 2, goal_change: "redefined", goal_now: "Prove beechwood bakes a reliable loaf", collision_goal: "Suvi wants to prove the beechwood loaf can rise quickly again" };
+  assert.equal(goalWarnings(p, again, 2).length, 2);
+});

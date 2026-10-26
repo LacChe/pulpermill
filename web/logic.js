@@ -325,6 +325,25 @@ function sourceList(project, source) {
   return project[cardId]?.[key] ?? [];
 }
 
+// A plant is named by its words, and two chapters can plant the same words. Past the first, the label carries the chapter,
+// so a payoff names exactly one plant and the page and the model agree on which.
+export function plantLabels(project) {
+  const beats = project.outline?.beats ?? [];
+  const chapterOf = (id) => beats.find((b) => b.id === id)?.chapter;
+  const planted = (project.summary_events?.entries ?? []).filter((e) => isFilled(e.planted))
+    .sort((a, b) => (Number(chapterOf(a.beat)) || 0) - (Number(chapterOf(b.beat)) || 0));
+  const seen = new Map();
+  const out = new Map();
+  for (const e of planted) {
+    const words = e.planted.trim();
+    const key = words.replace(/\s+/g, " ").toLowerCase();
+    const n = (seen.get(key) ?? 0) + 1;
+    seen.set(key, n);
+    out.set(e.id, n === 1 ? words : `${words.replace(/[.!?]+$/, "")} (chapter ${chapterOf(e.beat) ?? "?"})`);
+  }
+  return out;
+}
+
 function entryLabel(item, unnamed) {
   for (const key of NAME_KEYS) {
     if (typeof item[key] === "string" && item[key].trim()) return item[key].trim();
@@ -342,6 +361,7 @@ export function refOptions(project, sources, unnamed = msg("common.unnamed"), op
   const { where, keep = [] } = options;
   const paidOff = new Set((project.summary_events?.entries ?? []).flatMap((e) => e.paid_off ?? []));
   const landed = new Set((project.summary_events?.entries ?? []).flatMap((e) => e.reveals_landed ?? []));
+  const labels = sources.includes("summary_events.entries") ? plantLabels(project) : new Map();
   const out = [];
   for (const source of sources) {
     for (const item of sourceList(project, source)) {
@@ -350,7 +370,7 @@ export function refOptions(project, sources, unnamed = msg("common.unnamed"), op
         if (where && source === "world.rules" && landed.has(item.id)) continue;
         if (where && !Object.entries(where).every(([key, allowed]) => allowed.includes(item[key]))) continue;
       }
-      out.push({ value: item.id, label: entryLabel(item, unnamed), source });
+      out.push({ value: item.id, label: source === "summary_events.entries" && labels.has(item.id) ? labels.get(item.id) : entryLabel(item, unnamed), source });
     }
   }
   return out;

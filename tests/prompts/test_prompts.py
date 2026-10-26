@@ -287,3 +287,47 @@ def test_end_story_prompts_carry_ids_and_assemble():
 def test_every_prompt_is_one_user_turn():
     p = P.style_fit_prompt(golden("style_fit"))
     assert p.messages() == [{"role": "user", "content": p.text}]
+
+
+# ---- The goal arc ---------------------------------------------------------------------------------------------------
+
+def _needs_goal_request():
+    req = json.loads(json.dumps(plan_request()))
+    req.update(goal=None, goal_state="needs_goal", story_goal="Relight the oven.", chapter=3, chapter_count=6,
+               goal_plan={"state": "needs_goal", "due": "set", "age": 0, "since": 3, "earlier_goals": ["Relight the oven.", "Prove beechwood works."],
+                          "last_end": {"kind": "achieved", "goal": "Prove beechwood works."},
+                          "directions": [{"kind": "truth", "text": "People believe only applewood works."}]})
+    return req
+
+
+def test_a_needed_goal_is_told_to_the_planner_and_forced_in_the_beat():
+    req = _needs_goal_request()
+    text = P.planner_beat_prompt(req, "x").text
+    assert "Relight the oven." in text and "Prove beechwood works." in text
+    assert "starts a new goal" in text and "People believe only applewood works." in text
+    schema = P.planner_beat_prompt(req, "x").schema
+    assert schema["properties"]["goal_change"]["enum"] == ["redefined"]
+    assert {"goal_change", "goal_now"} <= set(schema["required"])
+    no_leaks(text)
+
+
+def test_a_goal_that_is_ended_for_good_offers_no_goal_change():
+    req = _needs_goal_request()
+    req.update(goal_state="ended", goal_plan={"state": "ended", "due": None, "age": 0, "since": 3, "earlier_goals": [], "last_end": None, "directions": []})
+    assert "goal_change" not in P.planner_beat_prompt(req, "x").schema["properties"]
+    assert "winding down" in P.planner_beat_prompt(req, "x").text
+
+
+def test_the_writer_is_told_a_new_goal_forms_when_the_story_goes_on():
+    from pulpermill.prompts.render import render_setup
+    setup = {"protagonist": "Suvi"}
+    assert "A new goal forms during this chapter" in render_setup(setup, None, 3, 6, goal_state="needs_goal")
+    assert "winding down" in render_setup(setup, None, 5, 6, goal_state="ended")
+    assert "winding down" in render_setup(setup, None, 5, 6)
+
+
+def test_the_entanglements_fill_asks_for_three_different_pressures():
+    req = {"call": "fill", "schema_version": 1, "language": "en", "card": "entanglements", "related": {}, "values": {}, "note": "Orla and Pim are close."}
+    text = P.fill_prompt(req).text
+    assert "three pressures" in text
+    assert "three pressures" not in P.fill_prompt({**req, "card": "world"}).text

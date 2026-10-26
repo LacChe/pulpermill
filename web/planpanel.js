@@ -5,7 +5,7 @@ import { storyStarted, cardLocked } from "./gate.js";
 import { planChapter } from "./client.js";
 import { planNoteFor, setPlanNote, copyNote, putNote, removeNote } from "./modelnotes.js";
 import {
-  CAST_MAX, castKey, chapterInfo, beatForChapter, castChoices, duePressure, suggestedCast, castProblem, pickSpotlight, shiftsForChapter, currentGoal,
+  CAST_MAX, castKey, chapterInfo, beatForChapter, castChoices, duePressure, suggestedCast, castProblem, pickSpotlight, shiftsForChapter, goalArc,
   openPlants, availableReveals, offstageDue, planIsStale, placeBeat,
 } from "./plan.js";
 import { section, fill, msg, joinList } from "./text.js";
@@ -57,7 +57,8 @@ export function createPlanPanel(hooks) {
 
   function facts(project, ids, chapter) {
     const spotlight = pickSpotlight(project, ids, chapter);
-    const goal = currentGoal(project);
+    const arc = goalArc(project);
+    const goal = arc.goal ?? (arc.state === "needs_goal" ? STRINGS.goalNeeded : null);
     const rows = [
       [STRINGS.spotlight, spotlight?.what ? (spotlight.what.length > 140 ? fill(STRINGS.truncated, { text: spotlight.what.slice(0, 140) }) : spotlight.what) : STRINGS.spotlightNone],
       [STRINGS.shifts, joinList(shiftsForChapter(project, chapter).map((s) => STRINGS.shiftWords[s]))],
@@ -92,6 +93,7 @@ export function createPlanPanel(hooks) {
     const words = [...new Set(result.unresolved.map((u) => u.words))];
     if (words.length) parts.push(fill(STRINGS.unmatched, { names: joinList(words.map((w) => msg("common.quoted", { text: w }))) }));
     if (result.dropped.length) parts.push(fill(STRINGS.dropped, { fields: joinList(result.dropped) }));
+    for (const warning of result.warnings ?? []) parts.push(warning);
     const wrote = copy(project.outline.beats.find((b) => b.id === result.beat.id));
     hooks.notice(joinList(parts, "sentence"), result.blockers.length ? "notice-bad" : "", {
       label: STRINGS.undo,

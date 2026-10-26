@@ -10,7 +10,7 @@ import { storyStarted, cardLocked } from "./gate.js";
 import { watch } from "./undo.js";
 import { msg, joinList } from "./text.js";
 import {
-  chapterInfo, beatForChapter, beatBlockers, castProblem, planIsStale, entanglementsHash, currentGoal, openPlants,
+  chapterInfo, beatForChapter, beatBlockers, castProblem, planIsStale, entanglementsHash, currentGoal, goalArc, openPlants,
   availableReveals, latestShifts, nameMap, fieldDefs, entanglementsFor, castCards, beatInWords, eventsInWords,
 } from "./plan.js";
 
@@ -79,6 +79,7 @@ export function generateRequest(schema, project, beat) {
     style: copyOf(settled.style),
     setup,
     goal: currentGoal(project),
+    goal_state: goalArc(project).state === "active" ? null : goalArc(project).state,
     cast: castCards(project, beat.cast).map(copyOf),
     world: worldForWriter(schema, project, names),
     entanglements: entanglementsFor(schema, project, beat.cast, names, { allPressures: false }),
@@ -141,7 +142,9 @@ function resolveChangeValue(def, change, project) {
   if (def.options?.length) {
     return def.options.some((o) => o.value === change.value) ? { value: change.value } : { why: msg("records.whyNotChoice", { value: change.value }) };
   }
-  return typeof change.value === "string" && change.value.trim() ? { value: change.value.trim() } : { why: msg("records.whyNoWords") };
+  // The model sometimes writes "old -> new". The value is only what it reads now: the part after the last arrow.
+  const words = typeof change.value === "string" ? change.value.split(/\s*(?:->|→)\s*/).pop().trim() : "";
+  return words ? { value: words } : { why: msg("records.whyNoWords") };
 }
 
 // Applies the proposed changes to a copy of the Entanglements. A change is dropped (and says why) when its item does not exist,
@@ -207,6 +210,7 @@ function addKnowledge(schema, project, next, proposals, cast, { overwriteLocked 
   const taken = ["ties", "holdings", "knowledge", "pressures"].flatMap((k) => (next[k] ?? []).map((i) => i.id));
   const people = new Set((project.characters ?? []).map((c) => c.id));
   for (const p of proposals) {
+    if (!p.rule && !p.fact) continue;      // an empty proposal says nothing, so it is not worth a warning
     const what = p.rule ?? p.fact ?? "";
     const drop = (why) => dropped.push({ section: "knowledge", field: label, value: `${p.person}: ${what}`, why });
     if (applied.length >= MAX_NEW_KNOWLEDGE) { drop(msg("records.knowledgeTooMany", { max: MAX_NEW_KNOWLEDGE })); continue; }
@@ -276,7 +280,10 @@ export function applyGenerated(schema, project, beat, read, { overwriteLocked = 
   const things = e.things_seen.map((w) => link(["world.objects"], w, msg("records.whatThing"))).filter(Boolean);
 
   // A chapter plants at most one thing, and at most two plants stay open at once.
-  let planted = e.planted;
+  // Only the plant the beat planned can land. Anything else the extractor wrote is not a plant, so a chapter cannot
+  // plant the same words twice by echoing the open list.
+  let planted = isFilled(beat.plant) && squash(e.planted) === squash(beat.plant) ? beat.plant.trim() : null;
+  if (planted && plants.some((p) => squash(p.text) === squash(planted))) planted = null;
   if (planted && plants.length - paid.length >= MAX_OPEN_PLANTS) {
     warnings.push({ kind: "plant", text: msg("records.plantsFull", { planted }) });
     planted = null;

@@ -77,8 +77,8 @@ test("an entry is left out, with its reason, when it cannot be trusted", async (
     entry({ fact: null }),
   ] }));
   assert.equal(added(out).length, 0);
-  assert.equal(out.changes.dropped.length, 4);
-  assert.equal(out.warnings.filter((w) => w.kind === "dropped").length, 4);
+  assert.equal(out.changes.dropped.length, 3, "an empty entry is skipped without a warning");
+  assert.equal(out.warnings.filter((w) => w.kind === "dropped").length, 3);
 });
 
 test("a person and a thing that already have an entry get no second one", async () => {

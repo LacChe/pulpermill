@@ -18,6 +18,10 @@ Schema = dict[str, Any]
 
 # ---- Small shapes ---------------------------------------------------------------------------------------------------
 
+def s_plain(value: Any) -> str:
+    return str(value or "").strip()
+
+
 def text() -> Schema:
     return {"type": "string"}
 
@@ -191,6 +195,11 @@ def beat_schema(req: dict) -> Schema:
     if req.get("goal"):
         props["goal_change"] = {"type": "string", "enum": ["achieved", "redefined", "abandoned"]}
         props["goal_now"] = text()
+    elif req.get("goal_state") == "needs_goal":
+        # The last goal ended and the story goes on: this chapter has to start the next goal, so it is not optional.
+        props["goal_change"] = {"type": "string", "enum": ["redefined"]}
+        props["goal_now"] = text()
+        required += ["goal_change", "goal_now"]
     return obj(props, required)
 
 
@@ -202,8 +211,12 @@ def behavior_states(cast: list[dict]) -> list[str]:
 
 def events_schema(req: dict) -> Schema:
     world = req.get("world") or {}
+    # `planted` may only confirm the plant the beat planned, in the beat's own words. Left free, the model copied the
+    # open plants list back as if every chapter had planted it again.
+    planned = s_plain((req.get("beat") or {}).get("plant"))
+    planted = maybe(one_of([planned])) if planned else {"type": "null"}
     return obj({
-        "happened": text(), "changed": text(), "planted": maybe(text()),
+        "happened": text(), "changed": text(), "planted": planted,
         "paid_off": list_of(names_of(req.get("open_plants"), "text"), 2),
         "reveals_landed": list_of(names_of(req.get("available_reveals"), "statement"), 5),
         "behaviors_seen": list_of(behavior_states(req.get("cast")), 5),
@@ -247,8 +260,10 @@ def shifts_schema(req: dict, handles: dict[str, dict]) -> Schema:
     changes = ({"type": "array", "items": {"anyOf": options} if len(options) > 1 else options[0]}
                if options else {"type": "array", "items": text(), "maxItems": 0})
     shift = obj({"character": one_of(cast), **{k: text() for k in SHIFT_FIELDS}}, ["character"])
-    new = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES},
-               "rule": maybe(one_of(names_of((req.get("world") or {}).get("rules"), "statement"))), "fact": maybe(text())})
+    rules = names_of((req.get("world") or {}).get("rules"), "statement")
+    about_rule = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES}, "rule": one_of(rules)})
+    about_fact = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES}, "fact": text()})
+    new = {"anyOf": [about_rule, about_fact]} if rules else about_fact
     return obj({"shifts": {"type": "array", "items": shift, "maxItems": 5},
                 "changes": changes,
                 "new_knowledge": {"type": "array", "items": new, "maxItems": 3}})

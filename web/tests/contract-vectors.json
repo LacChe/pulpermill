@@ -482,7 +482,18 @@
         "earlier_beats": [],
         "earlier_events": [],
         "latest_shifts": [],
-        "offstage": null
+        "offstage": null,
+        "goal_state": null,
+        "story_goal": null,
+        "goal_plan": {
+          "state": "active",
+          "due": null,
+          "age": 0,
+          "since": 1,
+          "earlier_goals": [],
+          "last_end": null,
+          "directions": []
+        }
       }
     },
     {
@@ -536,6 +547,17 @@
           "problems": [
             "The turn does not say what is different."
           ]
+        },
+        "goal_state": null,
+        "story_goal": null,
+        "goal_plan": {
+          "state": "active",
+          "due": null,
+          "age": 0,
+          "since": 1,
+          "earlier_goals": [],
+          "last_end": null,
+          "directions": []
         }
       }
     },
@@ -581,7 +603,18 @@
         "earlier_beats": [],
         "earlier_events": [],
         "latest_shifts": [],
-        "offstage": null
+        "offstage": null,
+        "goal_state": null,
+        "story_goal": null,
+        "goal_plan": {
+          "state": "active",
+          "due": null,
+          "age": 0,
+          "since": 1,
+          "earlier_goals": [],
+          "last_end": null,
+          "directions": []
+        }
       }
     },
     {
@@ -630,6 +663,17 @@
         "retry": {
           "thinking": "x",
           "beat": {}
+        },
+        "goal_state": null,
+        "story_goal": null,
+        "goal_plan": {
+          "state": "active",
+          "due": null,
+          "age": 0,
+          "since": 1,
+          "earlier_goals": [],
+          "last_end": null,
+          "directions": []
         }
       }
     },
@@ -663,7 +707,8 @@
           "turn": "She chooses the ledger."
         },
         "open_plants": [],
-        "available_reveals": []
+        "available_reveals": [],
+        "goal_state": null
       }
     },
     {
@@ -692,7 +737,8 @@
         "earlier_events": [],
         "previous_ending": null,
         "open_plants": [],
-        "available_reveals": []
+        "available_reveals": [],
+        "goal_state": null
       }
     },
     {
@@ -857,7 +903,18 @@
         "earlier_events": [],
         "latest_shifts": [],
         "offstage": null,
-        "retry": null
+        "retry": null,
+        "goal_state": null,
+        "story_goal": null,
+        "goal_plan": {
+          "state": "active",
+          "due": null,
+          "age": 0,
+          "since": 1,
+          "earlier_goals": [],
+          "last_end": null,
+          "directions": []
+        }
       }
     },
     {
@@ -938,7 +995,8 @@
           "spotlight": ""
         },
         "open_plants": [],
-        "available_reveals": []
+        "available_reveals": [],
+        "goal_state": null
       }
     }
   ],

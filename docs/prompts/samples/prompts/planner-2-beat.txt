@@ -97,6 +97,8 @@ How recently each person on stage has appeared: Suvi last in chapter 4; Aino las
 Lean towards the places and things that have been used least, when they fit the scene.
 Bring a hidden truth to light only when the story is ready for it.
 A payoff resolves one of the open plants, and a chapter that gives it a natural home is the one to choose.
+Goals change when the story turns, so the planner decides when. A goal can be achieved, given up, or reshaped, and the code's notes say when one is overdue or needed.
+A plant is something new. Leave it out when nothing new needs setting up, and never plant what is already listed as open.
 
 This is a middle chapter: tighten the squeeze, and let what the protagonist chose earlier cost them.
 
@@ -110,6 +112,8 @@ Fill the beat from your plan. Write each field as a plain sentence a writer coul
 - Each choice is something the protagonist wants or values. Picking one costs the other.
 - The turn says what is different by the end, and it differs from the earlier turns.
 - The ending is a moment that leaves a question open.
+- What the protagonist is after in this chapter is a step of its own, different from every earlier chapter's aim.
+- Give a goal change when the chapter really wins, loses or reshapes the protagonist's goal. A new goal (redefined) is something to get, find or stop that differs from every earlier goal. It may open a different part of the story than the last one did (another person's want, a pressure, a hidden truth), as long as it bears on what is at stake.
 - Use a shift from the allowed list, a reveal from the hidden truths still waiting, and a payoff from the open plants.
 - A reveal names who learns it. A goal change appears only when the story moves its goal, and a redefined goal says what it has become.
 Reply with the beat only.

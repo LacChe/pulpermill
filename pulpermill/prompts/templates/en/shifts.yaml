@@ -11,7 +11,7 @@ job: |
   - wants: an abstract desire that changed (a concrete aim toward one person belongs on a tie's edge)
   - refuses: something they now will not do
   - decided: what they decided; for the protagonist, say which of the two choices the chapter posed they took, or what they did instead
-  Then say what changed in the live entanglements, using the handle given for each item. Add a new knowledge line (at most three) only when someone has learned, suspected or been misled about something that has no line yet. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
+  Then say what changed in the live entanglements, using the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. Add a new knowledge line (at most three) only when someone has learned, suspected or been misled about something that has no line yet. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
 
 people_lead: "The people on stage:"
 choice_lead: "The chapter posed this choice for {name}:"

@@ -119,7 +119,10 @@ class PlanRequest(Envelope):
     chapter_count: int
     style: dict[str, Any]
     setup: dict[str, Any]
-    goal: str | None = None                 # the current goal, worked out by the page; none once it ended
+    goal: str | None = None                 # the current goal, worked out by the page; none while a new one is needed, or once it ended
+    goal_state: Literal["needs_goal", "ended"] | None = None   # why there is no goal: the story goes on and needs one, or it winds down
+    story_goal: str | None = None           # Setup's goal, when the chapters have moved off it
+    goal_plan: dict[str, Any] | None = None  # {state, due, age, since, earlier_goals, last_end, directions}: the goal arc's advice
     cast: list[dict[str, Any]]
     world: dict[str, Any]
     entanglements: dict[str, Any]
@@ -143,6 +146,7 @@ class GenerateRequest(Envelope):
     style: dict[str, Any]
     setup: dict[str, Any]                   # normal and disruption only in chapter 1
     goal: str | None = None
+    goal_state: Literal["needs_goal", "ended"] | None = None
     cast: list[dict[str, Any]]
     world: dict[str, Any]
     entanglements: dict[str, Any]

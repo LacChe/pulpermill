@@ -294,7 +294,7 @@ export function checkStyleFit(client, schema, project) {
 
 // Plan the next chapter: the offstage move when one is due, then think and fill the beat, and one more try when the
 // Outline's own blocking rules refuse the first beat (the second attempt is told what was wrong). Nothing is changed:
-// it resolves to {ok: true, beat, thinking, offstage, unresolved, dropped, blockers, retried, replaces} and the page decides
+// it resolves to {ok: true, beat, thinking, offstage, unresolved, dropped, warnings, blockers, retried, replaces} and the page decides
 // what to land. `replaces` is the unwritten beat for the same chapter that landing it would replace.
 // A request the page cannot make resolves to {ok: false, reason} (see planGate); a failed call to its failure.
 export function planChapter(client, schema, project, castIds) {
@@ -325,7 +325,7 @@ export function planChapter(client, schema, project, castIds) {
       landed = landBeat(schema, project, castIds, read, { offstage, existing: replaces });
       blockers = beatBlockers(schema, project, landed.beat);
     }
-    return { ok: true, beat: landed.beat, thinking: read.thinking, offstage, unresolved: landed.unresolved, dropped: landed.dropped, blockers, retried, replaces };
+    return { ok: true, beat: landed.beat, thinking: read.thinking, offstage, unresolved: landed.unresolved, dropped: landed.dropped, warnings: landed.warnings, blockers, retried, replaces };
   })();
   return { done, stop() { stopped = true; current?.stop(); } };
 }
