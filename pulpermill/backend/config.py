@@ -30,7 +30,8 @@ class Sampling:
 class ModelSettings:
     repo: str = "bartowski/mlabonne_gemma-3-27b-it-abliterated-GGUF"
     file: str = "mlabonne_gemma-3-27b-it-abliterated-Q6_K.gguf"     # CHECK the exact file name on the repo page
-    directory: str = "/kaggle/working/models"
+    directory: str = "/kaggle/temp/models"  # scratch disk: much roomier than /kaggle/working (about 20 GB, saved with the notebook); gone when the session ends
+    search_dirs: tuple[str, ...] = ("/kaggle/input",)   # looked through first for a file of this name, so a dataset that holds the model is used as it is (no download, no disk used)
     n_ctx: int = 12288                      # must equal budgets.yaml n_ctx
     n_batch: int = 256                      # also the size of one prefill step, so Stop can land between steps
     tensor_split: tuple[float, ...] = (0.58, 0.42)     # from the previous version; re-tune at M2 with the 6-bit file

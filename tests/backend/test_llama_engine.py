@@ -228,3 +228,20 @@ def test_not_enough_disk_stops_before_downloading_when_the_size_is_known():
     with pytest.raises(RuntimeError) as error:
         download.ensure_model(settings, downloader=lambda *a: called.append(1), size=22 * 10**9, free_bytes=lambda p: 5 * 10**9)
     assert "disk" in str(error.value) and not called
+
+
+def test_a_model_in_an_attached_dataset_is_used_without_downloading_or_a_disk_check():
+    import os, tempfile
+    from dataclasses import replace
+    root = tempfile.mkdtemp()
+    os.makedirs(os.path.join(root, "my-dataset", "sub"))
+    open(os.path.join(root, "my-dataset", "sub", "m.gguf"), "wb").write(b"x" * 10)
+    settings = replace(SETTINGS, directory=tempfile.mkdtemp(), file="m.gguf", search_dirs=(root, "/no/such/folder"))
+    called = []
+    path = download.ensure_model(settings, downloader=lambda *a: called.append(a), size=22 * 10**9, free_bytes=lambda p: 1)
+    assert path == os.path.join(root, "my-dataset", "sub", "m.gguf") and not called
+
+
+def test_the_default_download_folder_is_not_the_small_working_folder():
+    from pulpermill.backend.config import ModelSettings
+    assert ModelSettings().directory == "/kaggle/temp/models" and "/kaggle/input" in ModelSettings().search_dirs

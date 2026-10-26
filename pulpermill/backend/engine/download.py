@@ -1,5 +1,6 @@
 """Fetching the model into the session. A partly downloaded file is resumed by the hub client, so a retry does not start over."""
 import logging
+import os
 import shutil
 import time
 from pathlib import Path
@@ -27,10 +28,27 @@ def remote_size(repo: str, filename: str) -> int | None:
     return None
 
 
+def find_existing(settings: ModelSettings) -> str | None:
+    """The model file if one of the search folders (an attached Kaggle dataset, say) already holds a file of that name."""
+    for root in settings.search_dirs:
+        if not os.path.isdir(root):
+            continue
+        for here, _, files in os.walk(root):
+            if settings.file in files:
+                path = os.path.join(here, settings.file)
+                if os.path.getsize(path) > 0:
+                    return path
+    return None
+
+
 def ensure_model(settings: ModelSettings, *, downloader: Callable[[str, str, str], str] = default_downloader,
                  sleep: Callable[[float], None] = time.sleep, size: int | None = None,
                  free_bytes: Callable[[str], int] | None = None) -> str:
     """The path to the model file, downloading it if it is not there. Raises RuntimeError with a plain sentence."""
+    found = find_existing(settings)
+    if found:
+        log.info("model found in an attached folder, not downloading: %s (%.1f GB)", found, os.path.getsize(found) / 1e9)
+        return found
     folder = Path(settings.directory)
     folder.mkdir(parents=True, exist_ok=True)
     target = folder / settings.file
@@ -41,7 +59,7 @@ def ensure_model(settings: ModelSettings, *, downloader: Callable[[str, str, str
     need = (known or settings.size_fallback_bytes) + settings.disk_headroom_bytes
     free = (free_bytes or (lambda p: shutil.disk_usage(p).free))(str(folder))
     if free < need:
-        message = f"Not enough disk space for the model: {free / 1e9:.1f} GB free, about {need / 1e9:.1f} GB needed."
+        message = f"Not enough disk space for the model: {free / 1e9:.1f} GB free, about {need / 1e9:.1f} GB needed. Use a folder with more room (/kaggle/temp), or attach a dataset that holds the file."
         if known:
             raise RuntimeError(message)
         log.warning("%s (the size is a guess, so going on)", message)
