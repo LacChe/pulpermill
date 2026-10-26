@@ -34,3 +34,11 @@ are filled in from `tools/measure_engine.py` output on the Kaggle T4 x2.
 - A reply fails when it is not valid JSON in the prompt's shape (a reply cut off at `max_tokens` is one of these, and the note says so), when the caller's own check fails, or when the longer sentences are not in the requested language (`language.py`: script share for Chinese, Japanese and Korean; function words for en, fr, de, es; short texts and other languages pass).
 - `Config.constrain`: `"always"` (default) constrains every JSON call. `"repair"` writes the first attempt free and constrains only the retry. The old setup measured about 4.5 tok/s constrained against about 10 free, so after the speed table from `measure_engine.py` is in, decide which default stays.
 - Not wired yet: different sampling for Chinese (`language` does not pick a parameter set).
+
+## M4: the simple calls (`pulpermill/backend/pipelines/simple.py`)
+
+- `fill`: `fill_prompt` with the schema built from the request's own lists, so a link can only name what was sent. The reply is the model's object, returned as `values`.
+- `judge`: one pass per rule (`judge_prompts`), every prompt measured before the first runs, then `assemble_judge_reply`.
+- `style_fit`: `fits`, and the message only when it does not fit.
+- `python -m pulpermill.backend --fake` and the server tests now use the canned replies (`pipelines.run_canned`), since the fake engine's words are not JSON.
+- **Card-fill runs:** `node tools/run_cardfill.mjs <address> --token T --runs 3 --label <prompt-version>` fills every fixture in `tests/cardfill/fixtures` through the page's own client and rules and writes `tests/cardfill/results/<label>/` (one JSON per fixture and run, plus `summary.csv` with the rules that fired). It does not grade: grade by hand with `tests/cardfill/03-scoring-protocol.md`. The run record per call (prompt version, parameter set, retries) comes with M6.

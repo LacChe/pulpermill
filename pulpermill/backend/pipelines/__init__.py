@@ -1,12 +1,20 @@
 """One module per call. Each pipeline is `run(request, ctx) -> reply dict`. `canned` answers every call with a valid sample
 reply and exists so the server and the page can be exercised with no model; the real pipelines replace it call by call."""
 from .context import RunContext
-from . import canned
+from . import canned, simple
 
 PIPELINES = {
-    "fill": canned.fill, "judge": canned.judge, "style_fit": canned.style_fit, "offstage": canned.offstage,
+    "fill": simple.fill, "judge": simple.judge, "style_fit": simple.style_fit, "offstage": canned.offstage,
     "plan": canned.plan, "generate": canned.generate, "end_story": canned.end_story,
 }
+
+
+CANNED = {call: getattr(canned, call) for call in PIPELINES}
+
+
+def run_canned(request, ctx: RunContext) -> dict:
+    """Every call answered with a valid sample reply and no real model work: for the page and the server tests with the fake engine."""
+    return CANNED[request.call](request, ctx)
 
 
 def run(request, ctx: RunContext) -> dict:
@@ -14,4 +22,4 @@ def run(request, ctx: RunContext) -> dict:
     return PIPELINES[request.call](request, ctx)
 
 
-__all__ = ["RunContext", "PIPELINES", "run"]
+__all__ = ["RunContext", "PIPELINES", "CANNED", "run", "run_canned"]

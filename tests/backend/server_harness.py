@@ -10,6 +10,7 @@ import uvicorn
 
 from pulpermill.backend.config import Config
 from pulpermill.backend.engine import FakeEngine
+from pulpermill.backend.pipelines import run_canned
 from pulpermill.backend.server import create_app
 
 
@@ -21,11 +22,11 @@ def free_port() -> int:
 
 @contextlib.contextmanager
 def running(config: Config | None = None, engine: FakeEngine | None = None, run=None):
-    """Yields (base_url, engine). The server is stopped on exit."""
+    """Yields (base_url, engine). The server is stopped on exit. `run` defaults to the canned pipelines (the fake engine's words are not JSON)."""
     config = config or Config()
     engine = engine or FakeEngine()
     port = free_port()
-    server = uvicorn.Server(uvicorn.Config(create_app(config, engine, run), host="127.0.0.1", port=port, log_level="error"))
+    server = uvicorn.Server(uvicorn.Config(create_app(config, engine, run or run_canned), host="127.0.0.1", port=port, log_level="error"))
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
     for _ in range(500):
