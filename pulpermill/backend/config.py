@@ -36,6 +36,7 @@ class ModelSettings:
     n_batch: int = 256                      # also the size of one prefill step, so Stop can land between steps
     tensor_split: tuple[float, ...] = (0.58, 0.42)     # from the previous version; re-tune at M2 with the 6-bit file
     flash_attn: bool = True                 # the loader retries without it if this build rejects it
+    swa_full: bool = False                  # False: Gemma 3's sliding-window layers keep only their window, which saves several GB; True made the 6-bit file not fit
     kv_cache_type: str | None = None        # None = f16. "q8_0" halves the cache but needs flash_attn; decide at M2
     n_threads: int | None = None
     min_free_vram_mb: int = 400             # per GPU, after loading: less than this and the launcher stops with a plain message

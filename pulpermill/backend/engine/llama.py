@@ -128,14 +128,24 @@ def load(settings: ModelSettings, model_path: str, *, llama_class=None) -> Llama
              settings.kv_cache_type or "f16", before)
     started = time.monotonic()
     options = dict(model_path=model_path, n_ctx=settings.n_ctx, n_batch=settings.n_batch, n_gpu_layers=-1,
-                   tensor_split=list(settings.tensor_split), n_threads=settings.n_threads, verbose=False, **cache)
+                   tensor_split=list(settings.tensor_split), n_threads=settings.n_threads, verbose=False,
+                   swa_full=settings.swa_full, **cache)
+    llm, failure = None, None
     try:
         llm = llama_class(flash_attn=settings.flash_attn, **options)
     except Exception as error:
+        failure = str(error)[:200]
+    if llm is None:
         if not settings.flash_attn:
-            raise RuntimeError(f"The model could not be loaded: {str(error)[:200]}") from None
-        log.warning("loading with flash attention failed (%s); trying without it", str(error)[:200])
-        llm = llama_class(flash_attn=False, **options)
+            raise RuntimeError(f"The model could not be loaded: {failure}")
+        log.warning("loading with flash attention failed (%s); trying without it", failure)
+        import gc
+        gc.collect()        # the failed attempt may still hold the GPU's memory until it is collected
+        try:
+            llm = llama_class(flash_attn=False, **options)
+        except Exception as error:
+            raise RuntimeError(f"The model could not be loaded: {str(error)[:200]}. Free VRAM now: {free_vram_mb()} MB. "
+                               f"First attempt: {failure}") from None
     after = free_vram_mb()
     log.info("model loaded in %.0f s; free VRAM after=%s MB", time.monotonic() - started, after)
     problem = check_memory(after, settings.min_free_vram_mb)
