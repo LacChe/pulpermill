@@ -448,6 +448,8 @@ export function offstageRequest(schema, project, castIds) {
       pressures: out("pressures", choose(e.pressures.filter((p) => touches(p.source_agent, asList(p.bears_on))), counts.used)),
     },
     latest_events: last,
+    earlier_offstage: beatsOf(project).filter((b) => Number(b.chapter) < chapter && String(b.offstage_did ?? "").trim() !== "")
+      .sort((a, b) => Number(a.chapter) - Number(b.chapter)).map((b) => ({ chapter: Number(b.chapter), did: b.offstage_did })),
   };
 }
 

@@ -813,7 +813,8 @@
           "holdings": [],
           "pressures": []
         },
-        "latest_events": null
+        "latest_events": null,
+        "earlier_offstage": []
       }
     },
     {

@@ -12,10 +12,10 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 | planner-2-beat | 4145 | 15184 | 11039 | none needed |
 | events | 3851 | 15184 | 11333 | none needed |
 | shifts | 4843 | 15084 | 10241 | none needed |
-| fill-character | 794 | 15084 | 14290 | none needed |
+| fill-character | 834 | 15084 | 14250 | none needed |
 | judge-world | 181 | 15584 | 15403 | none needed |
 | style-fit | 177 | 15684 | 15507 | none needed |
-| offstage | 203 | 15684 | 15481 | none needed |
+| offstage | 259 | 15684 | 15425 | none needed |
 | end-story-character | 211 | 14284 | 14073 | none needed |
 
 ## a medium story (5 people, 3 items a list, 8 chapters)
@@ -28,10 +28,10 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 | planner-2-beat | 9691 | 15184 | 5493 | none needed |
 | events | 4244 | 15184 | 10940 | none needed |
 | shifts | 6864 | 15084 | 8220 | none needed |
-| fill-character | 846 | 15084 | 14238 | none needed |
+| fill-character | 886 | 15084 | 14198 | none needed |
 | judge-world | 181 | 15584 | 15403 | none needed |
 | style-fit | 177 | 15684 | 15507 | none needed |
-| offstage | 262 | 15684 | 15422 | none needed |
+| offstage | 318 | 15684 | 15366 | none needed |
 | end-story-character | 211 | 14284 | 14073 | none needed |
 
 ## a very large story (8 people, 5 items in every list, 12 chapters, every text past its cap)
@@ -44,10 +44,10 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 | planner-2-beat | 18976 | 15184 | -3792 | 0.7 |
 | events | 11121 | 15184 | 4063 | none needed |
 | shifts | 10840 | 15084 | 4244 | none needed |
-| fill-character | 1308 | 15084 | 13776 | none needed |
+| fill-character | 1348 | 15084 | 13736 | none needed |
 | judge-world | 181 | 15584 | 15403 | none needed |
 | style-fit | 177 | 15684 | 15507 | none needed |
-| offstage | 428 | 15684 | 15256 | none needed |
+| offstage | 484 | 15684 | 15200 | none needed |
 | end-story-character | 211 | 14284 | 14073 | none needed |
 
 ## How many people fit (no squeeze)

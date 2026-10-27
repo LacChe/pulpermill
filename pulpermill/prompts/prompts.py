@@ -459,6 +459,9 @@ def offstage_prompt(req: dict) -> Prompt:
     if last:
         last = {**last, "chapter": last.get("chapter") or max(int(req.get("chapter") or 1) - 1, 1)}
         parts.append(o["last_lead"] + "\n" + render_story_so_far([last], 10 ** 6, keep_full=1))
+    earlier = [e for e in (req.get("earlier_offstage") or []) if s(e.get("did"))]
+    if earlier:
+        parts.append(o["earlier_lead"] + "\n" + "\n".join(o["earlier_item"].format(chapter=e.get("chapter"), did=sentence(s(e.get("did")))) for e in earlier))
     parts.append(o["task"])
     return Prompt("offstage", o["version"], _join(*parts), schemas.offstage_schema(), "offstage")
 

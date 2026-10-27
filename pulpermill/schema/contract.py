@@ -123,6 +123,7 @@ class OffstageRequest(Envelope):
     world: dict[str, Any]                   # the groups and places that may change, with the places' use counts
     entanglements: dict[str, Any]           # only the ties, holdings and pressures those touch
     latest_events: dict[str, Any] | None = None    # the last written chapter's Events entry; none for chapter 1
+    earlier_offstage: list[dict[str, Any]] = []    # [{chapter, did}] the background moves already made, oldest first
 
 
 class PlanRetry(Strict):

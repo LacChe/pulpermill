@@ -71,3 +71,8 @@ The real figure is still to be measured: `memory_by_ctx` in the notebook, in a f
 - Events: "changed" is worked out from the chapter's text with a quoted phrase as evidence, and says nothing changed when no line shows a difference. List answers stay empty when the text does not show them, even when the beat planned them.
 - Shifts: the baseline is where each person stood at the end of the previous chapter, and an empty list is the right answer when nobody moved.
 - A tie's bond or edge changes only when the footing changed; a rewording of the same footing stands. Knowledge lines are for matters of plot, not small facts of a scene. A false belief goes under misled, with the false thing in belief.
+
+## Step 4: Fill and Offstage (fill-0.2, offstage-0.2)
+
+- Fill: an example for the suspects rule (the line's subject is the thing suspected, with the person under suspects and knows left empty). The world card gives every object the note mentions its own entry under the note's name.
+- Offstage: the request carries `earlier_offstage` ([{chapter, did}], oldest first; contract, page and prompt all updated) and the prompt asks for a different kind of move that complicates the protagonist's goal.

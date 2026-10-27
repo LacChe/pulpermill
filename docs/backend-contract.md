@@ -158,8 +158,11 @@ Only sent when the page decides an offstage change is due (every second chapter)
 
 ```json
 {"call": "offstage", "schema_version": 1, "language": "en", "chapter": 2, "chapter_count": 8,
- "cast": [{"id": "c0000001", "name": "Suvi"}], "world": {}, "entanglements": {}, "latest_events": {"happened": "..."}}
+ "cast": [{"id": "c0000001", "name": "Suvi"}], "world": {}, "entanglements": {}, "latest_events": {"happened": "..."},
+ "earlier_offstage": [{"chapter": 2, "did": "The board raids the docks."}]}
 ```
+
+`earlier_offstage` lists the background moves already made, oldest first (empty when there are none), so the next one can be a different kind.
 
 Reply: `{"ok": true, "did": "The board raids the docks.", "reach": "Suvi hears the bells."}`. Both are needed; the page refuses half a move.
 

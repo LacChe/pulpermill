@@ -446,3 +446,11 @@ test("a goal and a scene aim that repeat an earlier one are noticed", async () =
   const again = { id: "next", chapter: 2, goal_change: "redefined", goal_now: "Prove beechwood bakes a reliable loaf", collision_goal: "Suvi wants to prove the beechwood loaf can rise quickly again" };
   assert.equal(goalWarnings(p, again, 2).length, 2);
 });
+
+test("the offstage request carries the background moves already made", async () => {
+  const p = await started();
+  const [suvi] = p.characters;
+  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id, beat: { offstage_did: "The board raids the docks." } });
+  writeChapter(p, 2, { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id });
+  assert.deepEqual(offstageRequest(schema, p, [suvi.id]).earlier_offstage, [{ chapter: 1, did: "The board raids the docks." }]);
+});

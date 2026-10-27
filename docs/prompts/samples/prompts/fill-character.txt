@@ -1,8 +1,8 @@
-[fill fill-0.1, stage: None]
+[fill fill-0.2, stage: None]
 
 You are filling in one card of a story-planning tool from the writer's own words. The writer will read and edit every field, so fill what the words support, and write each field the way the field's guide asks.
 Write in English. Fill a field only when the words give you something for it, and leave the rest out. Name people, places and things by their names. Keep what the writer states exactly: every name, number and detail they give belongs on the card.
-When the writer says people believe something that is not true, or that a rule is only a belief, that rule is a Myth: set its status to the Myth value and write what is really true. When they say someone only suspects something, the status is suspects, not knows.
+When the writer says people believe something that is not true, or that a rule is only a belief, that rule is a Myth: set its status to the Myth value and write what is really true. When they say someone only suspects something, the status is suspects, not knows. For example, "Mara thinks the harbourmaster is skimming the tolls" is a knowledge line whose subject is the skimming, with Mara under suspects; knows stays empty until the writer says she has proof.
 
 This card. You may invent: The person themselves. Leave out: Other people, places, objects and relationships (they belong to other cards).
 
