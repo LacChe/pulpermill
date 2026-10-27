@@ -49,3 +49,14 @@ first two differ). All budgets follow: every prompt now has 4,096 more tokens of
 
 **If it does not load.** Out of memory at load means set 12,288 again in `budgets.yaml` and `backend/config.py`. Nothing else changes.
 The real figure is still to be measured: `memory_by_ctx` in the notebook, in a fresh session where the server has not been started.
+
+## Step 2: goal and planner wording (planner-0.2)
+
+- Goal changes are three kinds, each with its relation to the old goal: achieved (new aim set by what was won or lost), redefined (same thread, later stage), abandoned (turn to what matters more).
+- An ended goal no longer says the story is winding down; the story goes on from what is still open.
+- Freshness is the goal moving or the story turning, not a new room or props.
+- Think steps: state the goal now and which way the chapter moves it; three directions that differ in who drives the scene, one with a pressure's agent on stage; choices that cost something carried forward; one moment to slow down and one to skip.
+- Hook pickup: the last chapter's closing moment shows in the planner's timeline as an open question to answer, turn aside on purpose, or pay off within two chapters.
+- Late and last chapters list open threads and live pressures and resolve the one or two that carry the most plot.
+- Reveals wait past the first third unless the goal depends on them, and a person suspects before knowing. A payoff is a consequence of a plant, never a repeat.
+- Reveal, payoff and plant are left empty when none applies.

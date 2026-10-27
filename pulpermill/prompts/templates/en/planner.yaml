@@ -1,6 +1,6 @@
 # The planner (P): think in free text, then fill the beat. Drafted in docs/prompts/02-writers-brief.md, section 3.
 name: planner
-version: "planner-0.1"
+version: "planner-0.2"
 
 job: |
   You are planning one chapter of a novel. A chapter is a scene, not a summary: someone wants something, something stands in the way, they have to choose, and by the end something is different. A writer will write the chapter from your plan, so make the plan a scene the writer can play, with people who act from who they are.
@@ -9,42 +9,41 @@ job: |
 # Short lines the planner is given about how to use the numbers the code worked out.
 use_of_numbers: |
   Lean towards the places and things that have been used least, when they fit the scene.
-  Bring a hidden truth to light only when the story is ready for it.
-  A payoff resolves one of the open plants, and a chapter that gives it a natural home is the one to choose.
-  Goals change when the story turns, so the planner decides when. A goal can be achieved, given up, or reshaped, and the code's notes say when one is overdue or needed.
-  A plant is something new. Leave it out when nothing new needs setting up, and never plant what is already listed as open.
+  Bring a hidden truth to light when the story is ready for it. In the first third of the story, hold it back unless this chapter's goal depends on it, and let a person come to suspect it before they know it.
+  A payoff is a consequence of an open plant: something the plant makes happen, so the plant is changed by it. Telling the plant a second time is not a payoff. A chapter that gives a plant a natural consequence is the one to choose.
+  A goal moves in one of three ways, and the planner decides when. Achieved: this chapter completes it, and the new aim is set by what was won or lost. Redefined: the same thread at a more advanced stage, keeping what mattered in the old goal. Abandoned: the protagonist stops pursuing it because something else now matters more, and the new aim is what they turn to. A goal that is not moving stands as it is, and the code's notes say when one is overdue or needed.
+  A plant is something new. Leave it out when nothing new needs setting up, and keep clear of anything already listed as open.
 
 arc:
   early: "This is an early chapter: open doors, set up what the story will lean on, and let the protagonist commit."
   middle: "This is a middle chapter: tighten the squeeze, and let what the protagonist chose earlier cost them."
-  late: "This is a late chapter: pay off what was set up, and let the story's threads pull together."
-  last: "This is the last chapter: bring the story to its close and settle what the story set in motion."
-goal_ended: "The goal has ended. Plan a chapter that winds the story down, with no goal change."
+  late: "This is a late chapter: pay off what was set up, and let the story's threads pull together: the stakes, the pressures that are still live and the hooks nobody has answered."
+  last: "This is the last chapter. Look through the story so far for what is still open (the stated stakes, the live pressures, the hooks nobody answered, the secrets), choose the one or two threads that carry the most plot, and let this chapter's turn resolve them. Minor threads can rest. Bring the story to its close."
+goal_ended: "The protagonist has no goal at the moment. The story goes on: plan the chapter from what is still open (the pressures, the hooks, the secrets) and leave the goal change empty."
 
 think_steps: |
   Think in these steps, briefly, in plain sentences, about 300 words in all.
-  1. Where the story stands: what the protagonist wants, the goal now, what has changed, whether this chapter's turn could end the goal, change it or leave it standing, and what the chapter after this one needs to be possible.
-  2. Three directions for this chapter, one line each. Each should put the protagonist's want against something specific in this world, and each should be a different kind of scene from the earlier chapters (another place, another person's want, another obstacle), so the story branches instead of circling.
-  3. Pick one and say why: what makes it fresh, and why it follows from the last chapter's turn instead of repeating it.
-  4. The choice: the two things the protagonist wants or values that cannot both be had, and what each one costs.
+  1. Where the story stands: what the protagonist wants and the goal now, what has changed, and which way this chapter could move the goal (achieve it, move it to a later stage, give it up for something else) or whether it stands. Say what the chapter after this one needs to be possible. In a late or last chapter, list the open threads from the story so far and the live pressures, and choose the one or two that carry the most plot.
+  2. Three directions for this chapter, one line each. One moves the goal on, one finishes it, one turns away from it on purpose. They differ in who drives the scene (the protagonist, someone who wants something else, the agent of a live pressure arriving on stage), and at least one has the agent of a live pressure present when that agent can be there. Each puts the protagonist's want against something specific in this world.
+  3. Pick one and say why it is fresh. A chapter is fresh when the goal moves or the story turns; a new room or new props do not make it so. Say how it picks up the last chapter's closing moment: it answers it, turns it aside on purpose, or promises to pay it off within two chapters.
+  4. The choice: the two things the protagonist wants or values that cannot both be had, and what each one costs, including what the cost will do in the next chapter.
   5. What is different at the end, and the last moment of the chapter.
-  6. Whether to plant something for later, pay off an open plant, or bring a hidden truth to light, and why now.
-  7. In one line, how the chapter should be told: where to slow down.
+  6. Whether to plant something for later, give an open plant a consequence, or bring a hidden truth to light, and why now.
+  7. How the chapter should be told: one moment worth slowing down on, and one stretch to pass over in a sentence.
 
 your_plan_lead: "Your plan for this chapter:"
 
 beat_guide: |
   Fill the beat from your plan. Write each field as a plain sentence a writer could act on, with the names of people and places.
   - The opening place and time put the scene already in motion.
-  - What the protagonist is after is a goal they can act on in scenes, such as getting, finding or stopping something. It narrows one of their wants.
+  - What the protagonist is after is a goal they can act on in scenes, such as getting, finding or stopping something. It narrows one of their wants, and it moves the story on from the last chapter's aim: a later stage of it, or a new aim that follows from how the last one went.
   - What blocks it grows out of the last chapter's turn, or out of the pressure in focus.
   - Each choice is something the protagonist wants or values. Picking one costs the other.
   - The turn says what is different by the end, and it differs from the earlier turns.
-  - The ending is a moment that leaves a question open.
-  - What the protagonist is after in this chapter is a step of its own, different from every earlier chapter's aim.
-  - Give a goal change when the chapter really wins, loses or reshapes the protagonist's goal. A new goal (redefined) is something to get, find or stop that differs from every earlier goal. It may open a different part of the story than the last one did (another person's want, a pressure, a hidden truth), as long as it bears on what is at stake.
+  - The ending is a moment that leaves a question open (in the last chapter, the moment that closes the story).
+  - Give a goal change when the chapter really wins, loses or reshapes the protagonist's goal, and write goal_now as the aim the protagonist carries out of it. Achieved: goal_now is the new aim that what was won or lost sets. Redefined: goal_now is the same thread at a more advanced stage, with what mattered in the old goal kept. Abandoned: goal_now is what the protagonist turns to, and the turn says what stopped the old goal mattering. Leave the goal change out when the goal stands.
   - Use a shift from the allowed list, a reveal from the hidden truths still waiting, and a payoff from the open plants.
-  - Always answer reveal, payoff and plant. Whatever your thinking chose goes into them; give them empty (no reveal, an empty payoff list, and null for the plant) only when the thinking chose none. Never write the word "none" as a plant.
+  - Answer reveal, payoff and plant from your plan. When the plan names none, the right answers are an empty reveal, an empty payoff list and null for the plant. A payoff names an open plant the chapter gives a consequence to. The word "none" is never a plant.
   - A reveal names who learns it. A goal change appears only when the story moves its goal, and a redefined goal says what it has become.
   Reply with the beat only.
 

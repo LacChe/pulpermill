@@ -1,4 +1,4 @@
-[planner_think planner-0.1, stage: think]
+[planner_think planner-0.2, stage: think]
 
 You are planning one chapter of a novel. A chapter is a scene, not a summary: someone wants something, something stands in the way, they have to choose, and by the end something is different. A writer will write the chapter from your plan, so make the plan a scene the writer can play, with people who act from who they are.
 Below is everything that is true so far. Plan the next chapter.
@@ -95,21 +95,21 @@ People believe: The cellar under the shop floods on the spring tide. The truth: 
 How recently each person on stage has appeared: Suvi last in chapter 4; Aino last in chapter 4; Pekka has not appeared yet.
 
 Lean towards the places and things that have been used least, when they fit the scene.
-Bring a hidden truth to light only when the story is ready for it.
-A payoff resolves one of the open plants, and a chapter that gives it a natural home is the one to choose.
-Goals change when the story turns, so the planner decides when. A goal can be achieved, given up, or reshaped, and the code's notes say when one is overdue or needed.
-A plant is something new. Leave it out when nothing new needs setting up, and never plant what is already listed as open.
+Bring a hidden truth to light when the story is ready for it. In the first third of the story, hold it back unless this chapter's goal depends on it, and let a person come to suspect it before they know it.
+A payoff is a consequence of an open plant: something the plant makes happen, so the plant is changed by it. Telling the plant a second time is not a payoff. A chapter that gives a plant a natural consequence is the one to choose.
+A goal moves in one of three ways, and the planner decides when. Achieved: this chapter completes it, and the new aim is set by what was won or lost. Redefined: the same thread at a more advanced stage, keeping what mattered in the old goal. Abandoned: the protagonist stops pursuing it because something else now matters more, and the new aim is what they turn to. A goal that is not moving stands as it is, and the code's notes say when one is overdue or needed.
+A plant is something new. Leave it out when nothing new needs setting up, and keep clear of anything already listed as open.
 
 This is a middle chapter: tighten the squeeze, and let what the protagonist chose earlier cost them.
 
 Think in these steps, briefly, in plain sentences, about 300 words in all.
-1. Where the story stands: what the protagonist wants, the goal now, what has changed, whether this chapter's turn could end the goal, change it or leave it standing, and what the chapter after this one needs to be possible.
-2. Three directions for this chapter, one line each. Each should put the protagonist's want against something specific in this world, and each should be a different kind of scene from the earlier chapters (another place, another person's want, another obstacle), so the story branches instead of circling.
-3. Pick one and say why: what makes it fresh, and why it follows from the last chapter's turn instead of repeating it.
-4. The choice: the two things the protagonist wants or values that cannot both be had, and what each one costs.
+1. Where the story stands: what the protagonist wants and the goal now, what has changed, and which way this chapter could move the goal (achieve it, move it to a later stage, give it up for something else) or whether it stands. Say what the chapter after this one needs to be possible. In a late or last chapter, list the open threads from the story so far and the live pressures, and choose the one or two that carry the most plot.
+2. Three directions for this chapter, one line each. One moves the goal on, one finishes it, one turns away from it on purpose. They differ in who drives the scene (the protagonist, someone who wants something else, the agent of a live pressure arriving on stage), and at least one has the agent of a live pressure present when that agent can be there. Each puts the protagonist's want against something specific in this world.
+3. Pick one and say why it is fresh. A chapter is fresh when the goal moves or the story turns; a new room or new props do not make it so. Say how it picks up the last chapter's closing moment: it answers it, turns it aside on purpose, or promises to pay it off within two chapters.
+4. The choice: the two things the protagonist wants or values that cannot both be had, and what each one costs, including what the cost will do in the next chapter.
 5. What is different at the end, and the last moment of the chapter.
-6. Whether to plant something for later, pay off an open plant, or bring a hidden truth to light, and why now.
-7. In one line, how the chapter should be told: where to slow down.
+6. Whether to plant something for later, give an open plant a consequence, or bring a hidden truth to light, and why now.
+7. How the chapter should be told: one moment worth slowing down on, and one stretch to pass over in a sentence.
 
 ---- reply shape ----
 (free text)

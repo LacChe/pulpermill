@@ -330,15 +330,15 @@ def test_a_goal_that_is_ended_for_good_offers_no_goal_change():
     req = _needs_goal_request()
     req.update(goal_state="ended", goal_plan={"state": "ended", "due": None, "age": 0, "since": 3, "earlier_goals": [], "last_end": None, "directions": []})
     assert "goal_change" not in P.planner_beat_prompt(req, "x").schema["properties"]
-    assert "winding down" in P.planner_beat_prompt(req, "x").text
+    assert "The story goes on" in P.planner_beat_prompt(req, "x").text
 
 
 def test_the_writer_is_told_a_new_goal_forms_when_the_story_goes_on():
     from pulpermill.prompts.render import render_setup
     setup = {"protagonist": "Suvi"}
     assert "A new goal forms during this chapter" in render_setup(setup, None, 3, 6, goal_state="needs_goal")
-    assert "winding down" in render_setup(setup, None, 5, 6, goal_state="ended")
-    assert "winding down" in render_setup(setup, None, 5, 6)
+    assert "follow from how it ended" in render_setup(setup, None, 5, 6, goal_state="ended")
+    assert "follow from how it ended" in render_setup(setup, None, 5, 6)
 
 
 def test_the_entanglements_fill_asks_for_three_different_pressures():

@@ -8,8 +8,8 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 |---|---:|---:|---:|---|
 | writer-1-open | 3940 | 13684 | 9744 | none needed |
 | writer-2-close | 5364 | 13684 | 8320 | none needed |
-| planner-1-think | 2778 | 14884 | 12106 | none needed |
-| planner-2-beat | 3964 | 15184 | 11220 | none needed |
+| planner-1-think | 3040 | 14884 | 11844 | none needed |
+| planner-2-beat | 4145 | 15184 | 11039 | none needed |
 | events | 3799 | 15184 | 11385 | none needed |
 | shifts | 4732 | 15084 | 10352 | none needed |
 | fill-character | 794 | 15084 | 14290 | none needed |
@@ -24,8 +24,8 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 |---|---:|---:|---:|---|
 | writer-1-open | 10660 | 13684 | 3024 | none needed |
 | writer-2-close | 12084 | 13684 | 1600 | none needed |
-| planner-1-think | 8308 | 14884 | 6576 | none needed |
-| planner-2-beat | 9494 | 15184 | 5690 | none needed |
+| planner-1-think | 8586 | 14884 | 6298 | none needed |
+| planner-2-beat | 9691 | 15184 | 5493 | none needed |
 | events | 4192 | 15184 | 10992 | none needed |
 | shifts | 6753 | 15084 | 8331 | none needed |
 | fill-character | 846 | 15084 | 14238 | none needed |
@@ -40,8 +40,8 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 |---|---:|---:|---:|---|
 | writer-1-open | 21972 | 13684 | -8288 | 0.4 |
 | writer-2-close | 23396 | 13684 | -9712 | 0.3 |
-| planner-1-think | 17593 | 14884 | -2709 | 0.7 |
-| planner-2-beat | 18779 | 15184 | -3595 | 0.7 |
+| planner-1-think | 17871 | 14884 | -2987 | 0.7 |
+| planner-2-beat | 18976 | 15184 | -3792 | 0.7 |
 | events | 11069 | 15184 | 4115 | none needed |
 | shifts | 10729 | 15084 | 4355 | none needed |
 | fill-character | 1308 | 15084 | 13776 | none needed |
@@ -56,13 +56,13 @@ The writer's section 2 prompt allows 13684 tokens, the planner's thinking prompt
 
 | texts | people | writer tokens | writer | planner tokens | planner |
 |---|---:|---:|---|---:|---|
-| ordinary texts | 3 | 10089 | fits | 7094 | fits |
-| ordinary texts | 4 | 11348 | fits | 7943 | fits |
-| ordinary texts | 5 | 12536 | fits | 8742 | fits |
-| ordinary texts | 6 | 13764 | over | 9555 | fits |
-| ordinary texts | 8 | 16211 | over | 11203 | fits |
-| every text at its cap | 3 | 14342 | over | 11902 | fits |
-| every text at its cap | 4 | 16203 | over | 13079 | fits |
-| every text at its cap | 5 | 18086 | over | 14276 | fits |
-| every text at its cap | 6 | 19918 | over | 15497 | over |
-| every text at its cap | 8 | 23662 | over | 17871 | over |
+| ordinary texts | 3 | 10089 | fits | 7372 | fits |
+| ordinary texts | 4 | 11348 | fits | 8221 | fits |
+| ordinary texts | 5 | 12536 | fits | 9020 | fits |
+| ordinary texts | 6 | 13764 | over | 9833 | fits |
+| ordinary texts | 8 | 16211 | over | 11481 | fits |
+| every text at its cap | 3 | 14342 | over | 12180 | fits |
+| every text at its cap | 4 | 16203 | over | 13357 | fits |
+| every text at its cap | 5 | 18086 | over | 14554 | fits |
+| every text at its cap | 6 | 19918 | over | 15775 | over |
+| every text at its cap | 8 | 23662 | over | 18149 | over |

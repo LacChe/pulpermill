@@ -472,7 +472,12 @@ def render_earlier_beats(beats: list[dict]) -> str:
     rows = [fr["planner_beat_item"].format(chapter=b.get("chapter"), where=s(b.get("where")), when=s(b.get("when_time")),
                                            turn=sentence(s(b.get("turn"))), shift=s(b.get("shift")))
             for b in sorted(beats or [], key=lambda b: int(b.get("chapter") or 0))]
-    return fr["planner_beats_lead"] + "\n" + "\n".join(rows) if rows else ""
+    if not rows:
+        return ""
+    last = max(beats, key=lambda b: int(b.get("chapter") or 0))
+    if s(last.get("ends_on")):
+        rows.append(fr["planner_last_end"].format(chapter=last.get("chapter"), end=sentence(s(last.get("ends_on")))))
+    return fr["planner_beats_lead"] + "\n" + "\n".join(rows)
 
 
 # ---- The scene ------------------------------------------------------------------------------------------------------
