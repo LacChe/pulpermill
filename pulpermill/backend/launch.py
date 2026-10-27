@@ -63,15 +63,12 @@ def banner(url: str | None, port: int, token_set: bool) -> str:
 
 
 def use_hub_token(hf_token: str | None) -> bool:
-    """Gives the Hugging Face client the writer's token (signed-in downloads are faster and not rate-limited) and turns on the fast
-    transfer where it is installed. The token is only put in the environment, never logged. Returns whether a token was set."""
+    """Gives the Hugging Face client the writer's token (signed-in downloads are faster and not rate-limited) and turns on the
+    client's high-performance transfer (Xet; the old hf_transfer setting is deprecated). The token is only put in the environment,
+    never logged. Returns whether a token was set."""
     if hf_token:
         os.environ["HF_TOKEN"] = hf_token
-    try:
-        import hf_transfer  # noqa: F401
-        os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
-    except ImportError:
-        pass
+    os.environ.setdefault("HF_XET_HIGH_PERFORMANCE", "1")
     return bool(hf_token)
 
 
