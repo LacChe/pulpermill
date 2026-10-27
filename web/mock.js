@@ -34,11 +34,16 @@ function linkNames(related, sources) {
 }
 
 // One sample value for a field, or undefined when there is nothing sensible to put (a link with nothing to link to).
-function sampleValue(field, related, nth) {
+function sampleValue(field, related, nth, taken = new Set()) {
   if (field.ref) {
     const names = linkNames(related, field.ref);
     if (!names.length) return undefined;
-    if (field.input === "select-multiple") return names.slice(0, 2);
+    if (field.input === "select-multiple") {
+      // Several lists of the same people in one item (Knowledge's knows, suspects, misled) must not share a name.
+      const free = names.filter((n) => !taken.has(n)).slice(0, 2);
+      free.forEach((n) => taken.add(n));
+      return free.length ? free : undefined;
+    }
     return names[nth % names.length];
   }
   if (field.options?.length) {
@@ -54,6 +59,7 @@ function sampleValue(field, related, nth) {
 // of an either-or pair gets a value, so the sample never breaks the card's own shape rules.
 function sampleFields(owner, fields, related, nth) {
   const values = {};
+  const taken = new Set();
   let links = 0;   // each link in a set points at the next name along, so a tie never joins someone to themselves
   for (const field of fields) {
     const second = (owner.one_of ?? []).some((group) => group.fields.indexOf(field.key) > 0);
@@ -69,7 +75,7 @@ function sampleFields(owner, fields, related, nth) {
       values[field.key] = [item];
       continue;
     }
-    const value = sampleValue(field, related, field.ref ? nth + links++ : nth);
+    const value = sampleValue(field, related, field.ref ? nth + links++ : nth, taken);
     if (value !== undefined) values[field.key] = value;
   }
   return values;

@@ -262,7 +262,7 @@ test("a tie's two ends block each other's choice", () => {
 
 test("lookupLabel: option label, linked name, or the stored value", () => {
   const project = sample();
-  assert.equal(lookupLabel(project, entItem("knowledge", "status"), "misled"), "Misled");
+  assert.equal(lookupLabel(project, entItem("knowledge", "misled"), "p1"), "The Guild");
   assert.equal(lookupLabel(project, entItem("ties", "tie_from"), "p1"), "The Guild");
   assert.equal(lookupLabel(project, entItem("ties", "bond"), "rivals"), "rivals");
 });
@@ -272,8 +272,8 @@ test("item titles show names, not ids", () => {
   const lookup = (f, v) => lookupLabel(project, f, v);
   assert.equal(itemTitle(entList("ties"), { tie_from: "c1", tie_to: "p1" }, lookup), "Ines → The Guild");
   assert.equal(itemTitle(entList("holdings"), { holdee: "o1", held_by: "c1" }, lookup), "Ines holds The ledger");
-  assert.equal(itemTitle(entList("knowledge"), { person: "c1", status: "knows", rule: "r1", fact: "" }, lookup),
-    "Ines: Knows Ink never dries in the east wing");
+  assert.equal(itemTitle(entList("knowledge"), { rule: "r1", fact: "", knows: ["c1"], suspects: [], misled: [] }, lookup),
+    "Ink never dries in the east wing");
 });
 
 test("either-or: the filled field is the choice; switching clears the other", () => {
@@ -328,9 +328,8 @@ test("every link field on Entanglements has a placeholder and an empty message",
 
 test("a title for an either-or pair shows whichever half is used", () => {
   const lookup = (f, v) => lookupLabel(sample(), f, v);
-  assert.equal(itemTitle(entList("knowledge"), { person: "c1", status: "suspects", rule: "", fact: "the key is in the well" }, lookup),
-    "Ines: Suspects the key is in the well");
-  assert.equal(itemTitle(entList("knowledge"), { person: "c1", status: "", rule: "", fact: "" }, lookup), "Ines: …");
+  assert.equal(itemTitle(entList("knowledge"), { rule: "", fact: "the key is in the well", knows: [], suspects: ["c1"], misled: [] }, lookup),
+    "the key is in the well");
 });
 
 test("Setup: every field is supported, starts blank, and the protagonist picker has its empty message", () => {

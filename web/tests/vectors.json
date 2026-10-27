@@ -190,7 +190,9 @@
     "knowledge": [
      {
       "id": "k1",
-      "person": "c1"
+      "knows": [
+       "c1"
+      ]
      }
     ]
    },
@@ -211,8 +213,10 @@
     "knowledge": [
      {
       "id": "k1",
-      "person": "c1",
-      "fact": "f"
+      "fact": "f",
+      "knows": [
+       "c1"
+      ]
      }
     ]
    },
@@ -1903,6 +1907,102 @@
      {
       "id": "b1",
       "chapter": 1
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "knowledge: no one listed",
+   "card": "entanglements",
+   "rule": "knowledge_someone",
+   "values": {
+    "knowledge": [
+     {
+      "id": "k1",
+      "fact": "f",
+      "knows": [],
+      "suspects": [],
+      "misled": []
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "knowledge",
+     "k1",
+     "knows"
+    ]
+   ]
+  },
+  {
+   "name": "knowledge: someone listed",
+   "card": "entanglements",
+   "rule": "knowledge_someone",
+   "values": {
+    "knowledge": [
+     {
+      "id": "k1",
+      "fact": "f",
+      "knows": [],
+      "suspects": [
+       "c1"
+      ],
+      "misled": []
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
+   "name": "knowledge: a person in two lists",
+   "card": "entanglements",
+   "rule": "knowledge_one_standing",
+   "values": {
+    "knowledge": [
+     {
+      "id": "k1",
+      "fact": "f",
+      "knows": [
+       "c1"
+      ],
+      "suspects": [],
+      "misled": [
+       "c1"
+      ]
+     }
+    ]
+   },
+   "project": {},
+   "broken": [
+    [
+     "knowledge",
+     "k1",
+     "misled"
+    ]
+   ]
+  },
+  {
+   "name": "knowledge: each person in one list",
+   "card": "entanglements",
+   "rule": "knowledge_one_standing",
+   "values": {
+    "knowledge": [
+     {
+      "id": "k1",
+      "fact": "f",
+      "knows": [
+       "c1"
+      ],
+      "suspects": [
+       "c2"
+      ],
+      "misled": [
+       "p1"
+      ]
      }
     ]
    },

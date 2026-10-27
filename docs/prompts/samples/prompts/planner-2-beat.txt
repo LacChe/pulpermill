@@ -52,9 +52,9 @@ Pekka holds or controls The ledger.
 Suvi holds or controls The brass key.
 
 What each person can and cannot act on, given what they know:
-Pekka knows: The dock repairs were paid for by the shopkeepers, not the board.
-Suvi has been misled about: The cellar under the shop floods on the spring tide.
-Aino suspects: The ledger is in Pekka's rooms.
+The dock repairs were paid for by the shopkeepers, not the board. Knows it: Pekka, Aino. Misled about it: The Harbour Board. They believe instead: The board paid for the dock repairs.
+The cellar under the shop floods on the spring tide. Misled about it: Suvi.
+The ledger is in Pekka's rooms. Suspects it: Aino.
 
 Pressures on the story:
 The board wants the ledger before the next first-day visit and will close the shop to get it (from The Harbour Board; bears on Suvi, Pekka). Next move: Send a clerk to count the shop's stock on Friday.

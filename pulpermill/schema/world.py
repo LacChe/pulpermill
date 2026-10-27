@@ -70,10 +70,10 @@ class World(Item):
     history: str = spec("textarea", "overview", "free")                       # source doc: optional
 
     # Places
-    places: list[Place] = spec(None, "places", "pairs", repeat=True, counted=True)
+    places: list[Place] = spec(None, "places", "pairs", repeat=True, counted=True, uncapped=True)   # no cap: a request carries the relevant, least used
 
     # Things
-    objects: list[Thing] = spec(None, "things", "pairs", repeat=True, counted=True)   # source doc: optional
+    objects: list[Thing] = spec(None, "things", "pairs", repeat=True, counted=True, uncapped=True)   # source doc: optional
 
     # Powers (labelled "Groups" in the UI)
     powers: list[Power] = spec(None, "powers", "pairs", repeat=True)          # source doc: optional

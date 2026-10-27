@@ -30,7 +30,9 @@ async function started() {
 function writeChapter(p, n, { cast, where, spotlight, shift = "harder", events = {}, beat = {} }) {
   const id = `b000000${n}`;
   (p.outline ??= { beats: [] }).beats.push({ id, chapter: n, where, cast, spotlight, shift, turn: `Turn ${n}`, ...beat });
-  (p.chapters ??= []).push({ id: `ch00000${n}`, beat: id, text: `Chapter ${n}` });
+  // The text names the cast and the place: a value only counts as used when the written chapter says it.
+  const named = [...cast.map((c) => p.characters.find((x) => x.id === c)?.name), p.world.places.find((x) => x.id === where)?.name].filter(Boolean);
+  (p.chapters ??= []).push({ id: `ch00000${n}`, beat: id, text: `Chapter ${n}. ${named.join(" and ")} were there.` });
   (p.summary_events ??= { entries: [] }).entries.push({ id: `e000000${n}`, beat: id, happened: `Happened ${n}`, ...events });
   return id;
 }
@@ -98,7 +100,6 @@ test("replanning a chapter does not count its own earlier plan against the cast"
   const p = await started();
   const [suvi, ola] = p.characters;
   writeChapter(p, 1, { cast: [suvi.id, ola.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id });
-  p.chapters.pop();     // chapter 1 is planned but not written
   assert.equal(useCounts(p, 1).characters[ola.id], undefined);
   assert.equal(useCounts(p, null).characters[ola.id], 1);
 });

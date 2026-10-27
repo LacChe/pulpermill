@@ -12,6 +12,7 @@ import {
 } from "./logic.js";
 import { storyStarted, cardLocked } from "./gate.js";
 import { joinList, msg } from "./text.js";
+import { usageOf, choose, plannedIds, beatWords, mentions } from "./usage.js";
 
 export const CAST_MAX = 5;               // the beat's cast, protagonist included (the schema's max_selected)
 export const SUGGEST_SIZE = 3;           // how many the page suggests: the protagonist and the two least used
@@ -180,32 +181,26 @@ export function availableReveals(project) {
 }
 
 // ---- Use counts and the cast ---------------------------------------------------
-// Place and character counts come from planned beats (the beat chose them for its chapter). Behavior and thing counts
-// come from what the Events passes saw. `except` leaves out the chapter being planned, so replanning it does not count itself.
+// A value is used in a chapter only when it appears in that chapter's written text (see usage.js); a beat that planned it but has
+// not been written, or a chapter that never names it, uses nothing up. `except` leaves out the chapter being planned or written
+// again, so replanning it does not count itself.
 
 export function useCounts(project, except = null) {
-  const counts = { characters: {}, places: {}, lastSeen: {}, behaviors: {}, things: {} };
-  const bump = (bucket, id) => { if (id) counts[bucket][id] = (counts[bucket][id] ?? 0) + 1; };
-  for (const beat of beatsOf(project)) {
-    if (except !== null && Number(beat.chapter) === except) continue;
-    for (const id of asList(beat.cast)) {
-      bump("characters", id);
-      counts.lastSeen[id] = Math.max(counts.lastSeen[id] ?? 0, Number(beat.chapter) || 0);
-    }
-    bump("places", beat.where);
-  }
-  for (const entry of eventsOf(project)) {
-    for (const id of asList(entry.behaviors_seen)) bump("behaviors", id);
-    for (const id of asList(entry.things_seen)) bump("things", id);
-  }
+  const used = usageOf(project, except);
+  const counts = { characters: {}, places: {}, lastSeen: {}, behaviors: {}, things: {}, used };
+  const take = (bucket, list) => { for (const x of list ?? []) if (used[x.id]) counts[bucket][x.id] = used[x.id].uses; };
+  take("characters", project.characters);
+  take("places", project.world?.places);
+  take("things", project.world?.objects);
+  take("behaviors", (project.characters ?? []).flatMap((c) => c.behaviors ?? []));
+  for (const c of project.characters ?? []) if (used[c.id]) counts.lastSeen[c.id] = used[c.id].last;
   return counts;
 }
 
-// How often each pressure has been the spotlight of a planned beat. `except` leaves out the chapter being planned.
+// How often each pressure has been written about (see usage.js). `except` leaves out the chapter being planned.
 function spotlightUse(project, except = null) {
-  const used = {};
-  for (const beat of beatsOf(project)) if (except === null || Number(beat.chapter) !== except) used[beat.spotlight] = (used[beat.spotlight] ?? 0) + 1;
-  return used;
+  const used = usageOf(project, except);
+  return Object.fromEntries((project.entanglements?.pressures ?? []).map((p) => [p.id, used[p.id]?.uses ?? 0]));
 }
 
 // The pressure that has had the least attention so far (ties go to the one listed first), or null when there is none.
@@ -336,30 +331,54 @@ export function fieldDefs(schema, cardId, listKey) {
 
 export const castCards = (project, castIds) => asList(castIds).map((id) => (project.characters ?? []).find((c) => c.id === id)).filter(Boolean);
 
-// The Entanglements the cast can see: ties they hold, what they hold, what they know, and (for the planner) every pressure.
-export function entanglementsFor(schema, project, castIds, names, { allPressures }) {
+// The Entanglements the cast can see: ties they hold, what they hold, what they know, and (for the planner) every pressure. Each
+// kind is cut to the few least used (usage.js), with everything the beat names kept. `beat` is the chapter's beat when there is
+// one; for the planner it is only the pressure in focus.
+export function entanglementsFor(schema, project, castIds, names, { allPressures, beat = null }) {
   const cast = asList(castIds);
   const e = settledProject(schema, project).entanglements;
-  const out = (key, items) => items.map((i) => named(fieldDefs(schema, "entanglements", key), i, names));
+  const used = usageOf(project);
+  const nameOfId = (id) => names.get(id) ?? "";
+  const planned = (items, label, extra = () => false) => new Set(items.filter((i) => plannedIds(beat, [i], label).size || extra(i)).map((i) => i.id));
+  const pick = (key, items, label, extra, near) => choose(items, used, { planned: planned(items, label, extra), near })
+    .map((i) => named(fieldDefs(schema, "entanglements", key), i, names));
   const touchesCast = (p) => [p.source_agent, ...asList(p.bears_on)].some((id) => cast.includes(id));
+  const standing = (k) => [...asList(k.knows), ...asList(k.suspects), ...asList(k.misled)];
+  const words = beatWords(beat);
+  const placesAndThings = [...(project.world?.places ?? []), ...(project.world?.objects ?? [])];
+  const thingName = (id) => placesAndThings.find((x) => x.id === id)?.name;
   return {
-    ties: out("ties", e.ties.filter((t) => cast.includes(t.tie_from))),
-    holdings: out("holdings", e.holdings.filter((h) => cast.includes(h.held_by))),
-    knowledge: out("knowledge", e.knowledge.filter((k) => cast.includes(k.person))),
-    pressures: out("pressures", allPressures ? e.pressures : e.pressures.filter(touchesCast)),
+    ties: pick("ties", e.ties.filter((t) => cast.includes(t.tie_from)), () => "", (t) => cast.includes(t.tie_to)),
+    holdings: pick("holdings", e.holdings.filter((h) => cast.includes(h.held_by)), () => "", (h) => Boolean(words) && mentions(words, thingName(h.holdee))),
+    knowledge: pick("knowledge", e.knowledge.filter((k) => standing(k).some((id) => cast.includes(id))),
+      () => "", (k) => (k.rule && k.rule === beat?.reveal_rule) || (Boolean(words) && mentions(words, k.rule ? (project.world?.rules ?? []).find((r) => r.id === k.rule)?.statement : k.fact)),
+      (k) => standing(k).filter((id) => cast.includes(id)).length),
+    pressures: pick("pressures", allPressures ? e.pressures : e.pressures.filter(touchesCast), () => "", () => false),
   };
 }
 
 const withCounts = (items, counts) => items.map((i) => ({ ...i, uses: counts[i.id] ?? 0 }));
 
+// The places and things a request carries: the beat's own, then the least used, five in all (usage.js).
+export function rotating(project, w, beat = null, except = null) {
+  const used = usageOf(project, except);
+  const cast = new Set(asList(beat?.cast));
+  const held = new Map((project.entanglements?.holdings ?? []).map((h) => [h.holdee, h.held_by]));
+  return {
+    places: choose(w.places, used, { planned: plannedIds(beat, w.places, (p) => p.name) }),
+    objects: choose(w.objects, used, { planned: plannedIds(beat, w.objects, (o) => o.name), near: (o) => Number(cast.has(held.get(o.id))) }),
+  };
+}
+
 function worldFor(schema, project, castIds, names) {
   const w = settledProject(schema, project).world;
-  const counts = useCounts(project, null);
+  const counts = useCounts(project, chapterInfo(project).next);
   const held = new Map((project.entanglements?.holdings ?? []).map((h) => [h.holdee, names.get(h.held_by) ?? ""]));
+  const sent = rotating(project, w, null, chapterInfo(project).next);
   return {
     name: w.name, era_and_technology: w.era_and_technology, everyday_life: w.everyday_life,
-    places: withCounts(w.places, counts.places),
-    objects: withCounts(w.objects, counts.things).map((o) => ({ ...o, held_by: held.get(o.id) ?? "" })),
+    places: withCounts(sent.places, counts.places),
+    objects: withCounts(sent.objects, counts.things).map((o) => ({ ...o, held_by: held.get(o.id) ?? "" })),
     powers: w.powers,
     rules: w.rules,
   };
@@ -412,11 +431,11 @@ export function offstageRequest(schema, project, castIds) {
     ...envelope(schema, project, "offstage"),
     chapter, chapter_count: chapterInfo(project).count,
     cast: castCards(project, castIds).map(copyOf),
-    world: { powers: w.powers, places: withCounts(w.places, counts.places) },
+    world: { powers: w.powers, places: withCounts(rotating(project, w, null, chapter).places, counts.places) },
     entanglements: {
-      ties: out("ties", e.ties.filter((t) => touches(t.tie_from, t.tie_to))),
-      holdings: out("holdings", e.holdings.filter((h) => touches(h.held_by))),
-      pressures: out("pressures", e.pressures.filter((p) => touches(p.source_agent, asList(p.bears_on)))),
+      ties: out("ties", choose(e.ties.filter((t) => touches(t.tie_from, t.tie_to)), counts.used)),
+      holdings: out("holdings", choose(e.holdings.filter((h) => touches(h.held_by)), counts.used)),
+      pressures: out("pressures", choose(e.pressures.filter((p) => touches(p.source_agent, asList(p.bears_on))), counts.used)),
     },
     latest_events: last,
   };
@@ -459,16 +478,16 @@ export function planRequest(schema, project, castIds, { offstage = null, retry =
     ...goalFields(project, chapter, castIds, names),
     cast: castCards(project, castIds).map(copyOf),
     world: worldFor(schema, project, castIds, names),
-    entanglements: entanglementsFor(schema, project, castIds, names, { allPressures: true }),
+    entanglements: entanglementsFor(schema, project, castIds, names, { allPressures: true, beat: { spotlight: spotlight?.id, cast: castIds } }),
     spotlight: spotlight ? named(defs, spotlight, names) : {},
     legal_shifts: shiftsForChapter(project, chapter),
     open_plants: openPlants(project).map(({ text, chapter: c }) => ({ text, chapter: c })),
     available_reveals: availableReveals(project).map(({ statement, truth, status }) => ({ statement, truth, status })),
     use_counts: {
       characters: characters.map((c) => ({ name: instanceName(c), uses: counts.characters[c.id] ?? 0, last: counts.lastSeen[c.id] ?? null })),
-      places: (project.world?.places ?? []).map((p) => ({ name: p.name, uses: counts.places[p.id] ?? 0 })),
+      places: rotating(project, settledProject(schema, project).world, null, chapter).places.map((p) => ({ name: p.name, uses: counts.places[p.id] ?? 0 })),
       behaviors: characters.flatMap((c) => (c.behaviors ?? []).map((b) => ({ character: instanceName(c), state: b.state, uses: counts.behaviors[b.id] ?? 0 }))),
-      things: (project.world?.objects ?? []).map((o) => ({ name: o.name, uses: counts.things[o.id] ?? 0 })),
+      things: rotating(project, settledProject(schema, project).world, null, chapter).objects.map((o) => ({ name: o.name, uses: counts.things[o.id] ?? 0 })),
     },
     earlier_beats: earlier.map((b) => beatInWords(schema, project, b, names)),
     earlier_events: eventsInWords(project, chapter - 1),

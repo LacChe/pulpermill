@@ -41,29 +41,24 @@ fields:
       held_by: {label: "Held by", help: "Who holds it now. The choices depend on what it is.", placeholder: "Choose who holds it", why: "Moves as things change hands, and the model updates it after each chapter.", no_options: "Nobody can hold this yet. Add characters, groups or places first.", filtered_note: "Only holders that make sense for this kind of thing are listed."}
   knowledge:
     label: "Knowledge"
-    help: "Who knows, suspects or has been misled about a fact or world rule. It is measured against what is true in the story, which cannot be wrong. Someone who is simply unaware is left out."
+    help: "One thing, and what each person or group stands towards it: who knows it, who suspects it, who has been misled about it. It is measured against what is true in the story, which cannot be wrong. Someone who is simply unaware is left out."
     why: "A secret only matters if someone can act on what they know, or fail to."
-    empty: "No knowledge entries yet. Add who knows, suspects or was misled about something."
-    add: "Add what someone knows"
+    empty: "No knowledge entries yet. Add something, and who knows, suspects or was misled about it."
+    add: "Add what people know"
     delete_confirm: "Delete this entry?"
-    item_title: "{person}: {status} {rule}{fact}"
+    item_title: "{rule}{fact}"
     one_of:
       - {fields: [rule, fact], label: "This is about", options: {rule: "A rule of the world", fact: "Something else"}}
     lead_in: "What each person can and cannot act on, given what they know:\n{items}"
-    item_template: "{person} {status} {rule}{fact}"
+    item_template: "{rule}{fact}. Knows: {knows}. Suspects: {suspects}. Misled: {misled}"
     item_join: "\n"
     item_fields:
       rule: {label: "World rule", help: "A rule from World this is about.", placeholder: "Choose a rule from World", no_options: "No rules yet. Add some in World first."}
       fact: {label: "Other fact", help: "Or a short fact of your own, when it isn't a world rule.", placeholder: "e.g. The key is hidden in the well"}
-      person: {label: "Who", help: "A character or a group.", placeholder: "Choose a character or group", no_options: "No characters or groups yet. Add some in Characters or World first."}
-      belief: {label: "What they believe instead", help: "Only when misled about something true: the false thing they take to be true instead. Leave it empty for a Myth, where the Myth itself is what they believe.", placeholder: "e.g. The key is in the attic", visible_if: {status: "misled"}}
-      status:
-        label: "Status"
-        help: "Knows it, suspects it, or has been misled about it."
-        options:
-          knows: {label: "Knows", expand: "knows", description: "Has the true story: knows the key is in the well."}
-          suspects: {label: "Suspects", expand: "suspects", description: "Has a hunch and could act on it, but isn't sure: suspects the key is in the well."}
-          misled: {label: "Misled", expand: "has been misled about", description: "Believes something false: thinks the key is in the attic."}
+      knows: {label: "Knows it", help: "Has the true story: knows the key is in the well. Characters or groups; someone is in only one of the three lists.", placeholder: "Choose who knows it", no_options: "No characters or groups yet. Add some in Characters or World first."}
+      suspects: {label: "Suspects it", help: "Has a hunch and could act on it, but isn't sure: suspects the key is in the well.", placeholder: "Choose who suspects it", no_options: "No characters or groups yet. Add some in Characters or World first."}
+      misled: {label: "Misled about it", help: "Believes something false: thinks the key is in the attic.", placeholder: "Choose who is misled", no_options: "No characters or groups yet. Add some in Characters or World first."}
+      belief: {label: "What they believe instead", help: "Only when someone is misled about something true: the false thing they take to be true instead. Leave it empty for a Myth, where the Myth itself is what they believe.", placeholder: "e.g. The key is in the attic", visible_if: {misled: "filled"}}
   pressures:
     label: "Pressures"
     help: "What is pressing on people, from a circumstance or from someone with their own wants."
@@ -90,6 +85,12 @@ rules:
   holding_pair_allowed:
     message: "That holder isn't allowed for this kind of thing."
     fix: "Pick a holder from the list offered for it."
+  knowledge_someone:
+    message: "No one is listed as knowing, suspecting or being misled."
+    fix: "Add at least one person or group to one of the three lists."
+  knowledge_one_standing:
+    message: "Someone is in more than one of the lists."
+    fix: "Keep each person or group in only one of knows, suspects and misled."
   knowledge_one_fact:
     message: "Give either a world rule or a fact of your own, not both or neither."
     fix: "Fill in one of the two."

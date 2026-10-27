@@ -1115,6 +1115,29 @@ CHECKS.all_or_none = ({ card, rule, values }) => {
   return hits;
 };
 
+// At least one of the named list fields has something in it. Reported on the first.
+CHECKS.any_filled = ({ card, rule, values }) => {
+  const hits = [];
+  for (const target of targets(card, rule, values)) {
+    if (!rule.params.fields.some((key) => isFilled(valueOf(target, key)))) hits.push(place(target, rule.params.fields[0]));
+  }
+  return hits;
+};
+
+// No value is in more than one of the named list fields. Reported on the second list that repeats a value.
+CHECKS.disjoint_lists = ({ card, rule, values }) => {
+  const hits = [];
+  for (const target of targets(card, rule, values)) {
+    const seen = new Set();
+    for (const key of rule.params.fields) {
+      const own = Array.isArray(valueOf(target, key)) ? valueOf(target, key) : [];
+      if (own.some((v) => seen.has(v))) { hits.push(place(target, key)); break; }
+      own.forEach((v) => seen.add(v));
+    }
+  }
+  return hits;
+};
+
 CHECKS.fields_differ = ({ card, rule, values }) => {
   const [a, b] = rule.params.fields;
   const hits = [];

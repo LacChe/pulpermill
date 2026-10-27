@@ -6,7 +6,7 @@ import { createMock } from "../mock.js";
 import { createClient, planChapter, generateChapter } from "../client.js";
 import { lockStaticCards, setWriterLock } from "../gate.js";
 import { placeBeat, suggestedCast } from "../plan.js";
-import { applyGenerated, commitChapter, MAX_NEW_KNOWLEDGE } from "../generate.js";
+import { applyGenerated, commitChapter } from "../generate.js";
 import { readGenerateReply, validate, settledProject } from "../logic.js";
 
 async function planned() {
@@ -26,6 +26,7 @@ const reply = (over = {}) => readGenerateReply({
 });
 
 const entry = (over) => ({ person: "Suvi", status: "knows", rule: null, fact: "The ledger is forged.", ...over });
+const stands = (e) => ["knows", "suspects", "misled"].flatMap((status) => (e[status] ?? []).map((id) => ({ id, status })));
 const added = (out) => out.changes.applied.filter((a) => a.added);
 
 test("a reply may carry new Knowledge entries, and one with none is still a reply", () => {
@@ -49,11 +50,11 @@ test("a proposed entry with a fact is added, shown in the review as a change, an
   const [a] = added(out);
   assert.equal(a.label, "New Knowledge entry");
   assert.equal(a.from, "");
-  assert.match(a.to, /Suvi Knows: The ledger is forged\./);
+  assert.match(a.to, /^The ledger is forged\. \(Knows it: Suvi\)$/);
   commitChapter(project, out);
   assert.equal(project.entanglements.knowledge.length, before + 1);
   const made = project.entanglements.knowledge.at(-1);
-  assert.deepEqual([made.rule, made.fact, made.status], ["", "The ledger is forged.", "knows"]);
+  assert.deepEqual([made.rule, made.fact, made.knows.length, made.suspects, made.misled], ["", "The ledger is forged.", 1, [], []]);
   const settled = settledProject(schema, project);
   assert.deepEqual(validate(schema.cards.entanglements, settled.entanglements, settled, schema.common).problems.filter((p) => p.severity === "block"), []);
 });
@@ -62,10 +63,10 @@ test("a proposed entry can name a World rule by its wording", async () => {
   const { project, beat } = await planned();
   const rule = project.world.rules[0];
   const out = applyGenerated(schema, project, beat, reply({ new_knowledge: [entry({ rule: rule.statement, fact: null, person: "Ola", status: "suspects" })] }));
-  // Ola may not be in this chapter; either way it is never a silent half-entry.
-  const [a] = added(out);
-  if (a) assert.equal(project.entanglements.knowledge.length + 1, out.entanglements.knowledge.length);
-  else assert.ok(out.warnings.some((w) => w.kind === "dropped"));
+  // Ola may not be in this chapter; either way it is never a silent half-entry, and an entry about that rule gets no twin.
+  for (const k of out.entanglements.knowledge) assert.ok(stands(k).length, "every entry has someone in it");
+  const about = (list) => list.filter((k) => k.rule === rule.id).length;
+  assert.equal(about(out.entanglements.knowledge), Math.max(1, about(project.entanglements.knowledge)));
 });
 
 test("an entry is left out, with its reason, when it cannot be trusted", async () => {
@@ -81,24 +82,62 @@ test("an entry is left out, with its reason, when it cannot be trusted", async (
   assert.equal(out.warnings.filter((w) => w.kind === "dropped").length, 3);
 });
 
-test("a person and a thing that already have an entry get no second one", async () => {
+
+test("a person who already stands one way on a thing is moved inside that entry, never given a second entry", async () => {
   const { project, beat } = await planned();
-  const have = project.entanglements.knowledge[0];
-  const same = (status) => ({ person: have.person, status, rule: have.rule || null, fact: have.rule ? null : have.fact });
-  const quiet = applyGenerated(schema, project, beat, reply({ new_knowledge: [same(have.status)] }));
-  assert.equal(added(quiet).length, 0);
-  assert.equal(quiet.changes.dropped.length, 0, "the same status is simply nothing new");
-  const moved = applyGenerated(schema, project, beat, reply({ new_knowledge: [same(have.status === "knows" ? "suspects" : "knows")] }));
-  assert.equal(added(moved).length, 0);
-  assert.match(moved.changes.dropped[0].why, /already has an entry/);
+  const have = project.entanglements.knowledge.find((k) => stands(k).some((x) => project.characters.some((c) => c.id === x.id)));
+  const { id, status } = stands(have).find((x) => project.characters.some((c) => c.id === x.id));
+  const name = project.characters.find((c) => c.id === id).name;
+  const same = (to) => ({ person: name, status: to, rule: have.rule || null, fact: have.rule ? null : have.fact });
+  const cast = new Set(beat.cast);
+  if (!cast.has(id)) beat.cast = [...beat.cast, id];
+  const quiet = applyGenerated(schema, project, beat, reply({ new_knowledge: [same(status)] }));
+  assert.equal(quiet.changes.applied.length, 0, "the same standing is simply nothing new");
+  const to = status === "knows" ? "suspects" : "knows";
+  const moved = applyGenerated(schema, project, beat, reply({ new_knowledge: [same(to)] }));
+  assert.equal(added(moved).length, 0, "no new entry");
+  assert.equal(moved.entanglements.knowledge.length, project.entanglements.knowledge.length);
+  const entry = moved.entanglements.knowledge.find((k) => k.id === have.id);
+  assert.ok(entry[to].includes(id) && !entry[status].includes(id), "moved from one list to the other");
+  const [change] = moved.changes.applied.filter((a) => a.item === have.id);
+  assert.equal(change.field, to);
 });
 
-test("a chapter adds at most as many entries as the page allows", async () => {
+test("people proposed for the same new thing share one entry", async () => {
   const { project, beat } = await planned();
-  const many = Array.from({ length: MAX_NEW_KNOWLEDGE + 2 }, (_, i) => entry({ fact: `Fact number ${i}.` }));
+  const [a, b] = project.characters.filter((c) => beat.cast.includes(c.id)).slice(0, 2);
+  if (!b) return;
+  const out = applyGenerated(schema, project, beat, reply({ new_knowledge: [
+    entry({ person: a.name, status: "knows" }), entry({ person: b.name, status: "suspects" }),
+  ] }));
+  assert.equal(added(out).length, 1);
+  const made = out.entanglements.knowledge.at(-1);
+  assert.deepEqual([made.knows, made.suspects], [[a.id], [b.id]]);
+  assert.match(added(out)[0].to, new RegExp(`${a.name}.*${b.name}`));
+});
+
+test("a chapter may add any number of entries", async () => {
+  const { project, beat } = await planned();
+  const many = Array.from({ length: 12 }, (_, i) => entry({ fact: `Fact number ${i}.` }));
   const out = applyGenerated(schema, project, beat, reply({ new_knowledge: many }));
-  assert.equal(added(out).length, MAX_NEW_KNOWLEDGE);
-  assert.equal(out.changes.dropped.length, 2);
+  assert.equal(added(out).length, 12);
+  assert.equal(out.changes.dropped.length, 0);
+});
+
+test("a change names the one person who now knows, suspects or is misled, and the entry moves them", async () => {
+  const { project, beat } = await planned();
+  const out = applyGenerated(schema, project, beat, reply({ new_knowledge: [entry({ status: "suspects" })] }));
+  commitChapter(project, out);
+  const made = project.entanglements.knowledge.at(-1);
+  const learned = applyGenerated(schema, project, beat, reply({ changes: [{ section: "knowledge", item: made.id, field: "knows", value: "Suvi" }] }));
+  const [c] = learned.changes.applied;
+  assert.deepEqual([c.field, c.from, c.to], ["knows", "", "Suvi"]);
+  commitChapter(project, learned);
+  const now = project.entanglements.knowledge.at(-1);
+  assert.deepEqual([now.knows.length, now.suspects], [1, []]);
+  const nobody = applyGenerated(schema, project, beat, reply({ changes: [{ section: "knowledge", item: made.id, field: "knows", value: "Nobody" }] }));
+  assert.equal(nobody.changes.applied.length, 0);
+  assert.equal(nobody.changes.dropped.length, 1);
 });
 
 test("a lock on the Knowledge list asks first, and declining leaves the list alone", async () => {
@@ -133,15 +172,15 @@ test("a new entry counts as knowledge having changed, and Generate's undo takes 
   assert.equal(JSON.stringify(project.entanglements.knowledge), before);
 });
 
-test("a misled entry keeps what the person wrongly believes, and loses it when they learn the truth", async () => {
+test("an entry keeps what the misled wrongly believe, and loses it when no one is misled any more", async () => {
   const { project, beat } = await planned();
   const out = applyGenerated(schema, project, beat, reply({ new_knowledge: [entry({ status: "misled", belief: "The ledger is honest." })] }));
   commitChapter(project, out);
   const made = project.entanglements.knowledge.at(-1);
-  assert.deepEqual([made.status, made.belief], ["misled", "The ledger is honest."]);
-  const learned = applyGenerated(schema, project, beat, reply({ changes: [{ section: "knowledge", item: made.id, field: "status", value: "knows" }] }));
+  assert.deepEqual([made.misled.length, made.belief], [1, "The ledger is honest."]);
+  const learned = applyGenerated(schema, project, beat, reply({ changes: [{ section: "knowledge", item: made.id, field: "knows", value: "Suvi" }] }));
   commitChapter(project, learned);
   assert.equal(project.entanglements.knowledge.at(-1).belief, "");
-  const knows = applyGenerated(schema, project, beat, reply({ new_knowledge: [entry({ person: "Ola", status: "knows", belief: "ignored" })] }));
+  const knows = applyGenerated(schema, project, beat, reply({ new_knowledge: [entry({ person: "Ola", status: "knows", belief: "ignored", fact: "Another fact." })] }));
   assert.equal(added(knows)[0]?.now.belief ?? "", "");
 });

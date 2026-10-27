@@ -1244,7 +1244,7 @@
      "group": "places",
      "required": true,
      "counted": true,
-     "max_items": 5,
+     "uncapped": true,
      "repeat": true,
      "why": "A place that acts on people gives a scene something to push against.",
      "empty": "No places yet. Add the places where scenes will happen.",
@@ -1307,7 +1307,7 @@
      "group": "things",
      "required": true,
      "counted": true,
-     "max_items": 5,
+     "uncapped": true,
      "repeat": true,
      "why": "A thing matters because someone wants it. This is where you say why.",
      "empty": "No things yet. Add objects someone might want.",
@@ -1858,7 +1858,7 @@
      "kind": "pairs",
      "group": "holdings",
      "required": true,
-     "max_items": 5,
+     "uncapped": true,
      "repeat": true,
      "why": "Who holds what moves the plot: things change hands and places get controlled.",
      "empty": "No holdings yet. Add who holds or controls a thing or place.",
@@ -1904,12 +1904,12 @@
     {
      "key": "knowledge",
      "label": "Knowledge",
-     "help": "Who knows, suspects or has been misled about a fact or world rule. It is measured against what is true in the story, which cannot be wrong. Someone who is simply unaware is left out.",
+     "help": "One thing, and what each person or group stands towards it: who knows it, who suspects it, who has been misled about it. It is measured against what is true in the story, which cannot be wrong. Someone who is simply unaware is left out.",
      "input": null,
      "kind": "pairs",
      "group": "knowledge",
      "required": true,
-     "max_items": 5,
+     "uncapped": true,
      "repeat": true,
      "why": "A secret only matters if someone can act on what they know, or fail to.",
      "one_of": [
@@ -1925,10 +1925,10 @@
        }
       }
      ],
-     "empty": "No knowledge entries yet. Add who knows, suspects or was misled about something.",
-     "add": "Add what someone knows",
+     "empty": "No knowledge entries yet. Add something, and who knows, suspects or was misled about it.",
+     "add": "Add what people know",
      "delete_confirm": "Delete this entry?",
-     "item_title": "{person}: {status} {rule}{fact}",
+     "item_title": "{rule}{fact}",
      "item_fields": [
       {
        "key": "rule",
@@ -1953,56 +1953,64 @@
        "placeholder": "e.g. The key is hidden in the well"
       },
       {
-       "key": "person",
-       "label": "Who",
-       "help": "A character or a group.",
-       "input": "select",
+       "key": "knows",
+       "label": "Knows it",
+       "help": "Has the true story: knows the key is in the well. Characters or groups; someone is in only one of the three lists.",
+       "input": "select-multiple",
        "kind": "note",
-       "required": true,
+       "required": false,
+       "default": [],
        "ref": [
         "characters",
         "world.powers"
        ],
-       "placeholder": "Choose a character or group",
+       "changes": true,
+       "placeholder": "Choose who knows it",
        "no_options": "No characters or groups yet. Add some in Characters or World first."
       },
       {
-       "key": "status",
-       "label": "Status",
-       "help": "Knows it, suspects it, or has been misled about it.",
-       "input": "select",
-       "kind": "axis",
-       "required": true,
+       "key": "suspects",
+       "label": "Suspects it",
+       "help": "Has a hunch and could act on it, but isn't sure: suspects the key is in the well.",
+       "input": "select-multiple",
+       "kind": "note",
+       "required": false,
+       "default": [],
+       "ref": [
+        "characters",
+        "world.powers"
+       ],
        "changes": true,
-       "options": [
-        {
-         "value": "knows",
-         "label": "Knows",
-         "description": "Has the true story: knows the key is in the well."
-        },
-        {
-         "value": "suspects",
-         "label": "Suspects",
-         "description": "Has a hunch and could act on it, but isn't sure: suspects the key is in the well."
-        },
-        {
-         "value": "misled",
-         "label": "Misled",
-         "description": "Believes something false: thinks the key is in the attic."
-        }
-       ]
+       "placeholder": "Choose who suspects it",
+       "no_options": "No characters or groups yet. Add some in Characters or World first."
+      },
+      {
+       "key": "misled",
+       "label": "Misled about it",
+       "help": "Believes something false: thinks the key is in the attic.",
+       "input": "select-multiple",
+       "kind": "note",
+       "required": false,
+       "default": [],
+       "ref": [
+        "characters",
+        "world.powers"
+       ],
+       "changes": true,
+       "placeholder": "Choose who is misled",
+       "no_options": "No characters or groups yet. Add some in Characters or World first."
       },
       {
        "key": "belief",
        "label": "What they believe instead",
-       "help": "Only when misled about something true: the false thing they take to be true instead. Leave it empty for a Myth, where the Myth itself is what they believe.",
+       "help": "Only when someone is misled about something true: the false thing they take to be true instead. Leave it empty for a Myth, where the Myth itself is what they believe.",
        "input": "text",
        "kind": "note",
        "required": false,
        "changes": true,
        "placeholder": "e.g. The key is in the attic",
        "visible_if": {
-        "status": "misled"
+        "misled": "filled"
        }
       }
      ]
@@ -2168,6 +2176,44 @@
      "needs_model": false,
      "message": "Give either a world rule or a fact of your own, not both or neither.",
      "fix": "Fill in one of the two."
+    },
+    {
+     "id": "knowledge_someone",
+     "severity": "block",
+     "fields": [
+      "knowledge"
+     ],
+     "check": "any_filled",
+     "params": {
+      "fields": [
+       "knows",
+       "suspects",
+       "misled"
+      ]
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "No one is listed as knowing, suspecting or being misled.",
+     "fix": "Add at least one person or group to one of the three lists."
+    },
+    {
+     "id": "knowledge_one_standing",
+     "severity": "block",
+     "fields": [
+      "knowledge"
+     ],
+     "check": "disjoint_lists",
+     "params": {
+      "fields": [
+       "knows",
+       "suspects",
+       "misled"
+      ]
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "Someone is in more than one of the lists.",
+     "fix": "Keep each person or group in only one of knows, suspects and misled."
     },
     {
      "id": "pressure_one_source",

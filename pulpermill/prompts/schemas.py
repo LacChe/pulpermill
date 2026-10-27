@@ -257,7 +257,8 @@ def shifts_schema(req: dict, handles: dict[str, dict]) -> Schema:
     kinds = {
         "ties": lambda: change("ties", ["bond", "edge"], text()),
         "holdings": lambda: change("holdings", ["held_by"], one_of(holders)),
-        "knowledge": lambda: change("knowledge", ["status"], {"type": "string", "enum": STATUSES}),
+        # The value is the person who now knows, suspects or is misled about it; the page moves them between the item's lists.
+        "knowledge": lambda: change("knowledge", ["knows", "suspects", "misled"], one_of(people)),
         "pressures": lambda: change("pressures", ["what", "next_move", "bears_on"],
                                     {"anyOf": [text(), {"type": "array", "items": {"type": "string", "enum": people} if people else text()}]}),
     }
@@ -275,7 +276,7 @@ def shifts_schema(req: dict, handles: dict[str, dict]) -> Schema:
     new = {"anyOf": [about_rule, about_fact]} if rules else about_fact
     return obj({"shifts": {"type": "array", "items": shift, "maxItems": 5},
                 "changes": changes,
-                "new_knowledge": {"type": "array", "items": new, "maxItems": 3}})
+                "new_knowledge": {"type": "array", "items": new, "maxItems": 8}})
 
 
 # ---- The rest -------------------------------------------------------------------------------------------------------

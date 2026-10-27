@@ -350,4 +350,4 @@ def test_a_misled_person_can_be_given_what_they_believe():
     schema = S.shifts_schema({"cast": [{"name": "Suvi"}], "world": {"rules": []}}, handles)
     assert "belief" in schema["properties"]["new_knowledge"]["items"]["properties"]
     fields = [o["properties"]["field"]["enum"] for o in schema["properties"]["changes"]["items"]["anyOf"]]
-    assert ["status"] in fields and ["belief"] in fields
+    assert ["knows", "suspects", "misled"] in fields and ["belief"] in fields

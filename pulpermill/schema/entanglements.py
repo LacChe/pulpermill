@@ -30,8 +30,6 @@ HOLDING_PAIRS = {
     "world.places": ["characters", "world.powers"],
 }
 
-KnowledgeStatus = Literal["knows", "suspects", "misled"]
-
 # Reference sources: "characters" or "<card>.<list field>". Values are item ids; names are shown in prose.
 PEOPLE = ["characters", "world.powers"]
 
@@ -49,12 +47,17 @@ class Holding(Item):
                         ref_filter_by="holdee", changes=True)
 
 
+# One thing (a world rule or a fact), and everyone's standing towards it: three lists of people and groups, a person in at most one.
+KNOWLEDGE_LISTS = ["knows", "suspects", "misled"]
+
+
 class KnowledgeEntry(Item):
     rule: str | None = spec("select", None, "note", required=False, ref=["world.rules"])   # one of rule / fact
     fact: str | None = spec("text", None, "note", required=False)
-    person: str = spec("select", None, "note", ref=PEOPLE)
-    status: KnowledgeStatus = spec("select", None, "axis", changes=True)
-    belief: str | None = spec("text", None, "note", required=False, changes=True)   # only for "misled": what they wrongly believe
+    knows: list[str] = spec("select-multiple", None, "note", required=False, default=[], ref=PEOPLE, changes=True)
+    suspects: list[str] = spec("select-multiple", None, "note", required=False, default=[], ref=PEOPLE, changes=True)
+    misled: list[str] = spec("select-multiple", None, "note", required=False, default=[], ref=PEOPLE, changes=True)
+    belief: str | None = spec("text", None, "note", required=False, changes=True)   # only with someone misled: what they wrongly believe
 
 
 class Pressure(Item):
@@ -68,8 +71,8 @@ class Pressure(Item):
 # Everything is required for now. Source doc: "an empty section is fine".
 class Entanglements(Item):
     ties: list[Tie] = spec(None, "ties", "pairs", repeat=True, uncapped=True)   # a cast has many ties
-    holdings: list[Holding] = spec(None, "holdings", "pairs", repeat=True)
-    knowledge: list[KnowledgeEntry] = spec(None, "knowledge", "pairs", repeat=True)
+    holdings: list[Holding] = spec(None, "holdings", "pairs", repeat=True, uncapped=True)
+    knowledge: list[KnowledgeEntry] = spec(None, "knowledge", "pairs", repeat=True, uncapped=True)   # no cap: the pipeline sends the relevant, least used
     pressures: list[Pressure] = spec(None, "pressures", "pairs", repeat=True)
 
 
@@ -87,6 +90,12 @@ RULES = [
     Rule(id="knowledge_one_fact", severity="block", fields=["knowledge"],
          when="an entry gives both a world rule and a free-text fact, or neither",
          check="exactly_one", params={"fields": ["rule", "fact"]}),
+    Rule(id="knowledge_someone", severity="block", fields=["knowledge"],
+         when="an entry names no one who knows, suspects or is misled",
+         check="any_filled", params={"fields": KNOWLEDGE_LISTS}),
+    Rule(id="knowledge_one_standing", severity="block", fields=["knowledge"],
+         when="the same person or group is in more than one of knows, suspects and misled",
+         check="disjoint_lists", params={"fields": KNOWLEDGE_LISTS}),
     Rule(id="pressure_one_source", severity="block", fields=["pressures"],
          when="a pressure gives both an agent and a circumstance, or neither",
          check="exactly_one", params={"fields": ["source_agent", "source_circumstance"]}),

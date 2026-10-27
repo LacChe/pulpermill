@@ -179,11 +179,13 @@ def test_writer_entanglements_mark_whoever_is_offstage():
     assert text.index("Ties") < text.index("Who holds") < text.index("What each person") < text.index("Pressures")
 
 
-def test_knowledge_is_written_as_a_statement_with_a_colon():
+def test_one_knowledge_item_lists_everyone_who_stands_towards_it():
     text = render_entanglements(generate_request()["entanglements"], ["Suvi", "Aino", "Pekka"], scope="writer")
-    assert "Suvi has been misled about: The cellar under the shop floods on the spring tide." in text
-    assert "Aino suspects: The ledger is in Pekka's rooms." in text
-    assert "Pekka knows: The dock repairs" in text
+    assert "The cellar under the shop floods on the spring tide. Misled about it: Suvi." in text
+    assert "The ledger is in Pekka's rooms. Suspects it: Aino." in text
+    line = next(l for l in text.splitlines() if l.startswith("The dock repairs"))
+    assert "Knows it: Pekka, Aino." in line and "Misled about it: The Harbour Board." in line
+    assert line.endswith("They believe instead: The board paid for the dock repairs."), line
 
 
 def test_a_pressure_with_no_next_move_has_no_empty_label():

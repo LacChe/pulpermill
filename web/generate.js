@@ -11,12 +11,12 @@ import { watch } from "./undo.js";
 import { msg, joinList } from "./text.js";
 import {
   chapterInfo, beatForChapter, beatBlockers, castProblem, planIsStale, entanglementsHash, currentGoal, goalArc, openPlants,
-  availableReveals, latestShifts, nameMap, fieldDefs, entanglementsFor, castCards, beatInWords, eventsInWords,
+  availableReveals, latestShifts, nameMap, fieldDefs, entanglementsFor, castCards, beatInWords, eventsInWords, rotating,
 } from "./plan.js";
 
 export const PREVIOUS_ENDING_CHARS = 1500;   // how much of the last chapter's end the model is shown
 export const MAX_OPEN_PLANTS = 2;            // the schema's open_plants_max
-export const MAX_NEW_KNOWLEDGE = 3;          // new Knowledge entries one chapter may add
+const STANDINGS = ["knows", "suspects", "misled"];   // the lists on a Knowledge entry; a person is in one of them
 export const MAX_SHIFTS = 5;                 // the schema's shifts_per_chapter_max
 
 const copyOf = (value) => JSON.parse(JSON.stringify(value));
@@ -61,10 +61,11 @@ export function previousEnding(project, limit = PREVIOUS_ENDING_CHARS) {
 
 // The whole World as the writer sees it (canon, hidden truths included: they reach a character only through Knowledge), with
 // each object's holder named.
-function worldForWriter(schema, project, names) {
+function worldForWriter(schema, project, names, beat) {
   const w = settledProject(schema, project).world;
   const held = new Map((project.entanglements?.holdings ?? []).map((h) => [h.holdee, names.get(h.held_by) ?? ""]));
-  return { ...w, objects: w.objects.map((o) => ({ ...o, held_by: held.get(o.id) ?? "" })) };
+  const sent = rotating(project, w, beat);       // the places and things the beat names, then the least used
+  return { ...w, places: sent.places, objects: sent.objects.map((o) => ({ ...o, held_by: held.get(o.id) ?? "" })) };
 }
 
 export function generateRequest(schema, project, beat) {
@@ -81,8 +82,8 @@ export function generateRequest(schema, project, beat) {
     goal: currentGoal(project),
     goal_state: goalArc(project).state === "active" ? null : goalArc(project).state,
     cast: castCards(project, beat.cast).map(copyOf),
-    world: worldForWriter(schema, project, names),
-    entanglements: entanglementsFor(schema, project, beat.cast, names, { allPressures: false }),
+    world: worldForWriter(schema, project, names, beat),
+    entanglements: entanglementsFor(schema, project, beat.cast, names, { allPressures: false, beat }),
     standing: latestShifts(project, beat.cast, names),
     earlier_events: eventsInWords(project, info.next - 1),
     previous_ending: previousEnding(project),
@@ -147,6 +148,19 @@ function resolveChangeValue(def, change, project) {
   return words ? { value: words } : { why: msg("records.whyNoWords") };
 }
 
+// Puts a person into one of a Knowledge entry's lists, out of the others. Returns what the entry held before (to put back), and
+// clears the belief when no one is misled any more.
+function setStanding(entry, status, id) {
+  const before = { knows: [...entry.knows], suspects: [...entry.suspects], misled: [...entry.misled], belief: entry.belief ?? "" };
+  for (const key of STANDINGS) entry[key] = entry[key].filter((x) => x !== id);
+  entry[status].push(id);
+  if (!entry.misled.length) entry.belief = "";
+  return before;
+}
+
+// A Knowledge entry made before this build, or typed by hand, may lack a list: every entry reads as all three.
+const wholeEntry = (entry) => { for (const key of STANDINGS) entry[key] = Array.isArray(entry[key]) ? entry[key] : []; return entry; };
+
 // Applies the proposed changes to a copy of the Entanglements. A change is dropped (and says why) when its item does not exist,
 // its field is not one that moves, its value does not match the cards, or the result would break a blocking rule.
 // Returns {entanglements, applied, dropped, locked}. With overwriteLocked false, changes to locked values are dropped too.
@@ -163,10 +177,25 @@ function applyChanges(schema, project, changes, { overwriteLocked }) {
     const drop = (why) => dropped.push({ ...change, why });
     if (!item) { drop(msg("records.whyNoEntry")); continue; }
     if (!def?.changes) { drop(msg("records.whyNoChange")); continue; }
+    const covering = locks.filter((l) => lockCovers(l, change));
+    if (change.section === "knowledge" && STANDINGS.includes(change.field)) {
+      // The value is the one person who now stands that way; the entry moves them out of its other lists.
+      wholeEntry(item);
+      const who = wordsToId(project, ["characters", "world.powers"], Array.isArray(change.value) ? change.value[0] : change.value);
+      if (!who.id) { drop(msg(who.several ? "records.whyMatchesSeveral" : "records.whyMatchesNothing", { words: String(change.value) })); continue; }
+      if (item[change.field].includes(who.id)) continue;                                  // already so
+      if (covering.length && !overwriteLocked) { drop(msg("records.whyLocked")); continue; }
+      const was = [...item[change.field]];
+      const restore = setStanding(item, change.field, who.id);
+      applied.push({
+        section: change.section, item: change.item, field: change.field, label: def.label ?? def.key, was, now: [...item[change.field]],
+        from: show(def, was, names), to: show(def, item[change.field], names), restore, locks: covering.map((l) => l.id),
+      });
+      continue;
+    }
     const got = resolveChangeValue(def, change, project);
     if (got.why) { drop(got.why); continue; }
     if (JSON.stringify(item[change.field]) === JSON.stringify(got.value)) continue;       // no change at all
-    const covering = locks.filter((l) => lockCovers(l, change));
     if (covering.length && !overwriteLocked) { drop(msg("records.whyLocked")); continue; }
     applied.push({
       section: change.section, item: change.item, field: change.field, label: def.label ?? def.key,
@@ -175,8 +204,6 @@ function applyChanges(schema, project, changes, { overwriteLocked }) {
       locks: covering.map((l) => l.id),
     });
     item[change.field] = got.value;
-    // Someone who stops being misled no longer believes the false thing.
-    if (change.section === "knowledge" && change.field === "status" && got.value !== "misled" && item.belief) item.belief = "";
   }
   // A change that would break a blocking rule on its entry is undone, entry by entry.
   const trial = { ...before, entanglements: next };
@@ -187,7 +214,7 @@ function applyChanges(schema, project, changes, { overwriteLocked }) {
     const why = fresh.find((p) => p.item === bad).message;
     for (const a of applied.filter((x) => x.item === bad)) {
       const section = next[a.section].find((i) => i.id === bad);
-      section[a.field] = a.was;
+      if (a.restore) Object.assign(section, a.restore); else section[a.field] = a.was;
       dropped.push({ section: a.section, item: a.item, field: a.field, value: a.to, why: msg("records.whyBreaksRule", { why }) });
     }
   }
@@ -195,27 +222,28 @@ function applyChanges(schema, project, changes, { overwriteLocked }) {
   return { entanglements: next, applied: kept, dropped, locked: kept.filter((a) => a.locks.length) };
 }
 
-// New Knowledge entries the model proposed (someone came to know, suspect or be misled about something with no line yet).
-// Each is checked and added to `next` (the copy of the Entanglements) or left out with its reason: the person must be found, and
-// if a character must be in this chapter; exactly one of a World rule or a fact; no entry for that person and thing yet
-// (a status that moves is a change to the entry that is there); at most MAX_NEW_KNOWLEDGE a chapter; and a lock on the whole
-// Knowledge list or card asks first, like any locked value. Returns {applied, dropped}; applied entries read like changes
-// (label, from "", to) so the review lists them with the rest.
+// New Knowledge the model proposed: someone came to know, suspect or be misled about something. One proposal is one person. A person
+// is added to the entry about the same thing when there is one (moved, if they stood another way), and the first proposal about a
+// new thing makes its entry, which the next proposals about it join. Each is checked or left out with its reason: the person must be
+// found, and if a character must be in this chapter; exactly one of a World rule or a fact; and a lock on the whole Knowledge list
+// or card asks first, like any locked value. There is no limit on how many. Returns {applied, dropped}; applied entries read like
+// changes (label, from, to) so the review lists them with the rest.
 function addKnowledge(schema, project, next, proposals, cast, { overwriteLocked }) {
   const applied = [];
   const dropped = [];
   const names = nameMap(project);
-  const statusDef = fieldDefs(schema, "entanglements", "knowledge").find((d) => d.key === "status");
+  const defs = fieldDefs(schema, "entanglements", "knowledge");
   const label = msg("records.newKnowledge");
   const covering = (project.locks ?? []).filter((l) => lockCovers(l, { section: "knowledge" }));
   const list = next.knowledge ?? (next.knowledge = []);
   const taken = ["ties", "holdings", "knowledge", "pressures"].flatMap((k) => (next[k] ?? []).map((i) => i.id));
   const people = new Set((project.characters ?? []).map((c) => c.id));
+  const madeHere = new Map();      // entry id -> the applied record that shows it
+  const standing = (entry) => STANDINGS.filter((k) => entry[k].length).map((k) => `${defs.find((d) => d.key === k)?.label ?? k}: ${joinList(entry[k].map((id) => names.get(id) ?? id))}`).join("; ");
   for (const p of proposals) {
     if (!p.rule && !p.fact) continue;      // an empty proposal says nothing, so it is not worth a warning
     const what = p.rule ?? p.fact ?? "";
     const drop = (why) => dropped.push({ section: "knowledge", field: label, value: `${p.person}: ${what}`, why });
-    if (applied.length >= MAX_NEW_KNOWLEDGE) { drop(msg("records.knowledgeTooMany", { max: MAX_NEW_KNOWLEDGE })); continue; }
     const who = wordsToId(project, ["characters", "world.powers"], p.person);
     if (!who.id) { drop(msg(who.several ? "records.whyMatchesSeveral" : "records.whyMatchesNothing", { words: p.person })); continue; }
     if (people.has(who.id) && !cast.includes(who.id)) { drop(msg("records.notInChapter", { name: p.person })); continue; }
@@ -226,20 +254,37 @@ function addKnowledge(schema, project, next, proposals, cast, { overwriteLocked 
       if (!found.id) { drop(msg(found.several ? "records.whyMatchesSeveral" : "records.whyMatchesNothing", { words: p.rule })); continue; }
       ruleId = found.id;
     }
-    const same = list.find((k) => k.person === who.id && (ruleId ? k.rule === ruleId : squash(k.fact) === squash(p.fact)));
+    const same = list.find((k) => (ruleId ? k.rule === ruleId : squash(k.fact) === squash(p.fact)));
     if (same) {
-      if (same.status !== p.status) drop(msg("records.knowledgeHasEntry"));
+      wholeEntry(same);
+      if (same[p.status].includes(who.id)) continue;                                      // already so
+      const here = madeHere.get(same.id);
+      if (!here && covering.length && !overwriteLocked) { drop(msg("records.whyLocked")); continue; }
+      const was = [...same[p.status]];
+      const restore = setStanding(same, p.status, who.id);
+      if (p.status === "misled" && p.belief && !same.belief) same.belief = p.belief;
+      if (here) {                                                                         // joins the entry this reply made
+        here.to = msg("records.newKnowledgeTo", { what, standing: standing(same) });
+        continue;
+      }
+      const def = defs.find((d) => d.key === p.status);
+      applied.push({
+        section: "knowledge", item: same.id, field: p.status, label: def?.label ?? p.status, was, now: [...same[p.status]],
+        from: show(def, was, names), to: show(def, same[p.status], names), restore, locks: covering.map((l) => l.id),
+      });
       continue;
     }
     if (covering.length && !overwriteLocked) { drop(msg("records.whyLocked")); continue; }
-    const entry = { rule: ruleId, fact: ruleId ? "" : p.fact, person: who.id, status: p.status, belief: p.status === "misled" ? (p.belief ?? "") : "", id: newId(taken) };
+    const entry = { rule: ruleId, fact: ruleId ? "" : p.fact, knows: [], suspects: [], misled: [], belief: p.status === "misled" ? (p.belief ?? "") : "", id: newId(taken) };
+    entry[p.status].push(who.id);
     taken.push(entry.id);
     list.push(entry);
-    applied.push({
+    const record = {
       section: "knowledge", item: entry.id, field: "entry", label, was: null, now: entry, added: true,
-      from: "", to: msg("records.newKnowledgeTo", { person: names.get(who.id) ?? p.person, status: show(statusDef, p.status, names), what }),
-      locks: covering.map((l) => l.id),
-    });
+      from: "", to: msg("records.newKnowledgeTo", { what, standing: standing(entry) }), locks: covering.map((l) => l.id),
+    };
+    madeHere.set(entry.id, record);
+    applied.push(record);
   }
   return { applied, dropped };
 }

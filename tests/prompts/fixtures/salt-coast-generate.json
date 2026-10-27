@@ -97,9 +97,9 @@
       {"id": "H2", "holdee": "The brass key", "held_by": "Suvi"}
     ],
     "knowledge": [
-      {"id": "K1", "person": "Pekka", "status": "knows", "rule": "The dock repairs were paid for by the shopkeepers, not the board.", "fact": null},
-      {"id": "K2", "person": "Suvi", "status": "misled", "rule": "The cellar under the shop floods on the spring tide.", "fact": null},
-      {"id": "K3", "person": "Aino", "status": "suspects", "rule": null, "fact": "The ledger is in Pekka's rooms."}
+      {"id": "K1", "rule": "The dock repairs were paid for by the shopkeepers, not the board.", "fact": null, "knows": ["Pekka", "Aino"], "suspects": [], "misled": ["The Harbour Board"], "belief": "The board paid for the dock repairs."},
+      {"id": "K2", "rule": "The cellar under the shop floods on the spring tide.", "fact": null, "knows": [], "suspects": [], "misled": ["Suvi"], "belief": null},
+      {"id": "K3", "rule": null, "fact": "The ledger is in Pekka's rooms.", "knows": [], "suspects": ["Aino"], "misled": []}
     ],
     "pressures": [
       {"id": "P1", "what": "The board wants the ledger before the next first-day visit and will close the shop to get it.", "source_agent": "The Harbour Board", "source_circumstance": null, "bears_on": ["Suvi", "Pekka"], "next_move": "Send a clerk to count the shop's stock on Friday."},

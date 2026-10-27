@@ -19,7 +19,7 @@ UNCAPPED = {("entanglements", "ties"), ("outline", "beats"), ("summary_events", 
             ("summary_shifts", "shifts"), ("entanglements_history", "states")}   # exceptions to the 5-item list cap
 BLOCK_CHECKS = {"required_if", "exactly_one", "fields_differ", "holding_pairs_allowed", "ref_exists",
                 "includes_value", "unique_across_items", "all_or_none", "legal_shift",
-                "open_plants_max", "paid_off_valid", "at_least_one", "max_per_group", "not_already_landed"}   # checks a block rule may name
+                "open_plants_max", "paid_off_valid", "at_least_one", "any_filled", "disjoint_lists", "max_per_group", "not_already_landed"}   # checks a block rule may name
 COMMON_KEYS = {"missing", "not_allowed", "too_many", "invalid"}
 
 CASES = [(cid, lang) for cid in CARD_IDS for lang in LANGS]
