@@ -18,7 +18,7 @@
 
 ## 2. How each call is built
 
-- **Writer:** four sections of about 750 words (three of 1,000 if asked). Each prompt is rules and craft, then the rendered material, then the last ~300 words written, then the section's job, then a short reminder as the last lines. If the chapter is under 80% of pace before the last section, `needs_extra` adds a section. Stage `write`.
+- **Writer:** two sections (revised in `writer-0.2`, see `07-tuning-log.md`): the first opens and builds the pressure, the second makes the choice and closes. Each runs up to half the chapter ceiling and ends sooner when its job is done. The second is shown the whole first section. Rules and craft, then the rendered material, then the job, then a short reminder as the last lines. Stage `write`.
 - **Planner:** two prompts, think then beat. Both carry the tone, cast, world, entanglements, an arc line for early, middle, late or last chapter, and, on a retry, the refused attempt with the rules' words. The beat prompt adds the planner's own thinking. Constrained to the places, reveals, plants and shifts that were sent.
 - **Events and Shifts:** the page's lists as pick-lists. Shifts sees short handles (T1, H1, K1, P1), never ids; `resolve_changes` maps them back and drops any it does not know.
 - **`assemble_generate_reply`** joins the three passes into the contract's reply; a test round-trips it through `contract.parse_reply`.
