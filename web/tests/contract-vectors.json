@@ -998,6 +998,39 @@
         "available_reveals": [],
         "goal_state": null
       }
+    },
+    {
+      "name": "asking for a named call",
+      "valid": true,
+      "data": {
+        "call": "job",
+        "job_id": "job-aaaa-0001"
+      }
+    },
+    {
+      "name": "cancelling a named call",
+      "valid": true,
+      "data": {
+        "call": "cancel",
+        "job_id": "job-aaaa-0001"
+      }
+    },
+    {
+      "name": "a job id that is too short",
+      "valid": false,
+      "data": {
+        "call": "job",
+        "job_id": "abc"
+      }
+    },
+    {
+      "name": "a job request with extras",
+      "valid": false,
+      "data": {
+        "call": "job",
+        "job_id": "job-aaaa-0001",
+        "language": "en"
+      }
     }
   ],
   "replies": [

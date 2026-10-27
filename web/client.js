@@ -110,8 +110,9 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 //   mock       the object from createMock, used when the setting is "mock"
 //   sleep      how to wait between the idle checks after a Stop or a timeout (tests pass a fast one)
 //   pollEvery  while a story call runs, how often to ask status (ms): it shows the stage and notices a lost connection
-//   lostAfter  how many status checks in a row may fail before the call is given up as unreachable
-export function createClient({ setting = { kind: "mock" }, token = "", mock = null, fetchImpl = globalThis.fetch, timeouts = {}, sleep = wait, pollEvery = 1000, lostAfter = 3 } = {}) {
+//   lostAfter  how many status checks in a row may fail before the connection is counted as lost
+//   recoverEvery, recoverFor  after a lost connection, a named call is asked for by name every `recoverEvery` ms for up to `recoverFor` ms
+export function createClient({ setting = { kind: "mock" }, token = "", mock = null, fetchImpl = globalThis.fetch, timeouts = {}, sleep = wait, pollEvery = 1000, lostAfter = 3, recoverEvery = 3000, recoverFor = 20 * 60 * 1000 } = {}) {
   let current = setting;
   let secret = token;
   let running = null;                 // the model call this page has going, if any
@@ -164,26 +165,66 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
     return false;
   }
 
+  // A name for one call, sent with it so the backend keeps the call going if the connection drops and keeps its answer.
+  const makeJobId = () => (globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`).replace(/[^A-Za-z0-9_-]/g, "");
+
+  // The call's connection dropped but the call may be going on in the backend. Ask for it by name until it is done, the
+  // backend says it has never heard of it (it restarted: nothing to fetch), the page gives up, or Stop is pressed.
+  async function recover(jobId, signal) {
+    const tries = Math.max(1, Math.ceil(recoverFor / recoverEvery));
+    setConnection("unreachable");
+    for (let i = 0; i < tries && !signal.aborted; i++) {
+      await sleep(recoverEvery);
+      if (signal.aborted) break;
+      const reply = await post(fetchImpl, current.url, { call: "job", job_id: jobId }, signal, secret).catch(() => failure("unreachable"));
+      if (reply?.ok === true && reply.state === "running") {
+        setConnection("busy");
+        if ((reply.stage ?? null) !== stage) { stage = reply.stage ?? null; changed(); }
+        continue;
+      }
+      if (reply?.ok === true && reply.state === "unknown") return failure("unreachable", msg("backend.jobGone"));
+      if (reply?.ok === false && reply.error?.kind === "unreachable") { setConnection("unreachable"); continue; }
+      return reply;                       // the call's own answer, or its own error
+    }
+    return failure("unreachable", msg("backend.jobLost"));
+  }
+
   function start(request) {
     const call = request?.call;
     const isStatus = call === "status";
     if (!isStatus && running) {
       return { done: Promise.resolve(failure("busy", "This page is already waiting for an answer.")), stop() {} };
     }
-    const controller = new AbortController();
+    const named = current.kind === "url" && !isStatus;
+    const jobId = named ? makeJobId() : null;
+    const sent = named ? { ...request, job_id: jobId } : request;
+    const controller = new AbortController();                // ends the whole call: Stop or the time limit
+    let attempt = new AbortController();                      // one try at the connection; it alone ends when the connection is lost
+    controller.signal.addEventListener("abort", () => attempt.abort());
+    let lost = false;
     let why = null;
     const timer = setTimeout(() => { why = "timeout"; controller.abort(); }, limits[call] ?? limits.fill);
-    const handle = { stop() { why ??= "stopped"; controller.abort(); } };
+    const handle = {
+      stop() {
+        why ??= "stopped"; controller.abort();
+        if (jobId) post(fetchImpl, current.url, { call: "cancel", job_id: jobId }, undefined, secret).catch(() => {});
+      },
+    };
     if (!isStatus) { running = handle; changed(); }
-    const unwatch = STORY_CALLS.includes(call) ? watch(() => { why ??= "unreachable"; controller.abort(); }) : () => {};
+    const unwatch = STORY_CALLS.includes(call) ? watch(() => { lost = true; attempt.abort(); }) : () => {};
     const done = (async () => {
       let reply;
       try {
-        reply = await transport(request, controller.signal);
+        reply = await transport(sent, attempt.signal);
       } catch (error) {
         reply = why === "timeout" ? failure("timeout", "No answer in time.")
-          : why === "unreachable" ? failure("unreachable", "The backend stopped answering.")
+          : lost && !why ? failure("unreachable", "The backend stopped answering.")
           : error?.name === "AbortError" ? failure("stopped") : failure("unreachable", error?.message);
+      }
+      try {
+        if (named && !why && reply?.ok === false && reply.error?.kind === "unreachable") reply = await recover(jobId, controller.signal);
+        if (why === "timeout") reply = failure("timeout", "No answer in time.");
+        else if (why === "stopped") reply = failure("stopped");
       } finally {
         clearTimeout(timer);
         unwatch();

@@ -51,7 +51,9 @@
     "project": "pulpermill-project"
   },
   "backend": {
-    "answered": "The backend answered {status}."
+    "answered": "The backend answered {status}.",
+    "jobGone": "The connection dropped, and the backend no longer has this call (it may have been restarted). Nothing was changed. Press the button again.",
+    "jobLost": "The connection dropped and did not come back in time. Nothing was changed. Press the button again."
   },
   "records": {
     "whyMatchesNothing": "“{words}” matches nothing in the cards",

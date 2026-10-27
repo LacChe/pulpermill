@@ -333,10 +333,10 @@ test("a connection that drops during a story call ends it as unreachable after a
   let aborted = false;
   const fetchImpl = (url, { body, signal }) => {
     const request = JSON.parse(body);
-    if (request.call === "status") return Promise.reject(new TypeError("Failed to fetch"));
+    if (request.call === "status" || request.call === "job") return Promise.reject(new TypeError("Failed to fetch"));
     return new Promise((resolve, reject) => signal.addEventListener("abort", () => { aborted = true; reject(Object.assign(new Error("aborted"), { name: "AbortError" })); }));
   };
-  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: realSleep, pollEvery: 5, lostAfter: 3, timeouts: { generate: 5000 } });
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: realSleep, pollEvery: 5, lostAfter: 3, recoverEvery: 5, recoverFor: 20, timeouts: { generate: 5000 } });
   const reply = await client.start(generateRequest).done;
   assert.equal(reply.error.kind, "unreachable");
   assert.equal(aborted, true);
@@ -503,4 +503,75 @@ test("a connection cut while the body is still arriving is unreachable, not a ba
   const notJson = { ok: true, status: 200, json: async () => { throw new SyntaxError("Unexpected token"); } };
   const second = await fillCard(realClient(fakeFetch(() => notJson)), schema, project(), "world").done;
   assert.equal(second.error.kind, "bad_output");
+});
+
+// ---- Named calls: a dropped connection does not lose the answer ----
+
+const jobOf = (init) => JSON.parse(init.body);
+
+test("a named call whose connection drops is fetched by name until it is done", async () => {
+  const seen = [];
+  let polls = 0;
+  const fetchImpl = async (url, init) => {
+    const request = jobOf(init);
+    seen.push(request);
+    if (request.call === "status") return json({ ok: true, state: "busy" });
+    if (request.call === "job") { polls += 1; return polls < 3 ? json({ ok: true, state: "running", stage: "write" }) : json({ ok: true, did: "a", reach: "b" }); }
+    throw new TypeError("network error");              // the call itself
+  };
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: noSleep, pollEvery: 1000, recoverEvery: 1, recoverFor: 100 });
+  const reply = await client.start({ call: "offstage", schema_version: 1, language: "en" }).done;
+  assert.equal(reply.ok, true);
+  const first = seen.find((r) => r.call === "offstage");
+  assert.match(first.job_id, /^[A-Za-z0-9_-]{8,64}$/);
+  assert.ok(seen.filter((r) => r.call === "job").every((r) => r.job_id === first.job_id));
+  assert.equal(client.state.working, false);
+});
+
+test("a call the backend no longer knows is unreachable, with nothing to fetch", async () => {
+  const fetchImpl = async (url, init) => {
+    const request = jobOf(init);
+    if (request.call === "job") return json({ ok: true, state: "unknown" });
+    throw new TypeError("network error");
+  };
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: noSleep, recoverEvery: 1, recoverFor: 10 });
+  const reply = await client.start({ call: "offstage", schema_version: 1, language: "en" }).done;
+  assert.equal(reply.error.kind, "unreachable");
+  assert.match(reply.error.detail, /no longer has this call/);
+});
+
+test("a finished call that failed hands back its own error when fetched", async () => {
+  const fetchImpl = async (url, init) => {
+    const request = jobOf(init);
+    if (request.call === "job") return json({ ok: false, error: { kind: "bad_output", detail: "" } }, 502);
+    throw new TypeError("network error");
+  };
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: noSleep, recoverEvery: 1, recoverFor: 10 });
+  const reply = await client.start({ call: "offstage", schema_version: 1, language: "en" }).done;
+  assert.equal(reply.error.kind, "bad_output");
+});
+
+test("Stop tells the backend to cancel the named call", async () => {
+  const seen = [];
+  const fetchImpl = (url, init) => {
+    const request = jobOf(init);
+    seen.push(request);
+    if (request.call === "cancel") return Promise.resolve(json({ ok: true, state: "cancelled" }));
+    if (request.call === "status") return Promise.resolve(json({ ok: true, state: "idle" }));
+    return new Promise((resolve, reject) => init.signal?.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" }))));
+  };
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: noSleep });
+  const call = client.start({ call: "offstage", schema_version: 1, language: "en" });
+  call.stop();
+  const reply = await call.done;
+  assert.equal(reply.error.kind, "stopped");
+  const sent = seen.find((r) => r.call === "offstage");
+  assert.ok(seen.some((r) => r.call === "cancel" && r.job_id === sent.job_id));
+});
+
+test("status checks and the mock never carry a job id", async () => {
+  const seen = [];
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl: async (u, init) => { seen.push(jobOf(init)); return json({ ok: true, state: "idle" }); }, sleep: noSleep });
+  await client.checkStatus();
+  assert.equal("job_id" in seen[0], false);
 });

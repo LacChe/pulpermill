@@ -80,10 +80,46 @@ class Job:
             self._stage = stage
 
 
+class JobRecord:
+    """One call that carried a job_id: its name, what it is doing, and (once it ends) its outcome, kept for the page to fetch."""
+
+    def __init__(self, job_id: str, call: str, cancel: CancelFlag):
+        self.id, self.call, self.cancel = job_id, call, cancel
+        self.outcome: tuple[str, Any] | None = None       # ("ok", reply) or ("fail", (kind, detail)); None while running
+        self.finished_at: float | None = None
+
+
+class JobStore:
+    """The calls the page named, newest last. Held in memory only: when the server restarts they are gone, and the page is
+    told "unknown". At most `keep` finished calls are kept; a running one is never dropped."""
+
+    def __init__(self, keep: int = 30):
+        self._lock = threading.Lock()
+        self._records: dict[str, JobRecord] = {}
+        self.keep = keep
+
+    def get(self, job_id: str) -> JobRecord | None:
+        with self._lock:
+            return self._records.get(job_id)
+
+    def add(self, record: JobRecord) -> None:
+        with self._lock:
+            self._records[record.id] = record
+
+    def finish(self, record: JobRecord, outcome: tuple[str, Any]) -> None:
+        with self._lock:
+            record.outcome = outcome
+            record.finished_at = time.time()
+            finished = sorted((r for r in self._records.values() if r.outcome is not None), key=lambda r: r.finished_at)
+            for old in finished[: max(len(finished) - self.keep, 0)]:
+                del self._records[old.id]
+
+
 def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], dict] | None = None) -> Starlette:
     """`run(request_model, ctx) -> reply dict` answers one model call. It defaults to the pipelines package."""
     run = run or default_pipelines.run
     job = Job()
+    jobs = JobStore(config.jobs_kept)
     runs = runlog.RunLog(config.log_path, config)
 
     def token_ok(request: Request) -> bool:
@@ -92,7 +128,7 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
         given = request.headers.get(TOKEN_HEADER, "")
         return hmac.compare_digest(given.encode(), config.token.encode())
 
-    def work(model, cancel: CancelFlag, loop, done: "asyncio.Future") -> None:
+    def work(model, cancel: CancelFlag, loop, done: "asyncio.Future", record: JobRecord | None = None) -> None:
         """The model call, in a thread. Always ends by releasing the lock, then hands the outcome to the handler."""
         started = time.monotonic()
         started_at = time.time()
@@ -130,6 +166,8 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
             except Exception:
                 log.exception("the run record for call=%s could not be written", model.call)
             finally:
+                if record is not None:
+                    jobs.finish(record, outcome)        # before the lock is released: idle means the answer can be fetched
                 job.end()
         try:
             loop.call_soon_threadsafe(lambda: done.done() or done.set_result(outcome))
@@ -156,28 +194,61 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
             if job.stage:
                 body["stage"] = job.stage
             return JSONResponse(body, headers=CORS)
+        if model.call == "job":
+            record = jobs.get(model.job_id)
+            if record is None:
+                return JSONResponse({"ok": True, "state": "unknown"}, headers=CORS)
+            if record.outcome is None:
+                body = {"ok": True, "state": "running"}
+                if job.stage:
+                    body["stage"] = job.stage
+                return JSONResponse(body, headers=CORS)
+            kind, value = record.outcome
+            return JSONResponse(value, headers=CORS) if kind == "ok" else _fail(*value)
+        if model.call == "cancel":
+            record = jobs.get(model.job_id)
+            if record is None or record.outcome is not None:
+                return JSONResponse({"ok": True, "state": "unknown"}, headers=CORS)
+            log.info("call=%s job=%s cancelled by the page", record.call, record.id)
+            record.cancel.set()
+            return JSONResponse({"ok": True, "state": "cancelled"}, headers=CORS)
         if model.schema_version > SCHEMA_VERSION:
             return _fail("bad_request", f"This server knows project files up to version {SCHEMA_VERSION}, not {model.schema_version}.")
+        job_id = getattr(model, "job_id", None)
+        if job_id and (known := jobs.get(job_id)) is not None:
+            # The page sent this call again (it lost the answer). It is the same call: answer with where it stands.
+            if known.outcome is None:
+                return JSONResponse({"ok": True, "state": "running", **({"stage": job.stage} if job.stage else {})}, headers=CORS)
+            kind, value = known.outcome
+            return JSONResponse(value, headers=CORS) if kind == "ok" else _fail(*value)
         if not job.try_begin():
             return _fail("busy")
         cancel = CancelFlag()
+        record = JobRecord(job_id, model.call, cancel) if job_id else None
+        if record:
+            jobs.add(record)
         loop = asyncio.get_running_loop()
         done: asyncio.Future = loop.create_future()
-        threading.Thread(target=work, args=(model, cancel, loop, done), daemon=True, name=f"call-{model.call}").start()
+        threading.Thread(target=work, args=(model, cancel, loop, done, record), daemon=True, name=f"call-{model.call}").start()
         begun = loop.time()
         while not done.done():
             await asyncio.wait({done}, timeout=config.poll_interval)
-            if not done.done() and not cancel.cancelled and await request.is_disconnected():
-                log.info("call=%s client went away: cancelling", model.call)
-                cancel.set()
+            if not done.done() and await request.is_disconnected():
+                if record:
+                    # A named call outlives its connection: the page asks for the answer later (call "job").
+                    log.info("call=%s job=%s client went away: the call goes on", model.call, job_id)
+                    return Response(status_code=499, headers=CORS)
+                if not cancel.cancelled:
+                    log.info("call=%s client went away: cancelling", model.call)
+                    cancel.set()
             if not done.done() and not cancel.cancelled and loop.time() - begun >= config.stream_after:
-                return StreamingResponse(_stream(model.call, done, cancel), media_type="application/json", headers=CORS)
+                return StreamingResponse(_stream(model.call, done, cancel, bool(record)), media_type="application/json", headers=CORS)
         kind, value = done.result()
         if kind == "ok" and not cancel.cancelled:
             return JSONResponse(value, headers=CORS)
         return _fail(*(value if kind == "fail" else ("stopped", "")))
 
-    async def _stream(call: str, done: "asyncio.Future", cancel: CancelFlag):
+    async def _stream(call: str, done: "asyncio.Future", cancel: CancelFlag, named: bool = False):
         """A slow call's answer: a blank at once (so the headers go out) and every `heartbeat` seconds, then the reply as the
         JSON body. A JSON parser ignores the leading blanks. The status is 200 whatever the outcome: the page reads the
         contract's `ok` and `error.kind` from the body, which are the same as the status would have said."""
@@ -194,7 +265,9 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
                 body = contract.error_reply(*(value if kind == "fail" else ("stopped", "")))
             yield json.dumps(body).encode()
         except (asyncio.CancelledError, GeneratorExit):
-            if not cancel.cancelled:
+            if named:
+                log.info("call=%s client went away: the call goes on", call)
+            elif not cancel.cancelled:
                 log.info("call=%s client went away: cancelling", call)
                 cancel.set()
             raise

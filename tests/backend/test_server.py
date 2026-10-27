@@ -238,3 +238,69 @@ def test_a_reply_that_fails_the_contract_is_never_sent():
 
 def test_every_error_kind_has_a_status():
     assert set(contract.HTTP_STATUS) == {"busy", "bad_request", "bad_output", "too_long", "stopped", "server", "unauthorized"}
+
+
+# ---- Named calls: the answer is kept for the page to fetch ----------------------------------------------------------
+
+def _named(call, job_id="job-aaaa-0001"):
+    return {**_of(call), "job_id": job_id}
+
+
+def test_a_named_call_goes_on_when_the_connection_drops_and_its_answer_can_be_fetched():
+    with running(Config(stream_after=5), engine=FakeEngine(seconds_per_token=0.05, tokens_per_call=20)) as (base, engine):
+        with pytest.raises(requests.exceptions.ReadTimeout):
+            post(base, _named("generate"), timeout=0.2)
+        assert post(base, {"call": "job", "job_id": "job-aaaa-0001"}).json()["state"] == "running"
+        assert wait_idle(base, seconds=10) and engine.cancelled_calls == 0
+        reply = post(base, {"call": "job", "job_id": "job-aaaa-0001"}).json()
+        contract.parse_reply("generate", reply)
+        assert post(base, {"call": "job", "job_id": "job-aaaa-0001"}).json() == reply      # fetching again still works
+
+
+def test_an_unnamed_call_is_still_stopped_by_a_dropped_connection():
+    with running(Config(stream_after=0.1, heartbeat=0.1), engine=FakeEngine(seconds_per_token=0.2, tokens_per_call=200)) as (base, engine):
+        with pytest.raises(requests.exceptions.ReadTimeout):
+            post(base, _of("generate"), timeout=0.1)
+        assert wait_idle(base, seconds=10) and engine.cancelled_calls >= 1
+
+
+def test_an_unknown_job_is_said_to_be_unknown_and_a_failed_job_keeps_its_error():
+    def boom(model, ctx):
+        raise BackendError("bad_output", "")
+    with running(run=boom) as (base, _):
+        assert post(base, {"call": "job", "job_id": "never-seen-1"}).json() == {"ok": True, "state": "unknown"}
+        assert post(base, _named("generate", "job-bbbb-0002")).status_code == 502
+        got = post(base, {"call": "job", "job_id": "job-bbbb-0002"})
+        assert got.status_code == 502 and got.json()["error"]["kind"] == "bad_output"
+
+
+def test_sending_a_named_call_again_does_not_start_it_twice():
+    with running(engine=_slow()) as (base, engine):
+        result = {}
+        thread = threading.Thread(target=lambda: result.update(r=post(base, _named("generate", "job-cccc-0003"), timeout=30)))
+        thread.start()
+        time.sleep(0.3)
+        again = post(base, _named("generate", "job-cccc-0003")).json()
+        assert again["state"] == "running"
+        thread.join(timeout=30)
+        assert wait_idle(base)
+        assert post(base, _named("generate", "job-cccc-0003")).json()["ok"] is True
+
+
+def test_cancel_stops_a_named_call_and_its_stop_is_what_the_page_fetches():
+    with running(engine=FakeEngine(seconds_per_token=0.2, tokens_per_call=200)) as (base, engine):
+        thread = threading.Thread(target=lambda: post(base, _named("generate", "job-dddd-0004"), timeout=30))
+        thread.start()
+        time.sleep(0.3)
+        assert post(base, {"call": "cancel", "job_id": "job-dddd-0004"}).json()["state"] == "cancelled"
+        assert wait_idle(base, seconds=10) and engine.cancelled_calls >= 1
+        thread.join(timeout=10)
+        assert post(base, {"call": "job", "job_id": "job-dddd-0004"}).json()["error"]["kind"] == "stopped"
+
+
+def test_only_the_newest_finished_jobs_are_kept():
+    with running(Config(jobs_kept=2)) as (base, _):
+        for n in range(4):
+            assert post(base, _named("style_fit", f"job-keep-000{n}")).status_code == 200
+        states = [post(base, {"call": "job", "job_id": f"job-keep-000{n}"}).json().get("state") for n in range(4)]
+        assert states[:2] == ["unknown", "unknown"] and states[2:] == [None, None]

@@ -38,11 +38,31 @@ class Envelope(Strict):
     """What every call but status starts with."""
     schema_version: int          # the project file format the page speaks; a backend that knows only older ones answers bad_request
     language: str                # the language the model writes in. Instructions to the model stay in English.
+    job_id: str | None = Field(default=None, min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+    # The page's own name for this call. With one, the backend keeps the call going if the connection drops and keeps its
+    # answer for the page to fetch later (call "job"); a call that is stopped is stopped with call "cancel". Without one,
+    # a dropped connection stops the call, as before.
 
 
 class StatusRequest(Strict):
     """Asks whether the backend is free. The one call that is not a model call; the page may send it by itself."""
     call: Literal["status"]
+
+
+_JOB_ID = Field(min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+
+
+class JobRequest(Strict):
+    """Asks what became of a call that carried this job_id: still running, finished (the reply is the call's own reply or
+    error, exactly as the call would have answered), or unknown (never seen, forgotten, or the backend was restarted)."""
+    call: Literal["job"]
+    job_id: str = _JOB_ID
+
+
+class CancelRequest(Strict):
+    """Stops the running call that carried this job_id. Nothing is changed by a stopped call."""
+    call: Literal["cancel"]
+    job_id: str = _JOB_ID
 
 
 class FillRequest(Envelope):
@@ -169,7 +189,7 @@ class EndStoryRequest(Envelope):
     shifts: list[dict[str, Any]]
 
 
-Request = Annotated[Union[StatusRequest, FillRequest, JudgeRequest, StyleFitRequest, OffstageRequest, PlanRequest,
+Request = Annotated[Union[StatusRequest, JobRequest, CancelRequest, FillRequest, JudgeRequest, StyleFitRequest, OffstageRequest, PlanRequest,
                           GenerateRequest, EndStoryRequest], Field(discriminator="call")]
 _request = TypeAdapter(Request)
 
@@ -201,6 +221,18 @@ class StatusReply(Strict):
     ok: Literal[True]
     state: Literal["idle", "busy"]
     stage: Stage | None = None              # only when busy, and only if the backend knows
+
+
+class JobReply(Strict):
+    """A call that has not finished: the answer to `job` while it runs, or when the backend does not know it."""
+    ok: Literal[True]
+    state: Literal["running", "unknown"]
+    stage: Stage | None = None
+
+
+class CancelReply(Strict):
+    ok: Literal[True]
+    state: Literal["cancelled", "unknown"]
 
 
 class FillReply(Strict):
@@ -307,7 +339,7 @@ class EndStoryReply(Strict):
 
 
 REPLIES: dict[str, type[Strict]] = {
-    "status": StatusReply, "fill": FillReply, "judge": JudgeReply, "style_fit": StyleFitReply,
+    "status": StatusReply, "job": JobReply, "cancel": CancelReply, "fill": FillReply, "judge": JudgeReply, "style_fit": StyleFitReply,
     "offstage": OffstageReply, "plan": PlanReply, "generate": GenerateReply, "end_story": EndStoryReply,
 }
 _error = TypeAdapter(ErrorReply)

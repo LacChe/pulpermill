@@ -8,7 +8,7 @@ from helpers import REPO, CARDS, card
 from pulpermill.schema import contract
 from pulpermill.schema.contract import (
     BackendErrorKind, FillableCard, UserCard, HTTP_STATUS, PAGE_ERROR_KINDS, parse_request, parse_reply, error_reply,
-    FillRequest, JudgeRequest, StatusRequest, StyleFitRequest, ErrorReply, OffstageRequest, PlanRequest, GenerateRequest,
+    FillRequest, JobRequest, CancelRequest, JudgeRequest, StatusRequest, StyleFitRequest, ErrorReply, OffstageRequest, PlanRequest, GenerateRequest,
     EndStoryRequest, STAGES,
 )
 from pulpermill.schema.project import UserCard as ProjectUserCard
@@ -33,7 +33,7 @@ def test_every_request_example_is_accepted_or_refused_as_marked():
 
 
 def test_requests_parse_into_the_model_of_their_call():
-    wanted = {"status": StatusRequest, "fill": FillRequest, "judge": JudgeRequest, "style_fit": StyleFitRequest,
+    wanted = {"status": StatusRequest, "job": JobRequest, "cancel": CancelRequest, "fill": FillRequest, "judge": JudgeRequest, "style_fit": StyleFitRequest,
               "offstage": OffstageRequest, "plan": PlanRequest, "generate": GenerateRequest, "end_story": EndStoryRequest}
     seen = set()
     for case in VECTORS["requests"]:
@@ -105,7 +105,7 @@ def test_the_stages_a_busy_backend_may_name_match_the_pages():
 
 def test_the_story_calls_match_the_pages_and_every_reply_has_a_model():
     assert set(js_list(LOGIC, "STORY_CALLS")) == {"offstage", "plan", "generate", "end_story"}
-    assert set(contract.REPLIES) == {"status", "fill", "judge", "style_fit"} | set(js_list(LOGIC, "STORY_CALLS"))
+    assert set(contract.REPLIES) == {"status", "job", "cancel", "fill", "judge", "style_fit"} | set(js_list(LOGIC, "STORY_CALLS"))
 
 
 def test_every_story_call_has_a_timeout_on_the_page():

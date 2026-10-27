@@ -56,6 +56,7 @@ class Config:
                                             # at once and a blank is sent every `heartbeat` seconds, then the reply. Chrome gives up on a
                                             # request that has no response headers after 300 s, and a chapter can take longer than that.
     heartbeat: float = 15.0
+    jobs_kept: int = 30                     # finished calls that carried a job_id stay fetchable (memory only; a restart forgets them)
     prompt_version_note: str = ""           # free text recorded in the run log's first line
     log_path: str | None = None            # one JSON line per call (runlog.py); None = keep in memory only. The launcher sets it.
     max_body_bytes: int = 4_000_000         # a request larger than this is bad_request; the biggest real project is far below it
