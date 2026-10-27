@@ -370,7 +370,10 @@ def render_entanglements(ent: dict, cast_names: Iterable[str] = (), *, scope: st
         if status not in status_opts:
             continue
         thing = clip(k.get("rule") or k.get("fact"), c["fact"], "knowledge", report)
-        knowledge.append(fill(fr["knowledge_item"], {"person": s(k.get("person")), "status": status_opts[status]["expand"], "thing": thing}))
+        line = fill(fr["knowledge_item"], {"person": s(k.get("person")), "status": status_opts[status]["expand"], "thing": thing})
+        if status == "misled" and s(k.get("belief")):
+            line = sentence(line) + " " + fill(fr["knowledge_belief"], {"person": s(k.get("person")), "belief": sentence(clip(k.get("belief"), c["fact"], "knowledge", report))})
+        knowledge.append(line)
     block = _items_block("entanglements", "knowledge", knowledge)
     if block:
         paras.append((fr["knowledge_note"] + "\n" if writer else "") + block)
@@ -647,6 +650,8 @@ def render_handles(entanglements: dict, handles: dict[str, dict], cast_names: It
             elif section == "knowledge":
                 status = tx.schema_text("entanglements")["fields"]["knowledge"]["item_fields"]["status"]["options"].get(s(item.get("status")), {}).get("expand", s(item.get("status")))
                 line = f"{handle}. {s(item.get('person'))} {status}: {sentence(clip(item.get('rule') or item.get('fact'), c['fact'], 'knowledge', report))}"
+                if s(item.get("status")) == "misled" and s(item.get("belief")):
+                    line += f" They believe instead: {sentence(clip(item.get('belief'), c['fact'], 'knowledge', report))}"
             else:
                 bears = ", ".join(who(b) for b in item.get("bears_on") or [])
                 source = who(item.get("source_agent")) or s(item.get("source_circumstance"))

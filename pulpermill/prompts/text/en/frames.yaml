@@ -8,6 +8,7 @@ offstage_marker: "[offstage]"
 offstage_note: "People and groups marked [offstage] are somewhere else. They may be mentioned or thought of; only the people on stage appear in the scene."
 knowledge_note: "Some of what is true here is hidden from the people in it. What each person knows, suspects or wrongly believes is listed below. Write each person from their own knowledge. The narration says only what the point-of-view character could know. A hidden truth enters the story in the moment the scene gives it."
 knowledge_item: "{person} {status}: {thing}"
+knowledge_belief: "{person} believes instead: {belief}"
 # Three lines of the Characters wording rewritten so that they agree with the person's sex (she, he or they). The schema's
 # own lead-ins say "themselves" and "they" for everyone, which reads wrongly beside a named woman or man.
 portrait_fear: "{name} avoids and protects {themselves} from: {value}"

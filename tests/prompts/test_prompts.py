@@ -331,3 +331,23 @@ def test_the_entanglements_fill_asks_for_three_different_pressures():
     text = P.fill_prompt(req).text
     assert "three pressures" in text
     assert "three pressures" not in P.fill_prompt({**req, "card": "world"}).text
+
+
+def test_reveal_payoff_and_plant_are_always_answered():
+    schema = S.beat_schema(plan_request())
+    for key in ("reveal_rule", "reveal_learners", "payoff", "plant"):
+        if key in schema["properties"]:
+            assert key in schema["required"], key
+    if "reveal_rule" in schema["properties"]:
+        assert "" in schema["properties"]["reveal_rule"]["enum"]
+    assert valid({**{k: "words" for k in ("when_time", "when_gap", "collision_goal", "collision_block", "choice_a", "choice_b", "turn", "ends_on")},
+                  "where": schema["properties"]["where"].get("enum", ["x"])[0], "shift": "harder", "reveal_rule": "", "reveal_learners": [],
+                  "payoff": [], "plant": ""}, schema)
+
+
+def test_a_misled_person_can_be_given_what_they_believe():
+    handles = {"K1": {"section": "knowledge", "id": "k1"}}
+    schema = S.shifts_schema({"cast": [{"name": "Suvi"}], "world": {"rules": []}}, handles)
+    assert "belief" in schema["properties"]["new_knowledge"]["items"]["properties"]
+    fields = [o["properties"]["field"]["enum"] for o in schema["properties"]["changes"]["items"]["anyOf"]]
+    assert ["status"] in fields and ["belief"] in fields

@@ -175,6 +175,8 @@ function applyChanges(schema, project, changes, { overwriteLocked }) {
       locks: covering.map((l) => l.id),
     });
     item[change.field] = got.value;
+    // Someone who stops being misled no longer believes the false thing.
+    if (change.section === "knowledge" && change.field === "status" && got.value !== "misled" && item.belief) item.belief = "";
   }
   // A change that would break a blocking rule on its entry is undone, entry by entry.
   const trial = { ...before, entanglements: next };
@@ -230,7 +232,7 @@ function addKnowledge(schema, project, next, proposals, cast, { overwriteLocked 
       continue;
     }
     if (covering.length && !overwriteLocked) { drop(msg("records.whyLocked")); continue; }
-    const entry = { rule: ruleId, fact: ruleId ? "" : p.fact, person: who.id, status: p.status, id: newId(taken) };
+    const entry = { rule: ruleId, fact: ruleId ? "" : p.fact, person: who.id, status: p.status, belief: p.status === "misled" ? (p.belief ?? "") : "", id: newId(taken) };
     taken.push(entry.id);
     list.push(entry);
     applied.push({

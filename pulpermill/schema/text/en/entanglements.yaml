@@ -56,6 +56,7 @@ fields:
       rule: {label: "World rule", help: "A rule from World this is about.", placeholder: "Choose a rule from World", no_options: "No rules yet. Add some in World first."}
       fact: {label: "Other fact", help: "Or a short fact of your own, when it isn't a world rule.", placeholder: "e.g. The key is hidden in the well"}
       person: {label: "Who", help: "A character or a group.", placeholder: "Choose a character or group", no_options: "No characters or groups yet. Add some in Characters or World first."}
+      belief: {label: "What they believe instead", help: "Only when misled about something true: the false thing they take to be true instead. Leave it empty for a Myth, where the Myth itself is what they believe.", placeholder: "e.g. The key is in the attic", visible_if: {status: "misled"}}
       status:
         label: "Status"
         help: "Knows it, suspects it, or has been misled about it."

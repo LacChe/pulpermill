@@ -1033,8 +1033,8 @@ export function readGenerateReply(reply) {
   const newKnowledge = [];
   for (const entry of proposed) {
     if (!isObject(entry) || !isText(entry.person) || !entry.person.trim() || !KNOWLEDGE_STATUSES.includes(entry.status)) return bad("A new knowledge entry does not say who or how they stand.");
-    if (!isOptionalText(entry.rule) || !isOptionalText(entry.fact)) return bad("A new knowledge entry's rule or fact is not text.");
-    newKnowledge.push({ person: entry.person.trim(), status: entry.status, rule: entry.rule?.trim() || null, fact: entry.fact?.trim() || null });
+    if (!isOptionalText(entry.rule) || !isOptionalText(entry.fact) || !isOptionalText(entry.belief)) return bad("A new knowledge entry's rule, fact or belief is not text.");
+    newKnowledge.push({ person: entry.person.trim(), status: entry.status, rule: entry.rule?.trim() || null, fact: entry.fact?.trim() || null, belief: entry.belief?.trim() || null });
   }
   const events = {
     happened: e.happened.trim(), changed: e.changed?.trim() || null, planted: e.planted?.trim() || null,

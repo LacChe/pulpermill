@@ -11,7 +11,7 @@ job: |
   - wants: an abstract desire that changed (a concrete aim toward one person belongs on a tie's edge)
   - refuses: something they now will not do
   - decided: what they decided; for the protagonist, say which of the two choices the chapter posed they took, or what they did instead
-  Then say what changed in the live entanglements, using the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. Add a new knowledge line (at most three) only when someone has learned, suspected or been misled about something that has no line yet. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
+  Then say what changed in the live entanglements, using the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. Add a new knowledge line (at most three) only when someone has learned, suspected or been misled about something that has no line yet; for someone misled, say in belief what they wrongly believe. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
 
 people_lead: "The people on stage:"
 choice_lead: "The chapter posed this choice for {name}:"
@@ -24,7 +24,7 @@ handles_lead: "The live entanglements, each with its handle:"
 may_change:
   ties: "Ties (you may change: bond, edge)"
   holdings: "Holdings (you may change: held_by)"
-  knowledge: "Knowledge (you may change: status, to knows, suspects or misled)"
+  knowledge: "Knowledge (you may change: status, to knows, suspects or misled; belief, the false thing a misled person believes)"
   pressures: "Pressures (you may change: what, next_move, bears_on)"
 chapter_lead: "The chapter:"
 task: "Now say who moved and what changed, as the reply format asks."

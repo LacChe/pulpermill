@@ -54,6 +54,7 @@ class KnowledgeEntry(Item):
     fact: str | None = spec("text", None, "note", required=False)
     person: str = spec("select", None, "note", ref=PEOPLE)
     status: KnowledgeStatus = spec("select", None, "axis", changes=True)
+    belief: str | None = spec("text", None, "note", required=False, changes=True)   # only for "misled": what they wrongly believe
 
 
 class Pressure(Item):

@@ -89,8 +89,14 @@ async function post(fetchImpl, url, request, signal, token) {
     if (error?.name === "AbortError") throw error;
     return failure("unreachable", error?.message);
   }
+  // A long call is answered as a stream: the headers go out first and the body arrives at the end. If the connection drops
+  // while the body is still coming, reading it fails with a network error. That is a lost connection, not an answer in
+  // the wrong shape (which fails to parse, a SyntaxError).
   let body = null;
-  try { body = await response.json(); } catch { /* not JSON */ }
+  try { body = await response.json(); } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    if (!(error instanceof SyntaxError)) return failure("unreachable", error?.message);
+  }
   if (body && typeof body === "object" && !Array.isArray(body) && typeof body.ok === "boolean") return body;
   if (!response.ok) return failure(STATUS_FAILURES[response.status] ?? "server", msg("backend.answered", { status: response.status }));
   return failure("bad_output", "The backend's answer was not JSON.");

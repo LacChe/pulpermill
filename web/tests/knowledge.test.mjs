@@ -30,7 +30,7 @@ const added = (out) => out.changes.applied.filter((a) => a.added);
 
 test("a reply may carry new Knowledge entries, and one with none is still a reply", () => {
   assert.deepEqual(reply().new_knowledge, []);
-  assert.deepEqual(reply({ new_knowledge: [entry({ person: " Suvi " })] }).new_knowledge, [entry()]);
+  assert.deepEqual(reply({ new_knowledge: [entry({ person: " Suvi " })] }).new_knowledge, [entry({ belief: null })]);
 });
 
 test("a malformed new entry makes the whole reply bad_output", () => {
@@ -131,4 +131,17 @@ test("a new entry counts as knowledge having changed, and Generate's undo takes 
   assert.ok(project.entanglements.knowledge.length > JSON.parse(before).length);
   assert.equal(undo(), true);
   assert.equal(JSON.stringify(project.entanglements.knowledge), before);
+});
+
+test("a misled entry keeps what the person wrongly believes, and loses it when they learn the truth", async () => {
+  const { project, beat } = await planned();
+  const out = applyGenerated(schema, project, beat, reply({ new_knowledge: [entry({ status: "misled", belief: "The ledger is honest." })] }));
+  commitChapter(project, out);
+  const made = project.entanglements.knowledge.at(-1);
+  assert.deepEqual([made.status, made.belief], ["misled", "The ledger is honest."]);
+  const learned = applyGenerated(schema, project, beat, reply({ changes: [{ section: "knowledge", item: made.id, field: "status", value: "knows" }] }));
+  commitChapter(project, learned);
+  assert.equal(project.entanglements.knowledge.at(-1).belief, "");
+  const knows = applyGenerated(schema, project, beat, reply({ new_knowledge: [entry({ person: "Ola", status: "knows", belief: "ignored" })] }));
+  assert.equal(added(knows)[0]?.now.belief ?? "", "");
 });

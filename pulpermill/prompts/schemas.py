@@ -186,12 +186,17 @@ def beat_schema(req: dict) -> Schema:
         "ends_on": text(),
     }
     required = list(props)
+    # Reveal, payoff and plant are always answered. Left optional, the model skipped them even when its own thinking had
+    # chosen one ("pay off the open plant"), so the beat came out empty. An empty answer is the way to say "none".
     if reveals:
-        props["reveal_rule"] = {"type": "string", "enum": reveals}
+        props["reveal_rule"] = {"type": "string", "enum": [*reveals, ""]}
         props["reveal_learners"] = list_of(cast)
+        required += ["reveal_rule", "reveal_learners"]
     if plants:
         props["payoff"] = list_of(plants, 2)
+        required.append("payoff")
     props["plant"] = text()
+    required.append("plant")
     if req.get("goal"):
         props["goal_change"] = {"type": "string", "enum": ["achieved", "redefined", "abandoned"]}
         props["goal_now"] = text()
@@ -257,12 +262,16 @@ def shifts_schema(req: dict, handles: dict[str, dict]) -> Schema:
                                     {"anyOf": [text(), {"type": "array", "items": {"type": "string", "enum": people} if people else text()}]}),
     }
     options = [make() for section, make in kinds.items() if by_section.get(section)]
+    if by_section.get("knowledge"):
+        # What a misled person believes can move too (a new false belief, or none once they learn the truth).
+        options.append(change("knowledge", ["belief"], text()))
     changes = ({"type": "array", "items": {"anyOf": options} if len(options) > 1 else options[0]}
                if options else {"type": "array", "items": text(), "maxItems": 0})
     shift = obj({"character": one_of(cast), **{k: text() for k in SHIFT_FIELDS}}, ["character"])
     rules = names_of((req.get("world") or {}).get("rules"), "statement")
-    about_rule = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES}, "rule": one_of(rules)})
-    about_fact = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES}, "fact": text()})
+    # `belief` is what a misled person wrongly believes instead; null for anyone who knows or suspects the truth.
+    about_rule = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES}, "rule": one_of(rules), "belief": maybe(text())})
+    about_fact = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES}, "fact": text(), "belief": maybe(text())})
     new = {"anyOf": [about_rule, about_fact]} if rules else about_fact
     return obj({"shifts": {"type": "array", "items": shift, "maxItems": 5},
                 "changes": changes,

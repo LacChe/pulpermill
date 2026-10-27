@@ -287,6 +287,7 @@ class NewKnowledge(Strict):
     status: Literal["knows", "suspects", "misled"]
     rule: str | None = None
     fact: str | None = None
+    belief: str | None = None               # for "misled": the false thing they believe instead
 
 
 class GenerateReply(Strict):

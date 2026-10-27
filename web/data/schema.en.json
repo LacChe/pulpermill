@@ -1991,6 +1991,19 @@
          "description": "Believes something false: thinks the key is in the attic."
         }
        ]
+      },
+      {
+       "key": "belief",
+       "label": "What they believe instead",
+       "help": "Only when misled about something true: the false thing they take to be true instead. Leave it empty for a Myth, where the Myth itself is what they believe.",
+       "input": "text",
+       "kind": "note",
+       "required": false,
+       "changes": true,
+       "placeholder": "e.g. The key is in the attic",
+       "visible_if": {
+        "status": "misled"
+       }
       }
      ]
     },

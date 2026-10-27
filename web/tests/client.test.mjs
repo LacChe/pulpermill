@@ -494,3 +494,13 @@ test("the mock can be told to answer unauthorized, and the page has words for it
   const result = await checkStyleFit(client, schema, project()).done;
   assert.equal(result.error.kind, "unauthorized");
 });
+
+test("a connection cut while the body is still arriving is unreachable, not a badly shaped answer", async () => {
+  const cut = { ok: true, status: 200, json: async () => { throw new TypeError("network error"); } };
+  const client = realClient(fakeFetch(() => cut));
+  const result = await fillCard(client, schema, project(), "world").done;
+  assert.equal(result.error.kind, "unreachable");
+  const notJson = { ok: true, status: 200, json: async () => { throw new SyntaxError("Unexpected token"); } };
+  const second = await fillCard(realClient(fakeFetch(() => notJson)), schema, project(), "world").done;
+  assert.equal(second.error.kind, "bad_output");
+});

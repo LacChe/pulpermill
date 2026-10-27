@@ -7,7 +7,7 @@ For each person who moved, fill in only the boxes that changed:
 - wants: an abstract desire that changed (a concrete aim toward one person belongs on a tie's edge)
 - refuses: something they now will not do
 - decided: what they decided; for the protagonist, say which of the two choices the chapter posed they took, or what they did instead
-Then say what changed in the live entanglements, using the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. Add a new knowledge line (at most three) only when someone has learned, suspected or been misled about something that has no line yet. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
+Then say what changed in the live entanglements, using the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. Add a new knowledge line (at most three) only when someone has learned, suspected or been misled about something that has no line yet; for someone misled, say in belief what they wrongly believe. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
 
 The people on stage:
 Suvi (she/her). Wants: Keep the shop open; Know the truth about her mother's death. Fear: Being the one who lets the shop fall. Flaw: Believes that anyone who is kind to her wants something.
@@ -37,7 +37,7 @@ Holdings (you may change: held_by):
 H1. The ledger is held by Pekka.
 H2. The brass key is held by Suvi.
 
-Knowledge (you may change: status, to knows, suspects or misled):
+Knowledge (you may change: status, to knows, suspects or misled; belief, the false thing a misled person believes):
 K1. Pekka knows: The dock repairs were paid for by the shopkeepers, not the board.
 K2. Suvi has been misled about: The cellar under the shop floods on the spring tide.
 K3. Aino suspects: The ledger is in Pekka's rooms.
@@ -255,6 +255,38 @@ Now say who moved and what changed, as the reply format asks.
        "value"
       ],
       "additionalProperties": false
+     },
+     {
+      "type": "object",
+      "properties": {
+       "section": {
+        "const": "knowledge"
+       },
+       "item": {
+        "type": "string",
+        "enum": [
+         "K1",
+         "K2",
+         "K3"
+        ]
+       },
+       "field": {
+        "type": "string",
+        "enum": [
+         "belief"
+        ]
+       },
+       "value": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "section",
+       "item",
+       "field",
+       "value"
+      ],
+      "additionalProperties": false
      }
     ]
    }
@@ -291,12 +323,23 @@ Now say who moved and what changed, as the reply format asks.
          "The dock repairs were paid for by the shopkeepers, not the board.",
          "The cellar under the shop floods on the spring tide."
         ]
+       },
+       "belief": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ]
        }
       },
       "required": [
        "person",
        "status",
-       "rule"
+       "rule",
+       "belief"
       ],
       "additionalProperties": false
      },
@@ -323,12 +366,23 @@ Now say who moved and what changed, as the reply format asks.
        },
        "fact": {
         "type": "string"
+       },
+       "belief": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ]
        }
       },
       "required": [
        "person",
        "status",
-       "fact"
+       "fact",
+       "belief"
       ],
       "additionalProperties": false
      }

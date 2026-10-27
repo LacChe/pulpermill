@@ -249,7 +249,7 @@ def assemble_generate_reply(chapter_text: str, events: dict, shifts_out: dict, h
                    "goal_landed": bool(events.get("goal_landed"))},
         "shifts": shifts,
         "changes": resolve_changes(shifts_out.get("changes") or [], handles),
-        "new_knowledge": [{"person": s(k.get("person")), "status": k["status"], "rule": s(k.get("rule")) or None, "fact": s(k.get("fact")) or None}
+        "new_knowledge": [{"person": s(k.get("person")), "status": k["status"], "rule": s(k.get("rule")) or None, "fact": s(k.get("fact")) or None, "belief": s(k.get("belief")) or None}
                           for k in shifts_out.get("new_knowledge") or []],
     }
 
