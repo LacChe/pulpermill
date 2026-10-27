@@ -334,3 +334,4 @@ dialog.ask::backdrop { background: rgba(0, 0, 0, 0.35); }
 .fill-section > summary::before { content: "▸"; color: var(--muted); width: 1em; }
 .fill-section[open] > summary::before { content: "▾"; }
 .fill-section .fill-field { margin-top: 8px; display: block; }
+.elapsed { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.9rem; }

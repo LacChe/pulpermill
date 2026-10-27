@@ -116,6 +116,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
   let current = setting;
   let secret = token;
   let running = null;                 // the model call this page has going, if any
+  let since = null;                   // when that call began (ms), so a button can show how long it has run
   let connection = "unknown";         // unknown | idle | busy | unreachable
   let stage = null;                   // what the backend says it is doing, while a story call runs
   const listeners = new Set();
@@ -210,7 +211,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
         if (jobId) post(fetchImpl, current.url, { call: "cancel", job_id: jobId }, undefined, secret).catch(() => {});
       },
     };
-    if (!isStatus) { running = handle; changed(); }
+    if (!isStatus) { running = handle; since = Date.now(); changed(); }
     const unwatch = STORY_CALLS.includes(call) ? watch(() => { lost = true; attempt.abort(); }) : () => {};
     const done = (async () => {
       let reply;
@@ -228,7 +229,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
       } finally {
         clearTimeout(timer);
         unwatch();
-        if (!isStatus) running = null;
+        if (!isStatus) { running = null; since = null; }
       }
       if (!isStatus) {
         // A call that ended without an answer may still be running on the backend. The page stays locked until the
@@ -258,7 +259,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
     setToken(next) { secret = String(next ?? ""); connection = "unknown"; changed(); },
     onChange(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     // What the page needs to draw: whether this page is waiting on a call, and what the backend last said.
-    get state() { return { working: Boolean(running), connection, setting: current, stage }; },
+    get state() { return { working: Boolean(running), since, connection, setting: current, stage }; },
   };
   return client;
 }

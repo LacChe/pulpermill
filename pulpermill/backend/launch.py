@@ -5,6 +5,7 @@ try one short generation, start the server, open the tunnel, say clearly where i
     launch(token=..., ngrok_authtoken=...)
 """
 import logging
+import os
 import sys
 import threading
 import time
@@ -61,7 +62,20 @@ def banner(url: str | None, port: int, token_set: bool) -> str:
     return "\n".join(lines)
 
 
-def launch(*, token: str | None = None, ngrok_authtoken: str | None = None, overrides: dict[str, Any] | None = None,
+def use_hub_token(hf_token: str | None) -> bool:
+    """Gives the Hugging Face client the writer's token (signed-in downloads are faster and not rate-limited) and turns on the fast
+    transfer where it is installed. The token is only put in the environment, never logged. Returns whether a token was set."""
+    if hf_token:
+        os.environ["HF_TOKEN"] = hf_token
+    try:
+        import hf_transfer  # noqa: F401
+        os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
+    except ImportError:
+        pass
+    return bool(hf_token)
+
+
+def launch(*, token: str | None = None, ngrok_authtoken: str | None = None, hf_token: str | None = None, overrides: dict[str, Any] | None = None,
            port: int = 8000, tunnel: Callable[[int, str | None], str] | None = open_tunnel, serve: bool = True,
            engine: Engine | None = None, downloader: Callable | None = None, wait_for_server: float = 30.0,
            log_path: str | None = "/kaggle/working/pulpermill-runs.jsonl") -> dict[str, Any]:
@@ -72,6 +86,7 @@ def launch(*, token: str | None = None, ngrok_authtoken: str | None = None, over
     config = Config(token=token or None, host="0.0.0.0", port=port, model=model, log_path=log_path)
     log.info("settings: %s n_ctx=%d", config.describe(), model.n_ctx)
     check_settings(config)
+    log.info("hugging face token: %s", "set" if use_hub_token(hf_token) else "none (downloads are anonymous and slower)")
     if engine is None:
         path = download.ensure_model(model, **({"downloader": downloader} if downloader else {}))
         engine = load(model, path)

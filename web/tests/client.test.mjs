@@ -105,7 +105,7 @@ test("no answer in time is a timeout, and the page waits for the backend to be i
   mock.queue("timeout");
   const result = await fillCard(client, schema, project(), "world").done;
   assert.equal(result.error.kind, "timeout");
-  assert.deepEqual(client.state, { working: false, connection: "idle", setting: { kind: "mock" }, stage: null });
+  assert.deepEqual(client.state, { working: false, since: null, connection: "idle", setting: { kind: "mock" }, stage: null });
 });
 
 test("Stop ends the call with a stopped failure and the page is free again", async () => {

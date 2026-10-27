@@ -10,6 +10,8 @@ import { renderCard } from "./render.js";
 import { instanceName } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
 import { ask } from "./dialog.js";
+import { elapsedTag } from "./elapsed.js";
+import { remember } from "./folds.js";
 
 export const STRINGS = section("end");
 const copy = (value) => JSON.parse(JSON.stringify(value));
@@ -25,12 +27,14 @@ export function createEndPanel(hooks) {
   let button = null;
   let mine = false;
   let status = null;
+  let tag = null;
   let reviews = new Map();              // per card in the copy: what the writer has visited, kept across redraws like the cards' own
 
   function refresh() {
     const { working } = hooks.client.state;
     if (button) button.disabled = working;
     if (status) status.textContent = working && mine ? STRINGS.working : "";
+    tag?.update();
   }
 
   async function press(project, replaces) {
@@ -104,6 +108,7 @@ export function createEndPanel(hooks) {
       if (!reviews.has(key)) reviews.set(key, { touched: new Set(), validated: false });
       const holder = node("div", { className: "after-edit-card" });
       const inside = node("details", { className: "after-edit-item" }, node("summary", { textContent: label }), holder);
+      remember(inside, `after-edit:${label}`, inside.open);
       renderCard(holder, hooks.schema.cards[cardId], values, {
         project: view, schema: hooks.schema, common: hooks.schema.common, review: reviews.get(key),
         changed: () => hooks.changed(),
@@ -117,7 +122,9 @@ export function createEndPanel(hooks) {
         drawReview(project, summary);
       }, 0);
     });
-    return node("details", { className: "after-edit" }, node("summary", { textContent: STRINGS.editTitle }), body);
+    const outer = node("details", { className: "after-edit" }, node("summary", { textContent: STRINGS.editTitle }), body);
+    remember(outer, "after-edit", outer.open);
+    return outer;
   }
 
   function review(project) {
@@ -141,11 +148,12 @@ export function createEndPanel(hooks) {
     button = node("button", { type: "button", className: "validate", textContent: gate.replaces ? STRINGS.buttonAgain : STRINGS.button });
     button.addEventListener("click", () => press(project, gate.replaces));
     status = node("span", { className: "note", textContent: "" });
-    panel.append(node("div", { className: "plan-actions" }, button, status),
+    tag = elapsedTag(hooks.client, () => mine);
+    panel.append(node("div", { className: "plan-actions" }, button, tag.node, status),
       node("p", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) }));
     if (project.after_story) panel.append(review(project));
     refresh();
   }
 
-  return { draw, refresh, reset() { button = null; status = null; mine = false; reviews = new Map(); } };
+  return { draw, refresh, reset() { button = null; status = null; tag = null; mine = false; reviews = new Map(); } };
 }

@@ -7,6 +7,8 @@ import {
 } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
 import { ask } from "./dialog.js";
+import { stopwatch } from "./elapsed.js";
+import { foldedItems, remember } from "./folds.js";
 
 export const STRINGS = section("card");
 
@@ -372,7 +374,6 @@ function memoryFor(values) {
 // ---- Lists -----------------------------------------------------------------
 
 // Only the Outline's beats are deleted last-first and folded; `folded` remembers which beats the writer has folded, per list.
-const folds = new WeakMap();
 const isBeats = (field, ctx) => field.key === "beats" && ctx.card?.id === "outline";
 
 function itemRow(field, item, list, ctx, redraw) {
@@ -405,19 +406,18 @@ function itemRow(field, item, list, ctx, redraw) {
   setTitle();
   const head = el("div", { class: "item-head" }, title, remove);
   const body = el("div", { class: "item-body" });
-  if (beats) {
-    if (!folds.has(list)) folds.set(list, new Set());
-    const folded = folds.get(list);
+  {
+    const foldKey = `${ctx.card?.id ?? ""}:${field.key}:${item.id}`;
     const toggle = el("button", { type: "button", class: "fold" });
     const show = () => {
-      const shut = folded.has(item.id);
+      const shut = foldedItems.has(foldKey);
       body.hidden = shut;
       row.classList.toggle("folded", shut);
       toggle.textContent = shut ? "▸" : "▾";
       toggle.setAttribute("aria-expanded", String(!shut));
       toggle.title = toggle.ariaLabel = shut ? STRINGS.expand : STRINGS.collapse;
     };
-    toggle.addEventListener("click", () => { if (folded.has(item.id)) folded.delete(item.id); else folded.add(item.id); show(); });
+    toggle.addEventListener("click", () => { if (foldedItems.has(foldKey)) foldedItems.delete(foldKey); else foldedItems.add(foldKey); show(); });
     show();
     head.prepend(toggle);
   }
@@ -463,6 +463,7 @@ function listControl(field, values, path, ctx) {
 
 // The notes and Fill button on a card the model can fill. All the work is the page's (ctx.onFill); this only draws it.
 function fillPanel(card, values, ctx) {
+  const where = `${card.id}:${values.id ?? ""}:fill`;
   if (!FILLABLE.includes(card.id) || !ctx.onFill) return null;
   const area = (label, placeholder, rows, get, set) => {
     const box = el("textarea", { class: "text-control", rows, placeholder, "aria-label": label });
@@ -472,22 +473,30 @@ function fillPanel(card, values, ctx) {
     return el("div", { class: "fill-field" }, box);
   };
   // Each text sits in a fold of its own, open to start with.
-  const section = (title, body) => el("details", { class: "fill-section", open: true }, el("summary", {}, el("span", { class: "field-label", text: title })), body);
+  const section = (title, body) => {
+    const made = el("details", { class: "fill-section" }, el("summary", {}, el("span", { class: "field-label", text: title })), body);
+    remember(made, `${where}:${title}`, true);
+    return made;
+  };
   const button = el("button", { type: "button", class: "fill-button", text: STRINGS.fillButton });
+  const timer = stopwatch();
   button.addEventListener("click", async () => {
     button.disabled = true;
     button.textContent = STRINGS.fillWorking;
-    try { await ctx.onFill(); } finally { button.disabled = false; button.textContent = STRINGS.fillButton; }
+    timer.start();
+    try { await ctx.onFill(); } finally { timer.stop(); button.disabled = false; button.textContent = STRINGS.fillButton; }
   });
-  const where = ctx.backendWhere?.() ?? "";
-  return el("details", { class: "fill-panel", open: filledFieldKeys(card, values).length === 0 },
+  const backend = ctx.backendWhere?.() ?? "";
+  const panel = el("details", { class: "fill-panel" },
     el("summary", {}, el("span", { class: "group-label", text: STRINGS.fillTitle })),
     el("div", { class: "fill-body" },
       el("p", { class: "help", text: STRINGS.fillHelp }),
       section(STRINGS.exampleLabel, area(STRINGS.exampleLabel, STRINGS.examplePlaceholder, 6, ctx.example.get, ctx.example.set)),
       section(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, area(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, STRINGS.notePlaceholder, 4, ctx.notes.get, ctx.notes.set)),
-      el("div", { class: "fill-actions" }, button),
-      el("p", { class: "note", text: STRINGS.fillSends.replace("{where}", where) })));
+      el("div", { class: "fill-actions" }, button, timer.node),
+      el("p", { class: "note", text: STRINGS.fillSends.replace("{where}", backend) })));
+  remember(panel, where, filledFieldKeys(card, values).length === 0);
+  return panel;
 }
 
 // `values` is the one object the card edits (a card held once, or one character). It is changed in place.
@@ -509,7 +518,7 @@ export function makeReadOnly(root, banner) {
   root.classList.add("locked");
   root.prepend(el("p", { class: "locked-banner", role: "note", text: banner }));
   for (const control of root.querySelectorAll("input, select, textarea, button")) {
-    if (!control.classList.contains("validate")) control.disabled = true;
+    if (!control.classList.contains("validate") && !control.classList.contains("fold")) control.disabled = true;   // folding changes nothing, so a locked card still folds
   }
 }
 
@@ -519,7 +528,7 @@ export function freezeItems(root, ids, note) {
     if (!ids.has(row.dataset.id)) continue;
     row.classList.add("frozen");
     row.prepend(el("p", { class: "frozen-note", role: "note", text: note }));
-    for (const control of row.querySelectorAll("input, select, textarea, button")) control.disabled = true;
+    for (const control of row.querySelectorAll("input, select, textarea, button")) if (!control.classList.contains("fold")) control.disabled = true;
   }
 }
 
@@ -616,10 +625,11 @@ export function renderCard(root, card, values, ctx) {
     fieldsInto(body, fields, values, "", inner, null);
     if (!group) { section.append(body); continue; }
     const badge = el("span", { class: "group-count", hidden: true });
-    const details = el("details", { class: "group", open: !group.collapsed },
+    const details = el("details", { class: "group" },
       el("summary", {}, el("span", { class: "group-label", text: group.label }),
         group.help ? el("span", { class: "group-help", text: group.help }) : null, badge),
       body);
+    remember(details, `${card.id}:${values.id ?? ""}:group:${group.id}`, !group.collapsed);
     groupViews.set(group.id, { details, badge });
     section.append(details);
   }

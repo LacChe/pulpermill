@@ -8,6 +8,8 @@ import { chapterInfo } from "./plan.js";
 import { chapterNoteFor, setChapterNote, copyNote, putNote } from "./modelnotes.js";
 import { section, fill, joinList } from "./text.js";
 import { ask } from "./dialog.js";
+import { elapsedTag } from "./elapsed.js";
+import { remember } from "./folds.js";
 import { removeNote } from "./modelnotes.js";
 
 export const STRINGS = section("generate");
@@ -22,6 +24,7 @@ function node(tag, props = {}, ...children) {
 export function createGeneratePanel(hooks) {
   let button = null;
   let stageLine = null;
+  let tag = null;                       // the seconds beside the button
   let againButtons = [];
   let mine = false;                     // this panel pressed the button and is waiting
 
@@ -30,6 +33,7 @@ export function createGeneratePanel(hooks) {
     for (const b of againButtons) b.disabled = working;
     if (button) button.disabled = working || button.dataset.blocked === "true";
     if (stageLine) stageLine.textContent = working && mine ? STRINGS.stages[stage] ?? STRINGS.working : "";
+    tag?.update();
   }
 
   async function press(project) {
@@ -144,7 +148,9 @@ export function createGeneratePanel(hooks) {
       } else if (gate.reason === "outline_locked") {
         parts.push(node("p", { className: "help", textContent: STRINGS.reasonsAgain.outline_locked }));
       }
-      box.append(node("details", { className: "chapter", open: at === ordered.length - 1 }, ...parts));
+      const made = node("details", { className: "chapter" }, ...parts);
+      remember(made, `chapter:${c.id}`, at === ordered.length - 1);
+      box.append(made);
     });
     return box;
   }
@@ -154,6 +160,7 @@ export function createGeneratePanel(hooks) {
     const project = hooks.getProject();
     button = null;
     stageLine = null;
+    tag = null;
     againButtons = [];
     if (!project) return;
     const panel = node("section", { className: "generate-panel" }, node("h3", { textContent: STRINGS.title }));
@@ -170,12 +177,13 @@ export function createGeneratePanel(hooks) {
       button = node("button", { type: "button", className: "validate", textContent: fill(STRINGS.button, { n: info.next }) });
       button.addEventListener("click", () => press(project));
       stageLine = node("span", { className: "note", textContent: "" });
-      panel.append(node("div", { className: "plan-actions" }, button, stageLine),
+      tag = elapsedTag(hooks.client, () => mine);
+      panel.append(node("div", { className: "plan-actions" }, button, tag.node, stageLine),
         node("p", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) }));
     }
     panel.append(chapterList(project));
     refresh();
   }
 
-  return { draw, refresh, reset() { button = null; stageLine = null; mine = false; } };
+  return { draw, refresh, reset() { button = null; stageLine = null; tag = null; mine = false; } };
 }

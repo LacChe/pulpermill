@@ -14,6 +14,7 @@ import { untouched } from "./undo.js";
 import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
 import { createGeneratePanel } from "./generatepanel.js";
+import { forgetFolds } from "./folds.js";
 import { createEndPanel } from "./endpanel.js";
 import { createExportPanel } from "./exportpanel.js";
 import { createImportPanel } from "./importpanel.js";
@@ -124,6 +125,7 @@ function replaceProject(next, savedAs = next) {
   project = next;
   reviews.clear();
   drafts.clear();
+  forgetFolds();
   planPanel?.reset();
   generatePanel?.reset();
   endPanel?.reset();

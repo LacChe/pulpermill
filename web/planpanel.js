@@ -10,6 +10,8 @@ import {
 } from "./plan.js";
 import { section, fill, msg, joinList } from "./text.js";
 import { ask } from "./dialog.js";
+import { elapsedTag } from "./elapsed.js";
+import { remember } from "./folds.js";
 import { sameValue } from "./undo.js";
 
 export const STRINGS = section("plan");
@@ -25,6 +27,8 @@ function node(tag, props = {}, ...children) {
 export function createPlanPanel(hooks) {
   let selection = null;                 // {project, chapter, ids}: who is ticked, per project and chapter
   let button = null;
+  let mine = false;                     // this panel pressed the button and is waiting
+  let tag = null;                       // the seconds beside the button
   let shownIn = null;                   // the card the panel was last drawn into, so it can be drawn again alone
 
   // The ticks follow the plan's own Cast field: while the field is as it was, the writer's ticks stand; when it changes (by hand,
@@ -53,6 +57,7 @@ export function createPlanPanel(hooks) {
     if (!button) return;
     const working = hooks.client.state.working;
     button.disabled = working || button.dataset.blocked === "true";
+    tag?.update();
   }
 
   function facts(project, ids, chapter) {
@@ -74,7 +79,11 @@ export function createPlanPanel(hooks) {
     if (existing && !(await ask(STRINGS.confirmReplan))) return;
     hooks.notice(STRINGS.working);
     const call = planChapter(hooks.client, hooks.schema, project, [...ids]);
+    mine = true;
+    refresh();
     const result = await call.done;
+    mine = false;
+    refresh();
     if (hooks.getProject() !== project) return;          // another project was opened while the model worked
     if (result.reason) {
       const text = STRINGS.reasons[result.reason] ?? result.reason;
@@ -175,7 +184,8 @@ export function createPlanPanel(hooks) {
 
     button = node("button", { type: "button", className: "validate", textContent: fill(existing ? STRINGS.again : STRINGS.button, { n: info.next }) });
     button.addEventListener("click", () => press(project, existing, pick.ids));
-    panel.append(node("div", { className: "plan-actions" }, button,
+    tag = elapsedTag(hooks.client, () => mine);
+    panel.append(node("div", { className: "plan-actions" }, button, tag.node,
       node("span", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) })));
     startable();
 
@@ -183,9 +193,11 @@ export function createPlanPanel(hooks) {
     if (thought) {
       const lines = [node("p", { className: "plan-thinking", textContent: thought.thinking }), node("p", { className: "help", textContent: STRINGS.thoughtKept })];
       if (thought.retried) lines.unshift(node("p", { className: "help", textContent: STRINGS.retried }));
-      panel.append(node("details", { className: "plan-thought", open: true }, node("summary", { textContent: STRINGS.thought }), ...lines));
+      const made = node("details", { className: "plan-thought" }, node("summary", { textContent: STRINGS.thought }), ...lines);
+      remember(made, `thought:${existing.id}`, true);
+      panel.append(made);
     }
   }
 
-  return { draw, refresh, sync, reset() { selection = null; button = null; shownIn = null; } };
+  return { draw, refresh, sync, reset() { selection = null; button = null; tag = null; mine = false; shownIn = null; } };
 }

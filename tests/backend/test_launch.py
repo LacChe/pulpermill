@@ -41,3 +41,12 @@ def test_launch_starts_a_server_that_answers_and_the_banner_never_shows_the_toke
         out["server"].should_exit = True
     text = banner("https://x.ngrok.app", port, True)
     assert "https://x.ngrok.app" in text and "s3cret" not in text
+
+
+def test_a_hugging_face_token_goes_to_the_hub_client_and_never_into_the_log(monkeypatch, caplog):
+    import os
+    from pulpermill.backend.launch import use_hub_token
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    assert use_hub_token(None) is False and "HF_TOKEN" not in os.environ
+    assert use_hub_token("hf_secret") is True and os.environ["HF_TOKEN"] == "hf_secret"
+    assert "hf_secret" not in caplog.text

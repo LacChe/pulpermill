@@ -21,6 +21,7 @@
     "peopleLabel": "Characters"
   },
   "common": {
+    "elapsed": "{n} s",
     "comma": ", ",
     "semicolon": "; ",
     "sentence": " ",
