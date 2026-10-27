@@ -1,9 +1,9 @@
-[events events-0.1, stage: events]
+[events events-0.2, stage: events]
 
 Read the chapter below and say what it shows happened. Count only what is on the page.
 Write "happened" as short plain narration: one sentence per event, in the order it happened, usually 4 to 8 sentences. An event is a moment that changes who knows what, who holds what, or where people stand. Name the people and say what they did.
-Write "changed" as one short sentence: what is different for the protagonist now.
-For the plant, the payoff, the hidden truths, the dispositions and the objects, answer only from the lists given, copying the wording exactly, and only when it is clearly there in the text. Leave out anything the beat planned that the text does not show.
+Write "changed" as one short sentence: what is different for the protagonist now, worked out from the chapter's own text rather than from the plan. Quote the few words from the chapter that show it, and when no line of the chapter shows a difference, say that nothing changed for the protagonist.
+For the plant, the payoff, the hidden truths, the dispositions and the objects, answer only from the lists given, copying the wording exactly, and only when it is clearly there in the text. Leave a list answer empty when the text does not show it, even when the beat planned it.
 Say that the goal changed only if the text shows it.
 
 What the beat planned for this chapter:

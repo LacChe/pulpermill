@@ -65,3 +65,9 @@ The real figure is still to be measured: `memory_by_ctx` in the notebook, in a f
 
 - `tools/run_trials.py` samples at temperature 1.0, the same as the backend's prose default.
 - A pressure the beat put in the spotlight counts as used even when the chapter never showed it (its agent stayed off stage), so the spotlight and the suggested cast move on to the next pressure instead of repeating one. Code is in `web/plan.js::spotlightUse`.
+
+## Step 3: Events and Shifts rules (events-0.2, shifts-0.2)
+
+- Events: "changed" is worked out from the chapter's text with a quoted phrase as evidence, and says nothing changed when no line shows a difference. List answers stay empty when the text does not show them, even when the beat planned them.
+- Shifts: the baseline is where each person stood at the end of the previous chapter, and an empty list is the right answer when nobody moved.
+- A tie's bond or edge changes only when the footing changed; a rewording of the same footing stands. Knowledge lines are for matters of plot, not small facts of a scene. A false belief goes under misled, with the false thing in belief.

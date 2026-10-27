@@ -1,13 +1,13 @@
-[shifts shifts-0.1, stage: shifts]
+[shifts shifts-0.2, stage: shifts]
 
-Read the chapter below and say who moved. Only people whose belief, fear, want, refusal or decision changed in this chapter count, and only what changed, so compare with where each person stood at the start. At most five people.
+Read the chapter below and say who moved. Only people whose belief, fear, want, refusal or decision changed in this chapter count, and only what changed, so compare with where each person stood at the end of the previous chapter, as the lines below give it. At most five people. An empty list is the right answer when nobody moved.
 For each person who moved, fill in only the boxes that changed:
 - believes: a conviction they now hold, which the story could prove wrong
 - fears: a fear that is new or different
 - wants: an abstract desire that changed (a concrete aim toward one person belongs on a tie's edge)
 - refuses: something they now will not do
 - decided: what they decided; for the protagonist, say which of the two choices the chapter posed they took, or what they did instead
-Then say what changed in the live entanglements, using the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. When someone learns, comes to suspect or is misled about something that already has a line, put them in that line: change it (give the person under knows, suspects or misled) or add a knowledge row that names the line by its handle in entry. Never write out again something that already has a line. Add a knowledge row with the rule or fact written out only for something that has no line yet, one per person; for someone misled, say in belief what they wrongly believe. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
+Then say what changed in the live entanglements. A tie's bond or edge changes when the people's footing with each other changed on the page (a new alliance, a break, a debt, a promise); a different wording of the same footing is left as it stands. A knowledge line is for something that matters to the plot; small facts of the scene have no line. A person who now holds a false belief goes under misled, with the false thing written in belief. Use the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. When someone learns, comes to suspect or is misled about something that already has a line, put them in that line: change it (give the person under knows, suspects or misled) or add a knowledge row that names the line by its handle in entry. Never write out again something that already has a line. Add a knowledge row with the rule or fact written out only for something that has no line yet, one per person; for someone misled, say in belief what they wrongly believe. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
 Last, list in shown the handles of the pressures, knowledge, ties and holdings that the chapter actually showed: something a person acts on, is held back by, learns, or that changes on the page. A handle whose subject is only named in passing is left out. When none were shown, give an empty list.
 
 The people on stage:
