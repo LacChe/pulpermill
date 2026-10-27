@@ -28,7 +28,7 @@ Words to tokens, measured: English prose is about 1.12 tokens a word, and the pr
 
 A prompt may use `n_ctx - reply room - margin`. In `budgets.yaml`:
 
-- **`n_ctx: 12288`.** My assumption, not a measurement. The Q6 weights are about 22 GB of the 30 GB on the T4x2. Gemma 3 27B keeps about 0.25 MB of cache per token, so 12,288 tokens is about 3 GB. 16,384 might fit and 8,192 certainly does. Part B tries it on the machine; change the number and the tests and report follow.
+- **`n_ctx: 16384`** (was 12,288 until the two-section writer; see `07-tuning-log.md`). The first value was my assumption, not a measurement. The Q6 weights are about 22 GB of the 30 GB on the T4x2. Gemma 3 27B keeps about 0.25 MB of cache per token, so 12,288 tokens is about 3 GB. 16,384 might fit and 8,192 certainly does. Part B tries it on the machine; change the number and the tests and report follow.
 - **Reply room:** writer 1,600 (a 750-word section is about 900 tokens, a test checks this), planner 1,200 / 900, events 900, shifts 1,000, fill 1,000, end_story 1,800, the short calls 400–500.
 - **Margin 300.**
 

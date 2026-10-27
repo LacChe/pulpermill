@@ -117,7 +117,7 @@ def test_generate_that_cannot_fit_is_too_long_before_any_writing():
     from test_render import generate_request
     if not tokens.available():
         pytest.skip("the Gemma tokenizer files are not installed")
-    big = cases.inflate(generate_request(), **cases.TIERS["large"][0])      # eight full people: documented as not fitting
+    big = cases.inflate(generate_request(), **cases.TIERS["huge"][0])      # sixteen full people: does not fit at any squeeze
     ctx, engine, _ = make()
     with pytest.raises(BackendError) as e:
         story.generate(contract.parse_request(big), ctx)

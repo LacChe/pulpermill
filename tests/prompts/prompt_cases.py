@@ -115,6 +115,7 @@ def inflate(req: dict, cast: int = 8, each: int = MAX_ITEMS, ties: int = 12, cha
 TIERS = {
     # name: (inflate arguments, chapter words). "sample" is the Salt Coast story as it is.
     "medium": (dict(cast=5, each=3, ties=6, chapters=8, chars=200), 3000),
+    "huge": (dict(cast=16, each=MAX_ITEMS, ties=24, chapters=12, chars=2400), None),     # does not fit at any squeeze: the too_long case
     "large": (dict(cast=8, each=MAX_ITEMS, ties=12, chapters=12, chars=2400), None),
 }
 

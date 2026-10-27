@@ -10,7 +10,7 @@ from .base import CancelFlag, Engine
 
 
 class FakeEngine(Engine):
-    def __init__(self, *, seconds_per_token: float = 0.0, tokens_per_call: int = 5, n_ctx: int = 12288):
+    def __init__(self, *, seconds_per_token: float = 0.0, tokens_per_call: int = 5, n_ctx: int = 16384):
         self.seconds_per_token = seconds_per_token
         self.tokens_per_call = tokens_per_call     # how many words a canned pipeline's call makes
         self.n_ctx = n_ctx

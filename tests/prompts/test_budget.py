@@ -121,11 +121,11 @@ def test_fit_gives_up_with_too_long_when_nothing_fits():
     if not have_tokenizer():
         return
     try:
-        budget.fit(lambda: cases.tier("large")["writer-1-open"])
-    except budget.PromptTooLong as e:                                   # documented in docs/prompts/05-budgets.md
+        budget.fit(lambda: cases.tier("huge")["writer-1-open"])
+    except budget.PromptTooLong as e:                                   # a cast of sixteen full people; eight fit at 16,384 once squeezed (budget-report.md)
         assert e.measure.tokens > e.measure.limit
     else:
-        raise AssertionError("a story of eight full people was expected not to fit; update the doc if it does now")
+        raise AssertionError("a story of sixteen full people was expected not to fit; update the doc if it does now")
 
 
 def test_the_very_large_planner_prompt_fits_when_squeezed():

@@ -1,8 +1,8 @@
 # Token budgets (phase 5). Everything is counted on the Gemma 3 tokenizer, with the chat template around the prompt.
 # n_ctx is the context the backend loads the model with; the Kaggle T4x2 holds the Q6 27B weights (~22 GB of its 30 GB), so the
 # rest is the key-value cache: Gemma 3 27B needs about 0.25 MB of cache per token (62 layers x 8 key-value heads x 128 x 2 x 2 bytes),
-# so 12,288 tokens is ~3 GB. That is an estimate, not a measurement: Part B checks it on the real machine. Change n_ctx here when the backend is tried on real hardware, and the tests and the report follow.
-n_ctx: 12288
+# so 16,384 tokens is ~4 GB by that count (Gemma 3's sliding-window cache makes it less). Raised from 12,288 after the two-section writer: the test-3 session loaded 12,288 with 1.8 and 4.7 GB of VRAM free. If 16,384 does not load, set 12,288 here and in backend/config.py. Change n_ctx here when the backend is tried on real hardware, and the tests and the report follow.
+n_ctx: 16384
 # Tokens kept free after the prompt and the reply: the template's own tokens, a changed tokenizer, a longer word list.
 margin: 300
 # The most each call may write (max_tokens in the backend). Prose is ~1.35 tokens a word: a 1,500-word section is ~2,000 tokens.

@@ -29,7 +29,7 @@ the writer to "take it further" when a chapter was short. Each later section saw
 **Cost.** The second section carries the whole first one (up to ~2,000 tokens). The Salt Coast prompts still fit comfortably (3,900 and
 5,400 tokens against 9,600), but a five-person story with a sentence or two in every field needs its caps squeezed to 0.7 for the first
 section and 0.4 for the second (see `samples/budget-report.md`). If that squeeze is too hard, the lever is `n_ctx`: the load log of the
-test-3 session shows 1.8 GB and 4.7 GB of VRAM free at 12,288, so 16,384 may fit. Measure before changing it.
+test-3 session shows 1.8 GB and 4.7 GB of VRAM free at 12,288, so 16,384 may fit. Done in the next step (below).
 
 **Not changed here (still open from the brief).** The `lingering` pacing directive ("a full paragraph on at least two moments") and the
 craft line "let the scene take the time it needs" still push towards length. They are the next thing to look at if chapters run long
@@ -38,3 +38,14 @@ with two sections.
 **How to check.** Chapter length varies with the beat's weight; no duplicate paragraphs; no section ends mid-word; the second section
 does not retell the first. Run the four trials (`tests/trials/`) three times each and read them with `06-reading-rubric.md`, rows 2, 7 and 9
 first.
+
+## Step 1b: `n_ctx` 16,384
+
+**Why.** The second section carries the whole first one, which made a five-person story need its caps at 0.4. The test-3 load log
+(`model loaded in 125 s; free VRAM after=[1839, 4723] MB` at 12,288) leaves room for the extra cache.
+
+**What changed.** `n_ctx` is 16,384 in `budgets.yaml`, `backend/config.py` and the fake engine (the launcher refuses to start if the
+first two differ). All budgets follow: every prompt now has 4,096 more tokens of room. A story of eight full people (every text at its cap) now fits when squeezed (writer 0.3 to 0.4, planner 0.7); five people with ordinary texts need no squeeze. The test for "too long" uses sixteen people (`tier("huge")`).
+
+**If it does not load.** Out of memory at load means set 12,288 again in `budgets.yaml` and `backend/config.py`. Nothing else changes.
+The real figure is still to be measured: `memory_by_ctx` in the notebook, in a fresh session where the server has not been started.
