@@ -60,3 +60,8 @@ The real figure is still to be measured: `memory_by_ctx` in the notebook, in a f
 - Late and last chapters list open threads and live pressures and resolve the one or two that carry the most plot.
 - Reveals wait past the first third unless the goal depends on them, and a person suspects before knowing. A payoff is a consequence of a plant, never a repeat.
 - Reveal, payoff and plant are left empty when none applies.
+
+## Step 2b: temperature and spotlight rotation
+
+- `tools/run_trials.py` samples at temperature 1.0, the same as the backend's prose default.
+- A pressure the beat put in the spotlight counts as used even when the chapter never showed it (its agent stayed off stage), so the spotlight and the suggested cast move on to the next pressure instead of repeating one. Code is in `web/plan.js::spotlightUse`.

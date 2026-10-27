@@ -132,6 +132,18 @@ test("the spotlight is a pressure involving the cast, the least-spotlit first", 
   assert.equal(pickSpotlight(p, [suvi.id]), null);
 });
 
+test("a spotlight the chapter never showed still counts, so the rotation moves on", async () => {
+  const p = await started();
+  const [suvi, ola] = p.characters;
+  const pressures = p.entanglements.pressures;
+  pressures.push({ id: "pr000002", what: "Another", source_agent: ola.id, source_circumstance: "", next_move: "x", bears_on: [] });
+  pressures[0].source_agent = ola.id;
+  pressures[0].bears_on = [suvi.id];
+  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: pressures[0].id, events: { entanglements_shown: [] } });
+  assert.equal(pickSpotlight(p, [suvi.id, ola.id]).id, "pr000002", "the unshown spotlight was still used");
+  assert.equal(duePressure(p, null).id, "pr000002");
+});
+
 test("legal shifts follow the earlier beats, and an offstage change is due every second chapter", async () => {
   const p = await started();
   const [suvi] = p.characters;

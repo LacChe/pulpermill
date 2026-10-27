@@ -12,7 +12,7 @@ import {
 } from "./logic.js";
 import { storyStarted, cardLocked } from "./gate.js";
 import { joinList, msg } from "./text.js";
-import { usageOf, choose, plannedIds, beatWords, mentions } from "./usage.js";
+import { usageOf, writtenChapters, choose, plannedIds, beatWords, mentions } from "./usage.js";
 
 export const CAST_MAX = 5;               // the beat's cast, protagonist included (the schema's max_selected)
 export const SUGGEST_SIZE = 3;           // how many the page suggests: the protagonist and the two least used
@@ -197,10 +197,20 @@ export function useCounts(project, except = null) {
   return counts;
 }
 
-// How often each pressure has been written about (see usage.js). `except` leaves out the chapter being planned.
+// How often each pressure has had a chapter: one the chapter showed (see usage.js) or one the chapter's beat put in the
+// spotlight, once per chapter. A spotlight counts even when its agent stayed off stage and the chapter never showed it, so
+// the rotation always moves on. `except` leaves out the chapter being planned.
 function spotlightUse(project, except = null) {
   const used = usageOf(project, except);
-  return Object.fromEntries((project.entanglements?.pressures ?? []).map((p) => [p.id, used[p.id]?.uses ?? 0]));
+  const count = Object.fromEntries((project.entanglements?.pressures ?? []).map((p) => [p.id, used[p.id]?.uses ?? 0]));
+  const shown = {};
+  for (const c of writtenChapters(project)) {
+    if (except !== null && c.n === except) continue;
+    const id = c.beat?.spotlight;
+    if (id in count && !asList(c.events?.entanglements_shown).includes(id)) shown[id] = (shown[id] ?? 0) + 1;
+  }
+  for (const id of Object.keys(shown)) count[id] += shown[id];
+  return count;
 }
 
 // The pressure that has had the least attention so far (ties go to the one listed first), or null when there is none.

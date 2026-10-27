@@ -71,4 +71,4 @@ The flags are small heuristics for English. They find what a machine can find: l
 
 1. **The trials.** Four chapters from one story, in four voices. If you want a different genre in the set (a fantasy or a sci-fi one), tell me and I will add T5 and T6 on a second sample story. I did not, because every story needs its own cards and the first run would then be mostly about the cards.
 2. **Who grades.** I assume you do, and I will help in phase 7 by reading chapters alongside you and scoring them separately for comparison, as the card-fill tests did. Say if you want a different split.
-3. **Temperature.** `run_trials.py` defaults to 0.8. Part B decides the real setting; the score sheet records it on every row, so results made at different settings stay separate.
+3. **Temperature.** `run_trials.py` defaults to 1.0. Part B decides the real setting; the score sheet records it on every row, so results made at different settings stay separate.

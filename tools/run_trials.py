@@ -38,7 +38,7 @@ def run_chapter(request: dict, complete, target_words: int = 3000) -> tuple[str,
     return "\n\n".join(sections), sections
 
 
-def http_complete(url: str, max_tokens: int = 1600, temperature: float = 0.8):
+def http_complete(url: str, max_tokens: int = 1600, temperature: float = 1.0):
     def complete(text: str) -> str:
         body = json.dumps({"messages": [{"role": "user", "content": text}], "max_tokens": max_tokens, "temperature": temperature}).encode()
         req = urllib.request.Request(url.rstrip("/") + "/v1/chat/completions", body, {"Content-Type": "application/json"})
@@ -64,7 +64,7 @@ def main():
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--url")
     ap.add_argument("--runs", type=int, default=3)
-    ap.add_argument("--settings", default="gemma-3-27b-it-abliterated Q6, temperature 0.8")
+    ap.add_argument("--settings", default="gemma-3-27b-it-abliterated Q6, temperature 1.0")
     ap.add_argument("--trial", action="append")
     a = ap.parse_args()
     version = P.writer_prompt(trial_set.trial("T1-pressure"), P.writer_plan(), 0).version
