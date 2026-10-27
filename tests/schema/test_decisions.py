@@ -8,8 +8,7 @@ from pulpermill.schema.common import MAX_ITEMS
 
 def test_list_cap_is_five_and_only_these_lists_are_exempt():
     assert MAX_ITEMS == 5
-    assert UNCAPPED == {("entanglements", "ties"), ("outline", "beats"), ("summary_events", "entries"),
-                        ("summary_shifts", "shifts"), ("entanglements_history", "states")}
+    assert UNCAPPED == {("entanglements", "ties"), ("entanglements", "holdings"), ("entanglements", "knowledge"), ("world", "places"), ("world", "objects"), ("outline", "beats"), ("summary_events", "entries"), ("summary_shifts", "shifts"), ("entanglements_history", "states")}
 
 
 def test_card_chain_and_types():

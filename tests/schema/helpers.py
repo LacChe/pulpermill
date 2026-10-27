@@ -15,7 +15,9 @@ CARD_IDS = list(CARDS)
 LANGS = sorted(p.name for p in (ROOT / "text").iterdir() if p.is_dir())
 
 # Policy lists. Edit these deliberately when a decision changes.
-UNCAPPED = {("entanglements", "ties"), ("outline", "beats"), ("summary_events", "entries"),
+UNCAPPED = {("entanglements", "ties"), ("entanglements", "holdings"), ("entanglements", "knowledge"),
+            ("world", "places"), ("world", "objects"),
+            ("outline", "beats"), ("summary_events", "entries"),
             ("summary_shifts", "shifts"), ("entanglements_history", "states")}   # exceptions to the 5-item list cap
 BLOCK_CHECKS = {"required_if", "exactly_one", "fields_differ", "holding_pairs_allowed", "ref_exists",
                 "includes_value", "unique_across_items", "all_or_none", "legal_shift",
