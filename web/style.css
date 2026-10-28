@@ -117,6 +117,7 @@ textarea.text-control { resize: vertical; }
 .unsupported { color: var(--bad); font-size: 0.9rem; }
 
 .tabs { max-width: 820px; margin: 16px auto 0; padding: 0 24px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tabs[hidden] { display: none; }
 .tabs button[aria-current] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
 .tab-marks { display: inline-flex; gap: 6px; }
 .tab-marks:not(:empty) { margin-left: 8px; }
