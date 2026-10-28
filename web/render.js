@@ -614,7 +614,7 @@ export function renderCard(root, card, values, ctx) {
   ].filter(Boolean), "sentence");
 
   const section = el("section", { class: "card", "data-card": card.id },
-    el("div", { class: "card-heading" }, el("h2", { text: card.label })),
+    el("div", { class: "card-heading" }, el("div", { class: "card-title-row" }, el("h2", { text: card.label }))),
     el("p", { class: "summary", text: card.summary }),
     noteText ? el("p", { class: "flag-note", text: noteText }) : null,
     fillPanel(card, values, inner),
@@ -656,7 +656,7 @@ export function renderCard(root, card, values, ctx) {
       result.missing.length ? STRINGS.modelUnanswered.replace("{n}", String(result.missing.length)) : "",
     ].filter(Boolean), "sentence");
   });
-  section.append(el("div", { class: "validate-bar" }, validateButton, status));
+  section.querySelector(".card-heading").append(el("div", { class: "validate-bar" }, validateButton, status));
 
   // A problem appears when the writer leaves a field. Leaving a box can shift the page under the mouse, so while a
   // pointer is still down the update waits for it to be released, or the click that caused the move could miss.

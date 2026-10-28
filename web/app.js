@@ -399,7 +399,7 @@ function drawLockButton(card) {
   toggle.setAttribute("aria-pressed", String(on));
   const bar = Object.assign(document.createElement("div"), { className: "lock-bar" });
   bar.append(toggle);
-  main.querySelector(".card-heading")?.prepend(bar);
+  main.querySelector(".card-title-row")?.prepend(bar);
 }
 
 // ---- Navigation ---------------------------------------------------------------
