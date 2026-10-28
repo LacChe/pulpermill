@@ -118,6 +118,12 @@ textarea.text-control { resize: vertical; }
 .examples ul { margin: 2px 0 0; padding-left: 18px; }
 .examples-good strong { color: var(--good); }
 .examples-avoid strong { color: var(--bad); }
+.list-guidance { display: grid; gap: 10px; margin: 0 0 12px; }
+.list-guidance-field { display: grid; gap: 4px; }
+.list-guidance-field .help { margin: 0; }
+.examples-disclosure { margin-top: 2px; font-size: 0.88rem; }
+.examples-disclosure summary { cursor: pointer; color: var(--muted); }
+.examples-disclosure .examples { margin-top: 6px; }
 
 .why { margin-top: 8px; font-size: 0.88rem; color: var(--muted); }
 .why summary { cursor: pointer; }

@@ -50,6 +50,12 @@ function examplesBlock(examples) {
   return box;
 }
 
+function examplesDisclosure(examples) {
+  return el("details", { class: "examples-disclosure" },
+    el("summary", { text: STRINGS.examples }),
+    examplesBlock(examples));
+}
+
 function whyBlock(why) {
   return el("details", { class: "why" }, el("summary", { text: STRINGS.why }), el("p", { text: why }));
 }
@@ -272,7 +278,7 @@ function fieldBlock(field, values, path, ctx, scope) {
     ctx = { ...ctx, changed: () => { tag?.remove(); tag = null; ctx.drafts.delete(field.key); inherited(); } };
   }
   block.append(heading);
-  if (field.help) block.append(el("p", { class: "help", text: field.help }));
+  if (field.help && !ctx.parentGuidance) block.append(el("p", { class: "help", text: field.help }));
 
   if (field.repeat) {
     block.append(listControl(field, values, path, ctx), problemBox(path, ctx));
@@ -333,7 +339,7 @@ function fieldBlock(field, values, path, ctx, scope) {
     block.append(control);
   }
   block.append(problemBox(path, ctx));
-  if (field.examples) block.append(examplesBlock(field.examples));
+  if (field.examples && !ctx.parentGuidance) block.append(examplesBlock(field.examples));
   if (field.why) block.append(whyBlock(field.why));
   return block;
 }
@@ -424,7 +430,8 @@ function itemRow(field, item, list, ctx, redraw) {
   row.append(head, problemBox(itemPath, ctx));
   row.append(body);
   fieldsInto(body, field.item_fields, item, `${field.key}.${item.id}.`, {
-    ...ctx, list, changed: () => { setTitle(); for (const fn of ctx.siblings ?? []) fn(); ctx.changed(); },
+    ...ctx, list, parentGuidance: true,
+    changed: () => { setTitle(); for (const fn of ctx.siblings ?? []) fn(); ctx.changed(); },
   }, field);
   return row;
 }
@@ -432,6 +439,7 @@ function itemRow(field, item, list, ctx, redraw) {
 function listControl(field, values, path, ctx) {
   const list = values[field.key];
   const wrap = el("div", { class: "list" });
+  const guidance = el("div", { class: "list-guidance" });
   const rows = el("div", { class: "items" });
   const empty = el("p", { class: "empty", text: field.empty });
   const add = el("button", { type: "button", class: "add", text: field.add });
@@ -453,10 +461,15 @@ function listControl(field, values, path, ctx) {
   }
   add.addEventListener("click", () => { if (addItem(field, list)) { redraw(); ctx.changed(); } });
 
-  wrap.append(rows, empty, add, limit);
-  // A list of one-box items shows the examples once, under the list, instead of under every row.
-  const only = field.item_fields.length === 1 ? field.item_fields[0] : null;
-  if (only && only.examples) wrap.append(examplesBlock(only.examples));
+  for (const itemField of field.item_fields) {
+    if (!itemField.help && !itemField.examples) continue;
+    const itemGuidance = el("div", { class: "list-guidance-field" },
+      el("strong", { class: "field-label", text: itemField.label }),
+      itemField.help ? el("p", { class: "help", text: itemField.help }) : null,
+      itemField.examples ? examplesDisclosure(itemField.examples) : null);
+    guidance.append(itemGuidance);
+  }
+  wrap.append(guidance, rows, empty, add, limit);
   redraw();
   return wrap;
 }
