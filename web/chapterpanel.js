@@ -1,5 +1,5 @@
 import { section, fill } from "./text.js";
-import { lookupLabel } from "./logic.js";
+import { planNoteFor } from "./modelnotes.js";
 
 export const STRINGS = section("app");
 
@@ -23,21 +23,11 @@ export function createChapterPanel(hooks) {
     const planBody = node("div", { className: "chapter-view-body" });
     const plan = node("details", { className: "chapter-view-section", open: true },
       node("summary", { textContent: STRINGS.chapterPlan }), planBody);
-    if (!beat) {
+    const thought = beat ? planNoteFor(project, beat.id) : null;
+    if (!thought?.thinking) {
       planBody.append(node("p", { className: "help", textContent: STRINGS.chapterNoPlan }));
     } else {
-      const fields = hooks.schema.cards.outline.fields.find((field) => field.key === "beats")?.item_fields ?? [];
-      const rows = fields
-        .filter((field) => field.key !== "chapter" && field.key !== "stale" && beat[field.key] !== undefined && beat[field.key] !== "")
-        .map((field) => {
-          const value = Array.isArray(beat[field.key])
-            ? beat[field.key].map((item) => lookupLabel(project, field, item)).join(", ")
-            : lookupLabel(project, field, beat[field.key]);
-          return node("div", { className: "chapter-view-row" },
-          node("strong", { textContent: field.label }),
-          node("span", { textContent: value }));
-        });
-      planBody.append(rows.length ? node("dl", { className: "chapter-view-facts" }, ...rows.flatMap((row) => [node("dt", { textContent: row.firstChild.textContent }), node("dd", { textContent: row.lastChild.textContent })])) : node("p", { className: "help", textContent: STRINGS.chapterNoPlan }));
+      planBody.append(node("p", { className: "chapter-text", textContent: thought.thinking }));
     }
     const textBody = node("div", { className: "chapter-view-body" });
     const text = node("details", { className: "chapter-view-section", open: true },
