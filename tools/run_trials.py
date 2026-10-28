@@ -22,19 +22,22 @@ sys.path.insert(0, str(ROOT / "tests" / "prompts"))
 
 import trial_set                                                                     # noqa: E402
 from pulpermill.prompts import prompts as P                                         # noqa: E402
-from pulpermill.prompts.chapter_checks import run_checks, whole_sentences, words                     # noqa: E402
+from pulpermill.prompts.chapter_checks import run_checks, words                     # noqa: E402
 
 RESULTS = ROOT / "tests" / "trials" / "results"
 
 
 def run_chapter(request: dict, complete, target_words: int = 3000) -> tuple[str, list[str]]:
-    """Writes one chapter in two sections, as the backend does. The second section is shown the whole first one, and a section cut
-    short at the token limit is cut back to its last whole sentence. Returns the chapter and the section texts."""
+    """Writes one chapter section by section, as the backend will. Returns the chapter and the section texts."""
     plan = P.writer_plan()
-    sections: list[str] = []
-    for i in range(len(plan)):
-        prompt = P.writer_prompt(request, plan, i, "\n\n".join(sections), target_words)
-        sections.append(whole_sentences(complete(prompt.text).strip()))
+    sections, i, extra = [], 0, False
+    while i < len(plan):
+        if not extra and i == len(plan) - 1 and P.needs_extra(len(words(" ".join(sections))), i):
+            plan, extra = P.writer_plan(extra=True), True
+        written = "\n\n".join(sections)
+        prompt = P.writer_prompt(request, plan, i, written, target_words)
+        sections.append(complete(prompt.text).strip())
+        i += 1
     return "\n\n".join(sections), sections
 
 

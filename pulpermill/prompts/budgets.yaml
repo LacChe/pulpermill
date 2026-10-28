@@ -5,9 +5,9 @@
 n_ctx: 12288
 # Tokens kept free after the prompt and the reply: the template's own tokens, a changed tokenizer, a longer word list.
 margin: 300
-# The most each call may write (max_tokens in the backend). Prose is ~1.35 tokens a word: a 1,500-word section is ~2,000 tokens.
+# The most each call may write (max_tokens in the backend). Prose is ~1.35 tokens a word: a 750-word section is ~1,000 tokens.
 max_output:
-  writer: 2400           # one section of up to ~1,500 words (~2,000 tokens), with room to finish its last sentence
+  writer: 1600           # one section of ~750 words, with room to finish its last sentence
   planner_think: 1200
   planner_beat: 900
   events: 900
@@ -17,5 +17,5 @@ max_output:
   style_fit: 400
   offstage: 400
   end_story: 1800
-# The chapter text an Events or Shifts prompt carries. The ceiling is 3,000 words (two sections of up to 1,500); 4,000 allows for a section that runs long.
+# The chapter text an Events or Shifts prompt carries. The target is 3,000 words; a long chapter (an extra section) is ~4,000.
 chapter_words_worst_case: 4000

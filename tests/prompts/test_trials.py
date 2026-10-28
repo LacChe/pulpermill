@@ -135,10 +135,10 @@ def test_four_trials_each_a_different_kind_of_chapter():
 
 def test_every_trial_renders_all_its_prompts_without_leaks():
     for name, r in trial_set.all_trials().items():
-        for i in range(2):
+        for i in range(4):
             text = P.writer_prompt(r, P.writer_plan(), i, "" if i == 0 else "Suvi shut the till. " * 40).text
             assert not re.search(r"\{[a-z_]+\}", text) and "None" not in text, (name, i)
-        assert r["beat"]["ends_on"] in P.writer_prompt(r, P.writer_plan(), 1, "x " * 50).text, name
+        assert r["beat"]["ends_on"] in P.writer_prompt(r, P.writer_plan(), 3, "x " * 50).text, name
 
 
 def test_the_opening_trial_has_no_history_and_the_others_do():
@@ -161,22 +161,27 @@ def test_the_trials_are_made_the_same_way_every_time():
 
 # ---- The runner -----------------------------------------------------------------------------------------------------
 
-def test_the_chapter_loop_writes_two_sections_and_the_second_sees_the_whole_first():
+def test_the_chapter_loop_writes_four_sections_and_each_later_one_sees_the_tail():
     seen = []
 
     def complete(text):
         seen.append(text)
         return cases.chapter_text(800)
     chapter, sections = run_trials.run_chapter(trial_set.trial("T1-pressure"), complete)
-    assert len(sections) == 2 and len(seen) == 2
-    assert "The first section of the chapter" not in seen[0] and sections[0] in seen[1]
-    assert chapter.count("\n\n") >= 1
+    assert len(sections) == 4 and len(seen) == 4
+    assert "The chapter so far" not in seen[0] and all("The chapter so far" in t for t in seen[1:])
+    assert chapter.count("\n\n") >= 3
 
 
-def test_a_short_chapter_is_left_short_and_a_cut_section_ends_on_a_sentence():
-    outputs = iter([cases.chapter_text(300), cases.chapter_text(300) + " She was about to say that it wasn"])
-    _, sections = run_trials.run_chapter(trial_set.trial("T1-pressure"), lambda text: next(outputs))
-    assert len(sections) == 2 and sections[1].endswith(".") and not sections[1].endswith("wasn")
+def test_a_short_chapter_gets_an_extra_section_before_the_last():
+    seen = []
+
+    def complete(text):
+        seen.append(text)
+        return cases.chapter_text(300)
+    _, sections = run_trials.run_chapter(trial_set.trial("T1-pressure"), complete)
+    assert len(sections) == 5
+    assert "section 5 of 5" in seen[-1]
 
 
 def test_a_result_file_has_the_chapter_first_and_the_flags_after(tmp_path=None):
