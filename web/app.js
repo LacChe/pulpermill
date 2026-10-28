@@ -68,6 +68,11 @@ let importPanel;
 let welcome;
 let view = { card: "style", characterId: null, chapter: null };
 
+function syncWorkspaceLayout() {
+  const top = workspace.getBoundingClientRect().top;
+  workspace.style.setProperty("--workspace-top", `${Math.max(0, top)}px`);
+}
+
 function selectColumn(column) {
   workspace.dataset.column = column;
   for (const switchButton of columnSwitches) {
@@ -80,6 +85,14 @@ function selectColumn(column) {
 
 for (const switchButton of columnSwitches) switchButton.addEventListener("click", () => selectColumn(switchButton.dataset.column));
 selectColumn("cards");
+window.addEventListener("resize", syncWorkspaceLayout);
+new ResizeObserver(syncWorkspaceLayout).observe(document.body);
+new MutationObserver(syncWorkspaceLayout).observe(document.body, {
+  subtree: true,
+  attributes: true,
+  attributeFilter: ["hidden", "class", "style"],
+});
+syncWorkspaceLayout();
 
 function chapterState() {
   const count = Number(project?.setup?.chapter_count) || 0;

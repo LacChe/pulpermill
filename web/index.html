@@ -7,35 +7,37 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="bar">
-    <h1 data-text="page.title"></h1>
-    <label class="project-name">
-      <span class="visually-hidden" data-text="page.projectName"></span>
-      <input type="text" id="title" class="text-control" data-text-attrs="placeholder:app.untitled" autocomplete="off">
-    </label>
-    <span id="save-state" class="save-state" role="status"></span>
-    <div class="bar-actions">
-      <button type="button" id="new" data-text="page.new"></button>
-      <button type="button" id="open" data-text="page.open"></button>
-      <button type="button" id="import" data-text="page.import"></button>
-      <button type="button" id="guide" aria-controls="welcome" aria-expanded="true" data-text="page.guide"></button>
-      <button type="button" id="save" data-text="page.save"></button>
-      <input type="file" id="open-file" accept=".json,application/json" hidden>
-      <input type="file" id="import-file" accept=".json,application/json" multiple hidden>
+  <div class="app-header">
+    <header class="bar">
+      <h1 data-text="page.title"></h1>
+      <label class="project-name">
+        <span class="visually-hidden" data-text="page.projectName"></span>
+        <input type="text" id="title" class="text-control" data-text-attrs="placeholder:app.untitled" autocomplete="off">
+      </label>
+      <span id="save-state" class="save-state" role="status"></span>
+      <div class="bar-actions">
+        <button type="button" id="new" data-text="page.new"></button>
+        <button type="button" id="open" data-text="page.open"></button>
+        <button type="button" id="import" data-text="page.import"></button>
+        <button type="button" id="guide" aria-controls="welcome" aria-expanded="true" data-text="page.guide"></button>
+        <button type="button" id="save" data-text="page.save"></button>
+        <input type="file" id="open-file" accept=".json,application/json" hidden>
+        <input type="file" id="import-file" accept=".json,application/json" multiple hidden>
+      </div>
+    </header>
+    <div class="backend-bar">
+      <label class="backend">
+        <span data-text="page.modelConnection"></span>
+        <input type="text" id="backend" class="text-control" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="backend token">
+        <span data-text="page.tokenLabel"></span>
+        <input type="password" id="token" class="text-control" autocomplete="off" spellcheck="false" data-text-attrs="title:page.tokenHelp">
+      </label>
+      <span id="connection" class="connection" role="status"></span>
+      <button type="button" id="check" data-text="page.check"></button>
+      <button type="button" id="stop" class="stop" hidden data-text="page.stop"></button>
     </div>
-  </header>
-  <div class="backend-bar">
-    <label class="backend">
-      <span data-text="page.modelConnection"></span>
-      <input type="text" id="backend" class="text-control" autocomplete="off" spellcheck="false">
-    </label>
-    <label class="backend token">
-      <span data-text="page.tokenLabel"></span>
-      <input type="password" id="token" class="text-control" autocomplete="off" spellcheck="false" data-text-attrs="title:page.tokenHelp">
-    </label>
-    <span id="connection" class="connection" role="status"></span>
-    <button type="button" id="check" data-text="page.check"></button>
-    <button type="button" id="stop" class="stop" hidden data-text="page.stop"></button>
   </div>
   <div id="recovery" class="notice" hidden></div>
   <div id="notice" class="notice" role="status" hidden></div>

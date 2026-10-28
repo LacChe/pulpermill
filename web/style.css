@@ -24,13 +24,18 @@
     --warn: #e0b45c;
   }
 }
-* { box-sizing: border-box; }
+* { 
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel) var(--bg); 
+}
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
+.app-header { position: sticky; top: 0; z-index: 20; background: var(--panel); }
 .bar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 24px; border-bottom: 1px solid var(--line); background: var(--panel);
@@ -54,9 +59,8 @@ body {
 .column-switcher { display: none; max-width: 1400px; margin: 12px auto 0; padding: 0 24px; gap: 8px; }
 .column-switch { flex: 1; }
 .column-switch.active { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
-.workspace { max-width: 1400px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
-.cards-column, .planning-column { min-width: 0; }
-.planning-column { padding-top: 24px; }
+.workspace { max-width: 1400px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+.cards-column, .planning-column { min-width: 0; height: calc(100dvh - var(--workspace-top, 0px) - 16px); overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding-bottom: 24px; }
 .notice > span { flex: 1 1 320px; }
 .notice-bad { border-left-color: var(--bad); }
 .notice-close { color: var(--muted); padding: 2px 10px; font-size: 0.85rem; }
@@ -155,10 +159,9 @@ textarea.text-control { resize: vertical; }
 .why p { margin: 4px 0 0; }
 .unsupported { color: var(--bad); font-size: 0.9rem; }
 
-.tabs { max-width: 820px; margin: 16px auto 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tabs { max-width: 820px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: var(--bg); position: sticky; top: 0; z-index: 5; padding: 4px 0; }
 .tabs[hidden] { display: none; }
 .tabs button[aria-current] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
-.chapter-tabs { margin: 16px auto; }
 .chapter-tabs button:disabled { opacity: 0.55; cursor: not-allowed; }
 .chapter-tabs .chapter-written { border-color: var(--line); }
 .chapter-tabs .chapter-current { border-color: var(--accent); }
@@ -338,8 +341,7 @@ main.locked input:disabled, main.locked select:disabled, main.locked textarea:di
   .workspace { display: block; padding: 0; }
   .workspace[data-column="planning"] .cards-column { display: none; }
   .workspace[data-column="cards"] .planning-column { display: none; }
-  .cards-column, .planning-column { padding: 0 24px; }
-  .planning-column { padding-top: 12px; }
+  .cards-column, .planning-column { height: calc(100dvh - var(--workspace-top, 0px) - 16px); }
 }
 .export-label { font-weight: 600; min-width: 12rem; }
 
