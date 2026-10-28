@@ -1,4 +1,4 @@
-[writer writer-0.1, stage: write]
+[writer writer-0.2, stage: write]
 
 Write in English.
 Narrate in the first person, from inside the protagonist's own voice, knowing only what they know.
@@ -130,8 +130,8 @@ The pressure in focus is: The board wants the ledger before the next first-day v
 
 This is the shape of the scene. Find your own way through it: the people, the dialogue and the small events that carry the chapter from its opening to its last moment are yours to invent.
 
-This is section 1 of 4 of the chapter, about 750 words.
-Its job: Open inside the scene at The Docks, with the scene already moving. Show what Suvi is after, and let the first sign of what stands in the way appear.
+This is section 1 of 2 of the chapter. It runs as long as its job needs, up to about 1500 words, and ends sooner when the scene has done its work.
+Its job: Open inside the scene at The Docks, with the scene already moving. Show what Suvi is after, meet what stands in the way, and let the pressure build as the first attempts cost something. Set up this, in passing and if it fits: Pekka keeps a locked back room. If it fits, bring the hidden truth to light here, in one clear moment.
 The scene is not over after this section. Stay in the moment: end the section mid-scene, on a line or an action, so the next section can pick up from it.
 
 Write in English, first person, past tense, close distance, the whole way through. Stay in the scene.

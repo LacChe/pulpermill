@@ -61,8 +61,7 @@ standing:
   # Where each person stands now: the Shifts extractor writes these, so they are model text and get a cap too.
   field: 300
 chapter:
-  # The section-by-section writer (inventory D5). The backend uses these; the prompts only need the words per section.
+  # The two-section writer. target_words is a ceiling for the whole chapter, shared by the sections (each may run to half of it);
+  # a chapter ends when its turn lands, so it is often shorter. The second section is shown the whole first section.
   target_words: 3000
-  sections: 4
-  tail_words: 300            # how much of the chapter so far each later section is shown
-  short_ratio: 0.8           # an extra section is added when the words so far are under this share of the pace
+  sections: 2

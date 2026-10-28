@@ -56,6 +56,16 @@ def overlap(needle: str, hay: set[str]) -> float:
     return len(want & hay) / len(want) if want else 0.0
 
 
+def whole_sentences(text: str) -> str:
+    """A section that stopped at the token limit ends mid-word. Cuts it back to its last whole sentence; a text that already ends on
+    a full stop, a closing quote or the like is returned as it is, and so is one with no sentence end in its second half."""
+    body = text.rstrip()
+    if not body or re.search(r"[.!?…—][\"”'’)\]]*$", body):
+        return body
+    ends = [m.end() for m in re.finditer(r"[.!?…][\"”'’)\]]*(?=\s)", body)]
+    return body[:ends[-1]].rstrip() if ends and ends[-1] >= len(body) * 0.5 else body
+
+
 # ---- The checks -----------------------------------------------------------------------------------------------------
 
 def check_length(text, target=3000):
@@ -111,6 +121,14 @@ def check_repetition(text):
         best = max(best, run)
     if best >= 5:
         flags.append(Flag("repeat-sentence-start", f"{best} sentences in a row start with the same word"))
+    paras_seen, same = set(), 0
+    for para in paragraphs(text):
+        key = " ".join(para.lower().split())
+        if len(key) >= 60 and key in paras_seen:
+            same += 1
+        paras_seen.add(key)
+    if same:
+        flags.append(Flag("repeat-paragraph", f"{same} whole paragraph(s) written twice"))
     seen, dupes = set(), 0
     for sent in sentences(text):
         key = sent.lower()
