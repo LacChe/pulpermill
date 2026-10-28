@@ -266,6 +266,7 @@ function toggleBlock(group, index, values, path, ctx, scope) {
 // One field of one object (a card, or one item in a list). `values` is that object; it is changed in place.
 function fieldBlock(field, values, path, ctx, scope) {
   const block = el("div", { class: "field", "data-path": path });
+  const parentGuidance = ctx.parentGuidance && ctx.card?.id !== "outline";
   const heading = el("div", { class: "field-heading" }, el("span", { class: "field-label", text: field.label }));
   if (showsOptionalTag(scope.owner, field)) heading.append(el("span", { class: "tag", text: STRINGS.optional }));
   if (field.changes) heading.append(el("span", { class: "tag tag-live", text: STRINGS.tagLive, title: STRINGS.tagLiveHelp }));
@@ -278,7 +279,7 @@ function fieldBlock(field, values, path, ctx, scope) {
     ctx = { ...ctx, changed: () => { tag?.remove(); tag = null; ctx.drafts.delete(field.key); inherited(); } };
   }
   block.append(heading);
-  if (field.help && !ctx.parentGuidance) block.append(el("p", { class: "help", text: field.help }));
+  if (field.help && !parentGuidance) block.append(el("p", { class: "help", text: field.help }));
 
   if (field.repeat) {
     block.append(listControl(field, values, path, ctx), problemBox(path, ctx));
@@ -339,7 +340,7 @@ function fieldBlock(field, values, path, ctx, scope) {
     block.append(control);
   }
   block.append(problemBox(path, ctx));
-  if (field.examples && !ctx.parentGuidance) block.append(examplesBlock(field.examples));
+  if (field.examples && !parentGuidance) block.append(examplesBlock(field.examples));
   if (field.why) block.append(whyBlock(field.why));
   return block;
 }
@@ -430,7 +431,7 @@ function itemRow(field, item, list, ctx, redraw) {
   row.append(head, problemBox(itemPath, ctx));
   row.append(body);
   fieldsInto(body, field.item_fields, item, `${field.key}.${item.id}.`, {
-    ...ctx, list, parentGuidance: true,
+    ...ctx, list, parentGuidance: ctx.card?.id !== "outline",
     changed: () => { setTitle(); for (const fn of ctx.siblings ?? []) fn(); ctx.changed(); },
   }, field);
   return row;
@@ -461,15 +462,17 @@ function listControl(field, values, path, ctx) {
   }
   add.addEventListener("click", () => { if (addItem(field, list)) { redraw(); ctx.changed(); } });
 
-  for (const itemField of field.item_fields) {
-    if (!itemField.help && !itemField.examples) continue;
-    const itemGuidance = el("div", { class: "list-guidance-field" },
-      el("strong", { class: "field-label", text: itemField.label }),
-      itemField.help ? el("p", { class: "help", text: itemField.help }) : null,
-      itemField.examples ? examplesDisclosure(itemField.examples) : null);
-    guidance.append(itemGuidance);
+  if (ctx.card?.id !== "outline") {
+    for (const itemField of field.item_fields) {
+      if (!itemField.help && !itemField.examples) continue;
+      const itemGuidance = el("div", { class: "list-guidance-field" },
+        el("strong", { class: "field-label", text: itemField.label }),
+        itemField.help ? el("p", { class: "help", text: itemField.help }) : null,
+        itemField.examples ? examplesDisclosure(itemField.examples) : null);
+      guidance.append(itemGuidance);
+    }
   }
-  wrap.append(guidance, rows, empty, add, limit);
+  wrap.append(ctx.card?.id === "outline" ? rows : guidance, empty, add, limit);
   redraw();
   return wrap;
 }
