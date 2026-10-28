@@ -388,16 +388,18 @@ async function runFill(card, shown) {
 function drawLockButton(card) {
   if (lockedByStory(project, card.id)) return;
   const on = lockedByWriter(project, card.id);
-  const toggle = button(on ? STRINGS.unlockCard : STRINGS.lockCard, () => {
+  const label = on ? STRINGS.unlockCard : STRINGS.lockCard;
+  const toggle = button(on ? LABELS.unlockMark : LABELS.lockMark, () => {
     setWriterLock(project, card.id, !on);
     show();
     touchState();
   }, { className: "lock-toggle" });
+  toggle.setAttribute("aria-label", label);
   toggle.title = on ? STRINGS.unlockCardHelp : STRINGS.lockCardHelp;
   toggle.setAttribute("aria-pressed", String(on));
   const bar = Object.assign(document.createElement("div"), { className: "lock-bar" });
   bar.append(toggle);
-  main.prepend(bar);
+  main.querySelector(".card-heading")?.prepend(bar);
 }
 
 // ---- Navigation ---------------------------------------------------------------

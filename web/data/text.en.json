@@ -105,6 +105,7 @@
     "character": "Character",
     "locked": "locked",
     "lockMark": "🔒",
+    "unlockMark": "🔓",
     "tabNames": {
       "characters": "Characters"
     },

@@ -614,7 +614,7 @@ export function renderCard(root, card, values, ctx) {
   ].filter(Boolean), "sentence");
 
   const section = el("section", { class: "card", "data-card": card.id },
-    el("h2", { text: card.label }),
+    el("div", { class: "card-heading" }, el("h2", { text: card.label })),
     el("p", { class: "summary", text: card.summary }),
     noteText ? el("p", { class: "flag-note", text: noteText }) : null,
     fillPanel(card, values, inner),
