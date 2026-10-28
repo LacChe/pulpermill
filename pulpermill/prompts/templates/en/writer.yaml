@@ -2,7 +2,7 @@
 # The material between the rules and the section's job is rendered by pulpermill/prompts/blocks.py (writer_blocks).
 # Tokens in {braces} are filled by pulpermill/prompts/prompts.py. Every line says what to do.
 name: writer
-version: "writer-0.2"
+version: "writer-0.1"
 
 rules: |
   {language_line}
@@ -22,34 +22,42 @@ craft: |
 
   End where the scene ends, on a moment that leaves a question open.
 
-# What each section of the chapter is for. The beat's own details are filled in. A chapter is two sections: the first opens it and
-# builds the pressure, the second makes the choice and closes it.
+# What each section of the chapter is for. The beat's own details are filled in.
 jobs:
+  open: "Open inside the scene at {where}, with the scene already moving. Show what {protagonist} is after, and let the first sign of what stands in the way appear."
   open_press: "Open inside the scene at {where}, with the scene already moving. Show what {protagonist} is after, meet what stands in the way, and let the pressure build as the first attempts cost something.{plant_hint}{reveal_hint}"
-  choice_close: "Bring {protagonist} to the choice the scene set up and play it out with its cost. Then show what is different now and bring the scene to its ending moment.{payoff_hint}{late_hint}"
+  press: "Press on the obstacle: each attempt by {protagonist} costs something, and things get harder.{plant_hint}{reveal_hint}"
+  choice: "Force the choice between the two options the scene set up, and play it out with its cost.{payoff_hint}"
+  close: "Show what is different now, and bring the scene to its ending moment.{late_hint}"
 
 # Added to a job only when the beat names the thing.
 hints:
-  plant: " Set up this, in passing and if it fits: {plant}."
+  plant: " Set up this, in passing and if it fits: {plant}"
   reveal: " If it fits, bring the hidden truth to light here, in one clear moment."
-  payoff: " If it fits, pay off what was set up earlier here: {payoff}."
+  payoff: " If it fits, pay off what was set up earlier here: {payoff}"
   late: " Anything the beat names that has not happened on the page yet (the hidden truth, the set-up, the pay-off) happens now, briefly."
 
 job: |
-  This is section {k} of {n} of the chapter. It runs as long as its job needs, up to about {words} words, and ends sooner when the scene has done its work.
+  This is section {k} of {n} of the chapter, about {words} words.
   Its job: {job}
   {tail}
 tail_middle: "The scene is not over after this section. Stay in the moment: end the section mid-scene, on a line or an action, so the next section can pick up from it."
 tail_last: "This is the last section: bring the scene to its ending moment and stop there."
 
-so_far_lead: "The first section of the chapter, as written:"
-so_far_tail: "Continue from the last line of this passage, in the same voice. Let every paragraph show something the passage has not shown yet."
+# Inserted before the last section when the chapter is running short.
+extra: |
+  This is an extra section, about {words} words, placed before the chapter's close.
+  Its job: the scene is not over. Stay in it and take it further: let {protagonist} try something else, let someone say what they have been holding back, or let the obstacle show a new side.
+  End the section mid-scene, on a line or an action, so the next section can pick up from it.
+
+so_far_lead: "The chapter so far (its last part):"
+so_far_tail: "Continue from the end of this passage, in the same voice."
 
 reminder: |
   Write in {voice}, the whole way through. Stay in the scene.{fresh}
   {ending_line}
   Reply with the story text itself, beginning at its first word.
-fresh: " The images, gestures and turns of talk in the passage above are already used, so reach for new ones."
+fresh: " The images and gestures in the passage above are already used, so reach for new ones."
 ending_middle: "End this section mid-scene, and leave the chapter's ending moment for the last section."
 ending_last: "Stop on the ending moment."
 

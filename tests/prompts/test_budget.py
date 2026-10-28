@@ -74,8 +74,8 @@ def test_every_prompt_has_a_reply_room_in_the_budget():
 def test_a_section_of_prose_fits_the_writers_reply_room():
     if not have_tokenizer():
         return
-    section = tokens.count(cases.chapter_text(1500))
-    assert section * 1.3 < budget.budgets()["max_output"]["writer"], section          # ~1,500 words (a section's ceiling), plus 30% for a longer one
+    section = tokens.count(cases.chapter_text(750))
+    assert section * 1.3 < budget.budgets()["max_output"]["writer"], section          # ~750 words, plus 30% for a longer one
 
 
 def test_the_sample_story_fits_every_prompt_with_room_to_spare():
@@ -86,15 +86,11 @@ def test_the_sample_story_fits_every_prompt_with_room_to_spare():
         assert m.ok and m.headroom > m.limit * 0.3, (name, m)
 
 
-def test_a_medium_story_fits_after_a_squeeze():
-    """Five people with a sentence or two in every field. The second section carries the whole first one (up to ~1,500 words), so it
-    needs the harder squeeze; that is the price of the second section seeing everything the first showed (docs/prompts/07)."""
+def test_a_medium_story_fits_after_a_small_squeeze_at_most():
     if not have_tokenizer():
         return
-    _, first, measures = budget.fit(lambda: cases.tier("medium")["writer-1-open"])
-    assert first >= 0.7 and all(m.ok for m in measures)
-    _, second, measures = budget.fit(lambda: cases.tier("medium")["writer-2-close"])
-    assert second >= 0.4 and all(m.ok for m in measures)
+    made, factor, measures = budget.fit(lambda: cases.tier("medium")["writer-2-press"])
+    assert factor >= 0.7 and all(m.ok for m in measures)
 
 
 def test_squeezing_shortens_every_length_and_leaves_the_counts_alone():

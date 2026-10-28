@@ -48,10 +48,33 @@ def _bullets(items: list[str], none: str) -> str:
 
 # ---- The chapter writer ---------------------------------------------------------------------------------------------
 
-def writer_plan() -> list[str]:
-    """The roles of the sections, in order: a chapter is two sections. The first opens the scene and builds the pressure, the second
-    makes the choice and closes."""
-    return ["open_press", "choice_close"]
+def writer_plan(sections: int | None = None, extra: bool = False) -> list[str]:
+    """The roles of the sections, in order. Four sections of about 750 words by default, or three of about 1,000. An extra
+    section goes before the last one."""
+    n = sections or tx.limits()["chapter"]["sections"]
+    roles = {4: ["open", "press", "choice", "close"], 3: ["open_press", "choice", "close"]}.get(n)
+    if roles is None:
+        raise ValueError("a chapter is written in 3 or 4 sections")
+    return roles[:-1] + ["extra"] + roles[-1:] if extra else roles
+
+
+def tail_words(text: str, words: int | None = None) -> str:
+    """The last ~300 words of the chapter so far, starting at a paragraph or sentence so it does not open mid-clause."""
+    limit = words or tx.limits()["chapter"]["tail_words"]
+    tokens = re.findall(r"\S+\s*", text or "")
+    if len(tokens) <= limit:
+        return (text or "").strip()
+    tail = "".join(tokens[-limit:])
+    cut = re.search(r"\n\s*\n|(?<=[.!?])[\"”']?\s+", tail[: len(tail) // 3])
+    return (tail[cut.end():] if cut else tail).strip()
+
+
+def needs_extra(words_so_far: int, done: int, sections: int | None = None, target: int | None = None) -> bool:
+    """True when the section about to be written is the last one and the chapter is running short of its pace."""
+    lim = tx.limits()["chapter"]
+    n = sections or lim["sections"]
+    goal = target or lim["target_words"]
+    return done == n - 1 and words_so_far < lim["short_ratio"] * goal * done / n
 
 
 def _voice(style: dict, language: str) -> str:
@@ -73,12 +96,12 @@ def _voice_rules(style: dict) -> str:
 
 
 def writer_prompt(req: dict, plan: list[str], index: int, written: str = "", target_words: int | None = None) -> Prompt:
-    """One section of the chapter. `plan` is writer_plan(); `index` counts from 0; `written` is everything written before this
-    section (the whole first section, for the second)."""
+    """One section of the chapter. `plan` is writer_plan(); `index` counts from 0; `written` is the chapter so far."""
     w = _t("writer")
     lim = tx.limits()["chapter"]
     role = plan[index]
-    words = round((target_words or lim["target_words"]) / len(plan))
+    body = [r for r in plan if r != "extra"]
+    words = round((target_words or lim["target_words"]) / len(body))
     beat = req.get("beat") or {}
     protagonist = s((req.get("setup") or {}).get("protagonist"))
     last = index == len(plan) - 1
@@ -94,9 +117,12 @@ def writer_prompt(req: dict, plan: list[str], index: int, written: str = "", tar
         "payoff_hint": w["hints"]["payoff"].format(payoff=payoff) if payoff else "",
         "late_hint": w["hints"]["late"] if (plant or reveal or payoff) else "",
     }
-    job = w["job"].format(k=index + 1, n=len(plan), words=words, job=w["jobs"][role].format(**tokens),
-                          tail=w["tail_last"] if last else w["tail_middle"])
-    so_far = _join(w["so_far_lead"] + "\n" + written.strip(), w["so_far_tail"]) if written.strip() else ""
+    if role == "extra":
+        job = w["extra"].format(**tokens)
+    else:
+        job = w["job"].format(k=index + 1, n=len(plan), words=words, job=w["jobs"][role].format(**tokens),
+                              tail=w["tail_last"] if last else w["tail_middle"])
+    so_far = _join(w["so_far_lead"] + "\n" + tail_words(written), w["so_far_tail"]) if written.strip() else ""
     reminder = w["reminder"].format(
         voice=_voice(style, language), fresh=w["fresh"] if written.strip() else "",
         ending_line=w["ending_last"] if last else w["ending_middle"])

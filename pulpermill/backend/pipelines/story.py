@@ -4,7 +4,7 @@ that cannot fit is answered `too_long` at once and not after fifteen minutes of 
 from typing import Callable
 
 from pulpermill.prompts import (assemble_end_story_reply, assemble_generate_reply, budget, end_story_prompts, events_prompt,
-                                offstage_prompt, planner_beat_prompt, planner_think_prompt, shifts_prompt,
+                                needs_extra, offstage_prompt, planner_beat_prompt, planner_think_prompt, shifts_prompt,
                                 textfiles as tx, writer_plan, writer_prompt)
 from pulpermill.prompts import chapter_checks
 
@@ -39,8 +39,8 @@ def _req(request) -> dict:
 
 def _generate_prompts(req: dict, chapter_text: str, events: dict | None, target: int) -> list:
     """The heaviest prompt of each pass, for measuring: every section's, then Events and Shifts on a whole chapter."""
-    plan = writer_plan()
-    sections = [writer_prompt(req, plan, i, stand_in(target // len(plan)) if i else "", target) for i in range(len(plan))]
+    plan = writer_plan(extra=True)
+    sections = [writer_prompt(req, plan, i, stand_in(target), target) for i in range(len(plan))]
     return [*sections, events_prompt(req, chapter_text), shifts_prompt(req, chapter_text, events)]
 
 
@@ -65,14 +65,17 @@ def generate(request, ctx: RunContext) -> dict:
 
 
 def _write(ctx: RunContext, req: dict, language: str, target: int) -> list[str]:
-    """The chapter in two sections, as tools/run_trials.py::run_chapter does it. Free text, no early stop. The second section is shown
-    the whole first one. A section the token limit cut short is cut back to its last whole sentence."""
+    """The chapter section by section, as tools/run_trials.py::run_chapter does it. Free text, no early stop."""
     plan = writer_plan()
     sections: list[str] = []
-    for i in range(len(plan)):
+    extra = False
+    i = 0
+    while i < len(plan):
+        if not extra and i == len(plan) - 1 and needs_extra(len(chapter_checks.words(" ".join(sections))), i):
+            plan, extra = writer_plan(extra=True), True
         prompt = writer_prompt(req, plan, i, "\n\n".join(sections), target)
-        text = st.run_text(ctx, prompt, language, params=ctx.config.prose_for(language)).value
-        sections.append(chapter_checks.whole_sentences(text).strip())
+        sections.append(st.run_text(ctx, prompt, language, params=ctx.config.prose_for(language)).value.strip())
+        i += 1
     return sections
 
 

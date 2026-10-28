@@ -126,10 +126,11 @@ def prompts(gen: dict, plan: dict, chapter_words: int = 3000, vectors: dict | No
         vec = {k: inflate(v, **big) for k, v in vec.items()}
     chapter = chapter_text(chapter_words)
     roles = P.writer_plan()
-    earlier = prose(6500, 3)          # a whole first section at its ceiling (about 1,500 words)
+    earlier = P.tail_words(chapter)
     return {
         "writer-1-open": P.writer_prompt(gen, roles, 0),
-        "writer-2-close": P.writer_prompt(gen, roles, 1, earlier),
+        "writer-2-press": P.writer_prompt(gen, roles, 1, earlier),
+        "writer-4-close": P.writer_prompt(gen, roles, 3, earlier),
         "planner-1-think": P.planner_think_prompt(plan),
         "planner-2-beat": P.planner_beat_prompt(plan, prose(5000, 1)),
         "events": P.events_prompt(gen, chapter),
@@ -155,10 +156,10 @@ def golden() -> dict:
     """The sample prompts with placeholders for the text other calls would have made: what docs/prompts/samples/prompts holds."""
     gen, plan = generate_request(), plan_request()
     roles = P.writer_plan()
-    earlier = " ".join(["[the first section would be here]"] * 3)
+    earlier = " ".join(["[the chapter so far would be here]"] * 3)
     return {
         "writer-1-open": P.writer_prompt(gen, roles, 0),
-        "writer-2-close": P.writer_prompt(gen, roles, 1, earlier),
+        "writer-4-close": P.writer_prompt(gen, roles, 3, earlier),
         "planner-1-think": P.planner_think_prompt(plan),
         "planner-2-beat": P.planner_beat_prompt(plan, "[the planner's thinking would be here]"),
         "events": P.events_prompt(gen, "[the chapter would be here]"),

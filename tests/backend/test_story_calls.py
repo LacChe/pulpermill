@@ -55,7 +55,7 @@ def make(*outputs, **config):
     return ctx, engine, stages
 
 
-def chapter_outputs(request, sections=2, words=750):
+def chapter_outputs(request, sections=4, words=750):
     """Scripted replies for a whole generate call: the sections, then Events and Shifts shaped by the real schemas."""
     req = request.model_dump()
     chapter = "\n\n".join([section(words)] * sections)
@@ -64,35 +64,35 @@ def chapter_outputs(request, sections=2, words=750):
     return [section(words)] * sections + [json.dumps(events), json.dumps(shifts)]
 
 
-def test_generate_writes_two_sections_then_events_then_shifts():
+def test_generate_writes_four_sections_then_events_then_shifts():
     request = vector("generate")
     ctx, engine, stages = make(*chapter_outputs(request))
     reply = story.generate(request, ctx)
     contract.parse_reply("generate", reply)
-    assert engine.calls == 4 and reply["chapter_text"].count("\n\n") == 1
-    assert engine.constraints[:2] == [None] * 2 and engine.constraints[2] is not None and engine.constraints[3] is not None
+    assert engine.calls == 6 and reply["chapter_text"].count("\n\n") == 3
+    assert engine.constraints[:4] == [None] * 4 and engine.constraints[4] is not None and engine.constraints[5] is not None
     assert [s for i, s in enumerate(stages) if i == 0 or s != stages[i - 1]] == ["write", "events", "shifts"]
-    assert ctx.notes["words_per_section"] == [len(section(750).split())] * 2
-    assert ctx.notes["squeeze"] == 1.0 and [p["prompt"] for p in ctx.notes["passes"]] == ["writer"] * 2 + ["events", "shifts"]
+    assert ctx.notes["words_per_section"] == [len(section(750).split())] * 4
+    assert ctx.notes["squeeze"] == 1.0 and [p["prompt"] for p in ctx.notes["passes"]] == ["writer"] * 4 + ["events", "shifts"]
     assert isinstance(ctx.notes["flags"], list)
 
 
-def test_the_second_section_sees_the_whole_first_section():
+def test_a_section_sees_only_the_tail_of_the_chapter_so_far():
     request = vector("generate")
     ctx, engine, _ = make(*chapter_outputs(request))
     story.generate(request, ctx)
     assert section(750)[:60] not in engine.prompts[0]
-    assert section(750) in engine.prompts[1]
+    assert "river" in engine.prompts[1]
 
 
-def test_a_short_chapter_is_left_short_and_a_cut_section_ends_on_a_sentence():
+def test_a_short_chapter_gets_one_extra_section_before_the_close():
     request = vector("generate")
-    outputs = chapter_outputs(request, sections=2, words=300)
-    outputs[1] = outputs[1] + " She was about to say that it wasn"
+    req = request.model_dump()
+    outputs = chapter_outputs(request, sections=5, words=300)
     ctx, engine, _ = make(*outputs)
-    reply = story.generate(request, ctx)
-    assert engine.calls == 4 and ctx.notes["words"] < 700
-    assert reply["chapter_text"].rstrip().endswith(".") and not reply["chapter_text"].rstrip().endswith("wasn")
+    story.generate(request, ctx)
+    assert engine.calls == 7 and ctx.notes["words_per_section"] == [len(section(300).split())] * 5
+    assert len(P.writer_plan(extra=True)) == 5
 
 
 def test_findings_in_the_chapter_never_fail_the_call():
@@ -108,7 +108,7 @@ def test_a_section_in_the_wrong_language_is_written_again():
     outputs = chapter_outputs(request)
     ctx, engine, _ = make(french, *outputs)
     story.generate(request, ctx)
-    assert engine.calls == 5 and "could not be used" in engine.prompts[1]
+    assert engine.calls == 7 and "could not be used" in engine.prompts[1]
 
 
 def test_generate_that_cannot_fit_is_too_long_before_any_writing():
@@ -136,7 +136,7 @@ def test_stop_during_the_chapter_ends_the_call_and_no_extractor_runs():
 def test_a_broken_extractor_is_bad_output_and_gives_no_chapter():
     request = vector("generate")
     outputs = chapter_outputs(request)
-    outputs[2:] = ["nope", "still nope"]
+    outputs[4:] = ["nope", "still nope"]
     ctx, _, _ = make(*outputs)
     with pytest.raises(BackendError) as e:
         story.generate(request, ctx)

@@ -32,7 +32,7 @@ def capacity_rows():
         for n in (3, 4, 5, 6, 8):
             args = dict(cast=n, each=3 if chars < 1000 else cases.MAX_ITEMS, ties=2 * n, chapters=8, chars=chars)
             gen, plan = cases.inflate(cases.generate_request(), **args), cases.inflate(cases.plan_request(), **args)
-            w = budget.measure(cases.P.writer_prompt(gen, cases.P.writer_plan(), 1, cases.prose(6500)))
+            w = budget.measure(cases.P.writer_prompt(gen, cases.P.writer_plan(), 1, cases.prose(2000)))
             p = budget.measure(cases.P.planner_think_prompt(plan))
             rows.append(f"| {label} | {n} | {w.tokens} | {'fits' if w.ok else 'over'} | {p.tokens} | {'fits' if p.ok else 'over'} |")
     return rows

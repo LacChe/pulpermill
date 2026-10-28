@@ -43,26 +43,22 @@ def test_writer_wording_has_no_negative_phrases():
 
 # ---- The writer -----------------------------------------------------------------------------------------------------
 
-def test_a_chapter_is_two_sections():
-    assert P.writer_plan() == ["open_press", "choice_close"]
-    assert tx.limits()["chapter"]["sections"] == 2
-    assert not hasattr(P, "needs_extra") and not hasattr(P, "tail_words")          # no padding section, no tail
+def test_writer_plan():
+    assert P.writer_plan() == ["open", "press", "choice", "close"]
+    assert P.writer_plan(3) == ["open_press", "choice", "close"]
+    assert P.writer_plan(4, extra=True) == ["open", "press", "choice", "extra", "close"]
 
 
-def test_the_second_section_is_shown_the_whole_first_one():
-    req = generate_request()
-    first = "Suvi shut the till. " * 400 + "The last line of the first section."
-    text = P.writer_prompt(req, P.writer_plan(), 1, first).text
-    assert first in text and "The first section of the chapter, as written:" in text
-    assert text.index("The first section of the chapter") < text.index("This is section 2 of 2")
-    assert "something the passage has not shown yet" in text
+def test_needs_extra_only_before_the_last_section_and_only_when_short():
+    assert P.needs_extra(1500, 3) and not P.needs_extra(2200, 3)
+    assert not P.needs_extra(100, 2)
 
 
-def test_the_section_length_is_a_ceiling_and_not_a_target():
-    req = generate_request()
-    for i in range(2):
-        text = P.writer_prompt(req, P.writer_plan(), i, "" if i == 0 else "Some words. ").text
-        assert "up to about 1500 words" in text and "ends sooner when the scene has done its work" in text
+def test_tail_words_is_short_and_starts_cleanly():
+    text = " ".join(f"Word{n}." for n in range(1000))
+    tail = P.tail_words(text)
+    assert 200 <= len(tail.split()) <= 300 and tail.endswith("Word999.")
+    assert P.tail_words("Short.") == "Short."
 
 
 def test_writer_prompts_end_with_the_reminder_and_hold_the_scene():
@@ -75,15 +71,22 @@ def test_writer_prompts_end_with_the_reminder_and_hold_the_scene():
         assert p.text.rstrip().endswith("Reply with the story text itself, beginning at its first word.")
         assert "Stay in the scene" in p.text.split("\n\n")[-1]
     first = P.writer_prompt(req, plan, 0)
-    assert "The first section of the chapter" not in first.text
-    assert "The first section of the chapter" in P.writer_prompt(req, plan, 1, "Some words here.").text
+    assert "The chapter so far" not in first.text
+    assert "The chapter so far" in P.writer_prompt(req, plan, 1, "Some words here.").text
 
 
 def test_the_last_section_ends_the_chapter_and_the_others_do_not():
     req = generate_request()
     plan = P.writer_plan()
-    assert "Stop on the ending moment" in P.writer_prompt(req, plan, 1, "x").text
-    assert "End this section mid-scene" in P.writer_prompt(req, plan, 0).text
+    assert "Stop on the ending moment" in P.writer_prompt(req, plan, 3, "x").text
+    assert "End this section mid-scene" in P.writer_prompt(req, plan, 1, "x").text
+
+
+def test_extra_section_has_its_own_job():
+    req = generate_request()
+    plan = P.writer_plan(extra=True)
+    p = P.writer_prompt(req, plan, 3, "x")
+    assert p.meta["role"] == "extra" and p.meta["of"] == 5
 
 
 # ---- The planner ----------------------------------------------------------------------------------------------------
