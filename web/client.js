@@ -120,6 +120,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
   let connection = "unknown";         // unknown | idle | busy | unreachable
   let stage = null;                   // what the backend says it is doing, while a story call runs
   const listeners = new Set();
+  const finishers = new Set();        // told each time a model call ends, with its reply
   const judgeCache = new Map();
 
   const limits = { ...DEFAULT_TIMEOUTS, ...timeouts };
@@ -236,6 +237,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
         // backend says it is idle.
         if (reply?.ok === false && ["stopped", "timeout"].includes(reply.error?.kind)) await settle();
         else if (reply?.error?.kind === "unreachable") setConnection("unreachable");
+        for (const finisher of finishers) finisher(reply);
         changed();
       }
       return reply;
@@ -258,6 +260,8 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
     setSetting(next) { current = next; connection = "unknown"; judgeCache.clear(); changed(); },
     setToken(next) { secret = String(next ?? ""); connection = "unknown"; changed(); },
     onChange(listener) { listeners.add(listener); return () => listeners.delete(listener); },
+    // Called with the reply each time a model call ends (not status checks): the tab icon uses it to say done or failed.
+    onFinish(listener) { finishers.add(listener); return () => finishers.delete(listener); },
     // What the page needs to draw: whether this page is waiting on a call, and what the backend last said.
     get state() { return { working: Boolean(running), since, connection, setting: current, stage }; },
   };

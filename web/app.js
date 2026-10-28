@@ -23,6 +23,7 @@ import { createWelcomeStrip } from "./welcomestrip.js";
 import { fileKind } from "./exporting.js";
 import { pruneNotes } from "./modelnotes.js";
 import { writtenBeatIds, staleBeatIds } from "./plan.js";
+import { mountTabIcon } from "./favicon.js";
 import { createMock } from "./mock.js";
 import {
   BACKEND_KEY, TOKEN_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
@@ -58,6 +59,7 @@ let schema;
 let project;
 let client;
 let mock;
+let tabIcon;
 let storyBar;
 let planPanel;
 let generatePanel;
@@ -161,13 +163,21 @@ const store = {
 
 const isDirty = () => hasUnsavedChanges(schema, project, savedSnapshot);
 
+// The tab title: what the tab icon says in words (Safari and others do not always redraw the icon), then unsaved work, then the name.
+function drawTitle() {
+  if (!schema) return;
+  const icon = tabIcon?.mark();
+  const said = icon === "done" ? STRINGS.doneMark : icon === "failed" ? STRINGS.failedMark : "";
+  document.title = fill(STRINGS.documentTitle, { mark: said + (isDirty() ? STRINGS.dirtyMark : ""), title: project.title?.trim() || STRINGS.untitled });
+}
+
 function refreshState() {
   clearTimeout(timer);
   timer = null;
   const dirty = isDirty();
   stateNode.textContent = dirty ? STRINGS.dirty : STRINGS.clean;
   stateNode.classList.toggle("is-dirty", dirty);
-  document.title = fill(STRINGS.documentTitle, { mark: dirty ? STRINGS.dirtyMark : "", title: project.title?.trim() || STRINGS.untitled });
+  drawTitle();
   if (offerPending) return;
   if (dirty) store.set(recoveryRecord(schema, project));
   else store.remove();
@@ -650,6 +660,7 @@ try {
     notice: (text, kind, action) => showNotice(text, kind, action),
   });
   chapterPanel = createChapterPanel({ schema, getProject: () => project });
+  tabIcon = mountTabIcon(client, { onChange: drawTitle });
   client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); endPanel.refresh(); importPanel.refresh(); });
   drawConnection();
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.

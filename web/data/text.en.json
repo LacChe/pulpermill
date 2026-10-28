@@ -181,6 +181,8 @@
     },
     "documentTitle": "{mark}{title} — Pulpermill",
     "dirtyMark": "● ",
+    "doneMark": "✓ ",
+    "failedMark": "! ",
     "undoBlocked": "Undo would throw away words you changed since the fill, so nothing was put back.",
     "undonePartly": "Put back what the fill changed, except {fields}, which you edited since.",
     "lockCard": "🔒 Lock this card",
