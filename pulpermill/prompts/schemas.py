@@ -195,7 +195,7 @@ def beat_schema(req: dict) -> Schema:
     if plants:
         props["payoff"] = list_of(plants, 2)
         required.append("payoff")
-    props["plant"] = text()
+    props["plant"] = maybe(text())      # null says "no plant". Left a plain string, the model wrote "none" and the page took it for a plant.
     required.append("plant")
     if req.get("goal"):
         props["goal_change"] = {"type": "string", "enum": ["achieved", "redefined", "abandoned"]}

@@ -294,6 +294,15 @@ test("a payoff is the wording of an open plant, and lands as that entry's id", a
   assert.deepEqual(unresolved.map((u) => u.words), ["A thing never planted"]);
 });
 
+test("naming the same plant twice pays it once, and a null plant plants nothing", async () => {
+  const p = await started();
+  const [suvi] = p.characters;
+  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id, events: { planted: "A torn page" } });
+  const { beat } = landBeat(schema, p, [suvi.id], { beat: { payoff: ["A torn page", "A torn page"], plant: null } });
+  assert.deepEqual(beat.payoff, ["e0000001"]);
+  assert.equal(beat.plant ?? "", "");
+});
+
 test("placing a beat adds it, then replaces the unwritten beat for that chapter and keeps its id", async () => {
   const p = await started();
   const [suvi] = p.characters;

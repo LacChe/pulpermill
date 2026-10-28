@@ -67,7 +67,7 @@ class Outline(Item):
 RULES = [
     Rule(id="outline_link_broken", severity="block", fields=["beats"],
          when="a beat points to a place, character, rule or pressure that no longer exists",
-         check="ref_exists", context=["character_ids", "world_item_ids", "pressure_ids"]),
+         check="ref_exists", params={"skip": ["payoff"]}, context=["character_ids", "world_item_ids", "pressure_ids"]),   # a payoff has its own rule: once the chapter is written, the plant it paid is no longer open
     Rule(id="cast_has_protagonist", severity="block", fields=["beats"],
          when="the cast does not include the protagonist named in Setup",
          check="includes_value", params={"field": "cast", "value_from": "setup.protagonist"}),

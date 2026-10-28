@@ -115,6 +115,7 @@ def test_beat_schema_follows_the_request():
     schema = S.beat_schema(req)
     assert schema["properties"]["shift"]["enum"] == ["harder", "easier"]
     assert "reveal_rule" in schema["properties"] and "payoff" in schema["properties"]
+    assert {"type": "null"} in schema["properties"]["plant"]["anyOf"]      # "no plant" is null, never the word "none"
     req["available_reveals"], req["open_plants"] = [], []
     schema = S.beat_schema(req)
     assert "reveal_rule" not in schema["properties"] and "payoff" not in schema["properties"]
@@ -127,7 +128,7 @@ def test_a_good_beat_validates_and_a_wrong_place_does_not():
     schema = S.beat_schema(req)
     places = schema["properties"]["where"].get("enum") or ["x"]
     beat = {k: "words" for k, v in schema["properties"].items() if v.get("type") == "string" and "enum" not in v}
-    beat.update({"where": places[0], "shift": "harder"})
+    beat.update({"where": places[0], "shift": "harder", "plant": None})
     if "reveal_rule" in schema["properties"]:
         beat["reveal_rule"] = schema["properties"]["reveal_rule"]["enum"][0]
         beat["reveal_learners"] = []

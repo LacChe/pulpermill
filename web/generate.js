@@ -312,7 +312,7 @@ export function applyGenerated(schema, project, beat, read, { overwriteLocked = 
   const paid = [];
   for (const words of e.paid_off) {
     const plant = plants.find((p) => squash(p.text) === squash(words));
-    if (plant) paid.push(plant.id); else warnings.push({ kind: "unmatched", text: msg("records.payoffNotOpen", { words }) });
+    if (plant) { if (!paid.includes(plant.id)) paid.push(plant.id); } else warnings.push({ kind: "unmatched", text: msg("records.payoffNotOpen", { words }) });
   }
   const availableIds = new Set(availableReveals(project).map((r) => r.id));
   const reveals = e.reveals_landed.map((w) => link(["world.rules"], w, msg("records.whatReveal"))).filter((id) => {

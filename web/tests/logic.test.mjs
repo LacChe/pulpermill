@@ -560,6 +560,8 @@ test("a reveal may not repeat, and a payoff must be an earlier, still-open plant
   assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b4", { payoff: ["e1"] }), project), [["beats", "b4", "payoff"]]);   // already paid off
   assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b2", { payoff: ["e2"] }), project), [["beats", "b2", "payoff"]]);   // not earlier
   assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b4", { payoff: ["e3"] }), project), [["beats", "b4", "payoff"]]);   // planted nothing
+  // The written chapter that paid a plant closes it. Its own beat must not then be told the plant "no longer exists".
+  assert.deepEqual(run("outline", "outline_link_broken", withBeat("b3", { payoff: ["e1"] }), project), []);
 });
 
 test("a turn too close to an earlier turn or changed line is flagged", () => {

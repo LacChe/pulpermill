@@ -115,7 +115,7 @@ Fill the beat from your plan. Write each field as a plain sentence a writer coul
 - What the protagonist is after in this chapter is a step of its own, different from every earlier chapter's aim.
 - Give a goal change when the chapter really wins, loses or reshapes the protagonist's goal. A new goal (redefined) is something to get, find or stop that differs from every earlier goal. It may open a different part of the story than the last one did (another person's want, a pressure, a hidden truth), as long as it bears on what is at stake.
 - Use a shift from the allowed list, a reveal from the hidden truths still waiting, and a payoff from the open plants.
-- Always answer reveal, payoff and plant. Whatever your thinking chose goes into them; give them empty (no reveal, no payoff, no plant) only when the thinking chose none.
+- Always answer reveal, payoff and plant. Whatever your thinking chose goes into them; give them empty (no reveal, an empty payoff list, and null for the plant) only when the thinking chose none. Never write the word "none" as a plant.
 - A reveal names who learns it. A goal change appears only when the story moves its goal, and a redefined goal says what it has become.
 Reply with the beat only.
 
@@ -193,7 +193,14 @@ Reply with the beat only.
    "maxItems": 2
   },
   "plant": {
-   "type": "string"
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "null"
+    }
+   ]
   },
   "goal_change": {
    "type": "string",

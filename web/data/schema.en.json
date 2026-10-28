@@ -2992,7 +2992,11 @@
       "beats"
      ],
      "check": "ref_exists",
-     "params": {},
+     "params": {
+      "skip": [
+       "payoff"
+      ]
+     },
      "context": [
       "character_ids",
       "world_item_ids",

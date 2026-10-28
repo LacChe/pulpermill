@@ -1084,7 +1084,7 @@ CHECKS.ref_exists = ({ card, rule, values, project }) => {
   const hits = [];
   for (const target of targets(card, rule, values)) {
     for (const def of target.defs) {
-      if (!def.ref) continue;
+      if (!def.ref || (rule.params?.skip ?? []).includes(def.key)) continue;
       const have = new Set(refOptions(project, def.ref).map((o) => o.value));
       if (asList(valueOf(target, def.key)).some((id) => !have.has(id))) hits.push(place(target, def.key));
     }

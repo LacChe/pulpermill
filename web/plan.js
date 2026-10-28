@@ -530,6 +530,7 @@ export function landBeat(schema, project, castIds, reply, { offstage = null, exi
     const known = (project.summary_events?.entries ?? []).some((e) => isFilled(e.planted) && same(e.planted, beat.plant));
     if (known) { dropped.push("plant"); beat.plant = ""; }
   }
+  if (Array.isArray(beat.payoff)) beat.payoff = [...new Set(beat.payoff)];   // the same plant named twice pays it once
   if (existing) beat.id = existing.id;
   const spotlight = pickSpotlight(project, castIds, info.next);
   Object.assign(beat, {
