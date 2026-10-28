@@ -208,18 +208,16 @@ openInput.addEventListener("change", async () => {
 importButton.addEventListener("click", () => { if (schema) importInput.click(); });
 guideButton.addEventListener("click", () => welcome?.toggle());
 importInput.addEventListener("change", async () => {
-  const file = importInput.files[0];
+  const files = [...importInput.files];
   importInput.value = "";
-  if (!file) return;
-  let text;
-  try {
-    text = await file.text();
-  } catch {
-    showNotice(joinList([STRINGS.unreadable, STRINGS.unchanged], "sentence"), "notice-bad");
-    return;
+  if (!files.length) return;
+  const entries = [];
+  for (const file of files) {
+    try { entries.push({ file: file.name, text: await file.text() }); }
+    catch { entries.push({ file: file.name, text: "", readError: true }); }
   }
   noticeNode.hidden = true;
-  importPanel.start(text, file.name);
+  importPanel.start(entries);
 });
 
 titleInput.addEventListener("input", () => {

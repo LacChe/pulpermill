@@ -291,6 +291,47 @@ export function planImport(schema, project, read, choice = {}) {
   };
 }
 
+// Plans a group without changing the real project. Invalid files, duplicate singleton cards, and
+// character ids already present in the project or repeated in the group are rejected.
+export function planBatchImport(schema, project, entries) {
+  const failed = [];
+  const candidates = [];
+  const seenCards = new Set();
+  const seenIds = new Set();
+  const existingIds = new Set((project.characters ?? []).map((character) => character.id));
+  for (const entry of entries) {
+    const kind = fileKind(entry.text);
+    if (kind === "project") { failed.push({ ...entry, reason: "project" }); continue; }
+    const read = readCardFile(entry.text, schema);
+    if (!read.ok) { failed.push({ ...entry, reason: read.reason }); continue; }
+    const card = schema.cards[read.card];
+    if (!card.many_per_project && seenCards.has(read.card)) {
+      failed.push({ ...entry, reason: "duplicate_batch", card: read.card });
+      continue;
+    }
+    if (card.many_per_project && read.values.id && (existingIds.has(read.values.id) || seenIds.has(read.values.id))) {
+      failed.push({ ...entry, reason: "conflicting_id", card: read.card });
+      continue;
+    }
+    seenCards.add(read.card);
+    if (card.many_per_project && read.values.id) seenIds.add(read.values.id);
+    candidates.push({ ...entry, read });
+  }
+
+  const working = copy(project);
+  const accepted = [];
+  for (const entry of candidates) {
+    const plan = planImport(schema, working, entry.read);
+    if (!plan.ok) {
+      failed.push({ ...entry, reason: plan.reason, card: plan.card });
+      continue;
+    }
+    accepted.push({ ...entry, plan });
+    applyImport(schema, working, plan);
+  }
+  return { accepted, failed };
+}
+
 // Does what planImport said. Returns {instanceId, keys, undo}: instanceId is the character it landed on (null for Style and
 // World), keys are the fields it wrote, and undo puts back exactly what this import changed (for a new character, takes it out again).
 export function applyImport(schema, project, plan) {

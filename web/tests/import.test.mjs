@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
 import { newProject, settledProject, addInstance, setNote, noteFor } from "../logic.js";
 import { lockStaticCards } from "../gate.js";
-import { cardFiles, readCardFile, fileKind, planImport, applyImport, linksLost, relinkMap, CARD_FILE_KEY } from "../exporting.js";
+import { cardFiles, readCardFile, fileKind, planImport, planBatchImport, applyImport, linksLost, relinkMap, CARD_FILE_KEY } from "../exporting.js";
 
 const characters = schema.cards.characters;
 const filesOf = (project) => Object.fromEntries(cardFiles(schema, project).map((f) => [f.name.replace(/^.*?-(style|world|character-\d+)(-.*)?\.json$/, "$1"), f.text]));
@@ -45,6 +45,29 @@ test("a character comes in as a new character and keeps its id when nobody here 
   assert.equal(done.instanceId, got.values.id);
   assert.equal(project.characters[0].name, "Suvi");
   assert.deepEqual(project.characters[0].behaviors.map((b) => b.id), got.values.behaviors.map((b) => b.id));
+});
+
+test("a batch keeps valid files and reports invalid, duplicate, and conflicting files", async () => {
+  const source = await readyProject();
+  const files = filesOf(source);
+  const project = blank();
+  const duplicateStyle = { file: "style-copy.json", text: files.style };
+  const result = planBatchImport(schema, project, [
+    { file: "style.json", text: files.style },
+    duplicateStyle,
+    { file: "bad.json", text: "not json" },
+  ]);
+  assert.equal(result.accepted.length, 1);
+  assert.equal(result.accepted[0].read.card, "style");
+  assert.deepEqual(result.failed.map((failure) => failure.reason), ["duplicate_batch", "unreadable"]);
+
+  applyImport(schema, project, result.accepted[0].plan);
+  const conflict = planBatchImport(schema, project, [
+    { file: "character.json", text: files["character-1"] },
+    { file: "same-character.json", text: files["character-1"] },
+  ]);
+  assert.equal(conflict.accepted.length, 1);
+  assert.equal(conflict.failed[0].reason, "conflicting_id");
 });
 
 test("the same character brought in twice gets a new id the second time", async () => {

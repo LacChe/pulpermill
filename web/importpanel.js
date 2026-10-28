@@ -2,8 +2,7 @@
 // file and what bringing it in would do to the project, lets the writer choose how a character comes in (as a new character,
 // or in place of one they already have), and changes nothing until they press the button. Afterwards a notice offers Undo.
 // Nothing here calls the model. The rules are in exporting.js.
-import { fileKind, readCardFile, planImport, applyImport } from "./exporting.js";
-import { instanceName } from "./logic.js";
+import { planBatchImport, applyImport } from "./exporting.js";
 import { section, fill, joinList } from "./text.js";
 
 export const STRINGS = section("import");
@@ -16,7 +15,7 @@ function node(tag, props = {}, ...children) {
 
 // hooks: {schema, client, getProject, goTo(cardId, instanceId), forget(cardId, instanceId, keys), changed(), redraw(), notice(text, kind, action)}
 export function createImportPanel(root, hooks) {
-  let session = null;         // {project, read, file, choice}
+  let session = null;         // {project, entries, failed}
   let bring = null;
 
   const refuse = (reason, card) => hooks.notice(joinList([fill(STRINGS.reasons[reason], { card: card ? hooks.schema.cards[card].label : "" }), STRINGS.unchanged], "sentence"), "notice-bad");
@@ -32,18 +31,21 @@ export function createImportPanel(root, hooks) {
     if (bring) bring.disabled = hooks.client.state.working;
   }
 
-  // The writer picked a file. Open the panel, or say why not.
-  function start(text, file) {
+  function failureText(failure) {
+    if (failure.readError) return STRINGS.reasons.unreadable;
+    return fill(STRINGS.reasons[failure.reason], { card: failure.card ? hooks.schema.cards[failure.card].label : "" });
+  }
+
+  // The writer picked files. Open the panel for valid files, or report every failure.
+  function start(entries) {
     close();
     const project = hooks.getProject();
     if (!project) return;
-    const kind = fileKind(text);
-    if (kind === "project") { refuse("project"); return; }
-    const read = readCardFile(text, hooks.schema);
-    if (!read.ok) { refuse(read.reason); return; }
-    const plan = planImport(hooks.schema, project, read);
-    if (!plan.ok) { refuse(plan.reason, plan.card); return; }
-    session = { project, read, file, choice: { mode: "add" } };
+    const result = planBatchImport(hooks.schema, project, entries.filter((entry) => !entry.readError));
+    const failed = [...result.failed, ...entries.filter((entry) => entry.readError).map((entry) => ({ ...entry, reason: "unreadable" }))];
+    if (failed.length) hooks.notice(failed.map((failure) => fill(STRINGS.failedFile, { file: failure.file, reason: failureText(failure) })).join("\n"), "notice-bad");
+    if (!result.accepted.length) return;
+    session = { project, entries: result.accepted, failed };
     draw();
     bring?.focus();
   }
@@ -52,77 +54,38 @@ export function createImportPanel(root, hooks) {
     const project = hooks.getProject();
     if (!session || session.project !== project || hooks.client.state.working) return;
     const { schema } = hooks;
-    const plan = planImport(schema, project, session.read, session.choice);
-    if (!plan.ok) { const card = plan.card; const reason = plan.reason; close(); refuse(reason, card); return; }
-    const done = applyImport(schema, project, plan);
-    const card = schema.cards[plan.card];
+    const result = planBatchImport(schema, project, session.entries);
+    if (!result.accepted.length) { close(); hooks.notice(STRINGS.unchanged, "notice-bad"); return; }
+    const dones = result.accepted.map(({ plan }) => applyImport(schema, project, plan));
+    const last = result.accepted[result.accepted.length - 1].plan;
+    const failures = result.failed.length ? ` ${result.failed.map((failure) => fill(STRINGS.failedFile, { file: failure.file, reason: failureText(failure) })).join(" ")}` : "";
     close();
-    hooks.forget(plan.card, done.instanceId, done.keys);
-    hooks.goTo(plan.card, done.instanceId);
+    for (const { plan } of result.accepted) {
+      const done = dones[result.accepted.findIndex((entry) => entry.plan === plan)];
+      hooks.forget(plan.card, done.instanceId, done.keys);
+    }
+    hooks.goTo(last.card, dones[dones.length - 1].instanceId);
     hooks.changed();
-    const name = plan.name || STRINGS.unnamed.toLowerCase();
-    const text = !card.many_per_project ? fill(STRINGS.filledCard, { card: card.label })
-      : plan.mode === "add" ? (plan.name ? fill(STRINGS.addedCharacter, { name: plan.name }) : STRINGS.addedUnnamed)
-      : fill(STRINGS.replacedCharacter, { name: instanceName(project[plan.card].find((i) => i.id === plan.targetId)) || name });
-    hooks.notice(text, "", {
+    hooks.notice(`${fill(STRINGS.importedBatch, { n: result.accepted.length })}${failures}`, "", {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
-        const back = done.undo();
-        if (!back.done) { hooks.notice(STRINGS.undoBlocked, "notice-bad"); return; }
+        const backs = [...dones].reverse().map((done) => done.undo());
+        const blocked = backs.some((back) => !back.done);
+        if (blocked) { hooks.notice(STRINGS.undoBlocked, "notice-bad"); return; }
         hooks.changed();
         hooks.redraw();
-        const label = (key) => card.fields.find((f) => f.key === key)?.label ?? key;
-        hooks.notice(back.skipped.length ? fill(STRINGS.undonePartly, { fields: joinList(back.skipped.map(label)) }) : STRINGS.undone);
+        hooks.notice(STRINGS.undone);
       },
     });
   }
 
-  function chooser(project, plan) {
-    const mine = project.characters ?? [];
-    const add = node("input", { type: "radio", name: "import-mode", checked: session.choice.mode === "add" });
-    add.addEventListener("change", () => { session.choice = { mode: "add" }; session.focus = "radio"; draw(); });
-    const rows = [node("label", {}, add, node("span", { textContent: STRINGS.addNew }))];
-    if (mine.length) {
-      const replace = node("input", { type: "radio", name: "import-mode", checked: session.choice.mode === "replace" });
-      const select = node("select", { className: "text-control", disabled: session.choice.mode !== "replace" });
-      for (const person of mine) {
-        select.append(node("option", { value: person.id, textContent: instanceName(person) || STRINGS.unnamed, selected: person.id === session.choice.id }));
-      }
-      select.setAttribute("aria-label", STRINGS.replaceOne);
-      replace.addEventListener("change", () => { session.choice = { mode: "replace", id: select.value }; session.focus = "radio"; draw(); });
-      select.addEventListener("change", () => { session.choice = { mode: "replace", id: select.value }; session.focus = "select"; draw(); });
-      rows.push(node("label", {}, replace, node("span", { textContent: STRINGS.replaceOne }), select));
-    }
-    return node("fieldset", { className: "import-choice" }, node("legend", { textContent: STRINGS.how }), ...rows);
-  }
-
   function draw() {
     if (!session) { close(); return; }
-    const { schema } = hooks;
     const project = hooks.getProject();
     if (session.project !== project) { close(); return; }
-    let plan = planImport(schema, project, session.read, session.choice);
-    if (!plan.ok && plan.reason === "no_target") { session.choice = { mode: "add" }; plan = planImport(schema, project, session.read, session.choice); }
-    if (!plan.ok) { const { reason, card } = plan; close(); refuse(reason, card); return; }
-    const card = schema.cards[plan.card];
-    const parts = [node("h3", { textContent: STRINGS.title })];
-    parts.push(node("p", {
-      textContent: card.many_per_project
-        ? (plan.name ? fill(STRINGS.whatCharacter, { name: plan.name, file: session.file }) : fill(STRINGS.whatCharacterUnnamed, { file: session.file }))
-        : fill(STRINGS.whatCard, { card: card.label, file: session.file }),
-    }));
-    if (card.many_per_project) {
-      if ((project.characters ?? []).length) parts.push(chooser(project, plan));   // with nobody to replace there is nothing to choose
-      const target = plan.mode === "replace" ? project.characters.find((i) => i.id === plan.targetId) : null;
-      parts.push(node("p", { className: "help", textContent: target ? fill(STRINGS.replaceWords, { name: instanceName(target) || STRINGS.unnamed.toLowerCase() }) : STRINGS.addWords }));
-    } else {
-      parts.push(node("p", { className: "help", textContent: fill(plan.replaced.length ? STRINGS.replacesCard : plan.filled.length ? STRINGS.fillsEmpty : STRINGS.sameCard, { card: card.label }) }));
-    }
-    if (plan.replaced.length) parts.push(node("p", { textContent: fill(STRINGS.replacesFields, { fields: joinList(plan.replaced) }) }));
-    if (plan.relinked) parts.push(node("p", { className: "help", textContent: fill(STRINGS.relinked, { n: plan.relinked }) }));
-    if (plan.lost) parts.push(node("p", { className: "import-warn", textContent: fill(STRINGS.lost, { cards: joinList(plan.lost.cards), n: plan.lost.count }) }));
-    if (plan.ignored.length) parts.push(node("p", { className: "help", textContent: fill(STRINGS.ignored, { fields: joinList(plan.ignored) }) }));
+    const parts = [node("h3", { textContent: STRINGS.title }), node("p", { textContent: fill(STRINGS.batchReady, { n: session.entries.length }) })];
+    parts.push(node("ul", { className: "import-files" }, ...session.entries.map((entry) => node("li", { textContent: entry.file }))));
     parts.push(node("p", { className: "note", textContent: STRINGS.safe }));
     bring = node("button", { type: "button", className: "validate", textContent: STRINGS.bring });
     bring.addEventListener("click", accept);
