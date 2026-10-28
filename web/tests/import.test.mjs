@@ -70,6 +70,29 @@ test("a batch keeps valid files and reports invalid, duplicate, and conflicting 
   assert.equal(conflict.failed[0].reason, "conflicting_id");
 });
 
+test("a card with malformed World fields is rejected as incorrectly formatted", async () => {
+  const project = blank();
+  const oldWorld = {
+    [CARD_FILE_KEY]: "world",
+    schema_version: schema.schema_version,
+    values: {
+      name: "Thimble Hollow",
+      era_and_technology: "A small village.",
+      everyday_life: "The village makes bread.",
+      history: "It has been making bread for 200 years.",
+      places: [{ name: "the bakery", description: "Warm.", effect: 42, id: "7fae5dab" }],
+      objects: [{ name: "the Weather Oven", description: "A black oven.", significance: "It determines weather.", id: "e3bcb97e" }],
+      powers: [{ name: "The Parish Council", nature: "organisation", hold: "belief", felt: "Notices.", id: "15385843" }],
+      rules: [{ statement: "Only applewood works.", cost: "Expensive.", status: "false_belief", when_broken: "Punished", truth: "Pearwood works.", id: "8af35c43" }],
+      terms: [{ term: "loafcast", meaning: "A forecast in bread.", id: "c8a6a1a3" }],
+    },
+  };
+  const result = planBatchImport(schema, project, [{ file: "old-world.json", text: JSON.stringify(oldWorld) }]);
+  assert.equal(result.accepted.length, 0);
+  assert.equal(result.failed[0].reason, "wrong_format");
+  assert.equal(project.world.name, "");
+});
+
 test("the same character brought in twice gets a new id the second time", async () => {
   const files = filesOf(await readyProject());
   const project = blank();

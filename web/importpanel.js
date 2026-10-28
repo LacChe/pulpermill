@@ -56,7 +56,14 @@ export function createImportPanel(root, hooks) {
     const { schema } = hooks;
     const result = planBatchImport(schema, project, session.entries);
     if (!result.accepted.length) { close(); hooks.notice(STRINGS.unchanged, "notice-bad"); return; }
-    const dones = result.accepted.map(({ plan }) => applyImport(schema, project, plan));
+    let dones;
+    try {
+      dones = result.accepted.map(({ plan }) => applyImport(schema, project, plan));
+    } catch {
+      close();
+      hooks.notice(STRINGS.failedFile.replace("{file}", session.entries.map((entry) => entry.file).join(", ")).replace("{reason}", STRINGS.reasons.wrong_format), "notice-bad");
+      return;
+    }
     const last = result.accepted[result.accepted.length - 1].plan;
     const failures = result.failed.length ? ` ${result.failed.map((failure) => fill(STRINGS.failedFile, { file: failure.file, reason: failureText(failure) })).join(" ")}` : "";
     close();

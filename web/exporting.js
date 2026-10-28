@@ -113,13 +113,14 @@ function cleanItem(field, item) {
 // {ok: true, card, values, ignored: [keys]} or {ok: false, reason}: unreadable, not_card_file, unknown_card, not_portable, newer, damaged.
 // Only keys the card has are kept (ignored lists the rest); a value of the wrong kind is ignored too, and so is a part of a
 // list item that does not fit (the rest of the item stays). A character file gives one character.
-export function readCardFile(text, schema) {
+export function readCardFile(text, schema, { strict = false } = {}) {
   let data;
   try { data = JSON.parse(String(text).replace(/^\uFEFF/, "")); } catch { return { ok: false, reason: "unreadable" }; }
   if (!isObject(data) || typeof data[CARD_FILE_KEY] !== "string" || !isObject(data.values)) return { ok: false, reason: "not_card_file" };
   const card = schema.cards[data[CARD_FILE_KEY]];
   if (!card) return { ok: false, reason: "unknown_card" };
   if (!PORTABLE.includes(card.id)) return { ok: false, reason: "not_portable" };
+  if (strict && data.schema_version !== schema.schema_version) return { ok: false, reason: "wrong_format", card: card.id };
   if (Number.isInteger(data.schema_version) && data.schema_version > schema.schema_version) return { ok: false, reason: "newer" };
   if (!card.fields.length) return { ok: false, reason: "damaged" };
   const values = {};
@@ -136,6 +137,7 @@ export function readCardFile(text, schema) {
     } else if (fits(field, value)) values[key] = value;
     else ignored.push(key);
   }
+  if (strict && ignored.length) return { ok: false, reason: "wrong_format", card: card.id };
   return { ok: true, card: card.id, values, ignored };
 }
 
@@ -302,7 +304,7 @@ export function planBatchImport(schema, project, entries) {
   for (const entry of entries) {
     const kind = fileKind(entry.text);
     if (kind === "project") { failed.push({ ...entry, reason: "project" }); continue; }
-    const read = readCardFile(entry.text, schema);
+    const read = readCardFile(entry.text, schema, { strict: true });
     if (!read.ok) { failed.push({ ...entry, reason: read.reason }); continue; }
     const card = schema.cards[read.card];
     if (!card.many_per_project && seenCards.has(read.card)) {
@@ -321,13 +323,19 @@ export function planBatchImport(schema, project, entries) {
   const working = copy(project);
   const accepted = [];
   for (const entry of candidates) {
-    const plan = planImport(schema, working, entry.read);
-    if (!plan.ok) {
-      failed.push({ ...entry, reason: plan.reason, card: plan.card });
+    let plan;
+    try {
+      plan = planImport(schema, working, entry.read);
+      if (!plan.ok) {
+        failed.push({ ...entry, reason: plan.reason, card: plan.card });
+        continue;
+      }
+      applyImport(schema, working, plan);
+    } catch {
+      failed.push({ ...entry, reason: "wrong_format", card: entry.read.card });
       continue;
     }
     accepted.push({ ...entry, plan });
-    applyImport(schema, working, plan);
   }
   return { accepted, failed };
 }

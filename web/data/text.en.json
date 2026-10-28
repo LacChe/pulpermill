@@ -426,6 +426,7 @@
       "not_portable": "Only Style, Characters and World can be brought in. The other cards belong to one story.",
       "newer": "That card was saved by a newer version of Pulpermill than this page, so it was not brought in.",
       "damaged": "That card file is damaged, so it was not brought in.",
+      "wrong_format": "This card is not formatted correctly for this version of Pulpermill.",
       "project": "That file is a whole project, not a card. Use Open… to open it.",
       "locked": "{card} is locked, so nothing can be brought into it.",
       "no_target": "That character is not there any more.",
