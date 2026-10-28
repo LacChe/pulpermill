@@ -92,13 +92,18 @@ const countText = (one, many, n) => (n === 1 ? one : many.replace("{n}", String(
 // Radio cards. `options` is [{value, label, description?}].
 function radioCards(name, label, options, current, onPick) {
   const wrap = el("div", { class: "options", role: "radiogroup", "aria-label": label });
+  const inputs = [];
   for (const option of options) {
     const input = el("input", { type: "radio", name, value: option.value });
-    input.checked = current === option.value;
     input.addEventListener("change", () => onPick(option.value));
     wrap.append(el("label", { class: "option" }, input,
       el("span", { class: "option-label", text: option.label }),
       option.description ? el("span", { class: "option-description", text: option.description }) : null));
+    inputs.push([input, option.value]);
+  }
+  for (const [input, value] of inputs) {
+    input.checked = current === value;
+    input.dataset.initialChecked = String(input.checked);
   }
   return wrap;
 }
@@ -472,7 +477,7 @@ function listControl(field, values, path, ctx) {
       guidance.append(itemGuidance);
     }
   }
-  wrap.append(ctx.card?.id === "outline" ? rows : guidance, empty, add, limit);
+  wrap.append(...(ctx.card?.id === "outline" ? [rows] : [guidance, rows]), empty, add, limit);
   redraw();
   return wrap;
 }
@@ -533,9 +538,20 @@ function fillPanel(card, values, ctx) {
 export function makeReadOnly(root, banner) {
   root.classList.add("locked");
   root.prepend(el("p", { class: "locked-banner", role: "note", text: banner }));
+  const checkedRadios = [...root.querySelectorAll('input[type="radio"]:checked')]
+    .map((input) => [input.name, input.value]);
   for (const control of root.querySelectorAll("input, select, textarea, button")) {
     if (!control.classList.contains("validate") && !control.classList.contains("fold")) control.disabled = true;   // folding changes nothing, so a locked card still folds
   }
+  for (const [name, value] of checkedRadios) {
+    const input = [...root.querySelectorAll('input[type="radio"]')]
+      .find((candidate) => candidate.name === name && candidate.value === value);
+    if (input) input.checked = true;
+  }
+}
+
+export function restoreRadioSelections(root) {
+  for (const input of root.querySelectorAll('input[type="radio"][data-initial-checked="true"]')) input.checked = true;
 }
 
 // Freezes the list items with the given ids (a written chapter's beat): their controls are switched off and each says why.

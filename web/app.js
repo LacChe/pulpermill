@@ -7,7 +7,7 @@ import {
   RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering, projectStatus,
   noteFor, setNote, setExample, setCardValues,
 } from "./logic.js";
-import { renderCard, errorText, makeReadOnly, freezeItems, flagItems, STRINGS as CARD_STRINGS } from "./render.js";
+import { renderCard, errorText, makeReadOnly, restoreRadioSelections, freezeItems, flagItems, STRINGS as CARD_STRINGS } from "./render.js";
 import { cardLocked, lockedByStory, lockedByWriter, setWriterLock } from "./gate.js";
 import { ask } from "./dialog.js";
 import { untouched } from "./undo.js";
@@ -547,6 +547,7 @@ function show() {
   planningColumn.prepend(storyNode);
   storyBar?.draw();
   welcome?.draw();
+  restoreRadioSelections(main);
 }
 
 try {
