@@ -279,6 +279,7 @@ main.locked input:disabled, main.locked select:disabled, main.locked textarea:di
 .export-panel p { margin: 0; }
 .export-files { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .export-files li { display: flex; gap: 12px; align-items: center; }
+.export-files li > button { margin-left: auto; }
 .export-label { font-weight: 600; min-width: 12rem; }
 
 .import-panel { max-width: 772px; margin: 12px auto 0; padding: 14px 18px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; display: grid; gap: 10px; }
