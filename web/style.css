@@ -51,6 +51,12 @@ body {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
 }
 .notice[hidden] { display: none; }
+.column-switcher { display: none; max-width: 820px; margin: 12px auto 0; padding: 0 24px; gap: 8px; }
+.column-switch { flex: 1; }
+.column-switch.active { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.workspace { max-width: 1400px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.cards-column, .planning-column { min-width: 0; }
+.planning-column { padding-top: 24px; }
 .notice > span { flex: 1 1 320px; }
 .notice-bad { border-left-color: var(--bad); }
 .notice-close { color: var(--muted); padding: 2px 10px; font-size: 0.85rem; }
@@ -59,7 +65,7 @@ button {
   border: 1px solid var(--line); border-radius: 6px; padding: 6px 14px; cursor: pointer;
 }
 button:hover { border-color: var(--accent); }
-main { max-width: 820px; margin: 0 auto; padding: 24px; }
+main { max-width: 820px; margin: 0 auto; padding: 24px 0; }
 .card > h2 { margin: 0 0 4px; font-size: 1.6rem; }
 .summary { margin: 0 0 24px; color: var(--muted); }
 
@@ -281,6 +287,15 @@ main.locked input:disabled, main.locked select:disabled, main.locked textarea:di
 .export-files { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .export-files li { display: flex; gap: 12px; align-items: center; }
 .export-files li > button { margin-left: auto; }
+
+@media (max-width: 800px) {
+  .column-switcher { display: flex; }
+  .workspace { display: block; padding: 0; }
+  .workspace[data-column="planning"] .cards-column { display: none; }
+  .workspace[data-column="cards"] .planning-column { display: none; }
+  .cards-column, .planning-column { padding: 0 24px; }
+  .planning-column { padding-top: 12px; }
+}
 .export-label { font-weight: 600; min-width: 12rem; }
 
 .import-panel { max-width: 772px; margin: 12px auto 0; padding: 14px 18px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; display: grid; gap: 10px; }

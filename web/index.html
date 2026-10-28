@@ -39,12 +39,22 @@
   </div>
   <div id="recovery" class="notice" hidden></div>
   <div id="notice" class="notice" role="status" hidden></div>
-  <section id="import-panel" class="import-panel" data-text-attrs="aria-label:import.title" hidden></section>
   <section id="welcome" class="welcome" data-text-attrs="aria-label:page.welcomeLabel" hidden></section>
-  <div id="story-bar" class="story-bar"></div>
-  <nav id="cards" class="tabs" data-text-attrs="aria-label:page.cardsLabel"></nav>
-  <nav id="people" class="tabs people" data-text-attrs="aria-label:page.peopleLabel" hidden></nav>
-  <main id="card"></main>
+  <section id="column-switcher" class="column-switcher" role="group" data-text-attrs="aria-label:page.columnSwitcher">
+    <button type="button" class="column-switch active" data-column="cards" data-text="page.cardsColumn"></button>
+    <button type="button" class="column-switch" data-column="planning" data-text="page.planningColumn"></button>
+  </section>
+  <div id="workspace" class="workspace" data-column="cards">
+    <section class="cards-column" data-text-attrs="aria-label:page.cardsColumn">
+      <nav id="cards" class="tabs" data-text-attrs="aria-label:page.cardsLabel"></nav>
+      <nav id="people" class="tabs people" data-text-attrs="aria-label:page.peopleLabel" hidden></nav>
+      <section id="import-panel" class="import-panel" data-text-attrs="aria-label:import.title" hidden></section>
+      <main id="card"></main>
+    </section>
+    <section class="planning-column" data-text-attrs="aria-label:page.planningColumn">
+      <div id="story-bar" class="story-bar"></div>
+    </section>
+  </div>
   <script type="module" src="app.js"></script>
 </body>
 </html>

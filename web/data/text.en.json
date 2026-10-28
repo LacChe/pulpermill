@@ -18,7 +18,10 @@
     "stop": "Stop",
     "welcomeLabel": "Welcome",
     "cardsLabel": "Cards",
-    "peopleLabel": "Characters"
+    "peopleLabel": "Characters",
+    "columnSwitcher": "Workspace section",
+    "cardsColumn": "Cards",
+    "planningColumn": "Planning and generation"
   },
   "common": {
     "elapsed": "{n} s",

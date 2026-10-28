@@ -49,6 +49,9 @@ const stopButton = document.getElementById("stop");
 const noticeNode = document.getElementById("notice");
 const recoveryNode = document.getElementById("recovery");
 const storyNode = document.getElementById("story-bar");
+const planningColumn = document.querySelector(".planning-column");
+const workspace = document.getElementById("workspace");
+const columnSwitches = [...document.querySelectorAll(".column-switch")];
 let schema;
 let project;
 let client;
@@ -61,6 +64,18 @@ let exportPanel;
 let importPanel;
 let welcome;
 let view = { card: "style", characterId: null };
+
+function selectColumn(column) {
+  workspace.dataset.column = column;
+  for (const switchButton of columnSwitches) {
+    const selected = switchButton.dataset.column === column;
+    switchButton.classList.toggle("active", selected);
+    switchButton.setAttribute("aria-pressed", String(selected));
+  }
+}
+
+for (const switchButton of columnSwitches) switchButton.addEventListener("click", () => selectColumn(switchButton.dataset.column));
+selectColumn("cards");
 // What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
 // switching cards. Cleared when another project is opened.
 const reviews = new Map();
@@ -489,6 +504,7 @@ function drawNav() {
 function show() {
   const card = schema.cards[view.card];
   const held = ensureCard(project, card);
+  planningColumn.querySelectorAll(".plan-panel, .generate-panel, .end-panel, .export-panel").forEach((panel) => panel.remove());
   let values;
   if (card.many_per_project) {
     if (!findInstance(project, card, view.characterId)) view.characterId = held[0]?.id ?? null;
@@ -520,10 +536,11 @@ function show() {
   if (card.id === "outline") {
     flagItems(main, staleBeatIds(project), STRINGS.staleBeat);
     freezeItems(main, writtenBeatIds(project), STRINGS.writtenBeat);
-    planPanel?.draw(main);
-    generatePanel?.draw(main);
-    endPanel?.draw(main);
-    exportPanel?.draw(main);
+    planPanel?.draw(planningColumn);
+    generatePanel?.draw(planningColumn);
+    endPanel?.draw(planningColumn);
+    exportPanel?.draw(planningColumn);
+    planningColumn.prepend(storyNode);
   }
   storyBar?.draw();
   welcome?.draw();
