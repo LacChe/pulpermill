@@ -10,12 +10,13 @@ import { generateRequest } from "../generate.js";
 import { mentions, usageOf, choose, SEND_MAX } from "../usage.js";
 import { addItem } from "../logic.js";
 
-test("a name counts only as a whole word, and a sentence by its main words", () => {
+test("a name counts only as a whole word, and a sentence is never matched by its words", () => {
   assert.equal(mentions("Suvi walked to the Harbour.", "suvi"), true);
   assert.equal(mentions("Ola's coat hung there.", "Ola"), true, "a possessive is the name");
   assert.equal(mentions("Angola is far.", "Ola"), false, "a name inside another word is not the name");
-  assert.equal(mentions("The cellar flooded again at the spring tide.", "The cellar under the shop floods on the spring tide"), true);
-  assert.equal(mentions("She counted coins all night.", "The cellar under the shop floods on the spring tide"), false);
+  assert.equal(mentions("The cellar flooded again at the spring tide.", "The cellar under the shop floods on the spring tide"), false, "a sentence is judged by the model, not by its words");
+  assert.equal(mentions("Then the cellar under the shop floods on the spring tide, again.", "The cellar under the shop floods on the spring tide"), true, "unless it is quoted whole");
+  assert.equal(mentions("The Parish Council of Hollow met.", "the Parish Council of Hollow"), true, "a long name is still a name");
   assert.equal(mentions("", "Suvi"), false);
 });
 
@@ -43,6 +44,23 @@ test("a value is used only when a written chapter says it", async () => {
   assert.deepEqual(usageOf(project)[first.id], { uses: 1, last: 1 });
   assert.deepEqual(usageOf(project)[place.id], { uses: 1, last: 1 });
   assert.equal(usageOf(project, 1)[first.id], undefined, "the chapter being written again does not count itself");
+});
+
+test("pressures, knowledge, ties and holdings count as used only when the chapter's record says it showed them", async () => {
+  const project = await readyProject();
+  const [first] = project.characters;
+  const place = project.world.places[0];
+  const ent = project.entanglements;
+  const [pressure] = ent.pressures;
+  project.outline = { beats: [{ id: "b1", chapter: 1, where: place.id, cast: [first.id], spotlight: pressure.id }] };
+  // The text names the pressure's own words and everyone in it, which is exactly what word matching used to take for use.
+  project.chapters = [{ id: "c1", beat: "b1", text: `${pressure.what} ${first.name} went to ${place.name}.` }];
+  project.summary_events = { entries: [{ id: "e1", beat: "b1", happened: "x" }] };
+  assert.equal(usageOf(project)[pressure.id], undefined, "naming it is not showing it");
+  project.summary_events.entries[0].entanglements_shown = [pressure.id, ent.knowledge[0]?.id, ent.ties[0]?.id].filter(Boolean);
+  assert.deepEqual(usageOf(project)[pressure.id], { uses: 1, last: 1 });
+  for (const id of project.summary_events.entries[0].entanglements_shown) assert.equal(usageOf(project)[id].uses, 1);
+  assert.equal(usageOf(project, 1)[pressure.id], undefined, "the chapter being written again does not count itself");
 });
 
 async function crowded() {

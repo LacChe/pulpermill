@@ -33,7 +33,7 @@ function writeChapter(p, n, { cast, where, spotlight, shift = "harder", events =
   // The text names the cast and the place: a value only counts as used when the written chapter says it.
   const named = [...cast.map((c) => p.characters.find((x) => x.id === c)?.name), p.world.places.find((x) => x.id === where)?.name].filter(Boolean);
   (p.chapters ??= []).push({ id: `ch00000${n}`, beat: id, text: `Chapter ${n}. ${named.join(" and ")} were there.` });
-  (p.summary_events ??= { entries: [] }).entries.push({ id: `e000000${n}`, beat: id, happened: `Happened ${n}`, ...events });
+  (p.summary_events ??= { entries: [] }).entries.push({ id: `e000000${n}`, beat: id, happened: `Happened ${n}`, entanglements_shown: spotlight ? [spotlight] : [], ...events });
   return id;
 }
 

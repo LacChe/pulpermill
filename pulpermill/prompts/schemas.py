@@ -297,10 +297,16 @@ def shifts_schema(req: dict, handles: dict[str, dict]) -> Schema:
     # `belief` is what a misled person wrongly believes instead; null for anyone who knows or suspects the truth.
     about_rule = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES}, "rule": one_of(rules), "belief": maybe(text())})
     about_fact = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES}, "fact": text(), "belief": maybe(text())})
-    new = {"anyOf": [about_rule, about_fact]} if rules else about_fact
+    # A person who joins something that already has a line points at that line by its handle; only a new thing is written out.
+    about_entry = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES}, "entry": one_of(by_section.get("knowledge") or []), "belief": maybe(text())})
+    shapes = [*([about_entry] if by_section.get("knowledge") else []), *([about_rule] if rules else []), about_fact]
+    new = {"anyOf": shapes} if len(shapes) > 1 else shapes[0]
+    # Which pressures, knowledge, ties and holdings the chapter actually showed (never one it only named): this is what use counts
+    # are made of, so the least-shown are the ones carried into later requests.
     return obj({"shifts": {"type": "array", "items": shift, "maxItems": 5},
                 "changes": changes,
-                "new_knowledge": {"type": "array", "items": new, "maxItems": 8}})
+                "new_knowledge": {"type": "array", "items": new, "maxItems": 8},
+                "shown": list_of(list(handles), len(handles))})
 
 
 # ---- The rest -------------------------------------------------------------------------------------------------------

@@ -241,6 +241,17 @@ def assemble_generate_reply(chapter_text: str, events: dict, shifts_out: dict, h
         kept = {k: s(row.get(k)) for k in schemas.SHIFT_FIELDS if s(row.get(k))}
         if kept:
             shifts.append({"character": s(row.get("character")), **kept})
+    shown = list(dict.fromkeys(handles[h]["id"] for h in shifts_out.get("shown") or [] if h in handles and handles[h].get("id")))
+    new_knowledge = []
+    for k in shifts_out.get("new_knowledge") or []:
+        entry = None
+        if s(k.get("entry")):                                   # a handle for a line that already exists
+            info = handles.get(s(k.get("entry")))
+            if not info or info["section"] != "knowledge" or not info.get("id"):
+                continue
+            entry = info["id"]
+        new_knowledge.append({"person": s(k.get("person")), "status": k["status"], "rule": s(k.get("rule")) or None, "fact": s(k.get("fact")) or None,
+                              "belief": s(k.get("belief")) or None, "entry": entry})
     return {
         "ok": True, "chapter_text": chapter_text,
         "events": {"happened": s(events.get("happened")), "changed": s(events.get("changed")) or None, "planted": s(events.get("planted")) or None,
@@ -249,8 +260,8 @@ def assemble_generate_reply(chapter_text: str, events: dict, shifts_out: dict, h
                    "goal_landed": bool(events.get("goal_landed"))},
         "shifts": shifts,
         "changes": resolve_changes(shifts_out.get("changes") or [], handles),
-        "new_knowledge": [{"person": s(k.get("person")), "status": k["status"], "rule": s(k.get("rule")) or None, "fact": s(k.get("fact")) or None, "belief": s(k.get("belief")) or None}
-                          for k in shifts_out.get("new_knowledge") or []],
+        "new_knowledge": new_knowledge,
+        "shown": shown,
     }
 
 

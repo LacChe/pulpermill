@@ -63,6 +63,7 @@ def generate(request, ctx):
         "shifts": [{"character": who, "decided": "Canned decision."}] if who else [],
         "changes": [],
         "new_knowledge": [],
+        "shown": [],
     }
 
 

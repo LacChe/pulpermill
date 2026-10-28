@@ -313,13 +313,16 @@ class Change(Strict):
 
 class NewKnowledge(Strict):
     """A proposed new Knowledge entry: someone who has come to know, suspect or be misled about something that has no line
-    yet. Exactly one of `rule` (the wording of a World rule) and `fact` (free text) is meant; the page drops an entry that
-    gives both or neither, and one whose person or rule it cannot find. The backend never makes an id."""
+    yet, or someone who joins a line that already exists. For a new line exactly one of `rule` (the wording of a World rule) and
+    `fact` (free text) is meant; the page drops an entry that gives both or neither, and one whose person or rule it cannot find.
+    For an existing line `entry` is its id as the page sent it (the backend turns the handle back into it) and `rule` and `fact`
+    are empty. The backend never makes an id."""
     person: str
     status: Literal["knows", "suspects", "misled"]
     rule: str | None = None
     fact: str | None = None
     belief: str | None = None               # for "misled": the false thing they believe instead
+    entry: str | None = None                # the id of an existing Knowledge line this person joins
 
 
 class GenerateReply(Strict):
@@ -329,6 +332,7 @@ class GenerateReply(Strict):
     shifts: list[ShiftOut]
     changes: list[Change]
     new_knowledge: list[NewKnowledge] = []      # optional: a reply without it is a reply with none
+    shown: list[str] = []                       # optional: ids of the pressures, knowledge, ties and holdings the chapter actually showed
 
 
 class EndStoryReply(Strict):

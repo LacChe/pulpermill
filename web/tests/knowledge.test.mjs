@@ -31,7 +31,7 @@ const added = (out) => out.changes.applied.filter((a) => a.added);
 
 test("a reply may carry new Knowledge entries, and one with none is still a reply", () => {
   assert.deepEqual(reply().new_knowledge, []);
-  assert.deepEqual(reply({ new_knowledge: [entry({ person: " Suvi " })] }).new_knowledge, [entry({ belief: null })]);
+  assert.deepEqual(reply({ new_knowledge: [entry({ person: " Suvi " })] }).new_knowledge, [entry({ belief: null, entry: null })]);
 });
 
 test("a malformed new entry makes the whole reply bad_output", () => {
@@ -183,4 +183,29 @@ test("an entry keeps what the misled wrongly believe, and loses it when no one i
   assert.equal(project.entanglements.knowledge.at(-1).belief, "");
   const knows = applyGenerated(schema, project, beat, reply({ new_knowledge: [entry({ person: "Ola", status: "knows", belief: "ignored", fact: "Another fact." })] }));
   assert.equal(added(knows)[0]?.now.belief ?? "", "");
+});
+
+test("a proposal that names an existing line puts the person into it, and a line that is not there is left out", async () => {
+  const { project, beat } = await planned();
+  const line = project.entanglements.knowledge[0];
+  const who = project.characters.find((c) => beat.cast.includes(c.id));
+  const other = project.characters.find((c) => c.id !== who.id);
+  Object.assign(line, { knows: [other.id], suspects: [], misled: [], belief: "" });
+  const before = project.entanglements.knowledge.length;
+  const out = applyGenerated(schema, project, beat, reply({ new_knowledge: [
+    { person: who.name, status: "suspects", rule: null, fact: null, entry: line.id },
+    { person: who.name, status: "knows", rule: null, fact: null, entry: "no-such-line" },
+  ] }));
+  commitChapter(project, out);
+  assert.equal(project.entanglements.knowledge.length, before, "nothing new is made: the person joined the line that was there");
+  const same = project.entanglements.knowledge.find((k) => k.id === line.id);
+  assert.deepEqual(stands(same).filter((s) => s.id === who.id), [{ id: who.id, status: "suspects" }]);
+  assert.equal(out.changes.dropped.length, 1);
+});
+
+test("the chapter's record keeps which live entanglements it showed, and only live ones", async () => {
+  const { project, beat } = await planned();
+  const [pressure] = project.entanglements.pressures;
+  const out = applyGenerated(schema, project, beat, reply({ shown: [pressure.id, pressure.id, "gone"] }));
+  assert.deepEqual(out.events.entanglements_shown, [pressure.id]);
 });

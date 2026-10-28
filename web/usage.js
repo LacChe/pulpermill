@@ -1,32 +1,26 @@
 // How much each thing has been used, and which few of them a request carries. No DOM, no model.
 //
-// A value counts as used in a chapter only when it appears in that chapter's written text (never because a beat planned it):
-// a name is looked for as a name, a sentence (a behavior, a pressure, a piece of knowledge) by its main words. Only written
-// chapters count, so a planned-ahead beat uses nothing up.
+// A value counts as used in a chapter only when the written chapter shows it, never because a beat planned it.
+//   People, groups, places and things are looked for by name in the chapter's text: a name is exact, so there is nothing to judge.
+//   Behaviors, pressures, ties, holdings and knowledge are sentences, and whether a sentence "happened" is a judgment. The model
+//   that reads the chapter afterwards says which of them it showed (`behaviors_seen`, `entanglements_shown` in the chapter's
+//   record), and that record is what is counted.
 //
 // A request carries at most SEND_MAX of each kind of value that rotates (places, things, ties, holdings, knowledge, pressures),
-// the least used first. A value the beat for this chapter names, by link or in its words, is always carried, and does not
-// take a place from the others.
+// the least used first. A value the beat for this chapter names, by link or by name, is always carried, and does not take a
+// place from the others.
 
 export const SEND_MAX = 5;
 
 const asList = (value) => (Array.isArray(value) ? value : value ? [value] : []);
 const present = (value) => typeof value === "string" && value.trim() !== "";
 const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const WORD = /[\p{L}\p{N}]+/gu;
-const STEM = 5;       // "flood" matches "floods" and "flooded"
 
-// Does `text` name `phrase`? A short phrase (a name) must appear whole, with nothing letter-like touching it. A sentence is
-// found when at least half of its main words (four letters or more, at least two when it has two) appear, in any form.
+// Does `text` name `phrase`? The whole phrase must appear, with nothing letter-like touching it. Only names are looked for this
+// way: a sentence is never matched by its words (the model judges those), so a sentence only matches when it is quoted whole.
 export function mentions(text, phrase) {
   if (!present(text) || !present(phrase)) return false;
-  const words = phrase.toLowerCase().match(WORD) ?? [];
-  if (words.length <= 3) return new RegExp(`(?<![\\p{L}\\p{N}])${escaped(phrase.trim())}(?![\\p{L}\\p{N}])`, "iu").test(text);
-  const main = [...new Set(words.filter((w) => w.length >= 4).map((w) => w.slice(0, STEM)))];
-  if (!main.length) return false;
-  const have = new Set((text.toLowerCase().match(WORD) ?? []).map((w) => w.slice(0, STEM)));
-  const hit = main.filter((w) => have.has(w)).length;
-  return hit >= Math.min(2, main.length) && hit / main.length >= 0.5;
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped(phrase.trim())}(?![\\p{L}\\p{N}])`, "iu").test(text);
 }
 
 // A person is named by the whole name or by the first name.
@@ -57,32 +51,19 @@ export function usageOf(project, except = null) {
   };
   const world = project.world ?? {};
   const ent = project.entanglements ?? {};
-  const people = new Map((project.characters ?? []).map((c) => [c.id, (c.name ?? "").trim()]));
-  for (const g of world.powers ?? []) people.set(g.id, (g.name ?? "").trim());
-  const nameOf = (id) => people.get(id) ?? "";
   for (const chapter of writtenChapters(project)) {
     if (except !== null && chapter.n === except) continue;
-    const { n, text, beat, events } = chapter;
+    const { n, text, events } = chapter;
     for (const c of project.characters ?? []) if (mentionsPerson(text, c.name)) mark(c.id, n);
     for (const g of world.powers ?? []) if (mentionsPerson(text, g.name)) mark(g.id, n);
     for (const p of world.places ?? []) if (mentions(text, p.name)) mark(p.id, n);
     for (const o of world.objects ?? []) if (mentions(text, o.name)) mark(o.id, n);
     const seen = new Set(asList(events?.behaviors_seen));
-    for (const c of project.characters ?? []) {
-      for (const b of c.behaviors ?? []) if (seen.has(b.id) || mentions(text, b.state)) mark(b.id, n);
-    }
-    for (const t of ent.ties ?? []) if (mentionsPerson(text, nameOf(t.tie_from)) && mentionsPerson(text, nameOf(t.tie_to))) mark(t.id, n);
-    const named = (id) => [...(world.places ?? []), ...(world.objects ?? [])].find((x) => x.id === id)?.name;
-    for (const h of ent.holdings ?? []) if (mentions(text, named(h.holdee))) mark(h.id, n);
+    for (const c of project.characters ?? []) for (const b of c.behaviors ?? []) if (seen.has(b.id)) mark(b.id, n);
     const landed = new Set(asList(events?.reveals_landed));
-    for (const k of ent.knowledge ?? []) {
-      const thing = k.rule ? (world.rules ?? []).find((r) => r.id === k.rule)?.statement : k.fact;
-      if ((k.rule && landed.has(k.rule)) || mentions(text, thing)) mark(k.id, n);
-    }
-    for (const p of ent.pressures ?? []) {
-      const touched = [p.source_agent, ...asList(p.bears_on)].some((id) => mentionsPerson(text, nameOf(id)));
-      if (mentions(text, p.what) || (beat?.spotlight === p.id && touched)) mark(p.id, n);
-    }
+    const shown = new Set(asList(events?.entanglements_shown));
+    for (const group of [ent.ties, ent.holdings, ent.pressures]) for (const x of group ?? []) if (shown.has(x.id)) mark(x.id, n);
+    for (const k of ent.knowledge ?? []) if (shown.has(k.id) || (k.rule && landed.has(k.rule))) mark(k.id, n);
   }
   return used;
 }

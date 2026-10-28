@@ -228,6 +228,8 @@ function applyChanges(schema, project, changes, { overwriteLocked }) {
 // found, and if a character must be in this chapter; exactly one of a World rule or a fact; and a lock on the whole Knowledge list
 // or card asks first, like any locked value. There is no limit on how many. Returns {applied, dropped}; applied entries read like
 // changes (label, from, to) so the review lists them with the rest.
+const entryWords = (project, k) => (k.rule ? (project.world?.rules ?? []).find((r) => r.id === k.rule)?.statement : k.fact) ?? "";
+
 function addKnowledge(schema, project, next, proposals, cast, { overwriteLocked }) {
   const applied = [];
   const dropped = [];
@@ -241,20 +243,22 @@ function addKnowledge(schema, project, next, proposals, cast, { overwriteLocked 
   const madeHere = new Map();      // entry id -> the applied record that shows it
   const standing = (entry) => STANDINGS.filter((k) => entry[k].length).map((k) => `${defs.find((d) => d.key === k)?.label ?? k}: ${joinList(entry[k].map((id) => names.get(id) ?? id))}`).join("; ");
   for (const p of proposals) {
-    if (!p.rule && !p.fact) continue;      // an empty proposal says nothing, so it is not worth a warning
-    const what = p.rule ?? p.fact ?? "";
+    if (!p.entry && !p.rule && !p.fact) continue;      // an empty proposal says nothing, so it is not worth a warning
+    const target = p.entry ? list.find((k) => k.id === p.entry) : null;
+    const what = p.entry ? (target ? entryWords(project, target) : "") : (p.rule ?? p.fact ?? "");
     const drop = (why) => dropped.push({ section: "knowledge", field: label, value: `${p.person}: ${what}`, why });
     const who = wordsToId(project, ["characters", "world.powers"], p.person);
     if (!who.id) { drop(msg(who.several ? "records.whyMatchesSeveral" : "records.whyMatchesNothing", { words: p.person })); continue; }
     if (people.has(who.id) && !cast.includes(who.id)) { drop(msg("records.notInChapter", { name: p.person })); continue; }
-    if (Boolean(p.rule) === Boolean(p.fact)) { drop(msg("records.knowledgeOneFact")); continue; }
+    if (p.entry && !target) { drop(msg("records.whyMatchesNothing", { words: p.entry })); continue; }
+    if (!p.entry && Boolean(p.rule) === Boolean(p.fact)) { drop(msg("records.knowledgeOneFact")); continue; }
     let ruleId = "";
     if (p.rule) {
       const found = wordsToId(project, ["world.rules"], p.rule);
       if (!found.id) { drop(msg(found.several ? "records.whyMatchesSeveral" : "records.whyMatchesNothing", { words: p.rule })); continue; }
       ruleId = found.id;
     }
-    const same = list.find((k) => (ruleId ? k.rule === ruleId : squash(k.fact) === squash(p.fact)));
+    const same = target ?? list.find((k) => (ruleId ? k.rule === ruleId : squash(k.fact) === squash(p.fact)));
     if (same) {
       wholeEntry(same);
       if (same[p.status].includes(who.id)) continue;                                      // already so
@@ -287,6 +291,12 @@ function addKnowledge(schema, project, next, proposals, cast, { overwriteLocked 
     applied.push(record);
   }
   return { applied, dropped };
+}
+
+// The ids the model said the chapter showed that are live entanglements here (anything else is left out), each once.
+function shownIds(project, shown) {
+  const live = new Set(["ties", "holdings", "knowledge", "pressures"].flatMap((k) => (project.entanglements?.[k] ?? []).map((i) => i.id)));
+  return [...new Set(asList(shown))].filter((id) => live.has(id));
 }
 
 // Everything one chapter adds to the project, worked out and checked, with nothing changed.
@@ -338,6 +348,7 @@ export function applyGenerated(schema, project, beat, read, { overwriteLocked = 
   const event = {
     id: fresh(), beat: beat.id, happened: e.happened, changed: e.changed ?? "", planted: planted ?? "",
     paid_off: paid, reveals_landed: reveals, behaviors_seen: behaviors, things_seen: things, goal_landed: e.goal_landed,
+    entanglements_shown: shownIds(project, read.shown),
   };
   if (beat.goal_change && !e.goal_landed) warnings.push({ kind: "goal", text: msg("records.goalPending") });
   if (beat.reveal_rule && !reveals.includes(beat.reveal_rule)) warnings.push({ kind: "reveal", text: msg("records.revealStillAvailable") });

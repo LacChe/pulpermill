@@ -157,7 +157,7 @@ const DIAGNOSTICS = new Set([
   "The chapter's events have text of the wrong kind.", "The events' ${key} is not a list of names.", "The events' goal_landed is not yes or no.",
   "The chapter's shifts are missing.", "A shift does not say who moved.", "A shift's ${key} is not text.", "The proposed changes are missing.", "The new knowledge entries are not a list.",
   "A new knowledge entry does not say who or how they stand.", "A new knowledge entry's rule or fact is not text.",
-  "A proposed change does not say what to change.", "Rules this page cannot run yet:",
+  "A proposed change does not say what to change.", "The shown entanglements are not a list of ids.", "Rules this page cannot run yet:",
   "Two files are called ${file.name}", "A file name is too long for a zip", "The files are too big for a zip",
 ]);
 

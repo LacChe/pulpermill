@@ -138,6 +138,7 @@ export function createMock(schema, options = {}) {
         behaviors_seen: [], things_seen: [], goal_landed: Boolean(beat.goal_change),
       },
       shifts: who ? [{ character: who, decided: "Mock decision." }] : [],
+      shown: pressure?.id ? [pressure.id] : [],
       changes: pressure?.id ? [{ section: "pressures", item: pressure.id, field: "next_move", value: "Mock next move." }] : [],
       // A line the cards do not have yet: someone comes to know a landed reveal, or suspects something (so the review has one to show).
       new_knowledge: !who ? [] : beat.reveal_rule

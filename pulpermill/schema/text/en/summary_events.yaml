@@ -21,6 +21,7 @@ fields:
       reveals_landed: {label: "Reveals landed", help: "Hidden rules that actually came to light this chapter, checked against the beat's planned reveal. Only these count as revealed."}
       behaviors_seen: {label: "Behaviors seen", help: "Which character behaviors actually appeared. Used to tally use counts."}
       things_seen: {label: "Things seen", help: "Which world things actually appeared. Used to tally use counts."}
+      entanglements_shown: {label: "Entanglements shown", help: "Which pressures, pieces of knowledge, ties and holdings the chapter actually dramatized, not merely mentioned. Judged by the model that reads the chapter. Used to tally use counts, so what has been shown least is carried into the next request."}
       goal_landed: {label: "Goal change landed", help: "Whether the goal change planned in this chapter's beat actually happened in the text. A change that did not land stays pending."}
 rules:
   events_beat_unique:

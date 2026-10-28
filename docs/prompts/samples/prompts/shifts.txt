@@ -7,7 +7,8 @@ For each person who moved, fill in only the boxes that changed:
 - wants: an abstract desire that changed (a concrete aim toward one person belongs on a tie's edge)
 - refuses: something they now will not do
 - decided: what they decided; for the protagonist, say which of the two choices the chapter posed they took, or what they did instead
-Then say what changed in the live entanglements, using the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. When someone learns, comes to suspect or is misled about something that already has a line, change that line (give the person under knows, suspects or misled) instead of adding a new one. Add a new knowledge line only for something that has no line yet, one per person; for someone misled, say in belief what they wrongly believe. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
+Then say what changed in the live entanglements, using the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. When someone learns, comes to suspect or is misled about something that already has a line, put them in that line: change it (give the person under knows, suspects or misled) or add a knowledge row that names the line by its handle in entry. Never write out again something that already has a line. Add a knowledge row with the rule or fact written out only for something that has no line yet, one per person; for someone misled, say in belief what they wrongly believe. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
+Last, list in shown the handles of the pressures, knowledge, ties and holdings that the chapter actually showed: something a person acts on, is held back by, learns, or that changes on the page. A handle whose subject is only named in passing is left out. When none were shown, give an empty list.
 
 The people on stage:
 Suvi (she/her). Wants: Keep the shop open; Know the truth about her mother's death. Fear: Being the one who lets the shop fall. Flaw: Believes that anyone who is kind to her wants something.
@@ -320,6 +321,54 @@ Now say who moved and what changed, as the reply format asks.
          "misled"
         ]
        },
+       "entry": {
+        "type": "string",
+        "enum": [
+         "K1",
+         "K2",
+         "K3"
+        ]
+       },
+       "belief": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       }
+      },
+      "required": [
+       "person",
+       "status",
+       "entry",
+       "belief"
+      ],
+      "additionalProperties": false
+     },
+     {
+      "type": "object",
+      "properties": {
+       "person": {
+        "type": "string",
+        "enum": [
+         "Suvi",
+         "Aino",
+         "Pekka",
+         "The Harbour Board",
+         "The Dockhands' Brotherhood"
+        ]
+       },
+       "status": {
+        "type": "string",
+        "enum": [
+         "knows",
+         "suspects",
+         "misled"
+        ]
+       },
        "rule": {
         "type": "string",
         "enum": [
@@ -393,12 +442,32 @@ Now say who moved and what changed, as the reply format asks.
     ]
    },
    "maxItems": 8
+  },
+  "shown": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "T1",
+     "T2",
+     "T3",
+     "H1",
+     "H2",
+     "K1",
+     "K2",
+     "K3",
+     "P1",
+     "P2"
+    ]
+   },
+   "maxItems": 10
   }
  },
  "required": [
   "shifts",
   "changes",
-  "new_knowledge"
+  "new_knowledge",
+  "shown"
  ],
  "additionalProperties": false
 }

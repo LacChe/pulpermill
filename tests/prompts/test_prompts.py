@@ -165,8 +165,9 @@ def test_shifts_prompt_never_shows_ids_and_resolves_handles():
     assert not any(re.search(rf"\b{re.escape(i)}\b", p.text) for i in ids)
     ties = [h for h, info in handles.items() if info["section"] == "ties"]
     out = {"shifts": [{"character": "Suvi", "believes": "Pekka lied."}],
-           "changes": [{"section": "ties", "item": ties[0], "field": "edge", "value": "She now doubts him."}], "new_knowledge": []}
+           "changes": [{"section": "ties", "item": ties[0], "field": "edge", "value": "She now doubts him."}], "new_knowledge": [], "shown": [ties[0]]}
     assert errors(out, p.schema) == [], errors(out, p.schema)
+    assert not valid({**out, "shown": ["T99"]}, p.schema)          # only handles the request carried
     bad = {**out, "changes": [{"section": "holdings", "item": ties[0], "field": "edge", "value": "x"}]}
     assert not valid(bad, p.schema)
     resolved = P.resolve_changes(out["changes"], handles)
@@ -188,6 +189,22 @@ def test_assembled_generate_reply_is_what_the_contract_reads():
     assert parsed.chapter_text == "Chapter words." and len(parsed.shifts) == 1 and parsed.shifts[0].fears is None
     assert parsed.changes[0].item == sh.meta["handles"][ties[0]]["id"] and parsed.events.changed is None
     assert errors(events, ev.schema) == []
+
+
+def test_what_the_chapter_showed_and_the_line_someone_joins_come_back_as_ids():
+    sh = P.shifts_prompt(generate_request(), "CHAPTER")
+    handles = sh.meta["handles"]
+    knowledge = [h for h, i in handles.items() if i["section"] == "knowledge"]
+    pressure = [h for h, i in handles.items() if i["section"] == "pressures"]
+    events = {"happened": "x", "changed": "", "planted": None, "paid_off": [], "reveals_landed": [], "behaviors_seen": [], "things_seen": [], "goal_landed": False}
+    out = {"shifts": [], "changes": [], "shown": [pressure[0], pressure[0], "P99"],
+           "new_knowledge": [{"person": "Suvi", "status": "knows", "entry": knowledge[0], "belief": None},
+                             {"person": "Suvi", "status": "knows", "entry": pressure[0]},     # not a knowledge line: dropped
+                             {"person": "Suvi", "status": "suspects", "fact": "A new thing.", "belief": None}]}
+    reply = P.assemble_generate_reply("Words.", events, out, handles)
+    parsed = contract.parse_reply("generate", reply)
+    assert parsed.shown == [handles[pressure[0]]["id"]]
+    assert [k.entry for k in parsed.new_knowledge] == [handles[knowledge[0]]["id"], None]
 
 
 # ---- Fill, judge, style fit, offstage, end of story -----------------------------------------------------------------
@@ -359,6 +376,8 @@ def test_reveal_payoff_and_plant_are_always_answered():
 def test_a_misled_person_can_be_given_what_they_believe():
     handles = {"K1": {"section": "knowledge", "id": "k1"}}
     schema = S.shifts_schema({"cast": [{"name": "Suvi"}], "world": {"rules": []}}, handles)
-    assert "belief" in schema["properties"]["new_knowledge"]["items"]["properties"]
+    shapes = schema["properties"]["new_knowledge"]["items"]["anyOf"]
+    assert len(shapes) == 2 and all("belief" in shape["properties"] for shape in shapes)
+    assert any(shape["properties"].get("entry", {}).get("enum") == ["K1"] for shape in shapes)     # join a line that exists, by its handle
     fields = [o["properties"]["field"]["enum"] for o in schema["properties"]["changes"]["items"]["anyOf"]]
     assert ["knows", "suspects", "misled"] in fields and ["belief"] in fields
