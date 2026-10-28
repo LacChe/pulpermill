@@ -21,7 +21,8 @@
     "peopleLabel": "Characters",
     "columnSwitcher": "Workspace section",
     "cardsColumn": "Cards",
-    "planningColumn": "Planning and generation"
+    "planningColumn": "Planning and generation",
+    "chaptersLabel": "Chapters"
   },
   "common": {
     "elapsed": "{n} s",
@@ -158,6 +159,14 @@
     "backendBad": "That isn’t an address I can use. Type “mock”, or something like localhost:8000.",
     "backendMixed": "This page is served over https, so the browser won’t let it call a plain http address. Use an https address, or open the page from your own computer.",
     "whereMock": "the built-in sample model, which writes placeholder text (nothing leaves this page)",
+    "chapterTab": "Chapter {n}",
+    "chapterCurrent": "Current chapter",
+    "chapterWritten": "Written",
+    "chapterFuture": "Not available yet",
+    "chapterPlan": "Plan",
+    "chapterText": "Chapter text",
+    "chapterNoPlan": "This chapter has not been planned yet.",
+    "chapterNoText": "This chapter has not been written yet.",
     "working": "The model is working…",
     "writtenBeat": "This beat was written from. To change the chapter, write it again below.",
     "staleBeat": "May no longer fit: an earlier chapter was written again after this beat was planned.",

@@ -8,7 +8,7 @@ import {
   noteFor, setNote, setExample, setCardValues,
 } from "./logic.js";
 import { renderCard, errorText, makeReadOnly, restoreRadioSelections, freezeItems, flagItems, STRINGS as CARD_STRINGS } from "./render.js";
-import { cardLocked, lockedByStory, lockedByWriter, setWriterLock } from "./gate.js";
+import { cardLocked, lockedByStory, lockedByWriter, setWriterLock, storyStarted } from "./gate.js";
 import { ask } from "./dialog.js";
 import { untouched } from "./undo.js";
 import { createStoryBar } from "./story.js";
@@ -17,6 +17,7 @@ import { createGeneratePanel } from "./generatepanel.js";
 import { forgetFolds } from "./folds.js";
 import { createEndPanel } from "./endpanel.js";
 import { createExportPanel } from "./exportpanel.js";
+import { createChapterPanel } from "./chapterpanel.js";
 import { createImportPanel } from "./importpanel.js";
 import { createWelcomeStrip } from "./welcomestrip.js";
 import { fileKind } from "./exporting.js";
@@ -50,6 +51,7 @@ const noticeNode = document.getElementById("notice");
 const recoveryNode = document.getElementById("recovery");
 const storyNode = document.getElementById("story-bar");
 const planningColumn = document.querySelector(".planning-column");
+const chaptersNav = document.getElementById("chapters");
 const workspace = document.getElementById("workspace");
 const columnSwitches = [...document.querySelectorAll(".column-switch")];
 let schema;
@@ -61,9 +63,10 @@ let planPanel;
 let generatePanel;
 let endPanel;
 let exportPanel;
+let chapterPanel;
 let importPanel;
 let welcome;
-let view = { card: "style", characterId: null };
+let view = { card: "style", characterId: null, chapter: null };
 
 function selectColumn(column) {
   workspace.dataset.column = column;
@@ -72,10 +75,39 @@ function selectColumn(column) {
     switchButton.classList.toggle("active", selected);
     switchButton.setAttribute("aria-pressed", String(selected));
   }
+
 }
 
 for (const switchButton of columnSwitches) switchButton.addEventListener("click", () => selectColumn(switchButton.dataset.column));
 selectColumn("cards");
+
+function chapterState() {
+  const count = Number(project?.setup?.chapter_count) || 0;
+  const written = project?.chapters?.length ?? 0;
+  const current = Math.min(written + 1, count);
+  if (!count || !storyStarted(project)) return null;
+  if (!view.chapter || view.chapter > current || view.chapter < 1) view.chapter = current;
+  return { count, written, current };
+}
+
+function drawChapterNav() {
+  const state = chapterState();
+  chaptersNav.hidden = !state;
+  if (!state) { chaptersNav.replaceChildren(); return; }
+  chaptersNav.replaceChildren(...Array.from({ length: state.count }, (_, index) => {
+    const number = index + 1;
+    const written = number <= state.written;
+    const available = number <= state.current;
+    const node = button(fill(STRINGS.chapterTab, { n: number }), () => {
+      view.chapter = number;
+      show();
+    }, { current: view.chapter === number });
+    node.disabled = !available;
+    node.title = available ? (written ? STRINGS.chapterWritten : STRINGS.chapterCurrent) : STRINGS.chapterFuture;
+    node.classList.add(written ? "chapter-written" : "chapter-current");
+    return node;
+  }));
+}
 // What the writer has visited and whether they pressed Validate, per card (and per character), so it survives
 // switching cards. Cleared when another project is opened.
 const reviews = new Map();
@@ -145,7 +177,7 @@ function replaceProject(next, savedAs = next) {
   generatePanel?.reset();
   endPanel?.reset();
   importPanel?.reset();
-  view = { card: "style", characterId: null };
+  view = { card: "style", characterId: null, chapter: null };
   titleInput.value = project.title;
   savedSnapshot = projectSnapshot(schema, savedAs);
   show();
@@ -218,7 +250,6 @@ openInput.addEventListener("change", async () => {
   replaceProject(read.project);
   showNotice(joinList([fill(STRINGS.opened, { name: file.name }), ...(read.older ? [STRINGS.older] : [])], "sentence"));
 });
-
 // Import card: pick a card file; the import panel says what it would do and changes nothing until the writer says so.
 importButton.addEventListener("click", () => { if (schema) importInput.click(); });
 guideButton.addEventListener("click", () => welcome?.toggle());
@@ -506,7 +537,7 @@ function drawNav() {
 function show() {
   const card = schema.cards[view.card];
   const held = ensureCard(project, card);
-  planningColumn.querySelectorAll(".plan-panel, .generate-panel, .end-panel, .export-panel").forEach((panel) => panel.remove());
+  planningColumn.querySelectorAll(".plan-panel, .generate-panel, .end-panel, .export-panel, .chapter-view").forEach((panel) => panel.remove());
   let values;
   if (card.many_per_project) {
     if (!findInstance(project, card, view.characterId)) view.characterId = held[0]?.id ?? null;
@@ -515,6 +546,7 @@ function show() {
     values = held;
   }
   drawNav();
+  drawChapterNav();
   if (values) {
     const key = `${card.id}:${values.id ?? ""}`;
     const instanceId = card.many_per_project ? values.id : null;
@@ -540,10 +572,15 @@ function show() {
     flagItems(main, staleBeatIds(project), STRINGS.staleBeat);
     freezeItems(main, writtenBeatIds(project), STRINGS.writtenBeat);
   }
-  planPanel?.draw(planningColumn);
-  generatePanel?.draw(planningColumn);
-  endPanel?.draw(planningColumn);
-  exportPanel?.draw(planningColumn);
+  const chapter = chapterState();
+  if (chapter && view.chapter <= chapter.written) {
+    chapterPanel?.draw(planningColumn, view.chapter);
+  } else {
+    planPanel?.draw(planningColumn);
+    generatePanel?.draw(planningColumn);
+    endPanel?.draw(planningColumn);
+    exportPanel?.draw(planningColumn);
+  }
   planningColumn.prepend(storyNode);
   storyBar?.draw();
   welcome?.draw();
@@ -566,7 +603,7 @@ try {
   tokenInput.value = token;
   storyBar = createStoryBar(storyNode, {
     schema, client, getProject: () => project,
-    goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId }; show(); },
+    goTo: (cardId, instanceId) => {     view = { card: cardId, characterId: instanceId, chapter: view.chapter }; show(); },
     changed: () => touchState(),
     notice: (text, kind) => showNotice(text, kind),
     redraw: () => show(),
@@ -583,13 +620,13 @@ try {
   });
   welcome = createWelcomeStrip(welcomeNode, {
     schema, getProject: () => project,
-    goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId }; show(); },
+    goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId, chapter: view.chapter }; show(); },
     shownChanged: (shown) => guideButton.setAttribute("aria-expanded", String(shown)),
   });
   exportPanel = createExportPanel({ schema, getProject: () => project });
   importPanel = createImportPanel(importNode, {
     schema, client, getProject: () => project,
-    goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId }; show(); },
+    goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId, chapter: view.chapter }; show(); },
     forget: (cardId, instanceId, keys) => { const marked = draftsFor(`${cardId}:${instanceId ?? ""}`); for (const key of keys) marked.delete(key); },
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),
@@ -599,6 +636,7 @@ try {
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),
   });
+  chapterPanel = createChapterPanel({ schema, getProject: () => project });
   client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); endPanel.refresh(); importPanel.refresh(); });
   drawConnection();
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.
