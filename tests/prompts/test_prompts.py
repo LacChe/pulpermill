@@ -334,6 +334,16 @@ def test_the_entanglements_fill_asks_for_three_different_pressures():
     assert "three pressures" not in P.fill_prompt({**req, "card": "world"}).text
 
 
+def test_an_either_or_pair_cannot_come_back_both_or_neither():
+    schema = S.card_schema("entanglements")
+    for field, pair in (("knowledge", ("rule", "fact")), ("pressures", ("source_agent", "source_circumstance"))):
+        shape = {"type": "object", "properties": {field: schema["properties"][field]}, "required": [], "additionalProperties": False}
+        base = {"knowledge": {"knows": ["Ines"]}, "pressures": {"what": "w"}}[field]
+        assert valid({field: [{**base, pair[0]: "a"}]}, shape) and valid({field: [{**base, pair[1]: "b"}]}, shape)
+        assert not valid({field: [{**base, pair[0]: "a", pair[1]: "b"}]}, shape)
+        assert not valid({field: [base]}, shape)
+
+
 def test_reveal_payoff_and_plant_are_always_answered():
     schema = S.beat_schema(plan_request())
     for key in ("reveal_rule", "reveal_learners", "payoff", "plant"):

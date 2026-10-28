@@ -102,6 +102,7 @@ Reply:
 - **Links are words, not ids.** A field that points at another card's entry (`protagonist`, a tie's `tie_from`, a pressure's `bears_on`) holds that entry's name as the writer sees it: `"Suvi"`. The backend never invents or guesses ids. The page turns each name into an id; a name that matches nothing, or two entries, is left empty and the writer is told. For a field that takes several (`bears_on`), send a list of names.
 - **Lists are lists of objects without ids.** The page gives every new item an id. A list that comes back the same as it was changes nothing.
 - Choices (`select` fields) hold the option's `value` from the schema, not its label.
+- **An either-or pair holds one value.** Where a card's list item is "one of two" (a knowledge entry's `rule` or `fact`, a pressure's `source_agent` or `source_circumstance`), the reply schema offers two shapes, each with one of the pair required and the other absent. If both still arrive, the page keeps the first of the pair and drops the other.
 - Write in `language`. Fixed fields (name, age, sex, appearance) are written once here like any other; the story never changes them.
 
 ### `judge`: the model-judged rules of one card

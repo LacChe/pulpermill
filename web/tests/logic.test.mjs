@@ -719,6 +719,17 @@ test("a fill reply keeps the card's own fields and names the rest", () => {
   assert.equal(readFillReply(worldCard, { ok: false, error: { kind: "stopped" } }).error.kind, "stopped");
 });
 
+test("an either-or pair that arrives with both halves keeps the first and drops the other", () => {
+  const card = schema.cards.entanglements;
+  const both = { ok: true, values: {
+    knowledge: [{ rule: "Only apple wood burns", fact: "Pear wood works as well", knows: ["Ines"] }, { fact: "A fact alone", knows: ["Ines"] }],
+    pressures: [{ what: "w", source_agent: "Ines", source_circumstance: "the flood" }],
+  } };
+  const read = readFillReply(card, both);
+  assert.deepEqual(read.values.knowledge, [{ rule: "Only apple wood burns", knows: ["Ines"] }, { fact: "A fact alone", knows: ["Ines"] }]);
+  assert.deepEqual(read.values.pressures, [{ what: "w", source_agent: "Ines" }]);
+});
+
 test("the judge request lists the card's model rules, or only the ones asked for", () => {
   const project = projectWith();
   const all = judgeRequest(schema, project, "world", project.world);

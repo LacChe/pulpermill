@@ -790,10 +790,25 @@ export function readFillReply(card, reply) {
     } else if (!rightKind(field, value)) {
       return failure("bad_output", `The value for ${key} is the wrong kind of thing.`);
     } else {
-      values[key] = value;
+      values[key] = field.repeat ? oneEach(field, value) : value;
     }
   }
   return { ok: true, values, ignored };
+}
+
+// An either-or pair ("a world rule or a fact of your own") holds one value. The model is asked for one, but if it gives both,
+// the first of the pair as the card declares it is kept and the other is dropped, so the page never holds a hidden second value.
+export function oneEach(field, items) {
+  const groups = field.one_of ?? [];
+  if (!groups.length) return items;
+  return items.map((item) => {
+    const out = { ...item };
+    for (const group of groups) {
+      const first = group.fields.find((key) => isFilled(out[key]));
+      if (first) for (const key of group.fields) if (key !== first) delete out[key];
+    }
+    return out;
+  });
 }
 
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);

@@ -143,7 +143,31 @@ def card_schema(card_id: str, *, refs: dict[str, list[str]] | None = None, drop_
     """The reply shape for a card: every field optional, ids left out (the page makes them), and each link field limited to
     the names in `refs` (keyed by reference source, such as "characters" or "world.places"). `item_ids` keeps an optional
     `id` on list items, for the end-of-story update, where an existing item must carry the id it was sent."""
-    return _clean(card_model_schema(card_id), refs, drop_fixed, item_ids, True)
+    return _exclusive(_clean(card_model_schema(card_id), refs, drop_fixed, item_ids, True), card_id)
+
+
+def _exclusive(schema: Schema, card_id: str) -> Schema:
+    """An either-or pair (a rule `exactly_one` over two fields of a list item) becomes two shapes the model must pick between:
+    one with only the first field (required) and one with only the second (required). The grammar then cannot produce both
+    or neither, which the card's rule would otherwise block afterwards."""
+    for rule in CARDS[card_id][3]:
+        if rule.check != "exactly_one":
+            continue
+        for list_field in rule.fields:
+            node = (schema.get("properties") or {}).get(list_field)
+            item = (node or {}).get("items")
+            if not item or "properties" not in item:
+                continue
+            keys = [k for k in rule.params["fields"] if k in item["properties"]]
+            if len(keys) != 2:
+                continue
+            variants = []
+            for key in keys:
+                other = [k for k in keys if k != key]
+                variants.append({**item, "properties": {n: v for n, v in item["properties"].items() if n not in other},
+                                 "required": [key]})
+            node["items"] = {"anyOf": variants}
+    return schema
 
 
 def link_names(related: dict) -> dict[str, list[str]]:
