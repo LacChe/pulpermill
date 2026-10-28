@@ -155,7 +155,7 @@ export function createGeneratePanel(hooks) {
     return box;
   }
 
-  // Draws the panel into the Outline card, under the plan panel.
+  // Draws the panel into the planning column, under the plan panel.
   function draw(container) {
     const project = hooks.getProject();
     button = null;
@@ -164,7 +164,7 @@ export function createGeneratePanel(hooks) {
     againButtons = [];
     if (!project) return;
     const panel = node("section", { className: "generate-panel" }, node("h3", { textContent: STRINGS.title }));
-    (container.querySelector(".plan-panel")?.after(panel) ?? container.prepend(panel));
+    container.append(panel);
     const gate = generateGate(hooks.schema, project);
     const info = chapterInfo(project);
     if (gate.ok || gate.reason.startsWith("cast_") || gate.reason.endsWith("_blocked")) {

@@ -513,35 +513,36 @@ function show() {
     values = held;
   }
   drawNav();
-  if (!values) { main.replaceChildren(); return; }
-  const key = `${card.id}:${values.id ?? ""}`;
-  const instanceId = card.many_per_project ? values.id : null;
-  main.classList.remove("locked");
-  renderCard(main, card, values, {
-    project,
-    schema,
-    common: schema.common,
-    review: reviewFor(key),
-    drafts: draftsFor(key),
-    judge: () => judgeCard(client, schema, project, card.id, values),
-    onFill: () => runFill(card, values),
-    notes: { get: () => noteFor(project, card.id, instanceId), set: (text) => { setNote(project, card.id, instanceId, text); touchState(); } },
-    example: { get: () => project.example_chapter ?? "", set: (text) => { setExample(project, text); touchState(); } },
-    backendWhere,
-    changed: touchState,
-    reviewChanged: updateMarks,
-  });
-  if (cardLocked(project, card.id)) makeReadOnly(main, lockedByStory(project, card.id) ? STRINGS.lockedBanner : STRINGS.writerLockedBanner);
-  drawLockButton(card);
-  if (card.id === "outline") {
+  if (values) {
+    const key = `${card.id}:${values.id ?? ""}`;
+    const instanceId = card.many_per_project ? values.id : null;
+    main.classList.remove("locked");
+    renderCard(main, card, values, {
+      project,
+      schema,
+      common: schema.common,
+      review: reviewFor(key),
+      drafts: draftsFor(key),
+      judge: () => judgeCard(client, schema, project, card.id, values),
+      onFill: () => runFill(card, values),
+      notes: { get: () => noteFor(project, card.id, instanceId), set: (text) => { setNote(project, card.id, instanceId, text); touchState(); } },
+      example: { get: () => project.example_chapter ?? "", set: (text) => { setExample(project, text); touchState(); } },
+      backendWhere,
+      changed: touchState,
+      reviewChanged: updateMarks,
+    });
+    if (cardLocked(project, card.id)) makeReadOnly(main, lockedByStory(project, card.id) ? STRINGS.lockedBanner : STRINGS.writerLockedBanner);
+    drawLockButton(card);
+  } else main.replaceChildren();
+  if (card.id === "outline" && values) {
     flagItems(main, staleBeatIds(project), STRINGS.staleBeat);
     freezeItems(main, writtenBeatIds(project), STRINGS.writtenBeat);
-    planPanel?.draw(planningColumn);
-    generatePanel?.draw(planningColumn);
-    endPanel?.draw(planningColumn);
-    exportPanel?.draw(planningColumn);
-    planningColumn.prepend(storyNode);
   }
+  planPanel?.draw(planningColumn);
+  generatePanel?.draw(planningColumn);
+  endPanel?.draw(planningColumn);
+  exportPanel?.draw(planningColumn);
+  planningColumn.prepend(storyNode);
   storyBar?.draw();
   welcome?.draw();
 }

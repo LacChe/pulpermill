@@ -141,7 +141,7 @@ export function createEndPanel(hooks) {
     status = null;
     if (!project) return;
     const panel = node("section", { className: "end-panel" }, node("h3", { textContent: STRINGS.title }));
-    (container.querySelector(".generate-panel")?.after(panel) ?? container.append(panel));
+    container.append(panel);
     const gate = endGate(project);
     if (!gate.ok) { panel.append(node("p", { className: "help", textContent: STRINGS.notDone })); return; }
     panel.append(node("p", { className: "help", textContent: STRINGS.help }));

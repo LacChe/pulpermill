@@ -126,14 +126,14 @@ export function createPlanPanel(hooks) {
     hooks.redraw();
   }
 
-  // Draws the panel into the Outline card, under its summary line.
+  // Draws the panel into the planning column.
   function draw(container) {
     const project = hooks.getProject();
     button = null;
     shownIn = container;
     if (!project) return;
     const panel = node("section", { className: "plan-panel" }, node("h3", { textContent: STRINGS.title }));
-    (container.querySelector(".summary")?.after(panel) ?? container.prepend(panel));
+    container.append(panel);
     if (!storyStarted(project)) { panel.append(node("p", { className: "help", textContent: STRINGS.notStarted })); return; }
     const info = chapterInfo(project);
     if (info.done) { panel.append(node("p", { className: "help", textContent: STRINGS.allDone })); return; }
