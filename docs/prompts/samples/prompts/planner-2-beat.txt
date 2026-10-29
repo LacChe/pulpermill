@@ -1,6 +1,6 @@
-[planner_beat planner-0.3, stage: beat]
+[planner_beat planner-0.2, stage: beat]
 
-You are planning one chapter of a novel. A chapter is a scene, not a summary: someone wants something, something presses against it, and by the end something is different. A writer will write the chapter from your plan, so make the plan a scene the writer can play, with people who act from who they are.
+You are planning one chapter of a novel. A chapter is a scene, not a summary: someone wants something, something stands in the way, they have to choose, and by the end something is different. A writer will write the chapter from your plan, so make the plan a scene the writer can play, with people who act from who they are.
 Below is everything that is true so far. Plan the next chapter.
 
 The tone
@@ -77,15 +77,14 @@ Chapter 3. Suvi and Pekka argue over the rent. Pekka hints that he can talk abou
 Chapter 4. Aino warns Suvi that the board will count the stock on Friday. Suvi searches the cellar with the key and finds it dry. She tells no one. By its end: The cellar story is false, and Suvi alone knows it.
 
 Earlier chapters' plans, as a timeline:
-Chapter 3: at The Docks, Monday noon. (easier)
-Chapter 4: at The Shop, Friday night. (harder)
+Chapter 3: at The Docks, Monday noon. It turned on: Pekka names a price. (easier)
+Chapter 4: at The Shop, Friday night. It turned on: Suvi finds the cellar dry. (harder)
 
 Elsewhere
 While the cast were elsewhere, The board closed the east market gate. It reaches the protagonist like this: Suvi has to take the long way round. Plan around it.
 
 What is set for this chapter
 The pressure the chapter turns on: The board wants the ledger before the next first-day visit and will close the shop to get it.
-What its agent means to do next: Send a clerk to count the shop's stock on Friday.
 Either kind of chapter is allowed.
 Plants still open (a payoff resolves one of these):
 The brass key goes missing from its nail (set up in chapter 1)
@@ -98,7 +97,7 @@ How recently each person on stage has appeared: Suvi last in chapter 4; Aino las
 Lean towards the places and things that have been used least, when they fit the scene.
 Bring a hidden truth to light when the story is ready for it. In the first third of the story, hold it back unless this chapter's goal depends on it, and let a person come to suspect it before they know it.
 A payoff is a consequence of an open plant: something the plant makes happen, so the plant is changed by it. Telling the plant a second time is not a payoff. A chapter that gives a plant a natural consequence is the one to choose.
-The story stands on a goal, and one pressure is in focus this chapter. Design the chapter at the place where they meet: the protagonist takes a step toward the goal, and the pressure's next move comes at that step. Work out how the meeting could go, because it decides what both become. The goal ends the chapter achieved, taken to a later stage of the same thread, or given up for something that now matters more. The pressure ends the chapter with its next move made and over, or turned into something new (a different next move, a new form, a nearer date). Plan so that the chapter after this one has something to stand on.
+A goal moves in one of three ways, and the planner decides when. Achieved: this chapter completes it, and the new aim is set by what was won or lost. Redefined: the same thread at a more advanced stage, keeping what mattered in the old goal. Abandoned: the protagonist stops pursuing it because something else now matters more, and the new aim is what they turn to. A goal that is not moving stands as it is, and the code's notes say when one is overdue or needed.
 A plant is something new. Leave it out when nothing new needs setting up, and keep clear of anything already listed as open.
 
 This is a middle chapter: tighten the squeeze, and let what the protagonist chose earlier cost them.
@@ -108,11 +107,15 @@ Your plan for this chapter:
 
 Fill the beat from your plan. Write each field as a plain sentence a writer could act on, with the names of people and places.
 - The opening place and time put the scene already in motion.
-- What the protagonist is after is the one step this scene takes toward the goal now. It is something they can act on in scenes, such as getting, finding or stopping something, and it is written so that it already runs into the pressure in focus: the writer plays the meeting from it.
-- The ending is a moment that leaves a question open (in the last chapter, the moment that closes the story). It comes out of how the meeting plays out in your plan.
-- Use a shift from the allowed list and a reveal from the hidden truths still waiting.
-- A payoff is chosen from the open plants.
+- What the protagonist is after is a goal they can act on in scenes, such as getting, finding or stopping something. It narrows one of their wants, and it moves the story on from the last chapter's aim: a later stage of it, or a new aim that follows from how the last one went.
+- What blocks it grows out of the last chapter's turn, or out of the pressure in focus.
+- Each choice is something the protagonist wants or values. Picking one costs the other.
+- The turn says what is different by the end, and it differs from the earlier turns.
+- The ending is a moment that leaves a question open (in the last chapter, the moment that closes the story).
+- Give a goal change when the chapter really wins, loses or reshapes the protagonist's goal, and write goal_now as the aim the protagonist carries out of it. Achieved: goal_now is the new aim that what was won or lost sets. Redefined: goal_now is the same thread at a more advanced stage, with what mattered in the old goal kept. Abandoned: goal_now is what the protagonist turns to, and the turn says what stopped the old goal mattering. Leave the goal change out when the goal stands.
+- Use a shift from the allowed list, a reveal from the hidden truths still waiting, and a payoff from the open plants.
 - Answer reveal, payoff and plant from your plan. When the plan names none, the right answers are an empty reveal, an empty payoff list and null for the plant. A payoff names an open plant the chapter gives a consequence to. The word "none" is never a plant.
+- A reveal names who learns it. A goal change appears only when the story moves its goal, and a redefined goal says what it has become.
 Reply with the beat only.
 
 ---- reply shape ----
@@ -136,6 +139,18 @@ Reply with the beat only.
   "collision_goal": {
    "type": "string"
   },
+  "collision_block": {
+   "type": "string"
+  },
+  "choice_a": {
+   "type": "string"
+  },
+  "choice_b": {
+   "type": "string"
+  },
+  "turn": {
+   "type": "string"
+  },
   "shift": {
    "type": "string",
    "enum": [
@@ -153,6 +168,17 @@ Reply with the beat only.
     "The cellar under the shop floods on the spring tide.",
     ""
    ]
+  },
+  "reveal_learners": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "Suvi",
+     "Aino",
+     "Pekka"
+    ]
+   }
   },
   "payoff": {
    "type": "array",
@@ -174,6 +200,17 @@ Reply with the beat only.
      "type": "null"
     }
    ]
+  },
+  "goal_change": {
+   "type": "string",
+   "enum": [
+    "achieved",
+    "redefined",
+    "abandoned"
+   ]
+  },
+  "goal_now": {
+   "type": "string"
   }
  },
  "required": [
@@ -181,9 +218,14 @@ Reply with the beat only.
   "when_time",
   "when_gap",
   "collision_goal",
+  "collision_block",
+  "choice_a",
+  "choice_b",
+  "turn",
   "shift",
   "ends_on",
   "reveal_rule",
+  "reveal_learners",
   "payoff",
   "plant"
  ],

@@ -24,7 +24,7 @@ def writer_blocks(req: dict, report: Report | None = None) -> list[tuple[str, st
     setup = req.get("setup") or {}
     protagonist = s(setup.get("protagonist"))
     chapter = int(req.get("chapter") or 1)
-    story = [render_setup(setup, req.get("goal"), chapter, req.get("chapter_count"), report=report),
+    story = [render_setup(setup, req.get("goal"), chapter, req.get("chapter_count"), report=report, goal_state=req.get("goal_state")),
              render_story_so_far(req.get("earlier_events") or [], chapter, keep_full=lim["full_chapters_writer"], report=report)]
     ending = s(req.get("previous_ending"))
     blocks = [
@@ -50,7 +50,7 @@ def planner_blocks(req: dict, report: Report | None = None) -> list[tuple[str, s
     chapter = int(req.get("chapter") or 1)
     setup = req.get("setup") or {}
     tone = render_style(req.get("style") or {}, scope="planner", report=report)
-    story = [render_setup(setup, req.get("goal"), chapter, req.get("chapter_count"), report=report),
+    story = [render_setup(setup, req.get("goal"), chapter, req.get("chapter_count"), report=report, goal_state=req.get("goal_state")),
              render_story_so_far(req.get("earlier_events") or [], chapter, keep_full=lim["full_chapters_planner"], report=report),
              render_earlier_beats(req.get("earlier_beats") or [])]
     off = req.get("offstage") or {}

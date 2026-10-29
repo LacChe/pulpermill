@@ -21,20 +21,9 @@ fields:
       reveals_landed: {label: "Reveals landed", help: "Hidden rules that actually came to light this chapter, checked against the beat's planned reveal. Only these count as revealed."}
       behaviors_seen: {label: "Behaviors seen", help: "Which character behaviors actually appeared. Used to tally use counts."}
       things_seen: {label: "Things seen", help: "Which world things actually appeared. Used to tally use counts."}
-      entanglements_shown: {label: "Entanglements shown", help: "Which pieces of knowledge, ties and holdings the chapter actually dramatized, not merely mentioned. Judged by the model that reads the chapter. Used to tally use counts, so what has been shown least is carried into the next request."}
-      goal_change:
-        label: "Goal change"
-        help: "How the chapter left the goal it began with. Achieved: the chapter completed it. Redefined: the same thread at a later stage, so partial progress counts. Abandoned: the protagonist stopped pursuing it because something else now matters more."
-        options:
-          achieved: {label: "Achieved", expand: "the goal was achieved"}
-          redefined: {label: "Redefined", expand: "the goal moved to a later stage"}
-          abandoned: {label: "Abandoned", expand: "the goal was given up"}
-      goal_now: {label: "The goal now", help: "What the protagonist wants from here on, written forward from how the chapter ended. It is the heading the next chapters plan from, so it holds for more than one chapter unless the change says it ended."}
+      entanglements_shown: {label: "Entanglements shown", help: "Which pressures, pieces of knowledge, ties and holdings the chapter actually dramatized, not merely mentioned. Judged by the model that reads the chapter. Used to tally use counts, so what has been shown least is carried into the next request."}
+      goal_landed: {label: "Goal change landed", help: "Whether the goal change planned in this chapter's beat actually happened in the text. A change that did not land stays pending."}
 rules:
-  goal_now_advances:
-    message: "The goal now reads as the goal before it in new words."
-    fix: "Say the step the protagonist takes on from the old goal, or the new obstacle it exposed."
-    judge_prompt: "Does the new goal take a step on from the goal the chapter began with, or expose a new obstacle, rather than say the same thing in other words? Answer yes or no. If no, suggest a rewrite."
   events_beat_unique:
     message: "Two entries are for the same chapter."
     fix: "Keep one entry per chapter."

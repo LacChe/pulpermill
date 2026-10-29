@@ -10,7 +10,7 @@ import { storyStarted, cardLocked } from "./gate.js";
 import { watch } from "./undo.js";
 import { msg, joinList } from "./text.js";
 import {
-  chapterInfo, beatForChapter, beatBlockers, castProblem, planIsStale, entanglementsHash, goalArc, openPlants,
+  chapterInfo, beatForChapter, beatBlockers, castProblem, planIsStale, entanglementsHash, currentGoal, goalArc, openPlants,
   availableReveals, latestShifts, nameMap, fieldDefs, entanglementsFor, castCards, beatInWords, eventsInWords, rotating,
 } from "./plan.js";
 
@@ -70,7 +70,6 @@ function worldForWriter(schema, project, names, beat) {
 
 export function generateRequest(schema, project, beat) {
   const info = chapterInfo(project);
-  const arc = goalArc(project);
   const names = nameMap(project);
   const settled = settledProject(schema, project);
   const setup = { ...copyOf(settled.setup), protagonist: names.get(project.setup?.protagonist) ?? "" };
@@ -80,9 +79,8 @@ export function generateRequest(schema, project, beat) {
     chapter: info.next, chapter_count: info.count,
     style: copyOf(settled.style),
     setup,
-    goal: arc.goal,
-    story_goal: arc.story && arc.goal !== arc.story ? arc.story : null,
-    earlier_goals: arc.goals.filter((g) => g !== arc.goal),
+    goal: currentGoal(project),
+    goal_state: goalArc(project).state === "active" ? null : goalArc(project).state,
     cast: castCards(project, beat.cast).map(copyOf),
     world: worldForWriter(schema, project, names, beat),
     entanglements: entanglementsFor(schema, project, beat.cast, names, { allPressures: false, beat }),
@@ -295,10 +293,9 @@ function addKnowledge(schema, project, next, proposals, cast, { overwriteLocked 
   return { applied, dropped };
 }
 
-// The ids the model said the chapter showed that are live ties, holdings or knowledge here (anything else is left out, a pressure
-// included: its use is the spotlight), each once.
+// The ids the model said the chapter showed that are live entanglements here (anything else is left out), each once.
 function shownIds(project, shown) {
-  const live = new Set(["ties", "holdings", "knowledge"].flatMap((k) => (project.entanglements?.[k] ?? []).map((i) => i.id)));
+  const live = new Set(["ties", "holdings", "knowledge", "pressures"].flatMap((k) => (project.entanglements?.[k] ?? []).map((i) => i.id)));
   return [...new Set(asList(shown))].filter((id) => live.has(id));
 }
 
@@ -350,9 +347,10 @@ export function applyGenerated(schema, project, beat, read, { overwriteLocked = 
   }
   const event = {
     id: fresh(), beat: beat.id, happened: e.happened, changed: e.changed ?? "", planted: planted ?? "",
-    paid_off: paid, reveals_landed: reveals, behaviors_seen: behaviors, things_seen: things, goal_change: e.goal_change, goal_now: e.goal_now,
+    paid_off: paid, reveals_landed: reveals, behaviors_seen: behaviors, things_seen: things, goal_landed: e.goal_landed,
     entanglements_shown: shownIds(project, read.shown),
   };
+  if (beat.goal_change && !e.goal_landed) warnings.push({ kind: "goal", text: msg("records.goalPending") });
   if (beat.reveal_rule && !reveals.includes(beat.reveal_rule)) warnings.push({ kind: "reveal", text: msg("records.revealStillAvailable") });
 
   // Who moved: only people in the chapter, once each.

@@ -5,7 +5,7 @@ import { schema, readyProject } from "./helpers.mjs";
 import { createMock } from "../mock.js";
 import { createClient, planChapter, generateChapter } from "../client.js";
 import { lockStaticCards, setWriterLock } from "../gate.js";
-import { placeBeat, suggestedCast, pickSpotlight } from "../plan.js";
+import { placeBeat, suggestedCast } from "../plan.js";
 import { applyGenerated, commitChapter } from "../generate.js";
 import { readGenerateReply, validate, settledProject } from "../logic.js";
 
@@ -19,13 +19,10 @@ async function planned() {
   return { project, client, beat: plan.beat };
 }
 
-const goalEnds = { goal_change: "redefined", goal_now: "Find the ledger in the cellar before Friday's count." };
-
 const reply = (over = {}) => readGenerateReply({
   ok: true, chapter_text: "She went.",
-  events: { happened: "Suvi left.", changed: "", planted: null, paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], ...goalEnds },
+  events: { happened: "Suvi left.", changed: "", planted: null, paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false },
   shifts: [], changes: [], ...over,
-  ...(over.events ? { events: { ...goalEnds, ...over.events } } : {}),
 });
 
 const entry = (over) => ({ person: "Suvi", status: "knows", rule: null, fact: "The ledger is forged.", ...over });
@@ -209,19 +206,6 @@ test("a proposal that names an existing line puts the person into it, and a line
 test("the chapter's record keeps which live entanglements it showed, and only live ones", async () => {
   const { project, beat } = await planned();
   const [pressure] = project.entanglements.pressures;
-  const [tie] = project.entanglements.ties;
-  const out = applyGenerated(schema, project, beat, reply({ shown: [tie.id, tie.id, pressure.id, "gone"] }));
-  assert.deepEqual(out.events.entanglements_shown, [tie.id], "a pressure's use is the spotlight, so it is not kept here");
-});
-
-test("a pressure the pass marks resolved is resolved once the chapter commits, and the next spotlight passes over it", async () => {
-  const { project, beat } = await planned();
-  const [pressure] = project.entanglements.pressures;
-  project.entanglements.pressures.push({ ...JSON.parse(JSON.stringify(pressure)), id: "pr000002", what: "Winter is coming and the coal is unpaid." });
-  const out = applyGenerated(schema, project, beat, reply({ changes: [{ section: "pressures", item: pressure.id, field: "status", value: "resolved" }] }));
-  assert.equal(out.changes.dropped.length, 0, JSON.stringify(out.changes.dropped));
-  assert.deepEqual(out.changes.applied.map((a) => [a.field, a.from, a.to]), [["status", "Active", "Resolved"]]);
-  commitChapter(project, out);
-  assert.equal(project.entanglements.pressures.find((x) => x.id === pressure.id).status, "resolved");
-  assert.equal(pickSpotlight(project, project.characters.map((c) => c.id)).id, "pr000002");
+  const out = applyGenerated(schema, project, beat, reply({ shown: [pressure.id, pressure.id, "gone"] }));
+  assert.deepEqual(out.events.entanglements_shown, [pressure.id]);
 });

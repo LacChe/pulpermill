@@ -81,6 +81,7 @@
     "behaviorNone": "The behavior “{words}” matches no behavior of the cast, so it was left out.",
     "behaviorSeveral": "The behavior “{words}” matches more than one behavior of the cast, so it was left out.",
     "plantsFull": "Two plants were already open, so what this chapter planted (“{planted}”) is not counted as a plant.",
+    "goalPending": "The beat planned a change to the goal, but the chapter did not carry it out. It stays pending.",
     "revealStillAvailable": "The beat planned a reveal that the chapter did not make, so it is still available.",
     "notInChapter": "“{name}” moved, but was not in this chapter, so it was left out.",
     "shiftTwice": "“{name}” appeared twice in the shifts, so the second was left out.",
@@ -293,7 +294,8 @@
       "easier": "easier"
     },
     "goal": "Current goal",
-    "goalNone": "none",
+    "goalNone": "none: the goal has ended, so the story winds down",
+    "goalNeeded": "none: the last goal ended and the story goes on, so this chapter starts a new one",
     "plants": "Open plants",
     "plantsNone": "none",
     "reveals": "Reveals still available",
@@ -309,6 +311,14 @@
     "stillBlocks": "It still has {n} problem(s) that stop generation. They are marked on the beat.",
     "unmatched": "The model named {names}, but nothing in your cards matches, so those links were left empty.",
     "dropped": "The model gave something that is not a choice here ({fields}), so it was left empty.",
+    "goalWarn": {
+      "needed": "The last goal ended and the story goes on, but this plan does not start a new one.",
+      "repeats": "The new goal is close to one the story already had.",
+      "aimRepeats": "What the protagonist is after in this chapter is close to an earlier chapter's.",
+      "stale": "The goal has stood for {n} chapters. You may want it to end or change.",
+      "early": "The story's own goal is achieved with {n} chapters still to go.",
+      "unsettled": "This is the last chapter, and the plan does not settle the story's goal."
+    },
     "undo": "Undo",
     "undone": "Put the plan back as it was.",
     "confirmReplan": "Plan this chapter again? The beat you have now will be replaced. You can undo it afterwards.",

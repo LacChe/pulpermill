@@ -13,7 +13,7 @@ from .setup import Setup
 from .outline import Outline
 from .summaries import SummaryEvents, SummaryShifts, EntanglementsHistory
 
-SCHEMA_VERSION = 2          # bump when the file format changes, so older files can be recognised and migrated
+SCHEMA_VERSION = 1          # bump when the file format changes, so older files can be recognised and migrated
 
 # Which project field holds each registered card (checked by a test so a new card cannot be forgotten).
 CARD_FIELDS = {

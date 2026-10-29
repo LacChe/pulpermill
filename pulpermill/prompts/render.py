@@ -402,7 +402,8 @@ def render_entanglements(ent: dict, cast_names: Iterable[str] = (), *, scope: st
 
 # ---- Setup, standing, the story so far ------------------------------------------------------------------------------
 
-def render_setup(setup: dict, goal: str | None, chapter: int, chapter_count: int | None, *, report: Report | None = None) -> str:
+def render_setup(setup: dict, goal: str | None, chapter: int, chapter_count: int | None, *, report: Report | None = None,
+                 goal_state: str | None = None) -> str:
     c = tx.limits()["setup"]
     fr = tx.prompt_text("frames")
     lines = []
@@ -415,6 +416,8 @@ def render_setup(setup: dict, goal: str | None, chapter: int, chapter_count: int
             lines.append(fr["chapter_one_break"].format(value=clip(setup["disruption"], c["disruption"], "setup.disruption", report)))
     if s(goal):
         lines.append(lead("setup", "goal", value=clip(goal, c["goal"], "goal", report)))
+    else:
+        lines.append(fr["goal_between"] if goal_state == "needs_goal" else fr["goal_ended"])
     if s(setup.get("stakes")):
         lines.append(lead("setup", "stakes", value=clip(setup["stakes"], c["stakes"], "setup.stakes", report)))
     total = int(chapter_count or 0)
@@ -467,7 +470,7 @@ def render_story_so_far(events: list[dict], chapter: int, *, keep_full: int, rep
 def render_earlier_beats(beats: list[dict]) -> str:
     fr = tx.prompt_text("frames")
     rows = [fr["planner_beat_item"].format(chapter=b.get("chapter"), where=s(b.get("where")), when=s(b.get("when_time")),
-                                           shift=s(b.get("shift")))
+                                           turn=sentence(s(b.get("turn"))), shift=s(b.get("shift")))
             for b in sorted(beats or [], key=lambda b: int(b.get("chapter") or 0))]
     if not rows:
         return ""
@@ -481,11 +484,12 @@ def render_earlier_beats(beats: list[dict]) -> str:
 
 def render_scene(beat: dict, *, protagonist: str, sex: str = "other", open_plants: list[dict] | None = None,
                  available_reveals: list[dict] | None = None, report: Report | None = None) -> str:
-    """The beat as one situation: where it opens, what is wanted, that something changes, where it stops, then whatever the
-    beat names (reveal, plant, payoff, offstage move) and the pressure in focus, which the aim is to meet. Empty parts leave
+    """The beat as one situation: where it opens, what is wanted and what blocks it, the choice, what changes, where it
+    stops, then whatever the beat names (reveal, plant, payoff, offstage move, goal change, spotlight). Empty parts leave
     nothing behind. The writer's own wording is quoted, never recased, because it may begin with a name."""
     fr = tx.prompt_text("frames")
     b = tx.limits()["beat"]["field"]
+    them = PRONOUNS.get(sex, PRONOUNS["other"])["them"]
     cut = lambda key: clip(beat.get(key), b, f"beat.{key}", report)
     paras = []
 
@@ -502,10 +506,21 @@ def render_scene(beat: dict, *, protagonist: str, sex: str = "other", open_plant
     if opening:
         paras.append(" ".join(opening))
 
+    engine = []
     if cut("collision_goal"):
-        paras.append(fr["scene_goal"].format(name=protagonist, value=sentence(cut("collision_goal"))))
+        engine.append(fr["scene_goal"].format(name=protagonist, value=sentence(cut("collision_goal"))))
+    if cut("collision_block"):
+        engine.append(fr["scene_block"].format(value=sentence(cut("collision_block"))))
+    if cut("choice_a") and cut("choice_b"):
+        engine.append(fr["scene_choice"].format(name=protagonist, them=them))
+        engine.append(fr["scene_choice_a"].format(value=sentence(cut("choice_a"))))
+        engine.append(fr["scene_choice_b"].format(value=sentence(cut("choice_b"))))
+    if engine:
+        paras.append("\n".join(engine))
 
-    change = [fr["scene_change"]]
+    change = []
+    if cut("turn"):
+        change.append(fr["scene_turn"].format(value=sentence(cut("turn"))))
     if s(beat.get("shift")) in fr["scene_shift"]:
         change.append(fr["scene_shift"][beat["shift"]])
     if change:
@@ -518,12 +533,9 @@ def render_scene(beat: dict, *, protagonist: str, sex: str = "other", open_plant
         statement = sentence(s(beat["reveal_rule"]))
         match = next((r for r in available_reveals or [] if s(r.get("statement")) == s(beat["reveal_rule"])), {})
         truth = sentence(s(match.get("truth")))
-        learners = join_names(beat.get("reveal_learners") or [])
+        learners = join_names(beat.get("reveal_learners") or []) or "someone on stage"
         myth = s(match.get("status")) == "false_belief" and truth
-        reveal = fr["scene_reveal_myth" if myth else "scene_reveal_hidden"].format(statement=statement, truth=truth)
-        if learners:       # who learns it is read from the chapter afterwards; a person may still name them
-            reveal = reveal.replace(" Let it arrive", " " + fr["scene_reveal_learners"].format(learners=learners) + " Let it arrive", 1)
-        paras.append(reveal)
+        paras.append(fr["scene_reveal_myth" if myth else "scene_reveal_hidden"].format(statement=statement, truth=truth, learners=learners))
     if cut("plant"):
         paras.append(fr["scene_plant"].format(value=sentence(cut("plant"))))
     if beat.get("payoff"):
@@ -534,8 +546,12 @@ def render_scene(beat: dict, *, protagonist: str, sex: str = "other", open_plant
     if s(beat.get("offstage_did")) and s(beat.get("offstage_reach")):
         paras.append(fr["scene_offstage"].format(did=sentence(soften(clip(beat["offstage_did"], b, "beat.offstage_did", report))),
                                                   name=protagonist, reach=sentence(clip(beat["offstage_reach"], b, "beat.offstage_reach", report))))
+    change = s(beat.get("goal_change"))
+    if change in fr["scene_goal_change"]:
+        if change != "redefined" or s(beat.get("goal_now")):
+            paras.append(fr["scene_goal_change"][change].format(goal_now=sentence(s(beat.get("goal_now")))))
     if s(beat.get("spotlight")):
-        paras.append(fr["scene_spotlight"].format(name=protagonist, value=sentence(clip(beat["spotlight"], b, "beat.spotlight", report))))
+        paras.append(fr["scene_spotlight"].format(value=sentence(clip(beat["spotlight"], b, "beat.spotlight", report))))
     paras.append(fr["scene_shape"])
     return "\n\n".join(paras)
 
@@ -543,21 +559,27 @@ def render_scene(beat: dict, *, protagonist: str, sex: str = "other", open_plant
 # ---- What the planner is told the code has set ----------------------------------------------------------------------
 
 def _goal_lines(req: dict, fr: dict, lim: dict, report: Report | None) -> list[str]:
-    """What the goal arc says about this chapter: the story's goal when the chapters have moved off it, how long the goal has
-    stood, the goal arc's advice near the end, and the goals so far. All of it comes from the page."""
+    """What the goal arc says about this chapter: the story's goal, how long the goal has stood, why a new goal is needed or
+    advised, the goals so far, and the directions a new goal could take. All of it comes from the page."""
     plan = req.get("goal_plan") or {}
     cap = lim["setup"]["goal"]
     lines = []
     if s(req.get("story_goal")):
         lines.append(fr["code_story_goal"].format(value=sentence(clip(req["story_goal"], cap, "story_goal", report))))
-    if s(req.get("goal")) and int(plan.get("age") or 0) >= 1:
+    end = plan.get("last_end") or {}
+    if s(plan.get("state")) == "needs_goal" and s(end.get("kind")) in fr["code_goal_set"]:
+        lines.append(fr["code_goal_set"][s(end["kind"])].format(goal=sentence(clip(end.get("goal"), cap, "last_goal", report))))
+    elif s(req.get("goal")) and int(plan.get("age") or 0) >= 1:
         lines.append(fr["code_goal_age"].format(age=int(plan["age"]), since=int(plan.get("since") or 1)))
     due = s(plan.get("due"))
     if due in fr["code_goal_due"]:
         lines.append(fr["code_goal_due"][due])
     earlier = [clip(g, cap, "earlier_goal", report).rstrip(".") for g in plan.get("earlier_goals") or [] if s(g)]
-    if earlier:
+    if earlier and (due or s(plan.get("state")) == "needs_goal"):
         lines.append(fr["code_goals_so_far"].format(items="; ".join(earlier)))
+    directions = [s(d.get("text")) for d in plan.get("directions") or [] if s(d.get("text"))]
+    if directions:
+        lines.append(fr["code_directions"] + "\n" + "\n".join(fr["code_direction_item"].format(text=sentence(clip(d, cap * 2, "direction", report))) for d in directions))
     return lines
 
 
@@ -568,8 +590,6 @@ def render_code_numbers(req: dict, *, report: Report | None = None) -> str:
     spot = req.get("spotlight") or {}
     if s(spot.get("what")):
         lines.append(fr["code_spotlight"].format(value=sentence(clip(spot["what"], lim["entanglements"]["pressure_what"], "spotlight", report))))
-        if s(spot.get("next_move")):
-            lines.append(fr["code_spotlight_move"].format(value=sentence(clip(spot["next_move"], lim["entanglements"]["next_move"], "spotlight_move", report))))
     shifts = req.get("legal_shifts") or []
     lines.append(fr["code_shifts"].format(value=" or ".join(shifts)) if shifts and len(shifts) < 2 else fr["code_no_shifts"])
     plants = req.get("open_plants") or []

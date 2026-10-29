@@ -140,9 +140,10 @@ class PlanRequest(Envelope):
     chapter_count: int
     style: dict[str, Any]
     setup: dict[str, Any]
-    goal: str | None = None                 # the goal the story stands on now: Setup's goal, then what the last chapter's Events entry says the goal became
+    goal: str | None = None                 # the current goal, worked out by the page; none while a new one is needed, or once it ended
+    goal_state: Literal["needs_goal", "ended"] | None = None   # why there is no goal: the story goes on and needs one, or it winds down
     story_goal: str | None = None           # Setup's goal, when the chapters have moved off it
-    goal_plan: dict[str, Any] | None = None  # {due, age, since, earlier_goals}: the goal arc's advice for this chapter
+    goal_plan: dict[str, Any] | None = None  # {state, due, age, since, earlier_goals, last_end, directions}: the goal arc's advice
     cast: list[dict[str, Any]]
     world: dict[str, Any]
     entanglements: dict[str, Any]
@@ -165,9 +166,8 @@ class GenerateRequest(Envelope):
     chapter_count: int
     style: dict[str, Any]
     setup: dict[str, Any]                   # normal and disruption only in chapter 1
-    goal: str | None = None                 # the goal the chapter begins from (the Events pass says how the chapter leaves it)
-    story_goal: str | None = None           # Setup's goal, when the chapters have moved off it
-    earlier_goals: list[str] = []           # the goals the story has had before this one, oldest first: a new goal is not a rewording of these
+    goal: str | None = None
+    goal_state: Literal["needs_goal", "ended"] | None = None
     cast: list[dict[str, Any]]
     world: dict[str, Any]
     entanglements: dict[str, Any]
@@ -282,9 +282,6 @@ class PlanReply(Strict):
     beat: dict[str, Any]
 
 
-GoalChange = Literal["achieved", "redefined", "abandoned"]
-
-
 class EventsOut(Strict):
     """What the chapter text shows happened. Links are names or the wording that was sent."""
     happened: str
@@ -294,8 +291,7 @@ class EventsOut(Strict):
     reveals_landed: list[str] = []
     behaviors_seen: list[str] = []
     things_seen: list[str] = []
-    goal_change: GoalChange                 # how the chapter left the goal it began with
-    goal_now: str                           # what the protagonist wants from here on
+    goal_landed: bool = False
 
 
 class ShiftOut(Strict):
@@ -337,7 +333,7 @@ class GenerateReply(Strict):
     shifts: list[ShiftOut]
     changes: list[Change]
     new_knowledge: list[NewKnowledge] = []      # optional: a reply without it is a reply with none
-    shown: list[str] = []                       # optional: ids of the knowledge entries, ties and holdings the chapter actually showed
+    shown: list[str] = []                       # optional: ids of the pressures, knowledge, ties and holdings the chapter actually showed
 
 
 class EndStoryReply(Strict):

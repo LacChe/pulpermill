@@ -1,19 +1,16 @@
-[events events-0.3, stage: events]
+[events events-0.2, stage: events]
 
 Read the chapter below and say what it shows happened. Count only what is on the page.
 Write "happened" as short plain narration: one sentence per event, in the order it happened, usually 4 to 8 sentences. An event is a moment that changes who knows what, who holds what, or where people stand. Name the people and say what they did.
 Write "changed" as one short sentence: what is different for the protagonist now, worked out from the chapter's own text rather than from the plan. Quote the few words from the chapter that show it, and when no line of the chapter shows a difference, say that nothing changed for the protagonist.
 For the plant, the payoff, the hidden truths, the dispositions and the objects, answer only from the lists given, copying the wording exactly, and only when it is clearly there in the text. Leave a list answer empty when the text does not show it, even when the beat planned it.
-Say how the chapter left the protagonist's goal, always, from what the text shows. goal_change is achieved when the chapter completed the goal, redefined when the same thread now stands at a later stage (a step won, an obstacle met, part of the way done), and abandoned when the protagonist gave the goal up because something else now matters more. goal_now is what the protagonist wants from here on, in one plain sentence about something to get, find, stop or reach. It starts from where the chapter ended and takes a step on from the goal the chapter began with, or names the aim that the chapter's new obstacle exposed. It holds for more than the next chapter, so it names the aim and leaves out this scene's small business.
-
-The goal the chapter began with: Find the ledger before the harbour board does.
-Goals the story has had before: Learn who took the ledger.
-The scene's aim, as planned: Get Pekka to say where the ledger is.
+Say that the goal changed only if the text shows it.
 
 What the beat planned for this chapter:
 A hidden truth, or a false belief, to be brought to light: The cellar under the shop floods on the spring tide.
 Something to set up: Pekka keeps a locked back room.
 Something to pay off: A second lock on the cellar's inner door.
+A goal change: redefined: Find the ledger in the cellar before Friday's count
 
 The lists to answer from (copy the wording exactly):
 
@@ -111,16 +108,8 @@ Now say what the chapter shows happened, as the reply format asks.
    },
    "maxItems": 5
   },
-  "goal_change": {
-   "type": "string",
-   "enum": [
-    "achieved",
-    "redefined",
-    "abandoned"
-   ]
-  },
-  "goal_now": {
-   "type": "string"
+  "goal_landed": {
+   "type": "boolean"
   }
  },
  "required": [
@@ -131,8 +120,7 @@ Now say what the chapter shows happened, as the reply format asks.
   "reveals_landed",
   "behaviors_seen",
   "things_seen",
-  "goal_change",
-  "goal_now"
+  "goal_landed"
  ],
  "additionalProperties": false
 }

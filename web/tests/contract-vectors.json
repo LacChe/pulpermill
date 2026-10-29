@@ -15,7 +15,7 @@
       "valid": true,
       "data": {
         "call": "fill",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "setup",
         "instance": null,
@@ -43,7 +43,7 @@
       "valid": true,
       "data": {
         "call": "fill",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "characters",
         "instance": "c0000001",
@@ -62,7 +62,7 @@
       "valid": true,
       "data": {
         "call": "judge",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "world",
         "instance": null,
@@ -87,7 +87,7 @@
       "valid": true,
       "data": {
         "call": "style_fit",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "style": {
           "person": "first"
@@ -102,7 +102,7 @@
       "name": "no call named",
       "valid": false,
       "data": {
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en"
       }
     },
@@ -126,7 +126,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "setup",
         "instance": null,
@@ -153,7 +153,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "setup",
         "instance": null,
@@ -180,7 +180,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "characters",
         "instance": null,
@@ -198,7 +198,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "setup",
         "instance": "c0000001",
@@ -225,7 +225,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "outline",
         "instance": null,
@@ -252,7 +252,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 2,
+        "schema_version": 1,
         "card": "setup",
         "instance": null,
         "note": "Suvi must find the ledger.",
@@ -304,7 +304,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "setup",
         "instance": null,
@@ -332,7 +332,7 @@
       "valid": false,
       "data": {
         "call": "judge",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "nope",
         "instance": null,
@@ -356,7 +356,7 @@
       "valid": false,
       "data": {
         "call": "judge",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "card": "world",
         "instance": null,
@@ -377,7 +377,7 @@
       "valid": false,
       "data": {
         "call": "style_fit",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "style": {
           "person": "first"
@@ -389,7 +389,7 @@
       "valid": true,
       "data": {
         "call": "offstage",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -420,7 +420,7 @@
       "valid": false,
       "data": {
         "call": "offstage",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -445,7 +445,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -483,12 +483,16 @@
         "earlier_events": [],
         "latest_shifts": [],
         "offstage": null,
+        "goal_state": null,
         "story_goal": null,
         "goal_plan": {
+          "state": "active",
           "due": null,
           "age": 0,
           "since": 1,
-          "earlier_goals": []
+          "earlier_goals": [],
+          "last_end": null,
+          "directions": []
         }
       }
     },
@@ -497,7 +501,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -544,12 +548,16 @@
             "The turn does not say what is different."
           ]
         },
+        "goal_state": null,
         "story_goal": null,
         "goal_plan": {
+          "state": "active",
           "due": null,
           "age": 0,
           "since": 1,
-          "earlier_goals": []
+          "earlier_goals": [],
+          "last_end": null,
+          "directions": []
         }
       }
     },
@@ -558,7 +566,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -596,12 +604,16 @@
         "earlier_events": [],
         "latest_shifts": [],
         "offstage": null,
+        "goal_state": null,
         "story_goal": null,
         "goal_plan": {
+          "state": "active",
           "due": null,
           "age": 0,
           "since": 1,
-          "earlier_goals": []
+          "earlier_goals": [],
+          "last_end": null,
+          "directions": []
         }
       }
     },
@@ -610,7 +622,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -652,12 +664,16 @@
           "thinking": "x",
           "beat": {}
         },
+        "goal_state": null,
         "story_goal": null,
         "goal_plan": {
+          "state": "active",
           "due": null,
           "age": 0,
           "since": 1,
-          "earlier_goals": []
+          "earlier_goals": [],
+          "last_end": null,
+          "directions": []
         }
       }
     },
@@ -666,7 +682,7 @@
       "valid": true,
       "data": {
         "call": "generate",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -691,7 +707,8 @@
           "turn": "She chooses the ledger."
         },
         "open_plants": [],
-        "available_reveals": []
+        "available_reveals": [],
+        "goal_state": null
       }
     },
     {
@@ -699,7 +716,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -720,7 +737,8 @@
         "earlier_events": [],
         "previous_ending": null,
         "open_plants": [],
-        "available_reveals": []
+        "available_reveals": [],
+        "goal_state": null
       }
     },
     {
@@ -728,7 +746,7 @@
       "valid": true,
       "data": {
         "call": "end_story",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "style": {},
         "setup": {},
@@ -752,7 +770,7 @@
       "valid": false,
       "data": {
         "call": "end_story",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "style": {},
         "setup": {},
@@ -776,7 +794,7 @@
       "valid": true,
       "data": {
         "call": "offstage",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 1,
         "chapter_count": 0,
@@ -805,7 +823,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 1,
         "chapter_count": 0,
@@ -887,12 +905,16 @@
         "latest_shifts": [],
         "offstage": null,
         "retry": null,
+        "goal_state": null,
         "story_goal": null,
         "goal_plan": {
+          "state": "active",
           "due": null,
           "age": 0,
           "since": 1,
-          "earlier_goals": []
+          "earlier_goals": [],
+          "last_end": null,
+          "directions": []
         }
       }
     },
@@ -902,7 +924,7 @@
       "valid": true,
       "data": {
         "call": "generate",
-        "schema_version": 2,
+        "schema_version": 1,
         "language": "en",
         "chapter": 1,
         "chapter_count": 0,
@@ -975,8 +997,7 @@
         },
         "open_plants": [],
         "available_reveals": [],
-        "story_goal": null,
-        "earlier_goals": []
+        "goal_state": null
       }
     },
     {
@@ -1528,8 +1549,7 @@
           "things_seen": [
             "The ledger"
           ],
-          "goal_change": "redefined",
-          "goal_now": "Find the ledger in the cellar before Friday's count."
+          "goal_landed": false
         },
         "shifts": [
           {
@@ -1598,8 +1618,7 @@
           "things_seen": [
             "The ledger"
           ],
-          "goal_change": "redefined",
-          "goal_now": "Find the ledger in the cellar before Friday's count."
+          "goal_landed": false
         },
         "shifts": [
           {
@@ -1650,8 +1669,7 @@
           "things_seen": [
             "The ledger"
           ],
-          "goal_change": "redefined",
-          "goal_now": "Find the ledger in the cellar before Friday's count."
+          "goal_landed": false
         },
         "shifts": [
           {
@@ -1689,8 +1707,7 @@
           "things_seen": [
             "The ledger"
           ],
-          "goal_change": "redefined",
-          "goal_now": "Find the ledger in the cellar before Friday's count."
+          "goal_landed": false
         },
         "shifts": [
           {
@@ -1734,8 +1751,7 @@
           "things_seen": [
             "The ledger"
           ],
-          "goal_change": "redefined",
-          "goal_now": "Find the ledger in the cellar before Friday's count."
+          "goal_landed": false
         },
         "shifts": [
           {

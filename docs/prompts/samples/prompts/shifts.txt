@@ -1,4 +1,4 @@
-[shifts shifts-0.4, stage: shifts]
+[shifts shifts-0.2, stage: shifts]
 
 Read the chapter below and say who moved. Only people whose belief, fear, want, refusal or decision changed in this chapter count, and only what changed, so compare with where each person stood at the end of the previous chapter, as the lines below give it. At most five people. An empty list is the right answer when nobody moved.
 For each person who moved, fill in only the boxes that changed:
@@ -6,16 +6,20 @@ For each person who moved, fill in only the boxes that changed:
 - fears: a fear that is new or different
 - wants: an abstract desire that changed (a concrete aim toward one person belongs on a tie's edge)
 - refuses: something they now will not do
-- decided: what they decided; for the protagonist, what they did when their aim met the pressure in focus
+- decided: what they decided; for the protagonist, say which of the two choices the chapter posed they took, or what they did instead
 Then say what changed in the live entanglements. A tie's bond or edge changes when the people's footing with each other changed on the page (a new alliance, a break, a debt, a promise); a different wording of the same footing is left as it stands. A knowledge line is for something that matters to the plot; small facts of the scene have no line. A person who now holds a false belief goes under misled, with the false thing written in belief. Use the handle given for each item. For each change give only the new words as they should read now, never "old -> new" and never the old words. When someone learns, comes to suspect or is misled about something that already has a line, put them in that line: change it (give the person under knows, suspects or misled) or add a knowledge row that names the line by its handle in entry. Never write out again something that already has a line. Add a knowledge row with the rule or fact written out only for something that has no line yet, one per person; for someone misled, say in belief what they wrongly believe. Say who actually learned the hidden truth, if one came out. When nothing changed, give an empty list.
-Last, list in shown the handles of the knowledge, ties and holdings that the chapter actually showed: something a person acts on, is held back by, learns, or that changes on the page. A handle whose subject is only named in passing is left out. When none were shown, give an empty list.
+Last, list in shown the handles of the pressures, knowledge, ties and holdings that the chapter actually showed: something a person acts on, is held back by, learns, or that changes on the page. A handle whose subject is only named in passing is left out. When none were shown, give an empty list.
 
 The people on stage:
 Suvi (she/her). Wants: Keep the shop open; Know the truth about her mother's death. Fear: Being the one who lets the shop fall. Flaw: Believes that anyone who is kind to her wants something.
 Aino (he/him). Wants: A post at the harbour board; Be trusted by someone. Fear: Being found out as a man who reads other people's letters. Flaw: Cannot leave a secret alone once he has found it.
 Pekka (he/him). Wants: A quiet old age; To be paid on time. Fear: The board taking the building. Flaw: Believes every favour is a loan.
 
-The beat planned for this to come to light: The cellar under the shop floods on the spring tide.
+The chapter posed this choice for Suvi:
+One: Keep Pekka's goodwill by saying nothing about the rent.
+The other: Learn where the ledger is by pressing him in front of Aino.
+
+The beat planned for this to come to light: The cellar under the shop floods on the spring tide. Planned to be learned by: Suvi and Aino.
 
 Where they stand now. This is where each person stands at the start of the chapter. It is newer than their portrait; where the two differ, follow this.
 Suvi now believes Pekka sold the ledger's location to the board; has decided to keep the key to herself.
@@ -23,8 +27,6 @@ Aino now fears that Suvi has seen him reading her letters.
 
 What a first reading of the chapter found:
 What happened: [what the Events pass found]
-
-The pressure in focus this chapter is P1. A pressure that was in focus has moved: give the new words for its what and its next_move as the chapter leaves them, so that a later chapter reads the pressure as it now stands (a deadline that has come closer says so, an agent who has acted has a different next move). When its next move has happened on the page, give its status as resolved.
 
 The live entanglements, each with its handle:
 Ties (you may change: bond, edge):
@@ -41,7 +43,7 @@ K1. The dock repairs were paid for by the shopkeepers, not the board. Knows it: 
 K2. The cellar under the shop floods on the spring tide. Misled about it: Suvi.
 K3. The ledger is in Pekka's rooms. Suspects it: Aino.
 
-Pressures (you may change: what, next_move, bears_on, and status, which is resolved once the next move has happened):
+Pressures (you may change: what, next_move, bears_on):
 P1. The board wants the ledger before the next first-day visit and will close the shop to get it (from The Harbour Board [offstage]; bears on Suvi, Pekka). Next move: Send a clerk to count the shop's stock on Friday.
 P2. Winter is coming and the shop has not yet paid its coal (from the season; bears on Suvi).
 
@@ -263,40 +265,6 @@ Now say who moved and what changed, as the reply format asks.
       "type": "object",
       "properties": {
        "section": {
-        "const": "pressures"
-       },
-       "item": {
-        "type": "string",
-        "enum": [
-         "P1",
-         "P2"
-        ]
-       },
-       "field": {
-        "type": "string",
-        "enum": [
-         "status"
-        ]
-       },
-       "value": {
-        "type": "string",
-        "enum": [
-         "resolved"
-        ]
-       }
-      },
-      "required": [
-       "section",
-       "item",
-       "field",
-       "value"
-      ],
-      "additionalProperties": false
-     },
-     {
-      "type": "object",
-      "properties": {
-       "section": {
         "const": "knowledge"
        },
        "item": {
@@ -487,10 +455,12 @@ Now say who moved and what changed, as the reply format asks.
      "H2",
      "K1",
      "K2",
-     "K3"
+     "K3",
+     "P1",
+     "P2"
     ]
    },
-   "maxItems": 8
+   "maxItems": 10
   }
  },
  "required": [

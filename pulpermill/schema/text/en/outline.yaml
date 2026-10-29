@@ -8,13 +8,13 @@ groups:
 fields:
   beats:
     label: "Beats"
-    help: "Each beat sets up a chapter: where it opens, what the protagonist is after in this scene, and where it ends. The pressure in focus is what that aim meets; how the meeting goes is for the chapter to decide."
+    help: "Each beat sets up a chapter: where it opens, what the protagonist is after, what stands in the way, and what they must decide."
     empty: "No beats yet. Choose a cast and press Plan, or add one by hand."
     add: "Add a beat"
     delete_confirm: "Delete this beat?"
     item_title: "Chapter {chapter}"
     lead_in: "Chapter beats:\n{items}"
-    item_template: "Chapter {chapter}. We open at {where}, {when_time}{when_gap}. Present: {cast}. The protagonist is after {collision_goal}. This chapter is {shift}. It ends on {ends_on}. {reveal_rule} {reveal_learners} Set up for later: {plant} Pays off: {payoff} {offstage_did} {offstage_reach}"
+    item_template: "Chapter {chapter}. We open at {where}, {when_time}{when_gap}. Present: {cast}. The protagonist is after {collision_goal}, but {collision_block}. They must choose between {choice_a} and {choice_b}. By the end, {turn}. This chapter is {shift}. It ends on {ends_on}. {reveal_rule} {reveal_learners} Set up for later: {plant} Pays off: {payoff} {offstage_did} {offstage_reach} {goal_change} {goal_now}"
     item_join: "\n"
     item_fields:
       chapter: {label: "Chapter", help: "Which chapter this beat is for. Set by the system.", placeholder: "Set by the system"}
@@ -23,7 +23,11 @@ fields:
       when_time: {label: "When", help: "The day and time the chapter opens. The scene is already in motion.", placeholder: "e.g. Tuesday, just after the shop opens", why: "The model starts mid-scene at this moment, and later plans read these times as a timeline."}
       when_gap: {label: "Time since last chapter", help: "How long it has been. Leave blank for chapter 1.", placeholder: "e.g. Three days later", why: "Lets the model account for what happened in between."}
       cast: {label: "Cast", help: "Who is on stage. You pick it before planning, and the system suggests the least-used characters. The protagonist is always included.", placeholder: "Choose who is on stage (up to 5)", why: "Only these characters appear in the chapter. Anyone else can be mentioned or thought of, but doesn't show up.", no_options: "No characters yet. Add some in Characters first."}
-      collision_goal: {label: "The protagonist is after", help: "The one step this scene takes toward the story's goal now, written so that it already runs into the pressure in focus. The writer plays the meeting between the two, and how it goes decides what the goal and the pressure become.", placeholder: "e.g. Get the guild clerk to sign the permit before the auditor arrives", why: "Gives the chapter its engine: a step someone is taking, and a pressure that meets it.", examples: {"good": ["Get the guild clerk to sign the permit before the auditor arrives", "Reach the cellar before the board's clerk does"], "avoid": ["Feel better about her father", "Figure out her life"]}}
+      collision_goal: {label: "The protagonist is after", help: "What the protagonist is trying to get in this chapter.", placeholder: "e.g. Find out who left the ledger", why: "Gives the chapter its engine: something wanted, and something in the way.", examples: {"good": ["Find out who left the ledger", "Get the guild clerk to sign the permit before noon"], "avoid": ["Feel better about her father", "Figure out her life"]}}
+      collision_block: {label: "What blocks it", help: "What stands in the way. It should follow from the previous chapter's choice.", placeholder: "e.g. The only witness is the landlord, who will talk only if Ines stays quiet about the rent", why: "An obstacle that grows out of the last chapter's choice keeps the story connected."}
+      choice_a: {label: "Option A", help: "One side of the choice. Each option is a want or a value, and picking one costs the other.", placeholder: "e.g. Keep the landlord's goodwill", why: "Two options that each cost the other force a decision, and that decision is what makes the chapter matter."}
+      choice_b: {label: "Option B", help: "The other side of the choice.", placeholder: "e.g. Learn the truth about the ledger"}
+      turn: {label: "Turn", help: "What is different by the end of the chapter. It is best when it pays off something set up earlier.", placeholder: "e.g. Ines learns the customer's name, but the guild now knows she is asking.", why: "Naming what is different by the end makes the model write toward a change, not just an event.", examples: {"good": ["Ines learns the customer's name, but the guild now knows she is asking"], "avoid": ["Things get worse", "Ines thinks about what happened"]}}
       shift:
         label: "Shift"
         help: "Whether this chapter makes things harder or easier. Easier is a breath, never a pause: it still changes something, and the next chapter is harder. Choices that aren't allowed right now are disabled."
@@ -39,7 +43,16 @@ fields:
       reveal_learners: {label: "Who learns it", help: "Which characters learn the revealed rule.", placeholder: "Choose who learns it", why: "Sets who the model expects to be in the know after this chapter.", no_options: "No characters yet. Add some in Characters first.", visible_if: {"reveal_rule": "filled"}}
       offstage_did: {label: "Offstage move", help: "Optional. Something that changed in the background since the last chapter, away from the cast: a group acting, a place changing. It is never about the spotlighted pressure, which always involves someone on stage. The offstage pass writes it.", placeholder: "e.g. The guild closed the east market gate", why: "The world keeps changing while the protagonist isn't looking, and this records what changed."}
       offstage_reach: {label: "How it reaches the protagonist", help: "How the offstage change reaches the protagonist this chapter.", placeholder: "e.g. Ines finds the long way round to the print shop"}
-      spotlight: {label: "Spotlight", help: "The pressure this chapter puts in focus, which the protagonist's aim meets. It always involves someone in the cast: its agent, or a character or group it bears on. The system picks it so planning stays consistent, and you can change it.", placeholder: "Choose a pressure", why: "Rotates attention across the pressures, so one thread doesn't take over every chapter.", no_options: "No pressures yet. Add some in Entanglements first."}
+      goal_change:
+        label: "Goal change"
+        help: "Only when the goal moves. Achieved and abandoned both end the goal, and the remaining chapters wind down with no new goal. A change that did not land in the text stays pending and is tried again."
+        why: "Marks the moment the story's central aim ends or changes."
+        options:
+          achieved: {label: "Achieved", expand: "the protagonist's goal has been achieved", description: "Ines hands the ledger to the auditor, and the audit is over."}
+          redefined: {label: "Redefined", expand: "the protagonist's goal has changed to:", description: "Ines stops wanting the ledger and starts wanting whoever forged it."}
+          abandoned: {label: "Abandoned", expand: "the protagonist has abandoned the goal", description: "Ines lets the audit take the shop and walks away."}
+      goal_now: {label: "The goal now", help: "What the goal has become. Only for a redefined goal. It follows the same advice as Setup's goal: something to act on, with a clear outcome, that narrows a want.", placeholder: "e.g. Prove the ledger was forged before the guild meets", visible_if: {"goal_change": "redefined"}}
+      spotlight: {label: "Spotlight", help: "The pressure this chapter puts in focus. It always involves someone in the cast: its agent, or a character or group it bears on. The system picks it so planning stays consistent, and you can change it.", placeholder: "Choose a pressure", why: "Rotates attention across the pressures, so one thread doesn't take over every chapter.", no_options: "No pressures yet. Add some in Entanglements first."}
       planned_from: {label: "Planned from", help: "A fingerprint of the live state this beat was planned from. Set by the system. If the live state changes afterward, the beat is flagged as planned from older state.", placeholder: "Set when the beat is planned"}
 rules:
   outline_link_broken:
@@ -51,6 +64,9 @@ rules:
   when_gap_after_first:
     message: "A chapter after the first needs the time since the last one."
     fix: "Say how long it has been."
+  reveal_learners_needed:
+    message: "A reveal needs the characters who learn it."
+    fix: "Pick who learns it."
   reveal_not_repeated:
     message: "This rule has already come to light in a written chapter."
     fix: "Pick a different rule, or leave the reveal empty."
@@ -60,15 +76,38 @@ rules:
   offstage_both_or_neither:
     message: "An offstage change needs both what changed and how it reaches the protagonist."
     fix: "Fill in both, or clear both."
+  goal_now_for_redefined:
+    message: "A redefined goal needs the new goal."
+    fix: "Say what the goal is now."
   shift_legal:
     message: "This shift isn't allowed here."
     fix: "Pick the other one. Pacing limits come from the chapter number and what is still open."
+  goal_now_is_action:
+    message: "The new goal reads like a feeling or a theme, not something to act on."
+    fix: "Say what the protagonist is now concretely trying to do."
+    judge_prompt: "Is this something a person can act on in scenes, such as getting, finding, stopping or reaching something? Answer yes or no. If no, suggest a rewrite as an action."
+  goal_now_checkable:
+    message: "A reader couldn't tell whether the new goal succeeded, failed or stopped mattering."
+    fix: "Make it something with a clear outcome."
+    judge_prompt: "Could a reader tell whether this goal succeeded, failed or stopped mattering? Answer yes or no. If no, suggest a sharper version."
+  goal_now_touches_cards:
+    message: "The new goal doesn't connect to anything on the other cards."
+    fix: "Narrow one of the protagonist's wants into it, or tie it to a pressure or tie. A goal that touches nothing has nothing to collide with."
+    judge_prompt: "Does this goal narrow one of the protagonist's wants, and bear on at least one pressure or tie? Answer yes or no for each. If no, suggest the closest connection."
   spotlight_in_cast:
     message: "The spotlighted pressure doesn't involve anyone in the cast."
     fix: "Pick a pressure that bears on someone on stage, or change the cast."
-  aim_not_repeated:
-    message: "This aim is too close to an earlier one."
-    fix: "Aim at a different step, or at what the last chapter changed."
+  turn_not_repeated:
+    message: "This turn is too close to an earlier one."
+    fix: "Make something different happen."
+  turn_is_a_change:
+    message: "The turn doesn't say what is different by the end."
+    fix: "State what has changed."
+    judge_prompt: "Does this text say what is different by the end of the chapter? Answer yes or no. If no, suggest a rewrite."
+  choice_is_costly:
+    message: "These options aren't a real choice."
+    fix: "Make each a want or a value, so picking one costs the other."
+    judge_prompt: "Is each option a want or a value of the protagonist, and does picking one cost the other? Answer yes or no. If no, suggest a rewrite."
   ends_on_open_question:
     message: "This stopping point doesn't leave a question open."
     fix: "End on a moment that makes the reader ask what comes next."

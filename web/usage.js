@@ -2,12 +2,9 @@
 //
 // A value counts as used in a chapter only when the written chapter shows it, never because a beat planned it.
 //   People, groups, places and things are looked for by name in the chapter's text: a name is exact, so there is nothing to judge.
-//   Behaviors, ties, holdings and knowledge are sentences, and whether a sentence "happened" is a judgment. The model that reads
-//   the chapter afterwards says which of them it showed (`behaviors_seen`, `entanglements_shown` in the chapter's record), and that
-//   record is what is counted.
-//   A pressure is counted by the spotlight, never by that judgment: the chapter that put it in the spotlight moved it (the pass after
-//   the chapter gives it its new state), so the spotlight is its use. The model over-reports what a chapter showed, and counts that
-//   tie send the rotation back to the first pressure every time.
+//   Behaviors, pressures, ties, holdings and knowledge are sentences, and whether a sentence "happened" is a judgment. The model
+//   that reads the chapter afterwards says which of them it showed (`behaviors_seen`, `entanglements_shown` in the chapter's
+//   record), and that record is what is counted.
 //
 // A request carries at most SEND_MAX of each kind of value that rotates (places, things, ties, holdings, knowledge, pressures),
 // the least used first. A value the beat for this chapter names, by link or by name, is always carried, and does not take a
@@ -56,7 +53,7 @@ export function usageOf(project, except = null) {
   const ent = project.entanglements ?? {};
   for (const chapter of writtenChapters(project)) {
     if (except !== null && chapter.n === except) continue;
-    const { n, text, events, beat } = chapter;
+    const { n, text, events } = chapter;
     for (const c of project.characters ?? []) if (mentionsPerson(text, c.name)) mark(c.id, n);
     for (const g of world.powers ?? []) if (mentionsPerson(text, g.name)) mark(g.id, n);
     for (const p of world.places ?? []) if (mentions(text, p.name)) mark(p.id, n);
@@ -65,8 +62,7 @@ export function usageOf(project, except = null) {
     for (const c of project.characters ?? []) for (const b of c.behaviors ?? []) if (seen.has(b.id)) mark(b.id, n);
     const landed = new Set(asList(events?.reveals_landed));
     const shown = new Set(asList(events?.entanglements_shown));
-    for (const group of [ent.ties, ent.holdings]) for (const x of group ?? []) if (shown.has(x.id)) mark(x.id, n);
-    if ((ent.pressures ?? []).some((x) => x.id === beat?.spotlight)) mark(beat.spotlight, n);
+    for (const group of [ent.ties, ent.holdings, ent.pressures]) for (const x of group ?? []) if (shown.has(x.id)) mark(x.id, n);
     for (const k of ent.knowledge ?? []) if (shown.has(k.id) || (k.rule && landed.has(k.rule))) mark(k.id, n);
   }
   return used;
@@ -74,7 +70,7 @@ export function usageOf(project, except = null) {
 
 // The words of a beat that name things: everything it says in text.
 export function beatWords(beat) {
-  return ["collision_goal", "ends_on", "plant", "when_time", "when_gap", "offstage_did", "offstage_reach"]
+  return ["turn", "collision_goal", "collision_block", "choice_a", "choice_b", "ends_on", "plant", "when_time", "when_gap", "offstage_did", "offstage_reach"]
     .map((k) => beat?.[k]).filter(present).join("\n");
 }
 

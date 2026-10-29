@@ -1,5 +1,5 @@
 {
- "schema_version": 2,
+ "schema_version": 1,
  "lang": "en",
  "max_items": 5,
  "common": {
@@ -2618,7 +2618,7 @@
     {
      "key": "beats",
      "label": "Beats",
-     "help": "Each beat sets up a chapter: where it opens, what the protagonist is after in this scene, and where it ends. The pressure in focus is what that aim meets; how the meeting goes is for the chapter to decide.",
+     "help": "Each beat sets up a chapter: where it opens, what the protagonist is after, what stands in the way, and what they must decide.",
      "input": null,
      "kind": "pairs",
      "group": "beats",
@@ -2706,21 +2706,73 @@
       {
        "key": "collision_goal",
        "label": "The protagonist is after",
-       "help": "The one step this scene takes toward the story's goal now, written so that it already runs into the pressure in focus. The writer plays the meeting between the two, and how it goes decides what the goal and the pressure become.",
+       "help": "What the protagonist is trying to get in this chapter.",
        "input": "text",
        "kind": "note",
        "required": true,
        "filled_by": "planner",
-       "placeholder": "e.g. Get the guild clerk to sign the permit before the auditor arrives",
-       "why": "Gives the chapter its engine: a step someone is taking, and a pressure that meets it.",
+       "placeholder": "e.g. Find out who left the ledger",
+       "why": "Gives the chapter its engine: something wanted, and something in the way.",
        "examples": {
         "good": [
-         "Get the guild clerk to sign the permit before the auditor arrives",
-         "Reach the cellar before the board's clerk does"
+         "Find out who left the ledger",
+         "Get the guild clerk to sign the permit before noon"
         ],
         "avoid": [
          "Feel better about her father",
          "Figure out her life"
+        ]
+       }
+      },
+      {
+       "key": "collision_block",
+       "label": "What blocks it",
+       "help": "What stands in the way. It should follow from the previous chapter's choice.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner",
+       "placeholder": "e.g. The only witness is the landlord, who will talk only if Ines stays quiet about the rent",
+       "why": "An obstacle that grows out of the last chapter's choice keeps the story connected."
+      },
+      {
+       "key": "choice_a",
+       "label": "Option A",
+       "help": "One side of the choice. Each option is a want or a value, and picking one costs the other.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner",
+       "placeholder": "e.g. Keep the landlord's goodwill",
+       "why": "Two options that each cost the other force a decision, and that decision is what makes the chapter matter."
+      },
+      {
+       "key": "choice_b",
+       "label": "Option B",
+       "help": "The other side of the choice.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner",
+       "placeholder": "e.g. Learn the truth about the ledger"
+      },
+      {
+       "key": "turn",
+       "label": "Turn",
+       "help": "What is different by the end of the chapter. It is best when it pays off something set up earlier.",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner",
+       "placeholder": "e.g. Ines learns the customer's name, but the guild now knows she is asking.",
+       "why": "Naming what is different by the end makes the model write toward a change, not just an event.",
+       "examples": {
+        "good": [
+         "Ines learns the customer's name, but the guild now knows she is asking"
+        ],
+        "avoid": [
+         "Things get worse",
+         "Ines thinks about what happened"
         ]
        }
       },
@@ -2799,7 +2851,7 @@
        "ref": [
         "characters"
        ],
-       "filled_by": "human",
+       "filled_by": "planner",
        "placeholder": "Choose who learns it",
        "why": "Sets who the model expects to be in the know after this chapter.",
        "no_options": "No characters yet. Add some in Characters first.",
@@ -2865,9 +2917,49 @@
        "placeholder": "e.g. Ines finds the long way round to the print shop"
       },
       {
+       "key": "goal_change",
+       "label": "Goal change",
+       "help": "Only when the goal moves. Achieved and abandoned both end the goal, and the remaining chapters wind down with no new goal. A change that did not land in the text stays pending and is tried again.",
+       "input": "select",
+       "kind": "axis",
+       "required": false,
+       "filled_by": "planner",
+       "why": "Marks the moment the story's central aim ends or changes.",
+       "options": [
+        {
+         "value": "achieved",
+         "label": "Achieved",
+         "description": "Ines hands the ledger to the auditor, and the audit is over."
+        },
+        {
+         "value": "redefined",
+         "label": "Redefined",
+         "description": "Ines stops wanting the ledger and starts wanting whoever forged it."
+        },
+        {
+         "value": "abandoned",
+         "label": "Abandoned",
+         "description": "Ines lets the audit take the shop and walks away."
+        }
+       ]
+      },
+      {
+       "key": "goal_now",
+       "label": "The goal now",
+       "help": "What the goal has become. Only for a redefined goal. It follows the same advice as Setup's goal: something to act on, with a clear outcome, that narrows a want.",
+       "input": "text",
+       "kind": "note",
+       "required": false,
+       "filled_by": "planner",
+       "placeholder": "e.g. Prove the ledger was forged before the guild meets",
+       "visible_if": {
+        "goal_change": "redefined"
+       }
+      },
+      {
        "key": "spotlight",
        "label": "Spotlight",
-       "help": "The pressure this chapter puts in focus, which the protagonist's aim meets. It always involves someone in the cast: its agent, or a character or group it bears on. The system picks it so planning stays consistent, and you can change it.",
+       "help": "The pressure this chapter puts in focus. It always involves someone in the cast: its agent, or a character or group it bears on. The system picks it so planning stays consistent, and you can change it.",
        "input": "select",
        "kind": "note",
        "required": true,
@@ -2949,6 +3041,22 @@
      "fix": "Say how long it has been."
     },
     {
+     "id": "reveal_learners_needed",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "required_if",
+     "params": {
+      "field": "reveal_learners",
+      "when_present": "reveal_rule"
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "A reveal needs the characters who learn it.",
+     "fix": "Pick who learns it."
+    },
+    {
      "id": "reveal_not_repeated",
      "severity": "block",
      "fields": [
@@ -3000,6 +3108,24 @@
      "fix": "Fill in both, or clear both."
     },
     {
+     "id": "goal_now_for_redefined",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "required_if",
+     "params": {
+      "field": "goal_now",
+      "when": {
+       "goal_change": "redefined"
+      }
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "A redefined goal needs the new goal.",
+     "fix": "Say what the goal is now."
+    },
+    {
      "id": "shift_legal",
      "severity": "block",
      "fields": [
@@ -3015,6 +3141,49 @@
      "needs_model": false,
      "message": "This shift isn't allowed here.",
      "fix": "Pick the other one. Pacing limits come from the chapter number and what is still open."
+    },
+    {
+     "id": "goal_now_is_action",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "The new goal reads like a feeling or a theme, not something to act on.",
+     "fix": "Say what the protagonist is now concretely trying to do."
+    },
+    {
+     "id": "goal_now_checkable",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "A reader couldn't tell whether the new goal succeeded, failed or stopped mattering.",
+     "fix": "Make it something with a clear outcome."
+    },
+    {
+     "id": "goal_now_touches_cards",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [
+      "protagonist_wants",
+      "pressures",
+      "ties"
+     ],
+     "needs_model": true,
+     "message": "The new goal doesn't connect to anything on the other cards.",
+     "fix": "Narrow one of the protagonist's wants into it, or tie it to a pressure or tie. A goal that touches nothing has nothing to collide with."
     },
     {
      "id": "spotlight_in_cast",
@@ -3035,22 +3204,49 @@
      "fix": "Pick a pressure that bears on someone on stage, or change the cast."
     },
     {
-     "id": "aim_not_repeated",
+     "id": "turn_not_repeated",
      "severity": "warn",
      "fields": [
       "beats"
      ],
      "check": "similar_to_earlier",
-     "params": {
-      "field": "collision_goal"
-     },
+     "params": {},
      "context": [
-      "earlier_aims",
+      "earlier_turns",
       "changed_lines"
      ],
      "needs_model": false,
-     "message": "This aim is too close to an earlier one.",
-     "fix": "Aim at a different step, or at what the last chapter changed."
+     "message": "This turn is too close to an earlier one.",
+     "fix": "Make something different happen."
+    },
+    {
+     "id": "turn_is_a_change",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "The turn doesn't say what is different by the end.",
+     "fix": "State what has changed."
+    },
+    {
+     "id": "choice_is_costly",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "",
+     "params": {},
+     "context": [
+      "protagonist_wants",
+      "protagonist_values"
+     ],
+     "needs_model": true,
+     "message": "These options aren't a real choice.",
+     "fix": "Make each a want or a value, so picking one costs the other."
     },
     {
      "id": "ends_on_open_question",

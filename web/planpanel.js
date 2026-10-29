@@ -63,10 +63,11 @@ export function createPlanPanel(hooks) {
   function facts(project, ids, chapter) {
     const spotlight = pickSpotlight(project, ids, chapter);
     const arc = goalArc(project);
+    const goal = arc.goal ?? (arc.state === "needs_goal" ? STRINGS.goalNeeded : null);
     const rows = [
       [STRINGS.spotlight, spotlight?.what ? (spotlight.what.length > 140 ? fill(STRINGS.truncated, { text: spotlight.what.slice(0, 140) }) : spotlight.what) : STRINGS.spotlightNone],
       [STRINGS.shifts, joinList(shiftsForChapter(project, chapter).map((s) => STRINGS.shiftWords[s]))],
-      [STRINGS.goal, arc.goal ?? STRINGS.goalNone],
+      [STRINGS.goal, goal ?? STRINGS.goalNone],
       [STRINGS.plants, String(openPlants(project).length || STRINGS.plantsNone)],
       [STRINGS.reveals, String(availableReveals(project).length)],
       [STRINGS.offstage, offstageDue(chapter) ? STRINGS.offstageYes : STRINGS.offstageNo],

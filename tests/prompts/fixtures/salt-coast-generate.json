@@ -1,5 +1,5 @@
 {
-  "call": "generate", "schema_version": 2, "language": "en",
+  "call": "generate", "schema_version": 1, "language": "en",
   "chapter": 5, "chapter_count": 8,
   "style": {
     "person": "first", "tense": "past", "distance": "close", "humor": "dry", "pacing": "balanced",
@@ -17,7 +17,6 @@
     "stakes": "If the board finds it first, the shop and everyone who drinks there go under.", "chapter_count": 8
   },
   "goal": "Find the ledger before the harbour board does.",
-  "earlier_goals": ["Learn who took the ledger."],
   "cast": [
     {"id": "c0000001", "name": "Suvi", "age": 34, "sex": "female",
      "appearance": "Short and broad-shouldered, with salt-cracked hands and a dark braid she keeps pinned under a cap.",
@@ -122,12 +121,17 @@
     "id": "b0000005", "chapter": 5, "cast": ["Suvi", "Aino", "Pekka"],
     "where": "The Docks", "when_time": "Tuesday, just after the shop opens", "when_gap": "Three days later",
     "collision_goal": "Get Pekka to say where the ledger is",
+    "collision_block": "Pekka will talk only if Suvi stays quiet about the rent she owes",
+    "choice_a": "Keep Pekka's goodwill by saying nothing about the rent",
+    "choice_b": "Learn where the ledger is by pressing him in front of Aino",
+    "turn": "Suvi learns the ledger is in the cellar, but Aino now knows she is asking",
     "shift": "harder",
     "ends_on": "Suvi finds her own initials in the ledger's last entry",
     "reveal_rule": "The cellar under the shop floods on the spring tide.", "reveal_learners": ["Suvi", "Aino"],
     "plant": "Pekka keeps a locked back room",
     "payoff": ["A second lock on the cellar's inner door."],
     "offstage_did": "The board closed the east market gate.", "offstage_reach": "Suvi has to take the long way round the docks.",
+    "goal_change": "redefined", "goal_now": "Find the ledger in the cellar before Friday's count",
     "spotlight": "The board wants the ledger before the next first-day visit and will close the shop to get it."
   },
   "open_plants": [

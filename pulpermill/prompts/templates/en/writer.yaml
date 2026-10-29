@@ -2,7 +2,7 @@
 # The material between the rules and the section's job is rendered by pulpermill/prompts/blocks.py (writer_blocks).
 # Tokens in {braces} are filled by pulpermill/prompts/prompts.py. Every line says what to do.
 name: writer
-version: "writer-0.3"
+version: "writer-0.2"
 
 rules: |
   {language_line}

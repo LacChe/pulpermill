@@ -78,7 +78,7 @@ def test_leaked_structure_is_flagged():
 
 
 def test_a_beat_sentence_copied_into_the_story_is_flagged():
-    r = req(collision_goal="Suvi learns the ledger is in the cellar, but Aino now knows she is asking")
+    r = req(turn="Suvi learns the ledger is in the cellar, but Aino now knows she is asking")
     text = "He stared. Suvi learns the ledger is in the cellar, but Aino now knows she is asking, and so on."
     assert "beat-echo" in ids(C.check_echo(text, r["beat"]))
     assert not C.check_echo("She learned where it was, and Aino saw her learn it.", r["beat"])

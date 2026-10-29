@@ -44,6 +44,7 @@ def test_holdings_follow_the_pairing_table():
 def test_beat_sample_cast_cap_and_filled_by():
     from pulpermill.schema.outline import Beat
     base = dict(chapter=1, where="p1", when_time="Dawn", cast=["c1"], collision_goal="the ledger",
+                collision_block="a locked door", choice_a="safety", choice_b="loyalty", turn="the door opens",
                 shift="harder", ends_on="a knock", spotlight="pr1")
     b = Beat(**base)
     assert b.stale is False and b.when_gap is None and b.reveal_rule is None and "written" not in Beat.model_fields
@@ -66,7 +67,7 @@ def test_plants_are_one_per_chapter_two_open_two_payoffs():
 def test_records_and_shifts_sample():
     from pulpermill.schema.summaries import CharacterShift, EventsEntry
     CharacterShift(beat="b1", character="c1", decided="to stay")
-    e = EventsEntry(beat="b2", happened="x", planted="a locked box", paid_off=["e1"], goal_change="redefined", goal_now="Find the ledger in the cellar.")
+    e = EventsEntry(beat="b2", happened="x", planted="a locked box", paid_off=["e1"])
     assert e.changed is None and e.reveals_landed is None
 
 
@@ -117,21 +118,16 @@ def test_plants_and_payoffs_are_planned_on_the_beat_and_checked_when_landed():
     # a reveal counts as used only when it landed, not when it was planned
     assert rules["reveal_not_repeated"].check == "not_already_landed"
     assert rules["reveal_not_repeated"].params["landed_in"] == "summary_events.reveals_landed"
-    # the extractor says how the chapter left the goal, every chapter: the beat plans no goal change
-    for name in ("goal_change", "goal_now"):
-        field = EventsEntry.model_fields[name]
-        assert field.is_required() and field.json_schema_extra["filled_by"] == "extractor", name
-        assert name not in Beat.model_fields, name
-    assert "goal_landed" not in EventsEntry.model_fields
+    # the extractor says whether the planned goal change happened; a change that did not land stays pending
+    goal_landed = EventsEntry.model_fields["goal_landed"]
+    assert goal_landed.default is False and not goal_landed.is_required()
+    assert goal_landed.json_schema_extra["filled_by"] == "extractor"
 
 
-def test_the_goal_now_is_judged_for_advancing_and_the_beat_plans_no_goal_or_turn():
-    rule = {r.id: r for r in CARDS["summary_events"][3]}["goal_now_advances"]
-    assert rule.severity == "warn" and rule.needs_model
-    from pulpermill.schema.outline import Beat
-    for gone in ("goal_change", "goal_now", "turn", "collision_block", "choice_a", "choice_b"):
-        assert gone not in Beat.model_fields, gone
-    assert Beat.model_fields["reveal_learners"].json_schema_extra["filled_by"] == "human" and not Beat.model_fields["reveal_learners"].is_required()
+def test_a_redefined_goal_gets_the_same_warnings_as_setups_goal():
+    rules = {r.id: r for r in CARDS["outline"][3]}
+    for rid in ("goal_now_is_action", "goal_now_checkable", "goal_now_touches_cards"):
+        assert rules[rid].severity == "warn" and rules[rid].needs_model, rid
 
 
 def test_shifts_hold_abstract_inner_change_and_no_hides():

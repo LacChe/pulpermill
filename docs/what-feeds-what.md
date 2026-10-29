@@ -84,14 +84,16 @@
 | where | W, P, C | Place counts are tallied from here. |
 | when\_time, when\_gap | W, P | W anchors the opening. P sees the earlier beats' times as a timeline. |
 | cast | W, X2, C | Chosen by the human before Plan (code suggests). Counts and last-appeared come from here. |
-| collision\_goal | W, X1, J, C | The scene's one step toward the goal now, written so that it meets the pressure in focus. X1 sees it with the goal. The writer plays the meeting; how it goes is not planned. C warns when it repeats an earlier aim or a changed line. |
+| collision\_goal, collision\_block | W, J | The scene engine. |
+| choice\_a, choice\_b | W, X2, J | Decided: X2 sees them so `decided` records which was taken. |
+| turn | W, J, P (as earlier turns) |  |
 | shift (harder or easier) | W, C | C limits the legal values. |
 | ends\_on | W, J |  |
-| reveal\_rule, reveal\_learners | W, X1, X2, C | X1 confirms it landed. Only landed reveals leave the available list. X2 proposes who actually learned it, so `reveal_learners` is optional and the planner does not fill it. |
+| reveal\_rule, reveal\_learners | W, X1, X2, C | X1 confirms it landed. Only landed reveals leave the available list. X2 proposes who actually learned it. |
 | plant (new, optional) | W, X1, C | What this chapter plants. X1 confirms it landed (Events `planted`). It is open once landed. |
 | payoff (new, optional) | W, X1, C | Picked from the open plants. X1 confirms it landed (Events `paid_off`). A payoff that did not land stays open. |
 | offstage\_did, offstage\_reach | W | Written by the offstage pass (O), only when a change is due. Free text about background groups and places, never about the spotlight. |
-| (no goal fields) | | The beat plans no goal change, no turn and no choice. Goal changes live on the Events entry (below). |
+| goal\_change, goal\_now | W, P, X1, C | X1 confirms it landed (Events `goal_landed`). A change that did not land stays pending and is tried again. `goal_now` gets the same warnings as Setup's goal. |
 | spotlight | W, P | C picks it, always a pressure that involves someone in the cast. |
 
 ## Records and project data
@@ -100,7 +102,7 @@
 | --- | --- | --- |
 | Chapter text | W (the previous chapter's ending, as much as the context allows), X1, X2 (this chapter), export | E never reads it. |
 | Events: happened | W, P, E | Earlier chapters as a running summary. One sentence per event, usually 4 to 8 sentences. An event changes who knows what, who holds what or where people stand. E always reads these, never the full chapters. |
-| Events: changed | P, W, C (aim-not-repeated) |  |
+| Events: changed | P (turn-not-repeated), W |  |
 | Events: planted, paid\_off | P, C | X1 fills them by checking the chapter against the beat's `plant` and `payoff`. C computes the status: planned, open, resolved. |
 | Events: reveals\_landed, behaviors\_seen, things\_seen | C (counts, available reveals), P | `reveals_landed` is checked against the beat's reveal. |
 | Events: goal\_landed (new) | C | Says whether the beat's goal change happened. |
@@ -121,7 +123,7 @@
 
 1. **Plants (settled).** The planner plans them with new optional `Beat.plant` and `Beat.payoff` (picked from the open plants). X1 confirms each landed against the beat. C computes the status: planned, open (landed, not yet paid off) or resolved.
 2. **Reveals (settled).** X1 confirms the planned reveal landed. Only landed reveals leave the available list. X2 proposes who actually learned it and C applies that, warning if nobody's knowledge changed. `reveal_not_repeated` counts landed reveals plus the beat being planned.
-3. **Current goal (settled).** Nobody plans a goal change. X1 says, every chapter, how the chapter left the goal it began with (Events `goal_change`: achieved, redefined or abandoned) and what the protagonist wants from there on (Events `goal_now`). C derives the current goal as Setup's goal, replaced by the last written chapter's `goal_now`; a goal worded again as it stood is the same goal. There is always a goal. X2 is shown the result so that it moves the spotlighted pressure to match (new `what` and `next_move`, `status: resolved` once its next move has happened). A pressure's use is the spotlight, and the rotation takes the pressure spotlit longest ago.
+3. **Current goal (settled).** C derives it: Setup's goal, replaced by each landed `redefined` beat. A landed `achieved` or `abandoned` ends the goal and the remaining chapters wind down, with no next goal. A new Events field, `goal_landed`, records whether the beat's change happened. A change that did not land stays pending and is tried again; forcing it to land is deferred. `goal_now` gets Setup's goal warnings.
 4. **Offstage changes (settled).** The spotlight always involves someone in the cast, so agents outside the cast are never moved offstage. The offstage pass only changes background groups and places, and P never needs their cards.
 5. **One-sided links (settled).** See the rule under Entanglements.
 6. **Setup's normal and disruption (intended).** Used only for chapter 1.

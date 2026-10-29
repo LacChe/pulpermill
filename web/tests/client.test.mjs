@@ -406,17 +406,17 @@ test("a beat the blocking rules refuse is sent back once with the rules' words, 
   let first = true;
   mock.send = async (request, extra) => {
     const reply = await send(request, extra);
-    if (request.call === "plan" && first) { first = false; return { ...reply, beat: { ...reply.beat, collision_goal: "" } }; }
+    if (request.call === "plan" && first) { first = false; return { ...reply, beat: { ...reply.beat, turn: "" } }; }
     return reply;
   };
   const result = await planChapter(mockClient(mock), schema, p, [suvi.id]).done;
   assert.deepEqual(mock.seen.map((r) => r.call), ["plan", "plan"]);
   assert.equal(mock.seen[0].retry, null);
   assert.ok(mock.seen[1].retry.problems.length > 0);
-  assert.equal(mock.seen[1].retry.beat.collision_goal, "", "the failed attempt goes back as it was");
+  assert.equal(mock.seen[1].retry.beat.turn, "", "the failed attempt goes back as it was");
   assert.equal(result.retried, true);
   assert.deepEqual(result.blockers, []);
-  assert.ok(result.beat.collision_goal);
+  assert.ok(result.beat.turn);
 });
 
 test("a beat that still fails after the retry is returned with its problems, never retried again", async () => {
@@ -425,7 +425,7 @@ test("a beat that still fails after the retry is returned with its problems, nev
   const send = mock.send;
   mock.send = async (request, extra) => {
     const reply = await send(request, extra);
-    return request.call === "plan" ? { ...reply, beat: { ...reply.beat, collision_goal: "" } } : reply;
+    return request.call === "plan" ? { ...reply, beat: { ...reply.beat, turn: "" } } : reply;
   };
   const result = await planChapter(mockClient(mock), schema, p, [p.characters[0].id]).done;
   assert.equal(mock.seen.length, 2);
