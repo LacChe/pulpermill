@@ -1,33 +1,35 @@
 :root {
-  --bg: #faf8f4;
-  --panel: #ffffff;
-  --text: #25221e;
-  --muted: #6d675e;
-  --line: #ddd6ca;
-  --accent: #8a4b2a;
-  --accent-soft: #f3e6dc;
-  --good: #3f6b3a;
-  --bad: #9a3b2e;
-  --warn: #8a6410;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1c1a17;
-    --panel: #25221e;
-    --text: #ece6dc;
-    --muted: #a39b8f;
-    --line: #3b362f;
-    --accent: #e0a37c;
-    --accent-soft: #3a2c22;
-    --good: #8fc08a;
-    --bad: #e08c7e;
-    --warn: #e0b45c;
-  }
+  color-scheme: dark;
+
+  /* Palette generator: one hue, surfaces step up in lightness per nesting depth. */
+  --hue: 255;
+  --bg:           oklch(0.17 0.012 var(--hue));   /* page */
+  --surface-1:    oklch(0.21 0.014 var(--hue));   /* bars, panels */
+  --surface-2:    oklch(0.25 0.016 var(--hue));   /* items inside panels */
+  --surface-3:    oklch(0.29 0.018 var(--hue));   /* anything inside those */
+  --input:        oklch(0.14 0.012 var(--hue));   /* text wells, darker than every surface */
+  --line:         oklch(0.34 0.018 var(--hue));
+  --line-strong:  oklch(0.44 0.020 var(--hue));
+  --text:         oklch(0.94 0.008 var(--hue));
+  --muted:        oklch(0.76 0.015 var(--hue));
+  --faint:        oklch(0.60 0.016 var(--hue));   /* disabled, placeholder, read-only only */
+  --accent:       oklch(0.82 0.12 200);
+  --accent-soft:  oklch(0.30 0.05 205);
+  --good:         oklch(0.80 0.14 155);
+  --bad:          oklch(0.74 0.15 25);
+  --warn:         oklch(0.82 0.13 85);
+
+  /* Aliases so existing rules keep working. */
+  --panel: var(--surface-1);
+
+  /* Buttons tint whatever they sit on, so they work at any depth. */
+  --btn:       color-mix(in oklch, var(--text) 7%, transparent);
+  --btn-hover: color-mix(in oklch, var(--text) 13%, transparent);
 }
 * { 
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-color: var(--panel) var(--bg); 
+  scrollbar-color: var(--surface-3) var(--bg); 
 }
 body {
   margin: 0;
@@ -37,12 +39,12 @@ body {
 }
 .app-header { position: sticky; top: 0; z-index: 20; background: var(--panel); }
 .bar {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 0;
   padding: 12px 24px; border-bottom: 1px solid var(--line); background: var(--panel);
 }
 .bar h1 { margin: 0; font-size: 1.1rem; }
-.bar-actions { display: flex; gap: 8px; }
-.project-name { flex: 1; max-width: 420px; margin: 0 16px; }
+.bar-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.project-name { flex: 1 1 200px; max-width: 420px; margin: 0 16px; }
 .project-name .text-control { font-weight: 600; }
 .save-state { color: var(--muted); font-size: 0.85rem; margin-right: auto; white-space: nowrap; }
 .save-state.is-dirty { color: var(--warn); font-weight: 600; }
@@ -65,10 +67,10 @@ body {
 .notice-bad { border-left-color: var(--bad); }
 .notice-close { color: var(--muted); padding: 2px 10px; font-size: 0.85rem; }
 button {
-  font: inherit; color: var(--text); background: var(--panel);
+  font: inherit; color: var(--text); background: var(--btn);
   border: 1px solid var(--line); border-radius: 6px; padding: 6px 14px; cursor: pointer;
 }
-button:hover { border-color: var(--accent); }
+button:hover { border-color: var(--line-strong); background: var(--btn-hover); }
 main { max-width: 820px; margin: 0 auto; padding: 24px 0; }
 .card-heading { margin-bottom: 4px; }
 .card-title-row { display: flex; align-items: center; gap: 8px; }
@@ -116,7 +118,7 @@ main { max-width: 820px; margin: 0 auto; padding: 24px 0; }
   border-radius: 50%;
   display: grid;
   place-content: center;
-  background: var(--panel);
+  background: var(--input);
 }
 .option input[type="radio"]::before {
   content: "";
@@ -137,7 +139,7 @@ main { max-width: 820px; margin: 0 auto; padding: 24px 0; }
 .option-description { grid-column: 2; color: var(--muted); font-size: 0.88rem; font-style: italic; }
 
 .text-control {
-  width: 100%; font: inherit; color: var(--text); background: var(--bg);
+  width: 100%; font: inherit; color: var(--text); background: var(--input);
   border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
 }
 textarea.text-control { resize: vertical; }
@@ -159,7 +161,7 @@ textarea.text-control { resize: vertical; }
 .why p { margin: 4px 0 0; }
 .unsupported { color: var(--bad); font-size: 0.9rem; }
 
-.tabs { max-width: 820px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: var(--bg); position: sticky; top: 0; z-index: 5; padding: 4px 0; }
+.tabs { max-width: 820px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: var(--bg); position: sticky; top: 0; z-index: 5; padding: 4px 0; }
 .tabs[hidden] { display: none; }
 .tabs button[aria-current] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
 .chapter-tabs button:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -211,7 +213,8 @@ select.text-control[hidden], .checks[hidden] { display: none; }
 
 .clear { margin-top: 6px; padding: 2px 10px; color: var(--muted); font-size: 0.85rem; }
 .clear[hidden] { display: none; }
-.text-control[readonly] { color: var(--muted); background: transparent; }
+.text-control[readonly] { color: var(--faint); background: transparent; }
+.text-control::placeholder { color: var(--faint); }
 
 /* Problems: written under the field they belong to. They never disable anything. */
 .problems { margin-top: 8px; display: grid; gap: 6px; }
@@ -236,7 +239,7 @@ select.text-control[hidden], .checks[hidden] { display: none; }
 .group-count.has-warn { color: var(--warn); }
 
 .validate-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 8px 0 8px; }
-.validate, .fill-button { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.validate, .fill-button { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .validate-status { margin: 0; }
 
 .backend-bar {
@@ -269,7 +272,7 @@ select.text-control[hidden], .checks[hidden] { display: none; }
 .problem-kind { white-space: nowrap; }
 .notice .validate { padding: 2px 12px; }
 
-.story-bar { margin: 0 0 16px; padding: 8px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; border: 1px solid var(--line); border-radius: 6px; font-size: 0.9rem; }
+.story-bar { margin: 16px 0 16px 0; padding: 8px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; border: 1px solid var(--line); border-radius: 6px; font-size: 0.9rem; }
 .story-bar p { margin: 0; color: var(--muted); max-width: 70ch; }
 .story-bar .story-fix { color: var(--bad); flex-basis: 100%; }
 .story-bar .validate { padding: 3px 14px; }
@@ -345,7 +348,7 @@ main.locked input:disabled, main.locked select:disabled, main.locked textarea:di
 }
 .export-label { font-weight: 600; min-width: 12rem; }
 
-.import-panel { max-width: 772px; margin: 12px auto 0; padding: 14px 18px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; display: grid; gap: 10px; }
+.import-panel { max-width: 820px; margin: 12px auto 0; padding: 14px 18px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; display: grid; gap: 10px; }
 .import-panel[hidden] { display: none; }
 .import-panel h3 { margin: 0; font-size: 1.1rem; }
 .import-panel p, .import-panel ul { margin: 0; }
@@ -379,7 +382,7 @@ dialog.ask {
   max-width: 480px; width: calc(100% - 48px); padding: 20px 22px;
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px;
 }
-dialog.ask::backdrop { background: rgba(0, 0, 0, 0.35); }
+dialog.ask::backdrop { background: rgba(0, 0, 0, 0.6); }
 .ask-words { margin: 0 0 18px; white-space: pre-line; overflow-wrap: anywhere; }
 .ask-buttons { display: flex; justify-content: flex-end; gap: 10px; }
 
@@ -398,3 +401,10 @@ dialog.ask::backdrop { background: rgba(0, 0, 0, 0.35); }
 .fill-section[open] > summary::before { content: "▾"; }
 .fill-section .fill-field { margin-top: 8px; display: block; }
 .elapsed { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.9rem; }
+
+/* Depth: each nesting level is one step lighter. Add new components to the list for their level. */
+.option, .item, .plan-cast-box, .import-choice, .after-edit-item { background: var(--surface-2); }
+.item .item, .item .option, .item .plan-cast-box, .after-edit-item .group,
+.after-edit-item .item, .after-edit-item .option { background: var(--surface-3); }
+.item-compact { background: none; }
+.option.option:has(input:checked) { background: var(--accent-soft); }
