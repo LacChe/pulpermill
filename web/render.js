@@ -56,8 +56,13 @@ function examplesDisclosure(examples) {
     examplesBlock(examples));
 }
 
-function whyBlock(why) {
-  return el("details", { class: "why" }, el("summary", { text: STRINGS.why }), el("p", { text: why }));
+// "Why this matters" is a small ? beside the label. The words show on hover or focus (CSS) and Escape closes them.
+let whyCount = 0;
+function whyTip(why) {
+  const id = `why-tip-${++whyCount}`;
+  const button = el("button", { type: "button", class: "why-button", text: "?", "aria-label": STRINGS.why, "aria-describedby": id });
+  button.addEventListener("keydown", (event) => { if (event.key === "Escape") button.blur(); });
+  return el("span", { class: "why" }, button, el("span", { class: "why-tip", id, role: "tooltip", text: why }));
 }
 
 // ---- Problems ----------------------------------------------------------------
@@ -270,7 +275,7 @@ function toggleBlock(group, index, values, path, ctx, scope) {
 
 // One field of one object (a card, or one item in a list). `values` is that object; it is changed in place.
 function fieldBlock(field, values, path, ctx, scope) {
-  const block = el("div", { class: "field", "data-path": path });
+  const block = el("div", { class: isCodeFilled(field) ? "field field-system" : "field", "data-path": path });
   const parentGuidance = ctx.parentGuidance && ctx.card?.id !== "outline";
   const heading = el("div", { class: "field-heading" }, el("span", { class: "field-label", text: field.label }));
   if (showsOptionalTag(scope.owner, field)) heading.append(el("span", { class: "tag", text: STRINGS.optional }));
@@ -288,7 +293,7 @@ function fieldBlock(field, values, path, ctx, scope) {
 
   if (field.repeat) {
     block.append(listControl(field, values, path, ctx), problemBox(path, ctx));
-    if (field.why) block.append(whyBlock(field.why));
+    if (field.why) heading.append(whyTip(field.why));
     return block;
   }
   if (!isSupported(field)) {
@@ -346,7 +351,7 @@ function fieldBlock(field, values, path, ctx, scope) {
   }
   block.append(problemBox(path, ctx));
   if (field.examples && !parentGuidance) block.append(examplesBlock(field.examples));
-  if (field.why) block.append(whyBlock(field.why));
+  if (field.why) heading.append(whyTip(field.why));
   return block;
 }
 
@@ -554,22 +559,31 @@ export function restoreRadioSelections(root) {
   for (const input of root.querySelectorAll('input[type="radio"][data-initial-checked="true"]')) input.checked = true;
 }
 
-// Freezes the list items with the given ids (a written chapter's beat): their controls are switched off and each says why.
-export function freezeItems(root, ids, note) {
+// A small status badge in a list item's head, with the explanation behind a ? tooltip (stated once per item, not as a paragraph).
+function stateBadge(row, kind, label, note) {
+  const head = row.querySelector(":scope > .item-head");
+  if (!head) return;
+  const badge = el("span", { class: `tag tag-${kind}`, text: label });
+  head.insertBefore(badge, head.querySelector(".remove"));
+  head.insertBefore(whyTip(note), head.querySelector(".remove"));
+}
+
+// Freezes the list items with the given ids (a written chapter's beat): their controls are switched off and a badge says why.
+export function freezeItems(root, ids, note, label) {
   for (const row of root.querySelectorAll(".item[data-id]")) {
     if (!ids.has(row.dataset.id)) continue;
     row.classList.add("frozen");
-    row.prepend(el("p", { class: "frozen-note", role: "note", text: note }));
-    for (const control of row.querySelectorAll("input, select, textarea, button")) if (!control.classList.contains("fold")) control.disabled = true;
+    stateBadge(row, "written", label, note);
+    for (const control of row.querySelectorAll("input, select, textarea, button")) if (!control.classList.contains("fold") && !control.classList.contains("why-button")) control.disabled = true;
   }
 }
 
-// Marks the list items with the given ids (a beat that may no longer fit): each is outlined and says why, at the top of the item.
-export function flagItems(root, ids, note) {
+// Marks the list items with the given ids (a beat that may no longer fit): each is outlined and badged in its head.
+export function flagItems(root, ids, note, label) {
   for (const row of root.querySelectorAll(".item[data-id]")) {
     if (!ids.has(row.dataset.id)) continue;
     row.classList.add("flagged");
-    row.prepend(el("p", { class: "flagged-note", role: "note", text: note }));
+    stateBadge(row, "stale", label, note);
   }
 }
 

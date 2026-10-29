@@ -169,6 +169,8 @@
     "chapterNoText": "This chapter has not been written yet.",
     "working": "The model is working…",
     "writtenBeat": "This beat was written from. To change the chapter, write it again below.",
+    "writtenBadge": "Written",
+    "staleBadge": "Stale",
     "staleBeat": "May no longer fit: an earlier chapter was written again after this beat was planned.",
     "lockedBanner": "This card is locked because the story has started. You can read it, but not change it.",
     "connection": {

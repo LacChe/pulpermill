@@ -582,8 +582,8 @@ function show() {
     drawLockButton(card);
   } else main.replaceChildren();
   if (card.id === "outline" && values) {
-    flagItems(main, staleBeatIds(project), STRINGS.staleBeat);
-    freezeItems(main, writtenBeatIds(project), STRINGS.writtenBeat);
+    flagItems(main, staleBeatIds(project), STRINGS.staleBeat, STRINGS.staleBadge);
+    freezeItems(main, writtenBeatIds(project), STRINGS.writtenBeat, STRINGS.writtenBadge);
   }
   const chapter = chapterState();
   if (chapter && view.chapter <= chapter.written) {

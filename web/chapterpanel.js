@@ -27,7 +27,7 @@ export function createChapterPanel(hooks) {
     if (!thought?.thinking) {
       planBody.append(node("p", { className: "help", textContent: STRINGS.chapterNoPlan }));
     } else {
-      planBody.append(node("p", { className: "chapter-text", textContent: thought.thinking }));
+      planBody.append(node("p", { className: "chapter-text chapter-thinking", textContent: thought.thinking }));
     }
     const textBody = node("div", { className: "chapter-view-body" });
     const text = node("details", { className: "chapter-view-section", open: true },
