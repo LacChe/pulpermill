@@ -46,21 +46,35 @@ test("a value is used only when a written chapter says it", async () => {
   assert.equal(usageOf(project, 1)[first.id], undefined, "the chapter being written again does not count itself");
 });
 
-test("pressures, knowledge, ties and holdings count as used only when the chapter's record says it showed them", async () => {
+test("knowledge, ties and holdings count as used only when the chapter's record says it showed them", async () => {
   const project = await readyProject();
   const [first] = project.characters;
   const place = project.world.places[0];
   const ent = project.entanglements;
-  const [pressure] = ent.pressures;
-  project.outline = { beats: [{ id: "b1", chapter: 1, where: place.id, cast: [first.id], spotlight: pressure.id }] };
-  // The text names the pressure's own words and everyone in it, which is exactly what word matching used to take for use.
-  project.chapters = [{ id: "c1", beat: "b1", text: `${pressure.what} ${first.name} went to ${place.name}.` }];
+  project.outline = { beats: [{ id: "b1", chapter: 1, where: place.id, cast: [first.id], spotlight: "" }] };
+  project.chapters = [{ id: "c1", beat: "b1", text: `${first.name} went to ${place.name}.` }];
   project.summary_events = { entries: [{ id: "e1", beat: "b1", happened: "x" }] };
-  assert.equal(usageOf(project)[pressure.id], undefined, "naming it is not showing it");
-  project.summary_events.entries[0].entanglements_shown = [pressure.id, ent.knowledge[0]?.id, ent.ties[0]?.id].filter(Boolean);
-  assert.deepEqual(usageOf(project)[pressure.id], { uses: 1, last: 1 });
-  for (const id of project.summary_events.entries[0].entanglements_shown) assert.equal(usageOf(project)[id].uses, 1);
+  const sentences = [ent.knowledge[0]?.id, ent.ties[0]?.id].filter(Boolean);
+  for (const id of sentences) assert.equal(usageOf(project)[id], undefined, "naming it is not showing it");
+  project.summary_events.entries[0].entanglements_shown = sentences;
+  for (const id of sentences) assert.deepEqual(usageOf(project)[id], { uses: 1, last: 1 });
+  assert.equal(usageOf(project, 1)[sentences[0]], undefined, "the chapter being written again does not count itself");
+});
+
+test("a pressure counts as used by the spotlight, whatever the chapter's record says it showed", async () => {
+  const project = await readyProject();
+  const [first] = project.characters;
+  const place = project.world.places[0];
+  const [pressure] = project.entanglements.pressures;
+  project.outline = { beats: [{ id: "b1", chapter: 1, where: place.id, cast: [first.id], spotlight: pressure.id }] };
+  project.chapters = [{ id: "c1", beat: "b1", text: `${pressure.what} ${first.name} went to ${place.name}.` }];
+  project.summary_events = { entries: [{ id: "e1", beat: "b1", happened: "x", entanglements_shown: [] }] };
+  assert.deepEqual(usageOf(project)[pressure.id], { uses: 1, last: 1 }, "spotlit and never shown still counts");
+  project.summary_events.entries[0].entanglements_shown = [pressure.id];
+  assert.equal(usageOf(project)[pressure.id].uses, 1, "shown as well as spotlit counts once");
   assert.equal(usageOf(project, 1)[pressure.id], undefined, "the chapter being written again does not count itself");
+  project.outline.beats[0].spotlight = "";
+  assert.equal(usageOf(project)[pressure.id], undefined, "shown without the spotlight is not a use of a pressure");
 });
 
 async function crowded() {
@@ -103,7 +117,7 @@ test("what the beat's words name is sent too, as are the cast's things", async (
   const plan = await planChapter(client, schema, project, suggestedCast(project, 1)).done;
   placeBeat(project, plan.beat);
   const beat = project.outline.beats.at(-1);
-  beat.turn = "The ledger is found in Spare place 6, behind the stove.";
+  beat.collision_goal = "Find the ledger in Spare place 6, behind the stove.";
   const sent = generateRequest(schema, project, beat);
   assert.ok(sent.world.places.some((p) => p.name === "Spare place 6"), "a place named in the beat's text is carried");
 });

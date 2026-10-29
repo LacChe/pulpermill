@@ -157,7 +157,7 @@ def check_echo(text, beat):
     """The beat's own sentences copied into the story: the checklist showing through."""
     flags = []
     low = " ".join(words(text)).lower()
-    for key in ("collision_goal", "collision_block", "choice_a", "choice_b", "turn", "ends_on"):
+    for key in ("collision_goal", "ends_on"):
         value = " ".join(words(str(beat.get(key) or ""))).lower()
         if len(value.split()) >= 6 and value in low:
             flags.append(Flag("beat-echo", f"{key} appears word for word"))

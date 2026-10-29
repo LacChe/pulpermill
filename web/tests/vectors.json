@@ -701,6 +701,38 @@
    ]
   },
   {
+   "name": "four pressures, one resolved",
+   "card": "entanglements",
+   "rule": "pressures_active_count",
+   "values": {
+    "pressures": [
+     {
+      "id": "p0",
+      "what": "x",
+      "source_agent": "c1",
+      "status": "resolved"
+     },
+     {
+      "id": "p1",
+      "what": "x",
+      "source_agent": "c1"
+     },
+     {
+      "id": "p2",
+      "what": "x",
+      "source_agent": "c1"
+     },
+     {
+      "id": "p3",
+      "what": "x",
+      "source_agent": "c1"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
    "name": "myth without truth",
    "card": "world",
    "rule": "rule_false_needs_truth",
@@ -821,66 +853,6 @@
      {
       "id": "b1",
       "chapter": 1
-     }
-    ]
-   },
-   "project": {},
-   "broken": []
-  },
-  {
-   "name": "reveal needs learners",
-   "card": "outline",
-   "rule": "reveal_learners_needed",
-   "values": {
-    "beats": [
-     {
-      "id": "b1",
-      "chapter": 1,
-      "reveal_rule": "r1"
-     }
-    ]
-   },
-   "project": {},
-   "broken": [
-    [
-     "beats",
-     "b1",
-     "reveal_learners"
-    ]
-   ]
-  },
-  {
-   "name": "redefined goal needs a new goal",
-   "card": "outline",
-   "rule": "goal_now_for_redefined",
-   "values": {
-    "beats": [
-     {
-      "id": "b1",
-      "chapter": 1,
-      "goal_change": "redefined"
-     }
-    ]
-   },
-   "project": {},
-   "broken": [
-    [
-     "beats",
-     "b1",
-     "goal_now"
-    ]
-   ]
-  },
-  {
-   "name": "achieved goal needs none",
-   "card": "outline",
-   "rule": "goal_now_for_redefined",
-   "values": {
-    "beats": [
-     {
-      "id": "b1",
-      "chapter": 1,
-      "goal_change": "achieved"
      }
     ]
    },
@@ -1647,20 +1619,20 @@
    "broken": []
   },
   {
-   "name": "same turn twice",
+   "name": "same aim twice",
    "card": "outline",
-   "rule": "turn_not_repeated",
+   "rule": "aim_not_repeated",
    "values": {
     "beats": [
      {
       "id": "b1",
       "chapter": 1,
-      "turn": "Ines learns the customer's name but the guild now knows she is asking"
+      "collision_goal": "Ines learns the customer's name but the guild now knows she is asking"
      },
      {
       "id": "b2",
       "chapter": 2,
-      "turn": "Ines learns the customer's name but the guild now knows she is asking"
+      "collision_goal": "Ines learns the customer's name but the guild now knows she is asking"
      }
     ]
    },
@@ -1669,25 +1641,25 @@
     [
      "beats",
      "b2",
-     "turn"
+     "collision_goal"
     ]
    ]
   },
   {
-   "name": "different turns",
+   "name": "different aims",
    "card": "outline",
-   "rule": "turn_not_repeated",
+   "rule": "aim_not_repeated",
    "values": {
     "beats": [
      {
       "id": "b1",
       "chapter": 1,
-      "turn": "Ines learns the customer's name but the guild now knows she is asking"
+      "collision_goal": "Ines learns the customer's name but the guild now knows she is asking"
      },
      {
       "id": "b2",
       "chapter": 2,
-      "turn": "The east gate closes and the market moves"
+      "collision_goal": "The east gate closes and the market moves"
      }
     ]
    },
@@ -1695,15 +1667,15 @@
    "broken": []
   },
   {
-   "name": "turn repeats a changed line",
+   "name": "aim repeats a changed line",
    "card": "outline",
-   "rule": "turn_not_repeated",
+   "rule": "aim_not_repeated",
    "values": {
     "beats": [
      {
       "id": "b2",
       "chapter": 2,
-      "turn": "Ines learns the customer's name but the guild now knows she is asking"
+      "collision_goal": "Ines learns the customer's name but the guild now knows she is asking"
      }
     ]
    },
@@ -1722,7 +1694,7 @@
     [
      "beats",
      "b2",
-     "turn"
+     "collision_goal"
     ]
    ]
   },
@@ -1877,40 +1849,6 @@
      ]
     }
    },
-   "broken": []
-  },
-  {
-   "name": "reveal with learners",
-   "card": "outline",
-   "rule": "reveal_learners_needed",
-   "values": {
-    "beats": [
-     {
-      "id": "b1",
-      "chapter": 1,
-      "reveal_rule": "r1",
-      "reveal_learners": [
-       "c1"
-      ]
-     }
-    ]
-   },
-   "project": {},
-   "broken": []
-  },
-  {
-   "name": "no reveal, no learners needed",
-   "card": "outline",
-   "rule": "reveal_learners_needed",
-   "values": {
-    "beats": [
-     {
-      "id": "b1",
-      "chapter": 1
-     }
-    ]
-   },
-   "project": {},
    "broken": []
   },
   {

@@ -51,7 +51,7 @@ The fill needs an example chapter or a note for that card. There is no revise-ca
 | Offstage change (only when due) | C, O (M, free text) | C decides occasionally that a change is due. It is about background groups or places, never the spotlight, which always involves someone in the cast. O reads the groups, places and this chapter's Events, and writes `offstage_did` and `offstage_reach`. |
 | Think | M (free text) | Reads open pressures and their next moves, ties, latest shifts, open plants, available reveals, use counts, summaries, and any offstage move. Proposes 2 or 3 directions, picks one with a reason, says how the chapter should be written, and decides whether to plant something or pay off an open plant. |
 | Fill the beat | M (grammar) | Includes the optional `plant` and `payoff`. The thinking text is in context. Afterward C keeps it as a display note in the project, so H can read it again after reopening the file. It is never sent to a model. |
-| Block rules, then model-judged beat warnings | C, M | turn is a change, choice is costly, ends on an open question. |
+| Block rules, then model-judged beat warnings | C, M | the aim is not a repeat, ends on an open question. |
 | Retry | C | Two attempts in total; the first failure's message goes into the second. Still failing: H sees the rule's message and fix, and Generate stays disabled. Warnings are shown but do not block. |
 | Assess, edit, replan | H |  |
 | Store a hash of the Entanglements the beat was planned from | C | If live fields change later, the beat is marked planned from older state and Plan is highlighted. It is never replanned automatically, and Generate warns about such a plan but does not block. |

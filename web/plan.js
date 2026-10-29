@@ -57,109 +57,44 @@ export function beatForChapter(project, chapter) {
 const chapterOfBeat = (project, id) => Number(beatsOf(project).find((b) => b.id === id)?.chapter) || null;
 
 // ---- The goal arc ----------------------------------------------------------------------------
-// The story has one goal from Setup (the story's goal) and the goal the chapters are pursuing now, which starts as the same
-// words. A landed `redefined` beat replaces the current goal. A landed `achieved` or `abandoned` beat ends it, and what happens
-// next depends on how much story is left: with two or more chapters after it, the story is not over, it needs a new goal (the next
-// plan must redefine one, growing from the win or the failure); with fewer, the story winds down. Planned is not done: only a
-// change the Events pass confirmed counts.
-//   {story, goal, goals, since, state: "active" | "needs_goal" | "ended", lastEnd: {kind, goal} | null}
+// The story starts on Setup's goal. Nobody plans a goal change: after each written chapter the Events pass says how the chapter left
+// the goal it began with (`goal_change`) and what the protagonist wants from there on (`goal_now`), and that is the goal the next
+// chapter is planned from. A goal worded again as it stood is the same goal, so it does not restart the count of chapters it has stood.
+//   {story, goal, goals, since}
 //   goals  every goal the story has had, in order, the current one last
 //   since  the first chapter that pursued the current goal
-export const GOAL_NEEDED_LEFT = 2;       // chapters that must remain after a goal ends for the story to need a new one
 
 export function goalArc(project) {
-  const count = Number(project.setup?.chapter_count) || 0;
   const story = isFilled(project.setup?.goal) ? project.setup.goal.trim() : null;
-  const arc = { story, goal: story, goals: story ? [story] : [], since: 1, state: "active", lastEnd: null };
-  const written = beatsOf(project).filter((b) => writtenBeatIds(project).has(b.id)).sort((a, b) => a.chapter - b.chapter);
-  for (const beat of written) {
-    if (!eventsOf(project).some((e) => e.beat === beat.id && e.goal_landed)) continue;
-    const chapter = Number(beat.chapter) || 0;
-    if (beat.goal_change === "redefined" && isFilled(beat.goal_now)) {
-      arc.goal = beat.goal_now.trim();
-      arc.goals.push(arc.goal);
-      arc.since = chapter + 1;
-      arc.state = "active";
-      arc.lastEnd = null;
-    } else if (beat.goal_change === "achieved" || beat.goal_change === "abandoned") {
-      arc.lastEnd = { kind: beat.goal_change, goal: arc.goal };
-      arc.state = count && count - chapter >= GOAL_NEEDED_LEFT ? "needs_goal" : "ended";
-      arc.goal = null;
-    }
+  const arc = { story, goal: story, goals: story ? [story] : [], since: 1 };
+  const rows = eventsOf(project).map((e) => ({ e, chapter: chapterOfBeat(project, e.beat) })).filter((x) => x.chapter !== null && writtenBeatIds(project).has(x.e.beat))
+    .sort((a, b) => a.chapter - b.chapter);
+  for (const { e, chapter } of rows) {
+    if (!isFilled(e.goal_now)) continue;
+    const now = e.goal_now.trim();
+    if (arc.goal && similarity(now, arc.goal) >= SIMILARITY_LIMIT) { arc.goal = now; continue; }
+    arc.goal = now;
+    arc.goals.push(now);
+    arc.since = chapter + 1;
   }
   return arc;
 }
 
-// Setup's goal, replaced by each landed redefinition; none once a goal ended (while the story needs a new one, or winds down).
+// Setup's goal, replaced by each written chapter's goal_now.
 export const currentGoal = (project) => goalArc(project).goal;
 
-// How the goal stands for the chapter about to be planned, and what is worth doing with it. `due` is advice, never a rule:
-//   set      the last goal ended and the story goes on: this chapter must start a new one
+// How the goal stands for the chapter about to be planned. `due` is advice, never a rule:
 //   settle   the last chapter: the story's goal should end, won or lost
-//   return   the chapter before the last, away from the story's goal: turn back toward it
-//   stale    a goal that is not the story's has stood for half the story or more: end it or reshape it
-//   twist    the middle of the story, with the goal unchanged so far: room for one turn
-//   null     leave the goal alone unless the chapter's turn truly ends or reshapes it
-export const GOAL_STALE_SHARE = 0.5;
-
+//   return   the chapter before the last, with the goal away from the story's goal: turn back toward it
+//   null     nothing to add
 export function goalDue(project, chapter) {
   const arc = goalArc(project);
   const count = Number(project.setup?.chapter_count) || 0;
-  if (arc.state === "needs_goal") return { arc, due: "set", age: 0 };
-  if (arc.state === "ended") return { arc, due: null, age: 0 };
   const age = Math.max(0, chapter - arc.since);
-  const away = arc.goal !== arc.story;
+  const away = Boolean(arc.story && arc.goal) && arc.goal !== arc.story && similarity(arc.goal, arc.story) < SIMILARITY_LIMIT;
   if (count && chapter >= count) return { arc, due: "settle", age };
   if (count && chapter === count - 1 && away) return { arc, due: "return", age };
-  if (away && count && age >= Math.ceil(count * GOAL_STALE_SHARE)) return { arc, due: "stale", age };
-  if (count && chapter === Math.ceil(count / 2) && arc.goals.length < 2) return { arc, due: "twist", age };
   return { arc, due: null, age };
-}
-
-// Directions a new goal could take, from the cards, so the next goal does not have to come out of the last one. Up to `size`
-// of different kinds, with the kind to start from moving on each chapter, so the story is offered a different door each time:
-//   pressure    the pressure that has had the least attention, and what its agent means to do next
-//   truth       a hidden truth still waiting to come to light
-//   want        something one of the people on stage wants, rotating through them
-//   tie         what one person on stage wants from, or hides from, someone else
-//   disruption  the break that began the story, while the story is young enough to be dealing with it
-// A direction too close to a goal the story already had is left out. [{kind, text}]
-export function goalDirections(project, castIds, chapter, names = nameMap(project), size = 3) {
-  const arc = goalArc(project);
-  const count = Number(project.setup?.chapter_count) || 0;
-  const cast = castCards(project, castIds);
-  const found = [];
-  const due = duePressure(project, chapter);
-  if (due?.what) found.push({ kind: "pressure", text: due.next_move ? `${due.what.replace(/[.!?]+$/, "")}. ${due.next_move}` : due.what });
-  const truths = availableReveals(project);
-  if (truths.length) found.push({ kind: "truth", text: truths[(chapter - 1) % truths.length].statement });
-  const wants = cast.flatMap((c) => (c.wants ?? []).filter((w) => isFilled(w.text)).map((w) => `${instanceName(c)} wants to ${w.text.replace(/^to\s+/i, "")}`));
-  if (wants.length) found.push({ kind: "want", text: wants[(chapter - 1) % wants.length] });
-  const ties = (project.entanglements?.ties ?? []).filter((x) => asList(castIds).includes(x.tie_from) && isFilled(x.edge));
-  if (ties.length) {
-    const x = ties[(chapter - 1) % ties.length];
-    found.push({ kind: "tie", text: `${names.get(x.tie_from) ?? "Someone"} and ${names.get(x.tie_to) ?? "someone"}: ${x.edge}` });
-  }
-  if (isFilled(project.setup?.disruption) && (!count || chapter <= Math.ceil((count * 2) / 3))) found.push({ kind: "disruption", text: project.setup.disruption.trim() });
-  const fresh = found.filter((d) => !arc.goals.some((g) => similarity(d.text, g) >= SIMILARITY_LIMIT));
-  const start = fresh.length ? (chapter - 1) % fresh.length : 0;
-  return [...fresh.slice(start), ...fresh.slice(0, start)].slice(0, size);
-}
-
-// What the page says about a planned beat's goal, in the writer's words. Advice only: none of it stops anything.
-export function goalWarnings(project, beat, chapter = Number(beat?.chapter) || chapterInfo(project).next) {
-  const { arc, due } = goalDue(project, chapter);
-  const count = Number(project.setup?.chapter_count) || 0;
-  const out = [];
-  const earlierBeats = beatsOf(project).filter((b) => b.id !== beat.id && Number(b.chapter) < chapter);
-  const change = beat.goal_change || "";
-  if (arc.state === "needs_goal" && !(change === "redefined" && isFilled(beat.goal_now))) out.push(msg("plan.goalWarn.needed"));
-  if (change === "redefined" && isFilled(beat.goal_now) && arc.goals.some((g) => similarity(beat.goal_now, g) >= SIMILARITY_LIMIT)) out.push(msg("plan.goalWarn.repeats"));
-  if (isFilled(beat.collision_goal) && earlierBeats.some((b) => isFilled(b.collision_goal) && similarity(beat.collision_goal, b.collision_goal) >= SIMILARITY_LIMIT)) out.push(msg("plan.goalWarn.aimRepeats"));
-  if (due === "stale" && !change) out.push(msg("plan.goalWarn.stale", { n: Math.max(0, chapter - arc.since) }));
-  if (change === "achieved" && arc.goal === arc.story && count && count - chapter >= 3) out.push(msg("plan.goalWarn.early", { n: count - chapter }));
-  if (due === "settle" && change !== "achieved" && change !== "abandoned") out.push(msg("plan.goalWarn.unsettled"));
-  return out;
 }
 
 // Earlier entries that planted something no later entry has paid off.
@@ -197,30 +132,28 @@ export function useCounts(project, except = null) {
   return counts;
 }
 
-// How often each pressure has had a chapter: one the chapter showed (see usage.js) or one the chapter's beat put in the
-// spotlight, once per chapter. A spotlight counts even when its agent stayed off stage and the chapter never showed it, so
-// the rotation always moves on. `except` leaves out the chapter being planned.
-function spotlightUse(project, except = null) {
-  const used = usageOf(project, except);
-  const count = Object.fromEntries((project.entanglements?.pressures ?? []).map((p) => [p.id, used[p.id]?.uses ?? 0]));
-  const shown = {};
-  for (const c of writtenChapters(project)) {
-    if (except !== null && c.n === except) continue;
-    const id = c.beat?.spotlight;
-    if (id in count && !asList(c.events?.entanglements_shown).includes(id)) shown[id] = (shown[id] ?? 0) + 1;
-  }
-  for (const id of Object.keys(shown)) count[id] += shown[id];
-  return count;
+// The pressures the story is still playing out: the active ones, or every pressure once all of them have resolved (the story
+// goes on, and the spotlight still needs something to turn on).
+export function livePressures(project) {
+  const all = project.entanglements?.pressures ?? [];
+  const active = all.filter((p) => p.status !== "resolved");
+  return active.length ? active : all;
 }
 
-// The pressure that has had the least attention so far (ties go to the one listed first), or null when there is none.
-// It is the one the next chapter should turn on, so the people in it are the ones worth having on stage.
-export function duePressure(project, except = null) {
-  const pressures = project.entanglements?.pressures ?? [];
-  if (!pressures.length) return null;
-  const used = spotlightUse(project, except);
+// The pressures in the order the spotlight takes them: the fewest chapters in the spotlight first, then the one spotlit longest
+// ago, then the order the writer listed them (usage.js counts the spotlight as a pressure's use). `except` leaves out the chapter
+// being planned or written again, so replanning it does not count itself.
+function byAttention(project, pressures, except = null) {
+  const used = usageOf(project, except);
   return pressures.map((p, order) => ({ p, order }))
-    .sort((a, b) => (used[a.p.id] ?? 0) - (used[b.p.id] ?? 0) || a.order - b.order)[0].p;
+    .sort((a, b) => (used[a.p.id]?.uses ?? 0) - (used[b.p.id]?.uses ?? 0) || (used[a.p.id]?.last ?? 0) - (used[b.p.id]?.last ?? 0) || a.order - b.order)
+    .map((x) => x.p);
+}
+
+// The pressure that has had the least attention so far, or null when there is none. It is the one the next chapter should turn
+// on, so the people in it are the ones worth having on stage.
+export function duePressure(project, except = null) {
+  return byAttention(project, livePressures(project), except)[0] ?? null;
 }
 
 // Every character as a choice for the cast, with how much they have been used, and a suggestion: the protagonist and
@@ -257,17 +190,15 @@ export function castProblem(project, castIds) {
 
 // ---- The spotlight and the shifts ------------------------------------------------
 
-// The pressure this chapter is about: always one that involves someone on stage, the least-spotlit first (ties go to the
-// one listed first). With none involving the cast, the least-spotlit overall; the beat's own rule then warns about it.
+// The pressure this chapter is about: always one that involves someone on stage, the least recently spotlit first (see
+// byAttention). A resolved pressure is passed over. With none involving the cast, the least-spotlit overall; the beat's own rule
+// then warns about it.
 export function pickSpotlight(project, castIds, except = null) {
-  const pressures = project.entanglements?.pressures ?? [];
+  const pressures = livePressures(project);
   if (!pressures.length) return null;
-  const used = spotlightUse(project, except);
   const involves = (p) => [p.source_agent, ...asList(p.bears_on)].some((id) => asList(castIds).includes(id));
   const pool = pressures.filter(involves);
-  return (pool.length ? pool : pressures)
-    .map((p, order) => ({ p, order }))
-    .sort((a, b) => (used[a.p.id] ?? 0) - (used[b.p.id] ?? 0) || a.order - b.order)[0].p;
+  return byAttention(project, pool.length ? pool : pressures, except)[0];
 }
 
 // The shifts the chapter may take, from the earlier beats' pacing.
@@ -363,7 +294,7 @@ export function entanglementsFor(schema, project, castIds, names, { allPressures
     knowledge: pick("knowledge", e.knowledge.filter((k) => standing(k).some((id) => cast.includes(id))),
       () => "", (k) => (k.rule && k.rule === beat?.reveal_rule) || (Boolean(words) && mentions(words, k.rule ? (project.world?.rules ?? []).find((r) => r.id === k.rule)?.statement : k.fact)),
       (k) => standing(k).filter((id) => cast.includes(id)).length),
-    pressures: pick("pressures", allPressures ? e.pressures : e.pressures.filter(touchesCast), () => "", () => false),
+    pressures: pick("pressures", (allPressures ? e.pressures : e.pressures.filter(touchesCast)).filter((p) => p.status !== "resolved" || p.id === beat?.spotlight), () => "", () => false),
   };
 }
 
@@ -445,7 +376,7 @@ export function offstageRequest(schema, project, castIds) {
     entanglements: {
       ties: out("ties", choose(e.ties.filter((t) => touches(t.tie_from, t.tie_to)), counts.used)),
       holdings: out("holdings", choose(e.holdings.filter((h) => touches(h.held_by)), counts.used)),
-      pressures: out("pressures", choose(e.pressures.filter((p) => touches(p.source_agent, asList(p.bears_on))), counts.used)),
+      pressures: out("pressures", choose(e.pressures.filter((p) => p.status !== "resolved" && touches(p.source_agent, asList(p.bears_on))), counts.used)),
     },
     latest_events: last,
     earlier_offstage: beatsOf(project).filter((b) => Number(b.chapter) < chapter && String(b.offstage_did ?? "").trim() !== "")
@@ -453,21 +384,14 @@ export function offstageRequest(schema, project, castIds) {
   };
 }
 
-// What the planner is told about the goal: the current goal (none while a new one is needed, or once the story winds down), the
-// state, the story's own goal when the chapters have moved off it, and the goal arc's advice for this chapter.
-function goalFields(project, chapter, castIds, names) {
+// What the planner is told about the goal: the goal the story stands on now, the story's own goal when the chapters have moved off
+// it, and the goal arc's advice for this chapter.
+function goalFields(project, chapter) {
   const { arc, due, age } = goalDue(project, chapter);
-  const advice = ["set", "stale", "twist"].includes(due);
   return {
     goal: arc.goal,
-    goal_state: arc.state === "active" ? null : arc.state,
     story_goal: arc.story && arc.goal !== arc.story ? arc.story : null,
-    goal_plan: {
-      state: arc.state, due, age, since: arc.since,
-      earlier_goals: arc.goals.filter((g) => g !== arc.goal),
-      last_end: arc.lastEnd,
-      directions: advice ? goalDirections(project, castIds, chapter, names) : [],
-    },
+    goal_plan: { due, age, since: arc.since, earlier_goals: arc.goals.filter((g) => g !== arc.goal) },
   };
 }
 
@@ -487,7 +411,7 @@ export function planRequest(schema, project, castIds, { offstage = null, retry =
     chapter, chapter_count: info.count,
     style: copyOf(settledProject(schema, project).style),
     setup: { ...copyOf(settledProject(schema, project).setup), protagonist: asPerson(project.setup?.protagonist) },
-    ...goalFields(project, chapter, castIds, names),
+    ...goalFields(project, chapter),
     cast: castCards(project, castIds).map(copyOf),
     world: worldFor(schema, project, castIds, names),
     entanglements: entanglementsFor(schema, project, castIds, names, { allPressures: true, beat: { spotlight: spotlight?.id, cast: castIds } }),
@@ -551,7 +475,7 @@ export function landBeat(schema, project, castIds, reply, { offstage = null, exi
     offstage_did: offstage?.did ?? "", offstage_reach: offstage?.reach ?? "",
   });
   if (info.next === 1) beat.when_gap = "";
-  return { beat, unresolved, dropped, warnings: goalWarnings(project, beat, info.next) };
+  return { beat, unresolved, dropped, warnings: [] };
 }
 
 // Puts the beat into the outline: replaces the unwritten beat for the same chapter, or adds it. Returns what it replaced.

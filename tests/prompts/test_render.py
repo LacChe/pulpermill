@@ -28,12 +28,12 @@ def plan_request():
     req["entanglements"]["pressures"] = req["entanglements"]["pressures"] + [
         {"id": "P3", "what": "Aino is feeding the board names.", "source_agent": "Aino", "source_circumstance": None,
          "bears_on": ["Suvi"], "next_move": "Report who visited the shop on Friday."}]
-    req["spotlight"] = {"id": "P1", "what": req["entanglements"]["pressures"][0]["what"]}
+    req["spotlight"] = {"id": "P1", "what": req["entanglements"]["pressures"][0]["what"], "next_move": req["entanglements"]["pressures"][0]["next_move"]}
     req["legal_shifts"] = ["harder", "easier"]
     req["use_counts"] = {"characters": [{"name": "Suvi", "uses": 4, "last": 4}, {"name": "Aino", "uses": 2, "last": 4},
                                         {"name": "Pekka", "uses": 0, "last": None}]}
-    req["earlier_beats"] = [{"chapter": 4, "where": "The Shop", "when_time": "Friday night", "turn": "Suvi finds the cellar dry", "shift": "harder"},
-                            {"chapter": 3, "where": "The Docks", "when_time": "Monday noon", "turn": "Pekka names a price", "shift": "easier"}]
+    req["earlier_beats"] = [{"chapter": 4, "where": "The Shop", "when_time": "Friday night", "shift": "harder"},
+                            {"chapter": 3, "where": "The Docks", "when_time": "Monday noon", "shift": "easier"}]
     req["latest_shifts"] = [{"character": "Suvi", "believes": "Pekka sold the ledger's location to the board"}]
     req["offstage"] = {"did": "The board closed the east market gate.", "reach": "Suvi has to take the long way round."}
     req["retry"] = None
@@ -235,9 +235,9 @@ def test_chapter_one_carries_the_normal_and_the_break_and_later_chapters_do_not(
     assert "shop opened" not in five and "chapter 5 of 8" in five
 
 
-def test_the_last_chapter_is_said_to_be_the_last_and_an_ended_goal_is_said():
-    text = render_setup(generate_request()["setup"], None, 8, 8)
-    assert "last chapter" in text and "goal has ended" in text
+def test_the_last_chapter_is_said_to_be_the_last_and_the_goal_the_story_stands_on_is_shown():
+    text = render_setup(generate_request()["setup"], "Find the ledger in the cellar.", 8, 8)
+    assert "last chapter" in text and "Find the ledger in the cellar." in text
 
 
 def test_standing_is_marked_as_newer_than_the_cards():
@@ -269,9 +269,8 @@ def test_the_scene_reads_as_a_situation_with_the_writers_own_words():
     assert "Time has passed since the last chapter: Three days later." in text
     assert "Suvi, Aino and Pekka are there." in text
     assert "What Suvi is after: Get Pekka to say where the ledger is." in text
-    assert "either choice costs her the other" in text
-    assert "one way: Keep Pekka's goodwill" in text and "the other: Learn where the ledger is" in text
-    assert "By the end of the chapter something has changed: Suvi learns the ledger is in the cellar" in text
+    assert "choose" not in text and "one way" not in text, "the scene sets no fixed choice"
+    assert "By the end of the chapter something is different, and the scene's own events are what make it so." in text
     assert "This chapter is harder" in text
     assert "stops on this moment: Suvi finds her own initials" in text
     assert text.rstrip().endswith("yours to invent.")
@@ -284,22 +283,17 @@ def test_the_scene_carries_what_the_beat_names():
     assert "Set this up for later" in text and "Pekka keeps a locked back room" in text
     assert "A second lock on the cellar's inner door, set up in chapter 4" in text
     assert "While the cast were elsewhere, the board closed the east market gate." in text
-    assert "has changed to: Find the ledger in the cellar before Friday's count." in text
     assert "The pressure in focus is: The board wants the ledger" in text
+    assert "Let it meet what Suvi is after, and let the scene decide how that goes" in text
+    assert "carries into the next chapter" in text
 
 
 def test_the_scene_leaves_out_what_the_beat_does_not_name():
-    text = scene(reveal_rule="", reveal_learners=[], plant="", payoff=[], offstage_did="", offstage_reach="", goal_change="", goal_now="",
+    text = scene(reveal_rule="", reveal_learners=[], plant="", payoff=[], offstage_did="", offstage_reach="",
                  spotlight="", when_gap="")
-    for gone in ("learns that", "Set this up", "Pay off", "While the cast", "goal", "pressure in focus", "Time has passed"):
+    for gone in ("learns that", "Set this up", "Pay off", "While the cast", "pressure in focus", "Time has passed"):
         assert gone not in text
-
-
-def test_pronouns_follow_the_protagonists_sex():
-    req = generate_request()
-    text = render_scene(req["beat"], protagonist="Aino", sex="male")
-    assert "either choice costs him the other" in text
-    assert "either choice costs them the other" in render_scene(req["beat"], protagonist="Aino", sex="other")
+    assert "Who learns it" not in scene(reveal_learners=[]), "who learns a reveal is read from the chapter afterwards"
 
 
 # ---- Whole prompts' material ----------------------------------------------------------------------------------------

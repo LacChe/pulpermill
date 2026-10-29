@@ -479,8 +479,7 @@ test("required_if: when, when_present and unless", () => {
   assert.deepEqual(run("world", "rule_false_needs_truth", { rules: [{ id: "r1", status: "false_belief", truth: "" }, { id: "r2", status: "common", truth: "" }] }), [["rules", "r1", "truth"]]);
   assert.deepEqual(run("entanglements", "next_move_for_agents", { pressures: [{ id: "p1", source_agent: "c1", next_move: "" }, { id: "p2", source_circumstance: "storm", next_move: "" }] }), [["pressures", "p1", "next_move"]]);
   assert.deepEqual(run("outline", "when_gap_after_first", { beats: [beat({ id: "b1", chapter: 1 }), beat({ id: "b2", chapter: 2 })] }), [["beats", "b2", "when_gap"]]);
-  assert.deepEqual(run("outline", "goal_now_for_redefined", { beats: [beat({ goal_change: "redefined" })] }), [["beats", "b1", "goal_now"]]);
-  assert.deepEqual(run("outline", "goal_now_for_redefined", { beats: [beat({ goal_change: "achieved" })] }), []);
+  assert.deepEqual(run("outline", "when_gap_after_first", { beats: [beat({ id: "b1", chapter: 1 })] }), []);
 });
 
 test("links that no longer exist are reported, in a card and in its lists", () => {
@@ -564,15 +563,15 @@ test("a reveal may not repeat, and a payoff must be an earlier, still-open plant
   assert.deepEqual(run("outline", "outline_link_broken", withBeat("b3", { payoff: ["e1"] }), project), []);
 });
 
-test("a turn too close to an earlier turn or changed line is flagged", () => {
+test("an aim too close to an earlier aim or changed line is flagged", () => {
   assert.equal(similarity("Ines learns the customer's name", "Ines learns the customers name!") >= SIMILARITY_LIMIT, true);
   assert.equal(similarity("Ines learns the customer's name", "The guild burns the east market") < SIMILARITY_LIMIT, true);
   assert.equal(similarity("", "anything at all here"), 0);
   const project = { summary_events: { entries: [{ id: "e1", beat: "b1", changed: "The landlord now knows Ines is asking questions" }] } };
-  const beats = [beat({ id: "b2", chapter: 2, turn: "The landlord knows that Ines is asking questions" })];
-  assert.deepEqual(run("outline", "turn_not_repeated", { beats }, project), [["beats", "b2", "turn"]]);
-  const two = [beat({ id: "b1", chapter: 1, turn: "A stranger arrives with a sealed letter" }), beat({ id: "b2", chapter: 2, turn: "A stranger arrives with the sealed letter" })];
-  assert.deepEqual(run("outline", "turn_not_repeated", { beats: two }), [["beats", "b2", "turn"]]);
+  const beats = [beat({ id: "b2", chapter: 2, collision_goal: "The landlord knows that Ines is asking questions" })];
+  assert.deepEqual(run("outline", "aim_not_repeated", { beats }, project), [["beats", "b2", "collision_goal"]]);
+  const two = [beat({ id: "b1", chapter: 1, collision_goal: "A stranger arrives with a sealed letter" }), beat({ id: "b2", chapter: 2, collision_goal: "A stranger arrives with the sealed letter" })];
+  assert.deepEqual(run("outline", "aim_not_repeated", { beats: two }), [["beats", "b2", "collision_goal"]]);
 });
 
 // ---- Showing problems: when the page lets a problem appear ----
@@ -626,11 +625,11 @@ test("problemPath names a plain field, a list, an item and a field inside an ite
 test("filledPaths lists fields, lists, items and the fields inside them, and skips empty and unticked ones", () => {
   const values = {
     ...blankCard(outline),
-    beats: [{ ...blankItem(beatsField), id: "b1", chapter: 1, turn: "A letter arrives" }, { ...blankItem(beatsField), id: "b2" }],
+    beats: [{ ...blankItem(beatsField), id: "b1", chapter: 1, ends_on: "A letter arrives" }, { ...blankItem(beatsField), id: "b2" }],
   };
   const paths = filledPaths(outline, values);
-  for (const path of ["beats", "beats.b1", "beats.b1.turn", "beats.b1.chapter"]) assert.ok(paths.has(path), path);
-  for (const path of ["beats.b2", "beats.b2.turn", "beats.b1.cast"]) assert.ok(!paths.has(path), path);
+  for (const path of ["beats", "beats.b1", "beats.b1.ends_on", "beats.b1.chapter"]) assert.ok(paths.has(path), path);
+  for (const path of ["beats.b2", "beats.b2.ends_on", "beats.b1.cast"]) assert.ok(!paths.has(path), path);
   assert.equal(filledPaths(setupCard, blankCard(setupCard)).size, 0);
 });
 
@@ -1297,12 +1296,15 @@ test("a busy status may name its stage; an unknown stage is ignored and an idle 
 
 test("a chapter reply is tidied: text trimmed, empty shift boxes dropped, lists defaulted", () => {
   const read = vectorsApi.readGenerateReply({
-    ok: true, chapter_text: "Text.", events: { happened: " Happened. ", changed: "  " },
+    ok: true, chapter_text: "Text.", events: { happened: " Happened. ", changed: "  ", goal_change: "redefined", goal_now: " Find the ledger. " },
     shifts: [{ character: " Suvi ", believes: "  ", decided: " Stay. " }], changes: [],
   });
   assert.equal(read.ok, true);
-  assert.deepEqual(read.events, { happened: "Happened.", changed: null, planted: null, goal_landed: false, paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [] });
+  assert.deepEqual(read.events, { happened: "Happened.", changed: null, planted: null, goal_change: "redefined", goal_now: "Find the ledger.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [] });
   assert.deepEqual(read.shifts, [{ character: "Suvi", decided: "Stay." }]);
+  const noGoal = vectorsApi.readGenerateReply({ ok: true, chapter_text: "Text.", events: { happened: "Happened." }, shifts: [], changes: [] });
+  assert.equal(noGoal.error.kind, "bad_output", "how the chapter left the goal is always answered");
+  assert.equal(vectorsApi.readGenerateReply({ ok: true, chapter_text: "Text.", events: { happened: "Happened.", goal_change: "stands", goal_now: "x" }, shifts: [], changes: [] }).ok, false);
 });
 
 test("an offstage move needs both parts", () => {

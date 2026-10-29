@@ -34,12 +34,9 @@ def trial(name: str) -> dict:
         style.update(person="third", tense="present", distance="deep", humor="none", pacing="lingering", rhythm="flowing",
                      imagery="lush", attitude="warm", narrator_note="", lens="She counts what people leave on the counter.")
         beat.update(id="b0000006", chapter=6, cast=["Suvi", "Aino"], where="The Shop", when_time="Wednesday evening, after closing",
-                    when_gap="The next evening", collision_goal="Hear what Aino came to say", collision_block="Aino cannot say it while the shop is still warm with other people's talk",
-                    choice_a="Let Aino leave with it unsaid", choice_b="Tell him she already knows about the letters",
-                    turn="Aino admits he read her letters, and Suvi lets him stay", shift="easier",
+                    when_gap="The next evening", collision_goal="Hear what Aino came to say", shift="easier",
                     ends_on="Suvi hangs the brass key back on its nail", reveal_rule="", reveal_learners=[], plant="", payoff=[],
-                    offstage_did="", offstage_reach="", goal_change=None, goal_now="",
-                    spotlight="Aino fears Suvi has seen him reading her letters.")
+                    offstage_did="", offstage_reach="", spotlight="Aino fears Suvi has seen him reading her letters.")
         req["previous_ending"] = "Pekka's door closed behind him with the sound of a thing put away for good. Aino was still on the step, hat in his hands."
         req["open_plants"], req["available_reveals"] = [req["open_plants"][0]], []
         req["standing"] = [{"character": "Suvi", "decided": "to hear him out"}, {"character": "Aino", "fears": "that Suvi has seen him reading her letters"}]
@@ -51,12 +48,9 @@ def trial(name: str) -> dict:
         style.update(person="third", tense="past", distance="external", humor="none", pacing="brisk", rhythm="terse", imagery="literal",
                      attitude="clinical", narrator_note="", lens="", dialogue_note="")
         beat.update(id="b0000007", chapter=7, cast=["Suvi", "Pekka"], where="The Docks", when_time="Thursday, an hour before the spring tide",
-                    when_gap="The next day", collision_goal="Reach the cellar before the clerk does", collision_block="The east gate is shut and the tide is coming in over the low road",
-                    choice_a="Take the flooded low road and risk the ledger getting wet", choice_b="Wait for Pekka's boat and lose a quarter of an hour",
-                    turn="Suvi reaches the cellar first, but the second lock is already open", shift="harder",
+                    when_gap="The next day", collision_goal="Reach the cellar before the clerk does", shift="harder",
                     ends_on="The cellar door stands open and the ledger's shelf is empty", reveal_rule="", reveal_learners=[],
-                    plant="", payoff=["A second lock on the cellar's inner door."], offstage_did="", offstage_reach="", goal_change=None, goal_now="",
-                    spotlight="The board wants the ledger before the next first-day visit and will close the shop to get it.")
+                    plant="", payoff=["A second lock on the cellar's inner door."], offstage_did="", offstage_reach="", spotlight="The board wants the ledger before the next first-day visit and will close the shop to get it.")
         req["earlier_events"] += [
             {"chapter": 5, "happened": "Suvi pressed Pekka in front of Aino and learned the ledger is in the cellar. Aino now knows she is asking.",
              "changed": "Aino knows what Suvi is after.", "planted": ""},
@@ -74,12 +68,9 @@ def trial(name: str) -> dict:
         req["setup"] = {**req["setup"], "normal": "Suvi opens the harbour shop at six, counts the till twice, and knows every sailor's debt by heart.",
                         "disruption": "One morning the till is a crate's worth short, and the brass key is gone from its nail."}
         beat.update(id="b0000001", chapter=1, cast=["Suvi", "Aino"], where="The Shop", when_time="Monday, six in the morning", when_gap="",
-                    collision_goal="Find out who has been in the shop at night", collision_block="Nothing is broken and the door was locked",
-                    choice_a="Raise the miscount with the dock clerk now", choice_b="Say nothing and watch who comes in",
-                    turn="Suvi decides to watch, and Aino lets slip that a ledger exists", shift="harder",
+                    collision_goal="Find out who has been in the shop at night", shift="harder",
                     ends_on="The brass key is missing from its nail", reveal_rule="", reveal_learners=[], plant="The brass key goes missing from its nail.",
-                    payoff=[], offstage_did="", offstage_reach="", goal_change=None, goal_now="",
-                    spotlight="The board wants the ledger before the next first-day visit and will close the shop to get it.")
+                    payoff=[], offstage_did="", offstage_reach="", spotlight="The board wants the ledger before the next first-day visit and will close the shop to get it.")
         req["available_reveals"] = []
         return req
     raise KeyError(name)

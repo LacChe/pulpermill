@@ -129,16 +129,19 @@ export function createMock(schema, options = {}) {
     const beat = request.beat ?? {};
     const who = names(request.cast)[0];
     const pressure = (request.entanglements?.pressures ?? [])[0];
+    const tie = (request.entanglements?.ties ?? [])[0];
+    const last = request.chapter >= request.chapter_count;
     return {
       ok: true,
-      chapter_text: `Mock chapter ${request.chapter} of ${request.chapter_count}. ${beat.turn ?? ""}`.trim(),
+      chapter_text: `Mock chapter ${request.chapter} of ${request.chapter_count}. ${beat.collision_goal ?? ""}`.trim(),
       events: {
         happened: `Mock events of chapter ${request.chapter}.`, changed: "Mock change.", planted: beat.plant ?? null,
         paid_off: beat.payoff ?? [], reveals_landed: beat.reveal_rule ? [beat.reveal_rule] : [],
-        behaviors_seen: [], things_seen: [], goal_landed: Boolean(beat.goal_change),
+        behaviors_seen: [], things_seen: [],
+        goal_change: last ? "achieved" : "redefined", goal_now: `Mock aim ${request.chapter + 1}: reach the next stage of ${request.goal ?? "the goal"}`,
       },
       shifts: who ? [{ character: who, decided: "Mock decision." }] : [],
-      shown: pressure?.id ? [pressure.id] : [],
+      shown: tie?.id ? [tie.id] : [],
       changes: pressure?.id ? [{ section: "pressures", item: pressure.id, field: "next_move", value: "Mock next move." }] : [],
       // A line the cards do not have yet: someone comes to know a landed reveal, or suspects something (so the review has one to show).
       new_knowledge: !who ? [] : beat.reveal_rule

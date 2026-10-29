@@ -1018,6 +1018,7 @@ export function readPlanReply(reply) {
 const SHIFT_TEXT = ["believes", "fears", "wants", "refuses", "decided"];
 const CHANGE_SECTIONS = ["ties", "holdings", "knowledge", "pressures"];
 export const KNOWLEDGE_STATUSES = ["knows", "suspects", "misled"];
+export const GOAL_CHANGES = ["achieved", "redefined", "abandoned"];
 
 export function readGenerateReply(reply) {
   const checked = readReply(reply);
@@ -1028,7 +1029,7 @@ export function readGenerateReply(reply) {
   if (!isOptionalText(e.changed) || !isOptionalText(e.planted)) return bad("The chapter's events have text of the wrong kind.");
   const lists = ["paid_off", "reveals_landed", "behaviors_seen", "things_seen"];
   for (const key of lists) if (e[key] !== undefined && !isTextList(e[key])) return bad(`The events' ${key} is not a list of names.`);
-  if (e.goal_landed !== undefined && typeof e.goal_landed !== "boolean") return bad("The events' goal_landed is not yes or no.");
+  if (!GOAL_CHANGES.includes(e.goal_change) || !isText(e.goal_now) || !e.goal_now.trim()) return bad("The chapter's events do not say how the goal ended up.");
   if (!Array.isArray(checked.shifts)) return bad("The chapter's shifts are missing.");
   const shifts = [];
   for (const shift of checked.shifts) {
@@ -1056,7 +1057,7 @@ export function readGenerateReply(reply) {
   if (!isTextList(shown)) return bad("The shown entanglements are not a list of ids.");
   const events = {
     happened: e.happened.trim(), changed: e.changed?.trim() || null, planted: e.planted?.trim() || null,
-    goal_landed: e.goal_landed === true,
+    goal_change: e.goal_change, goal_now: e.goal_now.trim(),
   };
   for (const key of lists) events[key] = e[key] ?? [];
   return { ok: true, chapter_text: checked.chapter_text, events, shifts, changes: checked.changes.map((c) => ({ section: c.section, item: c.item, field: c.field, value: c.value })), new_knowledge: newKnowledge, shown };
@@ -1181,12 +1182,14 @@ CHECKS.holding_pairs_allowed = ({ card, rule, values, project }) => {
   return hits;
 };
 
-// A list is too short or too long. Items with nothing typed do not count.
+// A list is too short or too long. Items with nothing typed do not count, and neither does an item that holds every value of
+// params.skip ({field: value}: a resolved pressure is not an active one).
 CHECKS.item_count = ({ card, rule, values }) => {
-  const { min, max } = rule.params;
+  const { min, max, skip } = rule.params;
+  const skipped = (item) => Boolean(skip) && Object.entries(skip).every(([k, v]) => item?.[k] === v);
   const hits = [];
   for (const key of rule.fields ?? []) {
-    const count = (values[key] ?? []).filter((item) => !isItemEmpty(item)).length;
+    const count = (values[key] ?? []).filter((item) => !isItemEmpty(item) && !skipped(item)).length;
     if ((min != null && count < min) || (max != null && count > max)) hits.push({ field: key });
   }
   return hits;
@@ -1341,15 +1344,16 @@ export function similarity(a, b) {
   return shared / Math.min(x.size, y.size);
 }
 
-// The turn against the turns of earlier beats and against the "changed" lines of written chapters.
+// The aim (params.field) against the aims of earlier beats and against the "changed" lines of written chapters.
 CHECKS.similar_to_earlier = ({ card, rule, values, project }) => {
+  const key = rule.params?.field ?? "collision_goal";
   const changed = (project.summary_events?.entries ?? []).filter((e) => isFilled(e.changed)).map((e) => ({ beat: e.beat, text: e.changed }));
   return targets(card, rule, values)
-    .filter((t) => t.item && isFilled(t.item.turn))
+    .filter((t) => t.item && isFilled(t.item[key]))
     .filter((t) => {
-      const earlier = t.list.filter((b) => b !== t.item && isFilled(b.turn) && Number(b.chapter) < Number(t.item.chapter)).map((b) => b.turn);
+      const earlier = t.list.filter((b) => b !== t.item && isFilled(b[key]) && Number(b.chapter) < Number(t.item.chapter)).map((b) => b[key]);
       const lines = changed.filter((c) => c.beat !== t.item.id).map((c) => c.text);
-      return [...earlier, ...lines].some((text) => similarity(t.item.turn, text) >= SIMILARITY_LIMIT);
+      return [...earlier, ...lines].some((text) => similarity(t.item[key], text) >= SIMILARITY_LIMIT);
     })
-    .map((t) => place(t, "turn"));
+    .map((t) => place(t, key));
 };
