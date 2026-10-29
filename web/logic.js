@@ -1181,12 +1181,14 @@ CHECKS.holding_pairs_allowed = ({ card, rule, values, project }) => {
   return hits;
 };
 
-// A list is too short or too long. Items with nothing typed do not count.
+// A list is too short or too long. Items with nothing typed do not count, and neither does an item that holds every value of
+// params.skip ({field: value}: a resolved pressure is not an active one).
 CHECKS.item_count = ({ card, rule, values }) => {
-  const { min, max } = rule.params;
+  const { min, max, skip } = rule.params;
+  const skipped = (item) => Boolean(skip) && Object.entries(skip).every(([k, v]) => item?.[k] === v);
   const hits = [];
   for (const key of rule.fields ?? []) {
-    const count = (values[key] ?? []).filter((item) => !isItemEmpty(item)).length;
+    const count = (values[key] ?? []).filter((item) => !isItemEmpty(item) && !skipped(item)).length;
     if ((min != null && count < min) || (max != null && count > max)) hits.push({ field: key });
   }
   return hits;

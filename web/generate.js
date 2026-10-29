@@ -293,9 +293,10 @@ function addKnowledge(schema, project, next, proposals, cast, { overwriteLocked 
   return { applied, dropped };
 }
 
-// The ids the model said the chapter showed that are live entanglements here (anything else is left out), each once.
+// The ids the model said the chapter showed that are live ties, holdings or knowledge here (anything else is left out, a pressure
+// included: its use is the spotlight), each once.
 function shownIds(project, shown) {
-  const live = new Set(["ties", "holdings", "knowledge", "pressures"].flatMap((k) => (project.entanglements?.[k] ?? []).map((i) => i.id)));
+  const live = new Set(["ties", "holdings", "knowledge"].flatMap((k) => (project.entanglements?.[k] ?? []).map((i) => i.id)));
   return [...new Set(asList(shown))].filter((id) => live.has(id));
 }
 

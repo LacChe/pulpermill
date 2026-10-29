@@ -174,6 +174,16 @@ def events_prompt(req: dict, chapter_text: str) -> Prompt:
     return Prompt("events", ev["version"], text, schemas.events_schema(req), "events")
 
 
+def _focus_handle(beat: dict, entanglements: dict, handles: dict[str, dict]) -> str:
+    """The handle of the pressure the beat put in the spotlight (the beat carries its words), or '' when it is not among the handles."""
+    what = s(beat.get("spotlight"))
+    index = {(i["section"], i["id"]): h for h, i in handles.items()}
+    for item in entanglements.get("pressures") or []:
+        if what and s(item.get("what")) == what and index.get(("pressures", item.get("id"))):
+            return index[("pressures", item.get("id"))]
+    return ""
+
+
 def shifts_prompt(req: dict, chapter_text: str, events: dict | None = None) -> Prompt:
     sh = _t("shifts")
     cast = req.get("cast") or []
@@ -193,6 +203,9 @@ def shifts_prompt(req: dict, chapter_text: str, events: dict | None = None) -> P
         if events.get("reveals_landed"):
             found.append(sh["found_reveals"].format(value="; ".join(s(r) for r in events["reveals_landed"])))
         parts.append(sh["found_lead"] + "\n" + "\n".join(found))
+    focus = _focus_handle(beat, req.get("entanglements") or {}, handles)
+    if focus:
+        parts.append(sh["focus"].format(handle=focus))
     parts.append(sh["handles_lead"] + "\n" + render_handles(req.get("entanglements") or {}, handles, names))
     parts += [sh["chapter_lead"] + "\n" + chapter_text.strip(), sh["task"]]
     return Prompt("shifts", sh["version"], _join(*parts), schemas.shifts_schema(req, handles), "shifts", {"handles": handles})

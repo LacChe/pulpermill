@@ -2121,6 +2121,29 @@
        "changes": true,
        "placeholder": "Choose who it falls on",
        "no_options": "No characters or groups yet. Add some in Characters or World first."
+      },
+      {
+       "key": "status",
+       "label": "Status",
+       "help": "A pressure is active until its next move has happened in a written chapter. The system marks it resolved then, and later chapters stop planning around it. You can change it.",
+       "input": "select",
+       "kind": "axis",
+       "required": false,
+       "default": "active",
+       "changes": true,
+       "why": "Keeps a pressure that has played out from taking the spotlight again.",
+       "options": [
+        {
+         "value": "active",
+         "label": "Active",
+         "description": "The Guild has not yet closed the wells."
+        },
+        {
+         "value": "resolved",
+         "label": "Resolved",
+         "description": "The Guild closed the wells, and the story has moved on from it."
+        }
+       ]
       }
      ]
     }
@@ -2315,7 +2338,10 @@
      ],
      "check": "item_count",
      "params": {
-      "max": 3
+      "max": 3,
+      "skip": {
+       "status": "resolved"
+      }
      },
      "context": [],
      "needs_model": false,

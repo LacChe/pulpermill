@@ -701,6 +701,38 @@
    ]
   },
   {
+   "name": "four pressures, one resolved",
+   "card": "entanglements",
+   "rule": "pressures_active_count",
+   "values": {
+    "pressures": [
+     {
+      "id": "p0",
+      "what": "x",
+      "source_agent": "c1",
+      "status": "resolved"
+     },
+     {
+      "id": "p1",
+      "what": "x",
+      "source_agent": "c1"
+     },
+     {
+      "id": "p2",
+      "what": "x",
+      "source_agent": "c1"
+     },
+     {
+      "id": "p3",
+      "what": "x",
+      "source_agent": "c1"
+     }
+    ]
+   },
+   "project": {},
+   "broken": []
+  },
+  {
    "name": "myth without truth",
    "card": "world",
    "rule": "rule_false_needs_truth",

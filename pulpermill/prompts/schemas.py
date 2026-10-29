@@ -287,6 +287,9 @@ def shifts_schema(req: dict, handles: dict[str, dict]) -> Schema:
                                     {"anyOf": [text(), {"type": "array", "items": {"type": "string", "enum": people} if people else text()}]}),
     }
     options = [make() for section, make in kinds.items() if by_section.get(section)]
+    if by_section.get("pressures"):
+        # A pressure whose next move has happened on the page is resolved; the page then passes over it when it picks the spotlight.
+        options.append(change("pressures", ["status"], {"type": "string", "enum": ["resolved"]}))
     if by_section.get("knowledge"):
         # What a misled person believes can move too (a new false belief, or none once they learn the truth).
         options.append(change("knowledge", ["belief"], text()))
@@ -301,12 +304,13 @@ def shifts_schema(req: dict, handles: dict[str, dict]) -> Schema:
     about_entry = obj({"person": one_of(people), "status": {"type": "string", "enum": STATUSES}, "entry": one_of(by_section.get("knowledge") or []), "belief": maybe(text())})
     shapes = [*([about_entry] if by_section.get("knowledge") else []), *([about_rule] if rules else []), about_fact]
     new = {"anyOf": shapes} if len(shapes) > 1 else shapes[0]
-    # Which pressures, knowledge, ties and holdings the chapter actually showed (never one it only named): this is what use counts
-    # are made of, so the least-shown are the ones carried into later requests.
+    # Which knowledge, ties and holdings the chapter actually showed (never one it only named): this is what use counts are made of,
+    # so the least-shown are the ones carried into later requests. A pressure is not listed: the spotlight is its use.
+    showable = [h for h, info in handles.items() if info["section"] != "pressures"]
     return obj({"shifts": {"type": "array", "items": shift, "maxItems": 5},
                 "changes": changes,
                 "new_knowledge": {"type": "array", "items": new, "maxItems": 8},
-                "shown": list_of(list(handles), len(handles))})
+                "shown": list_of(showable, len(showable))})
 
 
 # ---- The rest -------------------------------------------------------------------------------------------------------

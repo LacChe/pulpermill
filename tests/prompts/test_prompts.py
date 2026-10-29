@@ -194,13 +194,14 @@ def test_what_the_chapter_showed_and_the_line_someone_joins_come_back_as_ids():
     knowledge = [h for h, i in handles.items() if i["section"] == "knowledge"]
     pressure = [h for h, i in handles.items() if i["section"] == "pressures"]
     events = {"happened": "x", "changed": "", "planted": None, "paid_off": [], "reveals_landed": [], "behaviors_seen": [], "things_seen": [], "goal_landed": False}
-    out = {"shifts": [], "changes": [], "shown": [pressure[0], pressure[0], "P99"],
+    out = {"shifts": [], "changes": [], "shown": [knowledge[0], knowledge[0], "P99"],
            "new_knowledge": [{"person": "Suvi", "status": "knows", "entry": knowledge[0], "belief": None},
                              {"person": "Suvi", "status": "knows", "entry": pressure[0]},     # not a knowledge line: dropped
                              {"person": "Suvi", "status": "suspects", "fact": "A new thing.", "belief": None}]}
     reply = P.assemble_generate_reply("Words.", events, out, handles)
     parsed = contract.parse_reply("generate", reply)
-    assert parsed.shown == [handles[pressure[0]]["id"]]
+    assert parsed.shown == [handles[knowledge[0]]["id"]]
+    assert not valid({**out, "shown": [pressure[0]]}, sh.schema), "a pressure's use is the spotlight, not what the chapter showed"
     assert [k.entry for k in parsed.new_knowledge] == [handles[knowledge[0]]["id"], None]
 
 
@@ -378,3 +379,18 @@ def test_a_misled_person_can_be_given_what_they_believe():
     assert any(shape["properties"].get("entry", {}).get("enum") == ["K1"] for shape in shapes)     # join a line that exists, by its handle
     fields = [o["properties"]["field"]["enum"] for o in schema["properties"]["changes"]["items"]["anyOf"]]
     assert ["knows", "suspects", "misled"] in fields and ["belief"] in fields
+
+
+def test_the_pressure_in_focus_is_named_by_its_handle_and_can_be_marked_resolved():
+    req = generate_request()
+    sh = P.shifts_prompt(req, "CHAPTER")
+    handles = sh.meta["handles"]
+    focus = next(h for h, i in handles.items() if i["section"] == "pressures" and i["id"] == next(
+        x["id"] for x in req["entanglements"]["pressures"] if x["what"] == req["beat"]["spotlight"]))
+    assert f"The pressure in focus this chapter is {focus}." in sh.text
+    out = {"shifts": [], "changes": [{"section": "pressures", "item": focus, "field": "status", "value": "resolved"}], "new_knowledge": [], "shown": []}
+    assert errors(out, sh.schema) == [], errors(out, sh.schema)
+    assert not valid({**out, "changes": [{"section": "pressures", "item": focus, "field": "status", "value": "active"}]}, sh.schema)
+    assert P.resolve_changes(out["changes"], handles)[0]["item"] == handles[focus]["id"]
+    nothing = {**req, "beat": {**req["beat"], "spotlight": ""}}
+    assert "The pressure in focus" not in P.shifts_prompt(nothing, "CHAPTER").text

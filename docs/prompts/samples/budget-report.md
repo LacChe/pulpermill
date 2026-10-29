@@ -11,7 +11,7 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 | planner-1-think | 3040 | 14884 | 11844 | none needed |
 | planner-2-beat | 4145 | 15184 | 11039 | none needed |
 | events | 3851 | 15184 | 11333 | none needed |
-| shifts | 4843 | 15084 | 10241 | none needed |
+| shifts | 4941 | 15084 | 10143 | none needed |
 | fill-character | 834 | 15084 | 14250 | none needed |
 | judge-world | 181 | 15584 | 15403 | none needed |
 | style-fit | 177 | 15684 | 15507 | none needed |
@@ -27,7 +27,7 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 | planner-1-think | 8586 | 14884 | 6298 | none needed |
 | planner-2-beat | 9691 | 15184 | 5493 | none needed |
 | events | 4244 | 15184 | 10940 | none needed |
-| shifts | 6864 | 15084 | 8220 | none needed |
+| shifts | 6875 | 15084 | 8209 | none needed |
 | fill-character | 886 | 15084 | 14198 | none needed |
 | judge-world | 181 | 15584 | 15403 | none needed |
 | style-fit | 177 | 15684 | 15507 | none needed |
@@ -43,7 +43,7 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 | planner-1-think | 17871 | 14884 | -2987 | 0.7 |
 | planner-2-beat | 18976 | 15184 | -3792 | 0.7 |
 | events | 11121 | 15184 | 4063 | none needed |
-| shifts | 10840 | 15084 | 4244 | none needed |
+| shifts | 10851 | 15084 | 4233 | none needed |
 | fill-character | 1348 | 15084 | 13736 | none needed |
 | judge-world | 181 | 15584 | 15403 | none needed |
 | style-fit | 177 | 15684 | 15507 | none needed |

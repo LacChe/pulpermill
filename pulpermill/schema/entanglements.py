@@ -60,12 +60,16 @@ class KnowledgeEntry(Item):
     belief: str | None = spec("text", None, "note", required=False, changes=True)   # only with someone misled: what they wrongly believe
 
 
+PressureStatus = Literal["active", "resolved"]
+
+
 class Pressure(Item):
     what: str = spec("textarea", None, "note", changes=True)
     source_agent: str | None = spec("select", None, "note", required=False, ref=PEOPLE)   # one of agent / circumstance
     source_circumstance: str | None = spec("text", None, "note", required=False)
     next_move: str | None = spec("text", None, "note", required=False, changes=True)       # only with an agent
     bears_on: list[str] = spec("select-multiple", None, "note", ref=PEOPLE, changes=True)   # people and groups only, not ties
+    status: PressureStatus = spec("select", None, "axis", required=False, default="active", changes=True)   # resolved once its next move has happened on the page; the story's pressures stop rotating onto it
 
 
 # Everything is required for now. Source doc: "an empty section is fine".
@@ -115,6 +119,6 @@ RULES = [
          when="an agent's next move states the agent's general wants instead of what it wants in this situation",
          needs_model=True),
     Rule(id="pressures_active_count", severity="warn", fields=["pressures"],       # drives story
-         when="more than three pressures are active at once",
-         check="item_count", params={"max": 3}),
+         when="more than three pressures are active at once (a resolved pressure is not active)",
+         check="item_count", params={"max": 3, "skip": {"status": "resolved"}}),
 ]

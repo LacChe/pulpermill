@@ -197,30 +197,28 @@ export function useCounts(project, except = null) {
   return counts;
 }
 
-// How often each pressure has had a chapter: one the chapter showed (see usage.js) or one the chapter's beat put in the
-// spotlight, once per chapter. A spotlight counts even when its agent stayed off stage and the chapter never showed it, so
-// the rotation always moves on. `except` leaves out the chapter being planned.
-function spotlightUse(project, except = null) {
-  const used = usageOf(project, except);
-  const count = Object.fromEntries((project.entanglements?.pressures ?? []).map((p) => [p.id, used[p.id]?.uses ?? 0]));
-  const shown = {};
-  for (const c of writtenChapters(project)) {
-    if (except !== null && c.n === except) continue;
-    const id = c.beat?.spotlight;
-    if (id in count && !asList(c.events?.entanglements_shown).includes(id)) shown[id] = (shown[id] ?? 0) + 1;
-  }
-  for (const id of Object.keys(shown)) count[id] += shown[id];
-  return count;
+// The pressures the story is still playing out: the active ones, or every pressure once all of them have resolved (the story
+// goes on, and the spotlight still needs something to turn on).
+export function livePressures(project) {
+  const all = project.entanglements?.pressures ?? [];
+  const active = all.filter((p) => p.status !== "resolved");
+  return active.length ? active : all;
 }
 
-// The pressure that has had the least attention so far (ties go to the one listed first), or null when there is none.
-// It is the one the next chapter should turn on, so the people in it are the ones worth having on stage.
-export function duePressure(project, except = null) {
-  const pressures = project.entanglements?.pressures ?? [];
-  if (!pressures.length) return null;
-  const used = spotlightUse(project, except);
+// The pressures in the order the spotlight takes them: the fewest chapters in the spotlight first, then the one spotlit longest
+// ago, then the order the writer listed them (usage.js counts the spotlight as a pressure's use). `except` leaves out the chapter
+// being planned or written again, so replanning it does not count itself.
+function byAttention(project, pressures, except = null) {
+  const used = usageOf(project, except);
   return pressures.map((p, order) => ({ p, order }))
-    .sort((a, b) => (used[a.p.id] ?? 0) - (used[b.p.id] ?? 0) || a.order - b.order)[0].p;
+    .sort((a, b) => (used[a.p.id]?.uses ?? 0) - (used[b.p.id]?.uses ?? 0) || (used[a.p.id]?.last ?? 0) - (used[b.p.id]?.last ?? 0) || a.order - b.order)
+    .map((x) => x.p);
+}
+
+// The pressure that has had the least attention so far, or null when there is none. It is the one the next chapter should turn
+// on, so the people in it are the ones worth having on stage.
+export function duePressure(project, except = null) {
+  return byAttention(project, livePressures(project), except)[0] ?? null;
 }
 
 // Every character as a choice for the cast, with how much they have been used, and a suggestion: the protagonist and
@@ -257,17 +255,15 @@ export function castProblem(project, castIds) {
 
 // ---- The spotlight and the shifts ------------------------------------------------
 
-// The pressure this chapter is about: always one that involves someone on stage, the least-spotlit first (ties go to the
-// one listed first). With none involving the cast, the least-spotlit overall; the beat's own rule then warns about it.
+// The pressure this chapter is about: always one that involves someone on stage, the least recently spotlit first (see
+// byAttention). A resolved pressure is passed over. With none involving the cast, the least-spotlit overall; the beat's own rule
+// then warns about it.
 export function pickSpotlight(project, castIds, except = null) {
-  const pressures = project.entanglements?.pressures ?? [];
+  const pressures = livePressures(project);
   if (!pressures.length) return null;
-  const used = spotlightUse(project, except);
   const involves = (p) => [p.source_agent, ...asList(p.bears_on)].some((id) => asList(castIds).includes(id));
   const pool = pressures.filter(involves);
-  return (pool.length ? pool : pressures)
-    .map((p, order) => ({ p, order }))
-    .sort((a, b) => (used[a.p.id] ?? 0) - (used[b.p.id] ?? 0) || a.order - b.order)[0].p;
+  return byAttention(project, pool.length ? pool : pressures, except)[0];
 }
 
 // The shifts the chapter may take, from the earlier beats' pacing.
@@ -363,7 +359,7 @@ export function entanglementsFor(schema, project, castIds, names, { allPressures
     knowledge: pick("knowledge", e.knowledge.filter((k) => standing(k).some((id) => cast.includes(id))),
       () => "", (k) => (k.rule && k.rule === beat?.reveal_rule) || (Boolean(words) && mentions(words, k.rule ? (project.world?.rules ?? []).find((r) => r.id === k.rule)?.statement : k.fact)),
       (k) => standing(k).filter((id) => cast.includes(id)).length),
-    pressures: pick("pressures", allPressures ? e.pressures : e.pressures.filter(touchesCast), () => "", () => false),
+    pressures: pick("pressures", (allPressures ? e.pressures : e.pressures.filter(touchesCast)).filter((p) => p.status !== "resolved" || p.id === beat?.spotlight), () => "", () => false),
   };
 }
 
@@ -445,7 +441,7 @@ export function offstageRequest(schema, project, castIds) {
     entanglements: {
       ties: out("ties", choose(e.ties.filter((t) => touches(t.tie_from, t.tie_to)), counts.used)),
       holdings: out("holdings", choose(e.holdings.filter((h) => touches(h.held_by)), counts.used)),
-      pressures: out("pressures", choose(e.pressures.filter((p) => touches(p.source_agent, asList(p.bears_on))), counts.used)),
+      pressures: out("pressures", choose(e.pressures.filter((p) => p.status !== "resolved" && touches(p.source_agent, asList(p.bears_on))), counts.used)),
     },
     latest_events: last,
     earlier_offstage: beatsOf(project).filter((b) => Number(b.chapter) < chapter && String(b.offstage_did ?? "").trim() !== "")

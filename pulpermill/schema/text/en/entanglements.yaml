@@ -78,6 +78,13 @@ fields:
       source_circumstance: {label: "Circumstance", help: "Or a circumstance with no one behind it, like a storm or a deadline.", placeholder: "e.g. a drought, or a deadline"}
       next_move: {label: "Agent's next move", help: "Only when an agent is behind it: what they want in this situation, not their general wants.", placeholder: "e.g. Plans to call in the loan before the audit", examples: {good: ["Plans to call in the loan before the audit"], avoid: ["Wants power", "Wants to be loved"]}, visible_if: {source_agent: "filled"}}
       bears_on: {label: "Bears on", help: "Who it falls on: characters or groups.", placeholder: "Choose who it falls on", no_options: "No characters or groups yet. Add some in Characters or World first."}
+      status:
+        label: "Status"
+        help: "A pressure is active until its next move has happened in a written chapter. The system marks it resolved then, and later chapters stop planning around it. You can change it."
+        why: "Keeps a pressure that has played out from taking the spotlight again."
+        options:
+          active: {label: "Active", expand: "still pressing", description: "The Guild has not yet closed the wells."}
+          resolved: {label: "Resolved", expand: "has played out", description: "The Guild closed the wells, and the story has moved on from it."}
 rules:
   tie_not_self:
     message: "A tie goes from someone to themselves."

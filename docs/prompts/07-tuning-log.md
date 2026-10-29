@@ -76,3 +76,18 @@ The real figure is still to be measured: `memory_by_ctx` in the notebook, in a f
 
 - Fill: an example for the suspects rule (the line's subject is the thing suspected, with the person under suspects and knows left empty). The world card gives every object the note mentions its own entry under the note's name.
 - Offstage: the request carries `earlier_offstage` ([{chapter, did}], oldest first; contract, page and prompt all updated) and the prompt asks for a different kind of move that complicates the protagonist's goal.
+
+## Step 5: the spotlight rotates and pressures move (shifts-0.3)
+
+**Why.** In the six-chapter test run the spotlight was the same pressure every chapter. `entanglements_shown` over-reports (10 to 14 ids a chapter, usually all three pressures), so counts tied and the first-listed pressure won each time. `spotlightUse` also added a count for a planned spotlight, against the page's rule that planned is not used. Nothing asked a pressure to change after its chapter, so its text and `next_move` stood still.
+
+**What changed.**
+- A pressure's use is the spotlight. `usageOf` marks the pressure a written chapter's beat put in the spotlight, and no longer reads pressures out of `entanglements_shown` (`web/usage.js`). `spotlightUse` is gone.
+- `pickSpotlight` and `duePressure` rotate by fewest chapters in the spotlight, then the one spotlit longest ago, then list order (`web/plan.js::byAttention`).
+- A pressure has a `status`: `active` or `resolved`. A resolved pressure is passed over by the spotlight and is not sent to the planner, the writer or the offstage pass. When every pressure is resolved the rotation falls back to all of them, so a story always has a spotlight. The "more than three active" rule counts active pressures only (`item_count` takes `skip`).
+- Shifts (`shifts-0.3`): the pressure the beat put in the spotlight is named by its handle, and the pass is asked to give its new `what` and `next_move` as the chapter leaves them, and `status: resolved` once its next move has happened on the page. `shown` no longer lists pressures (schema, prompt, contract doc, `summary_events.entanglements_shown`).
+- The spotlighted pressure is always among the pressures sent to the pass, even when its people are not on stage.
+
+**How to check.** Rerun the test project. The spotlight should visit each active pressure in turn; a pressure's text and `next_move` should differ from chapter to chapter after its turn; a pressure whose agent has acted should end up resolved and stop coming back.
+
+**Not done here.** Goal changes still come from the planner (step 6 moves them to the pass after the chapter).

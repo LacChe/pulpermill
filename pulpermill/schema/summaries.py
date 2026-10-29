@@ -38,8 +38,8 @@ class EventsEntry(Item):
     things_seen: list[str] | None = spec("select-multiple", None, "note", required=False, max_selected=5,
                                          ref=["world.objects"], filled_by="extractor")
     entanglements_shown: list[str] | None = spec("select-multiple", None, "note", required=False,
-                                                 ref=["entanglements.pressures", "entanglements.knowledge", "entanglements.ties", "entanglements.holdings"],
-                                                 filled_by="extractor")     # the pressures, knowledge, ties and holdings the chapter actually showed
+                                                 ref=["entanglements.knowledge", "entanglements.ties", "entanglements.holdings"],
+                                                 filled_by="extractor")     # the knowledge, ties and holdings the chapter actually showed (a pressure's use is the spotlight)
     goal_landed: bool = spec("checkbox", None, "note", required=False, default=False, filled_by="extractor")   # the beat's goal change actually happened in the text
 
 

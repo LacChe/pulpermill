@@ -132,6 +132,39 @@ test("the spotlight is a pressure involving the cast, the least-spotlit first", 
   assert.equal(pickSpotlight(p, [suvi.id]), null);
 });
 
+test("the spotlight rotates through every pressure however many the extractor says each chapter showed", async () => {
+  const p = await started();
+  const [suvi, ola] = p.characters;
+  const pressures = p.entanglements.pressures;
+  for (const id of ["pr000002", "pr000003"]) pressures.push({ id, what: `Pressure ${id}`, source_agent: ola.id, source_circumstance: "", next_move: "x", bears_on: [suvi.id] });
+  pressures[0].source_agent = ola.id;
+  pressures[0].bears_on = [suvi.id];
+  const everything = pressures.map((x) => x.id);
+  const seen = [];
+  for (let n = 1; n <= 6; n++) {
+    const pick = pickSpotlight(p, [suvi.id, ola.id]);
+    seen.push(pick.id);
+    writeChapter(p, n, { cast: [suvi.id, ola.id], where: p.world.places[0].id, spotlight: pick.id, events: { entanglements_shown: everything } });
+  }
+  assert.deepEqual(seen, [...everything, ...everything], "each pressure in turn, the one spotlit longest ago first");
+});
+
+test("a resolved pressure is passed over, and the story still has a spotlight once every pressure is resolved", async () => {
+  const p = await started();
+  const [suvi, ola] = p.characters;
+  const pressures = p.entanglements.pressures;
+  pressures.push({ id: "pr000002", what: "Another", source_agent: ola.id, source_circumstance: "", next_move: "x", bears_on: [suvi.id] });
+  pressures[0].source_agent = ola.id;
+  pressures[0].bears_on = [suvi.id];
+  pressures[0].status = "resolved";
+  assert.equal(pickSpotlight(p, [suvi.id, ola.id]).id, "pr000002");
+  assert.equal(duePressure(p).id, "pr000002");
+  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: "pr000002" });
+  assert.equal(pickSpotlight(p, [suvi.id, ola.id]).id, "pr000002", "the only live one, even though it was just spotlit");
+  pressures[1].status = "resolved";
+  assert.equal(pickSpotlight(p, [suvi.id, ola.id]).id, pressures[0].id, "all resolved: the least recently spotlit overall");
+});
+
 test("a spotlight the chapter never showed still counts, so the rotation moves on", async () => {
   const p = await started();
   const [suvi, ola] = p.characters;
