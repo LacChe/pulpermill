@@ -1,6 +1,6 @@
-[planner_think planner-0.2, stage: think]
+[planner_think planner-0.3, stage: think]
 
-You are planning one chapter of a novel. A chapter is a scene, not a summary: someone wants something, something stands in the way, they have to choose, and by the end something is different. A writer will write the chapter from your plan, so make the plan a scene the writer can play, with people who act from who they are.
+You are planning one chapter of a novel. A chapter is a scene, not a summary: someone wants something, something presses against it, and by the end something is different. A writer will write the chapter from your plan, so make the plan a scene the writer can play, with people who act from who they are.
 Below is everything that is true so far. Plan the next chapter.
 
 The tone
@@ -77,14 +77,15 @@ Chapter 3. Suvi and Pekka argue over the rent. Pekka hints that he can talk abou
 Chapter 4. Aino warns Suvi that the board will count the stock on Friday. Suvi searches the cellar with the key and finds it dry. She tells no one. By its end: The cellar story is false, and Suvi alone knows it.
 
 Earlier chapters' plans, as a timeline:
-Chapter 3: at The Docks, Monday noon. It turned on: Pekka names a price. (easier)
-Chapter 4: at The Shop, Friday night. It turned on: Suvi finds the cellar dry. (harder)
+Chapter 3: at The Docks, Monday noon. (easier)
+Chapter 4: at The Shop, Friday night. (harder)
 
 Elsewhere
 While the cast were elsewhere, The board closed the east market gate. It reaches the protagonist like this: Suvi has to take the long way round. Plan around it.
 
 What is set for this chapter
 The pressure the chapter turns on: The board wants the ledger before the next first-day visit and will close the shop to get it.
+What its agent means to do next: Send a clerk to count the shop's stock on Friday.
 Either kind of chapter is allowed.
 Plants still open (a payoff resolves one of these):
 The brass key goes missing from its nail (set up in chapter 1)
@@ -97,16 +98,16 @@ How recently each person on stage has appeared: Suvi last in chapter 4; Aino las
 Lean towards the places and things that have been used least, when they fit the scene.
 Bring a hidden truth to light when the story is ready for it. In the first third of the story, hold it back unless this chapter's goal depends on it, and let a person come to suspect it before they know it.
 A payoff is a consequence of an open plant: something the plant makes happen, so the plant is changed by it. Telling the plant a second time is not a payoff. A chapter that gives a plant a natural consequence is the one to choose.
-A goal moves in one of three ways, and the planner decides when. Achieved: this chapter completes it, and the new aim is set by what was won or lost. Redefined: the same thread at a more advanced stage, keeping what mattered in the old goal. Abandoned: the protagonist stops pursuing it because something else now matters more, and the new aim is what they turn to. A goal that is not moving stands as it is, and the code's notes say when one is overdue or needed.
+The story stands on a goal, and one pressure is in focus this chapter. Design the chapter at the place where they meet: the protagonist takes a step toward the goal, and the pressure's next move comes at that step. Work out how the meeting could go, because it decides what both become. The goal ends the chapter achieved, taken to a later stage of the same thread, or given up for something that now matters more. The pressure ends the chapter with its next move made and over, or turned into something new (a different next move, a new form, a nearer date). Plan so that the chapter after this one has something to stand on.
 A plant is something new. Leave it out when nothing new needs setting up, and keep clear of anything already listed as open.
 
 This is a middle chapter: tighten the squeeze, and let what the protagonist chose earlier cost them.
 
 Think in these steps, briefly, in plain sentences, about 300 words in all.
-1. Where the story stands: what the protagonist wants and the goal now, what has changed, and which way this chapter could move the goal (achieve it, move it to a later stage, give it up for something else) or whether it stands. Say what the chapter after this one needs to be possible. In a late or last chapter, list the open threads from the story so far and the live pressures, and choose the one or two that carry the most plot.
-2. Three directions for this chapter, one line each. One moves the goal on, one finishes it, one turns away from it on purpose. They differ in who drives the scene (the protagonist, someone who wants something else, the agent of a live pressure arriving on stage), and at least one has the agent of a live pressure present when that agent can be there. Each puts the protagonist's want against something specific in this world.
-3. Pick one and say why it is fresh. A chapter is fresh when the goal moves or the story turns; a new room or new props do not make it so. Say how it picks up the last chapter's closing moment: it answers it, turns it aside on purpose, or promises to pay it off within two chapters.
-4. The choice: the two things the protagonist wants or values that cannot both be had, and what each one costs, including what the cost will do in the next chapter.
+1. Where the story stands: the goal now and how far it has come, the pressure in focus and its next move, and what has changed since the chapter before. In a late or last chapter, list the open threads from the story so far and the live pressures, and choose the one or two that carry the most plot.
+2. Three ways the goal and the pressure could meet in this chapter, one line each. They differ in who drives the scene (the protagonist, the agent of the pressure arriving on stage, someone with a want of their own) and in where the meeting happens. Each sets a specific step toward the goal against the pressure's next move in this world.
+3. Pick one and say why it is fresh. A chapter is fresh when the goal moves or the pressure changes; a new room or new props do not make it so. Say how it picks up the last chapter's closing moment: it answers it, turns it aside on purpose, or promises to pay it off within two chapters.
+4. How the meeting plays out: what the protagonist's step gets and what it costs, what the pressure does in answer, and so what each one becomes by the end. Name where the goal ends up (achieved, a later stage of the same thread, or given up) and where the pressure ends up (its next move made and over, or turned into something new). The chapter after this one needs to be possible from there.
 5. What is different at the end, and the last moment of the chapter.
 6. Whether to plant something for later, give an open plant a consequence, or bring a hidden truth to light, and why now.
 7. How the chapter should be told: one moment worth slowing down on, and one stretch to pass over in a sentence.

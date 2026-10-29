@@ -128,8 +128,6 @@ def _retry_block(req: dict) -> str:
 def _planner_material(req: dict) -> str:
     p = _t("planner")
     extras = [p["use_of_numbers"], _arc(int(req.get("chapter") or 1), int(req.get("chapter_count") or 0))]
-    if not s(req.get("goal")):
-        extras.append(p["goal_ended"])
     return _join(p["job"], assemble(planner_blocks(req)), _retry_block(req), *extras)
 
 
@@ -155,10 +153,25 @@ def _planned(beat: dict, ev: dict) -> str:
         lines.append(ev["planned_plant"].format(plant=sentence(s(beat["plant"]))))
     if beat.get("payoff"):
         lines.append(ev["planned_payoff"].format(payoff=join_names([s(p).rstrip(".") for p in beat["payoff"]]) + "."))
-    change = s(beat.get("goal_change"))
-    if change:
-        lines.append(ev["planned_goal"].format(change=change + (": " + s(beat.get("goal_now")) if s(beat.get("goal_now")) else "")))
     return ev["planned_lead"] + "\n" + ("\n".join(lines) if lines else ev["planned_none"])
+
+
+def _goal_block(req: dict, ev: dict) -> str:
+    """The goal the chapter began with, the story's own goal when the chapters have moved off it, the goals before, and the scene's aim."""
+    lines = []
+    if s(req.get("goal")):
+        lines.append(ev["goal_lead"].format(goal=sentence(s(req["goal"]))))
+    if s(req.get("story_goal")) and s(req.get("story_goal")) != s(req.get("goal")):
+        lines.append(ev["goal_story"].format(goal=sentence(s(req["story_goal"]))))
+    earlier = [s(g).rstrip(".") for g in req.get("earlier_goals") or [] if s(g)]
+    if earlier:
+        lines.append(ev["goal_earlier"].format(items="; ".join(earlier)))
+    aim = s((req.get("beat") or {}).get("collision_goal"))
+    if aim:
+        lines.append(ev["goal_beat"].format(aim=sentence(aim)))
+    if int(req.get("chapter_count") or 0) and int(req.get("chapter") or 0) >= int(req["chapter_count"]):
+        lines.append(ev["goal_last"])
+    return "\n".join(lines)
 
 
 def events_prompt(req: dict, chapter_text: str) -> Prompt:
@@ -170,7 +183,7 @@ def events_prompt(req: dict, chapter_text: str) -> Prompt:
         ev["list_reveals"] + "\n" + _bullets(schemas.names_of(req.get("available_reveals"), "statement"), none),
         ev["list_behaviors"] + "\n" + _bullets(schemas.behavior_states(req.get("cast")), none),
         ev["list_things"] + "\n" + _bullets(schemas.names_of((req.get("world") or {}).get("objects")), none))
-    text = _join(ev["job"], _planned(req.get("beat") or {}, ev), lists, ev["chapter_lead"] + "\n" + chapter_text.strip(), ev["task"])
+    text = _join(ev["job"], _goal_block(req, ev), _planned(req.get("beat") or {}, ev), lists, ev["chapter_lead"] + "\n" + chapter_text.strip(), ev["task"])
     return Prompt("events", ev["version"], text, schemas.events_schema(req), "events")
 
 
@@ -192,16 +205,15 @@ def shifts_prompt(req: dict, chapter_text: str, events: dict | None = None) -> P
     protagonist = s((req.get("setup") or {}).get("protagonist"))
     handles = schemas.entanglement_handles(req.get("entanglements") or {})
     parts = [sh["job"], sh["people_lead"] + "\n" + "\n".join(render_person_brief(p) for p in cast)]
-    if s(beat.get("choice_a")) and s(beat.get("choice_b")):
-        parts.append(sh["choice_lead"].format(name=protagonist) + "\n" + sh["choice_line"].format(label="One", value=sentence(s(beat["choice_a"])))
-                     + "\n" + sh["choice_line"].format(label="The other", value=sentence(s(beat["choice_b"]))))
     if s(beat.get("reveal_rule")):
-        parts.append(sh["reveal_lead"].format(statement=sentence(s(beat["reveal_rule"])), learners=join_names(beat.get("reveal_learners") or []) or "someone on stage"))
+        parts.append(sh["reveal_lead"].format(statement=sentence(s(beat["reveal_rule"]))))
     parts.append(render_standing(req.get("standing") or []))
     if events:
         found = [sh["found_happened"].format(value=s(events.get("happened")))]
         if events.get("reveals_landed"):
             found.append(sh["found_reveals"].format(value="; ".join(s(r) for r in events["reveals_landed"])))
+        if s(events.get("goal_now")):
+            found.append(sh["found_goal"].format(change=s(events.get("goal_change")) or "redefined", goal=sentence(s(events["goal_now"]))))
         parts.append(sh["found_lead"] + "\n" + "\n".join(found))
     focus = _focus_handle(beat, req.get("entanglements") or {}, handles)
     if focus:
@@ -244,7 +256,7 @@ def assemble_generate_reply(chapter_text: str, events: dict, shifts_out: dict, h
         "events": {"happened": s(events.get("happened")), "changed": s(events.get("changed")) or None, "planted": s(events.get("planted")) or None,
                    "paid_off": list(events.get("paid_off") or []), "reveals_landed": list(events.get("reveals_landed") or []),
                    "behaviors_seen": list(events.get("behaviors_seen") or []), "things_seen": list(events.get("things_seen") or []),
-                   "goal_landed": bool(events.get("goal_landed"))},
+                   "goal_change": s(events.get("goal_change")), "goal_now": s(events.get("goal_now"))},
         "shifts": shifts,
         "changes": resolve_changes(shifts_out.get("changes") or [], handles),
         "new_knowledge": new_knowledge,

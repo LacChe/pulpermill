@@ -102,9 +102,9 @@ def test_planner_prompts_and_beat_schema():
 
 def test_planner_retry_shows_the_problems_and_changes_the_stage():
     req = plan_request()
-    req["retry"] = {"thinking": "first thoughts", "beat": {"where": "The Docks", "turn": "Same turn"}, "problems": ["The turn repeats chapter 4's."]}
+    req["retry"] = {"thinking": "first thoughts", "beat": {"where": "The Docks", "collision_goal": "Same aim"}, "problems": ["The aim repeats chapter 4's."]}
     p = P.planner_think_prompt(req)
-    assert p.stage == "retry" and "The turn repeats chapter 4's." in p.text and "first thoughts" in p.text
+    assert p.stage == "retry" and "The aim repeats chapter 4's." in p.text and "first thoughts" in p.text
 
 
 def test_beat_schema_follows_the_request():
@@ -128,7 +128,6 @@ def test_a_good_beat_validates_and_a_wrong_place_does_not():
     beat.update({"where": places[0], "shift": "harder", "plant": None})
     if "reveal_rule" in schema["properties"]:
         beat["reveal_rule"] = schema["properties"]["reveal_rule"]["enum"][0]
-        beat["reveal_learners"] = []
     if "payoff" in schema["properties"]:
         beat["payoff"] = []
     assert errors(beat, schema) == [], errors(beat, schema)
@@ -147,7 +146,7 @@ def test_events_prompt_lists_only_what_was_sent():
         assert plant["text"] in p.text
     assert not valid({"happened": "x"}, p.schema)
     reply = {"happened": "Suvi found it.", "changed": "She knows.", "planted": None, "paid_off": [], "reveals_landed": [],
-             "behaviors_seen": [], "things_seen": [req["world"]["objects"][0]["name"]], "goal_landed": False}
+             "behaviors_seen": [], "things_seen": [req["world"]["objects"][0]["name"]], "goal_change": "redefined", "goal_now": "Find the ledger in the cellar."}
     assert errors(reply, p.schema) == [], errors(reply, p.schema)
     assert not valid({**reply, "things_seen": ["The Moon"]}, p.schema)
 
@@ -178,7 +177,7 @@ def test_assembled_generate_reply_is_what_the_contract_reads():
     sh = P.shifts_prompt(req, "CHAPTER")
     ties = [h for h, i in sh.meta["handles"].items() if i["section"] == "ties"]
     events = {"happened": "Suvi found it.", "changed": "", "planted": None, "paid_off": [], "reveals_landed": [], "behaviors_seen": [],
-              "things_seen": [], "goal_landed": False}
+              "things_seen": [], "goal_change": "redefined", "goal_now": "Find the ledger in the cellar."}
     shifts = {"shifts": [{"character": "Suvi", "believes": "Pekka lied.", "fears": ""}, {"character": "Aino"}],
               "changes": [{"section": "ties", "item": ties[0], "field": "edge", "value": "x"}], "new_knowledge": []}
     reply = P.assemble_generate_reply("Chapter words.", events, shifts, sh.meta["handles"])
@@ -193,7 +192,7 @@ def test_what_the_chapter_showed_and_the_line_someone_joins_come_back_as_ids():
     handles = sh.meta["handles"]
     knowledge = [h for h, i in handles.items() if i["section"] == "knowledge"]
     pressure = [h for h, i in handles.items() if i["section"] == "pressures"]
-    events = {"happened": "x", "changed": "", "planted": None, "paid_off": [], "reveals_landed": [], "behaviors_seen": [], "things_seen": [], "goal_landed": False}
+    events = {"happened": "x", "changed": "", "planted": None, "paid_off": [], "reveals_landed": [], "behaviors_seen": [], "things_seen": [], "goal_change": "redefined", "goal_now": "Find the ledger in the cellar."}
     out = {"shifts": [], "changes": [], "shown": [knowledge[0], knowledge[0], "P99"],
            "new_knowledge": [{"person": "Suvi", "status": "knows", "entry": knowledge[0], "belief": None},
                              {"person": "Suvi", "status": "knows", "entry": pressure[0]},     # not a knowledge line: dropped
@@ -307,39 +306,48 @@ def test_every_prompt_is_one_user_turn():
 
 # ---- The goal arc ---------------------------------------------------------------------------------------------------
 
-def _needs_goal_request():
+def _later_request():
     req = json.loads(json.dumps(plan_request()))
-    req.update(goal=None, goal_state="needs_goal", story_goal="Relight the oven.", chapter=3, chapter_count=6,
-               goal_plan={"state": "needs_goal", "due": "set", "age": 0, "since": 3, "earlier_goals": ["Relight the oven.", "Prove beechwood works."],
-                          "last_end": {"kind": "achieved", "goal": "Prove beechwood works."},
-                          "directions": [{"kind": "truth", "text": "People believe only applewood works."}]})
+    req.update(goal="Prove beechwood works.", story_goal="Relight the oven.", chapter=3, chapter_count=6,
+               goal_plan={"due": None, "age": 1, "since": 2, "earlier_goals": ["Relight the oven."]})
     return req
 
 
-def test_a_needed_goal_is_told_to_the_planner_and_forced_in_the_beat():
-    req = _needs_goal_request()
+def test_the_planner_is_told_the_goal_the_story_stands_on_and_the_goals_before_it():
+    req = _later_request()
     text = P.planner_beat_prompt(req, "x").text
-    assert "Relight the oven." in text and "Prove beechwood works." in text
-    assert "starts a new goal" in text and "People believe only applewood works." in text
-    schema = P.planner_beat_prompt(req, "x").schema
-    assert schema["properties"]["goal_change"]["enum"] == ["redefined"]
-    assert {"goal_change", "goal_now"} <= set(schema["required"])
+    assert "Prove beechwood works." in text and "The story's own goal" in text and "Goals the story has had before this one: Relight the oven" in text
+    assert "The current goal has stood for 1 chapters, since chapter 2." in text
     no_leaks(text)
 
 
-def test_a_goal_that_is_ended_for_good_offers_no_goal_change():
-    req = _needs_goal_request()
-    req.update(goal_state="ended", goal_plan={"state": "ended", "due": None, "age": 0, "since": 3, "earlier_goals": [], "last_end": None, "directions": []})
-    assert "goal_change" not in P.planner_beat_prompt(req, "x").schema["properties"]
-    assert "The story goes on" in P.planner_beat_prompt(req, "x").text
+def test_the_beat_does_not_ask_how_the_chapter_turns_out_or_what_the_goal_becomes():
+    props = S.beat_schema(_later_request())["properties"]
+    for gone in ("goal_change", "goal_now", "turn", "collision_block", "choice_a", "choice_b", "reveal_learners"):
+        assert gone not in props, gone
+    assert "collision_goal" in props and "ends_on" in props
 
 
-def test_the_writer_is_told_a_new_goal_forms_when_the_story_goes_on():
-    from pulpermill.prompts.render import render_setup
-    setup = {"protagonist": "Suvi"}
-    assert "A new goal forms during this chapter" in render_setup(setup, None, 3, 6, goal_state="needs_goal")
-    assert "follow from how it ended" in render_setup(setup, None, 5, 6, goal_state="ended")
-    assert "follow from how it ended" in render_setup(setup, None, 5, 6)
+def test_the_events_pass_is_given_the_goal_and_must_say_how_the_chapter_left_it():
+    req = generate_request()
+    p = P.events_prompt(req, "CHAPTER")
+    assert "The goal the chapter began with: Find the ledger before the harbour board does." in p.text
+    assert "Goals the story has had before: Learn who took the ledger." in p.text
+    assert "The scene's aim, as planned: Get Pekka to say where the ledger is." in p.text
+    assert "This is the last chapter" not in p.text
+    schema = p.schema
+    assert schema["properties"]["goal_change"]["enum"] == ["achieved", "redefined", "abandoned"]
+    assert {"goal_change", "goal_now"} <= set(schema["required"]) and "goal_landed" not in schema["properties"]
+    last = P.events_prompt({**req, "chapter": req["chapter_count"]}, "CHAPTER").text
+    assert "This is the last chapter, so the goal ends here, achieved or abandoned." in last
+
+
+def test_the_shifts_pass_is_told_how_the_goal_ended_so_both_passes_read_one_event():
+    req = generate_request()
+    found = {"happened": "Suvi found it.", "goal_change": "redefined", "goal_now": "Find the ledger in the cellar before Friday's count."}
+    text = P.shifts_prompt(req, "CHAPTER", found).text
+    assert "How the chapter left the protagonist's goal: redefined. The goal now: Find the ledger in the cellar before Friday's count." in text
+    assert "which of the two choices" not in text and "posed this choice" not in text
 
 
 def test_the_entanglements_fill_asks_for_three_different_pressures():
@@ -361,13 +369,14 @@ def test_an_either_or_pair_cannot_come_back_both_or_neither():
 
 def test_reveal_payoff_and_plant_are_always_answered():
     schema = S.beat_schema(plan_request())
-    for key in ("reveal_rule", "reveal_learners", "payoff", "plant"):
+    assert "reveal_learners" not in schema["properties"], "who learns it is read from the chapter afterwards"
+    for key in ("reveal_rule", "payoff", "plant"):
         if key in schema["properties"]:
             assert key in schema["required"], key
     if "reveal_rule" in schema["properties"]:
         assert "" in schema["properties"]["reveal_rule"]["enum"]
-    assert valid({**{k: "words" for k in ("when_time", "when_gap", "collision_goal", "collision_block", "choice_a", "choice_b", "turn", "ends_on")},
-                  "where": schema["properties"]["where"].get("enum", ["x"])[0], "shift": "harder", "reveal_rule": "", "reveal_learners": [],
+    assert valid({**{k: "words" for k in ("when_time", "when_gap", "collision_goal", "ends_on")},
+                  "where": schema["properties"]["where"].get("enum", ["x"])[0], "shift": "harder", "reveal_rule": "",
                   "payoff": [], "plant": ""}, schema)
 
 

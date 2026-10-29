@@ -203,9 +203,7 @@ def beat_schema(req: dict) -> Schema:
         "where": one_of(places),
         "when_time": text(),
         **({} if first else {"when_gap": text()}),
-        "collision_goal": text(), "collision_block": text(),
-        "choice_a": text(), "choice_b": text(),
-        "turn": text(),
+        "collision_goal": text(),
         "shift": {"type": "string", "enum": shifts},
         "ends_on": text(),
     }
@@ -214,21 +212,12 @@ def beat_schema(req: dict) -> Schema:
     # chosen one ("pay off the open plant"), so the beat came out empty. An empty answer is the way to say "none".
     if reveals:
         props["reveal_rule"] = {"type": "string", "enum": [*reveals, ""]}
-        props["reveal_learners"] = list_of(cast)
-        required += ["reveal_rule", "reveal_learners"]
+        required.append("reveal_rule")
     if plants:
         props["payoff"] = list_of(plants, 2)
         required.append("payoff")
     props["plant"] = maybe(text())      # null says "no plant". Left a plain string, the model wrote "none" and the page took it for a plant.
     required.append("plant")
-    if req.get("goal"):
-        props["goal_change"] = {"type": "string", "enum": ["achieved", "redefined", "abandoned"]}
-        props["goal_now"] = text()
-    elif req.get("goal_state") == "needs_goal":
-        # The last goal ended and the story goes on: this chapter has to start the next goal, so it is not optional.
-        props["goal_change"] = {"type": "string", "enum": ["redefined"]}
-        props["goal_now"] = text()
-        required += ["goal_change", "goal_now"]
     return obj(props, required)
 
 
@@ -250,7 +239,9 @@ def events_schema(req: dict) -> Schema:
         "reveals_landed": list_of(names_of(req.get("available_reveals"), "statement"), 5),
         "behaviors_seen": list_of(behavior_states(req.get("cast")), 5),
         "things_seen": list_of(names_of(world.get("objects")), 5),
-        "goal_landed": {"type": "boolean"},
+        # How the chapter left the goal it began with. Always answered: an empty answer would leave the next plan with nothing to stand on.
+        "goal_change": {"type": "string", "enum": ["achieved", "redefined", "abandoned"]},
+        "goal_now": text(),
     })
 
 

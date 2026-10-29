@@ -154,7 +154,7 @@ const DIAGNOSTICS = new Set([
   "The answer for ${rule.id} names a field the card does not have.", "The reply does not say whether the style fits.",
   "The offstage move needs words for what happened and how it reaches the protagonist.", "The offstage move is missing one of its two parts.",
   "The plan has no thinking text.", "The plan has no beat.", "The chapter text is empty.", "The chapter's events are missing.",
-  "The chapter's events have text of the wrong kind.", "The events' ${key} is not a list of names.", "The events' goal_landed is not yes or no.",
+  "The chapter's events have text of the wrong kind.", "The events' ${key} is not a list of names.", "The chapter's events do not say how the goal ended up.",
   "The chapter's shifts are missing.", "A shift does not say who moved.", "A shift's ${key} is not text.", "The proposed changes are missing.", "The new knowledge entries are not a list.",
   "A new knowledge entry does not say who or how they stand.", "A new knowledge entry's rule or fact is not text.",
   "A proposed change does not say what to change.", "The shown entanglements are not a list of ids.", "Rules this page cannot run yet:",

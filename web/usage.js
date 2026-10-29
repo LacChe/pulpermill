@@ -74,7 +74,7 @@ export function usageOf(project, except = null) {
 
 // The words of a beat that name things: everything it says in text.
 export function beatWords(beat) {
-  return ["turn", "collision_goal", "collision_block", "choice_a", "choice_b", "ends_on", "plant", "when_time", "when_gap", "offstage_did", "offstage_reach"]
+  return ["collision_goal", "ends_on", "plant", "when_time", "when_gap", "offstage_did", "offstage_reach"]
     .map((k) => beat?.[k]).filter(present).join("\n");
 }
 

@@ -117,7 +117,7 @@ test("what the beat's words name is sent too, as are the cast's things", async (
   const plan = await planChapter(client, schema, project, suggestedCast(project, 1)).done;
   placeBeat(project, plan.beat);
   const beat = project.outline.beats.at(-1);
-  beat.turn = "The ledger is found in Spare place 6, behind the stove.";
+  beat.collision_goal = "Find the ledger in Spare place 6, behind the stove.";
   const sent = generateRequest(schema, project, beat);
   assert.ok(sent.world.places.some((p) => p.name === "Spare place 6"), "a place named in the beat's text is carried");
 });

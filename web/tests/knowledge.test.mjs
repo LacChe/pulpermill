@@ -19,10 +19,13 @@ async function planned() {
   return { project, client, beat: plan.beat };
 }
 
+const goalEnds = { goal_change: "redefined", goal_now: "Find the ledger in the cellar before Friday's count." };
+
 const reply = (over = {}) => readGenerateReply({
   ok: true, chapter_text: "She went.",
-  events: { happened: "Suvi left.", changed: "", planted: null, paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false },
+  events: { happened: "Suvi left.", changed: "", planted: null, paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], ...goalEnds },
   shifts: [], changes: [], ...over,
+  ...(over.events ? { events: { ...goalEnds, ...over.events } } : {}),
 });
 
 const entry = (over) => ({ person: "Suvi", status: "knows", rule: null, fact: "The ledger is forged.", ...over });

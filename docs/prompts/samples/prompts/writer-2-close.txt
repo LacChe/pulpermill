@@ -1,4 +1,4 @@
-[writer writer-0.2, stage: write]
+[writer writer-0.3, stage: write]
 
 Write in English.
 Narrate in the first person, from inside the protagonist's own voice, knowing only what they know.
@@ -106,12 +106,8 @@ This chapter
 The chapter opens at The Docks, Tuesday, just after the shop opens. Time has passed since the last chapter: Three days later. Suvi, Aino and Pekka are there.
 
 What Suvi is after: Get Pekka to say where the ledger is.
-What stands in the way: Pekka will talk only if Suvi stays quiet about the rent she owes.
-Suvi has to choose, and either choice costs her the other:
-one way: Keep Pekka's goodwill by saying nothing about the rent.
-the other: Learn where the ledger is by pressing him in front of Aino.
 
-By the end of the chapter something has changed: Suvi learns the ledger is in the cellar, but Aino now knows she is asking. This chapter is harder than what came before: let the pressure rise.
+By the end of the chapter something is different, and the scene's own events are what make it so. This chapter is harder than what came before: let the pressure rise.
 
 The chapter stops on this moment: Suvi finds her own initials in the ledger's last entry.
 Stop there, with the question hanging.
@@ -124,9 +120,7 @@ Pay off what was set up earlier: A second lock on the cellar's inner door, set u
 
 While the cast were elsewhere, the board closed the east market gate. It reaches Suvi like this: Suvi has to take the long way round the docks. Work it into the scene as something they run into.
 
-By the end of the chapter the protagonist's goal has changed to: Find the ledger in the cellar before Friday's count.
-
-The pressure in focus is: The board wants the ledger before the next first-day visit and will close the shop to get it. Keep it present in the scene, felt in what people do.
+The pressure in focus is: The board wants the ledger before the next first-day visit and will close the shop to get it. Let it meet what Suvi is after, and let the scene decide how that goes: Suvi may get through, be stopped, or be turned toward something else, and the pressure may act, ease or take a new shape. How it plays out is what the story carries into the next chapter.
 
 This is the shape of the scene. Find your own way through it: the people, the dialogue and the small events that carry the chapter from its opening to its last moment are yours to invent.
 

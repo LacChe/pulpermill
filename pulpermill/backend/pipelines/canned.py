@@ -37,8 +37,7 @@ def plan(request, ctx):
     _think(ctx, ["retry", "beat"] if request.retry else ["think", "beat"])
     places = (request.world or {}).get("places") or []
     beat = {
-        "when_time": "Canned time.", "collision_goal": "Canned goal.", "collision_block": "Canned block.",
-        "choice_a": "Canned choice A.", "choice_b": "Canned choice B.", "turn": "Canned turn.", "ends_on": "Canned ending.",
+        "when_time": "Canned time.", "collision_goal": "Canned goal.", "ends_on": "Canned ending.",
     }
     if places and places[0].get("name"):
         beat["where"] = places[0]["name"]
@@ -58,8 +57,9 @@ def generate(request, ctx):
     who = next((c.get("name") for c in request.cast if c.get("name")), None)
     return {
         "ok": True,
-        "chapter_text": f"Canned chapter {request.chapter} of {request.chapter_count}. {beat.get('turn', '')}".strip(),
-        "events": {"happened": f"Canned events of chapter {request.chapter}."},
+        "chapter_text": f"Canned chapter {request.chapter} of {request.chapter_count}. {beat.get('collision_goal', '')}".strip(),
+        "events": {"happened": f"Canned events of chapter {request.chapter}.", "goal_change": "redefined",
+                   "goal_now": f"Canned goal after chapter {request.chapter}."},
         "shifts": [{"character": who, "decided": "Canned decision."}] if who else [],
         "changes": [],
         "new_knowledge": [],

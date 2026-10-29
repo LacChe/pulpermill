@@ -1,20 +1,24 @@
 # The Events extractor (X1): what the chapter shows happened. Drafted in docs/prompts/02-writers-brief.md, section 5.
 name: events
-version: "events-0.2"
+version: "events-0.3"
 
 job: |
   Read the chapter below and say what it shows happened. Count only what is on the page.
   Write "happened" as short plain narration: one sentence per event, in the order it happened, usually 4 to 8 sentences. An event is a moment that changes who knows what, who holds what, or where people stand. Name the people and say what they did.
   Write "changed" as one short sentence: what is different for the protagonist now, worked out from the chapter's own text rather than from the plan. Quote the few words from the chapter that show it, and when no line of the chapter shows a difference, say that nothing changed for the protagonist.
   For the plant, the payoff, the hidden truths, the dispositions and the objects, answer only from the lists given, copying the wording exactly, and only when it is clearly there in the text. Leave a list answer empty when the text does not show it, even when the beat planned it.
-  Say that the goal changed only if the text shows it.
+  Say how the chapter left the protagonist's goal, always, from what the text shows. goal_change is achieved when the chapter completed the goal, redefined when the same thread now stands at a later stage (a step won, an obstacle met, part of the way done), and abandoned when the protagonist gave the goal up because something else now matters more. goal_now is what the protagonist wants from here on, in one plain sentence about something to get, find, stop or reach. It starts from where the chapter ended and takes a step on from the goal the chapter began with, or names the aim that the chapter's new obstacle exposed. It holds for more than the next chapter, so it names the aim and leaves out this scene's small business.
 
 planned_lead: "What the beat planned for this chapter:"
 planned_reveal: "A hidden truth, or a false belief, to be brought to light: {statement}"
 planned_plant: "Something to set up: {plant}"
 planned_payoff: "Something to pay off: {payoff}"
-planned_goal: "A goal change: {change}"
-planned_none: "The beat planned no reveal, plant, payoff or goal change."
+planned_none: "The beat planned no reveal, plant or payoff."
+goal_lead: "The goal the chapter began with: {goal}"
+goal_story: "The story's own goal: {goal}"
+goal_earlier: "Goals the story has had before: {items}."
+goal_last: "This is the last chapter, so the goal ends here, achieved or abandoned."
+goal_beat: "The scene's aim, as planned: {aim}"
 
 lists_lead: "The lists to answer from (copy the wording exactly):"
 list_plants: "Plants still open (the chapter may pay one off):"

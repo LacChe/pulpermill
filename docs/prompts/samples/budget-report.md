@@ -6,12 +6,12 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 
 | prompt | tokens | allowed | left | squeeze that fits |
 |---|---:|---:|---:|---|
-| writer-1-open | 3940 | 13684 | 9744 | none needed |
-| writer-2-close | 5364 | 13684 | 8320 | none needed |
-| planner-1-think | 3040 | 14884 | 11844 | none needed |
-| planner-2-beat | 4145 | 15184 | 11039 | none needed |
-| events | 3851 | 15184 | 11333 | none needed |
-| shifts | 4941 | 15084 | 10143 | none needed |
+| writer-1-open | 3881 | 13684 | 9803 | none needed |
+| writer-2-close | 5305 | 13684 | 8379 | none needed |
+| planner-1-think | 3072 | 14884 | 11812 | none needed |
+| planner-2-beat | 3973 | 15184 | 11211 | none needed |
+| events | 4029 | 15184 | 11155 | none needed |
+| shifts | 4879 | 15084 | 10205 | none needed |
 | fill-character | 834 | 15084 | 14250 | none needed |
 | judge-world | 181 | 15584 | 15403 | none needed |
 | style-fit | 177 | 15684 | 15507 | none needed |
@@ -22,12 +22,12 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 
 | prompt | tokens | allowed | left | squeeze that fits |
 |---|---:|---:|---:|---|
-| writer-1-open | 10660 | 13684 | 3024 | none needed |
-| writer-2-close | 12084 | 13684 | 1600 | none needed |
-| planner-1-think | 8586 | 14884 | 6298 | none needed |
-| planner-2-beat | 9691 | 15184 | 5493 | none needed |
-| events | 4244 | 15184 | 10940 | none needed |
-| shifts | 6875 | 15084 | 8209 | none needed |
+| writer-1-open | 10569 | 13684 | 3115 | none needed |
+| writer-2-close | 11993 | 13684 | 1691 | none needed |
+| planner-1-think | 8567 | 14884 | 6317 | none needed |
+| planner-2-beat | 9468 | 15184 | 5716 | none needed |
+| events | 4463 | 15184 | 10721 | none needed |
+| shifts | 6813 | 15084 | 8271 | none needed |
 | fill-character | 886 | 15084 | 14198 | none needed |
 | judge-world | 181 | 15584 | 15403 | none needed |
 | style-fit | 177 | 15684 | 15507 | none needed |
@@ -38,12 +38,12 @@ Context 16384 tokens, margin 300. A prompt may use `n_ctx - reply room - margin`
 
 | prompt | tokens | allowed | left | squeeze that fits |
 |---|---:|---:|---:|---|
-| writer-1-open | 21972 | 13684 | -8288 | 0.4 |
-| writer-2-close | 23396 | 13684 | -9712 | 0.3 |
-| planner-1-think | 17871 | 14884 | -2987 | 0.7 |
-| planner-2-beat | 18976 | 15184 | -3792 | 0.7 |
-| events | 11121 | 15184 | 4063 | none needed |
-| shifts | 10851 | 15084 | 4233 | none needed |
+| writer-1-open | 21834 | 13684 | -8150 | 0.4 |
+| writer-2-close | 23258 | 13684 | -9574 | 0.3 |
+| planner-1-think | 16932 | 14884 | -2048 | 0.7 |
+| planner-2-beat | 17833 | 15184 | -2649 | 0.7 |
+| events | 11797 | 15184 | 3387 | none needed |
+| shifts | 10789 | 15084 | 4295 | none needed |
 | fill-character | 1348 | 15084 | 13736 | none needed |
 | judge-world | 181 | 15584 | 15403 | none needed |
 | style-fit | 177 | 15684 | 15507 | none needed |
@@ -56,13 +56,13 @@ The writer's section 2 prompt allows 13684 tokens, the planner's thinking prompt
 
 | texts | people | writer tokens | writer | planner tokens | planner |
 |---|---:|---:|---|---:|---|
-| ordinary texts | 3 | 10089 | fits | 7372 | fits |
-| ordinary texts | 4 | 11348 | fits | 8221 | fits |
-| ordinary texts | 5 | 12536 | fits | 9020 | fits |
-| ordinary texts | 6 | 13764 | over | 9833 | fits |
-| ordinary texts | 8 | 16211 | over | 11481 | fits |
-| every text at its cap | 3 | 14342 | over | 12180 | fits |
-| every text at its cap | 4 | 16203 | over | 13357 | fits |
-| every text at its cap | 5 | 18086 | over | 14554 | fits |
-| every text at its cap | 6 | 19918 | over | 15775 | over |
-| every text at its cap | 8 | 23662 | over | 18149 | over |
+| ordinary texts | 3 | 10002 | fits | 7357 | fits |
+| ordinary texts | 4 | 11261 | fits | 8206 | fits |
+| ordinary texts | 5 | 12449 | fits | 9005 | fits |
+| ordinary texts | 6 | 13677 | fits | 9818 | fits |
+| ordinary texts | 8 | 16124 | over | 11466 | fits |
+| every text at its cap | 3 | 14204 | over | 11241 | fits |
+| every text at its cap | 4 | 16060 | over | 12409 | fits |
+| every text at its cap | 5 | 17963 | over | 13611 | fits |
+| every text at its cap | 6 | 19780 | over | 14836 | fits |
+| every text at its cap | 8 | 23539 | over | 17206 | over |

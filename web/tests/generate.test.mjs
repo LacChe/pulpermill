@@ -5,7 +5,7 @@ import { schema, readyProject } from "./helpers.mjs";
 import { createMock } from "../mock.js";
 import { createClient, planChapter, generateChapter } from "../client.js";
 import { lockStaticCards } from "../gate.js";
-import { placeBeat, chapterInfo, suggestedCast, openPlants } from "../plan.js";
+import { placeBeat, chapterInfo, suggestedCast, openPlants, planRequest } from "../plan.js";
 import { generateGate, generateRequest, applyGenerated, commitChapter, previousEnding, inputsKey } from "../generate.js";
 import { readGenerateReply } from "../logic.js";
 
@@ -23,10 +23,13 @@ async function planned() {
   return { project, mock, client, beat: plan.beat };
 }
 
+const goalEnds = { goal_change: "redefined", goal_now: "Find the ledger in the cellar before Friday's count." };
+
 const reply = (over = {}) => readGenerateReply({
   ok: true, chapter_text: "She went.\n\nHe stayed.",
-  events: { happened: "Suvi left.", changed: "", planted: null, paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false },
+  events: { happened: "Suvi left.", changed: "", planted: null, paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], ...goalEnds },
   shifts: [], changes: [], ...over,
+  ...(over.events ? { events: { ...goalEnds, ...over.events } } : {}),
 });
 
 test("the gate says why a chapter cannot be written", async () => {
@@ -141,11 +144,11 @@ test("a plant is not counted when two are already open; a reveal with no knowled
   ] };
   assert.equal(openPlants(project).length, 2);
   beat.plant = "Third thing.";      // only the plant the beat planned can land
-  const out = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "Third thing.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false } }));
+  const out = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "Third thing.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: []} }));
   assert.equal(out.events.planted, "");
   assert.ok(out.warnings.some((w) => w.kind === "plant"));
   assert.ok(beat0);
-  const paid = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "Third thing.", paid_off: ["First thing."], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false } }));
+  const paid = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "Third thing.", paid_off: ["First thing."], reveals_landed: [], behaviors_seen: [], things_seen: []} }));
   assert.deepEqual(paid.events.paid_off, ["e0000001"]);
   assert.equal(paid.events.planted, "Third thing.");
 });
@@ -204,10 +207,10 @@ test("an extractor that echoes an open plant plants nothing, and a beat plant th
   const { project, beat } = await planned();
   project.summary_events = { entries: [{ id: "e0000001", beat: "gone", happened: "a", planted: "The pond is warm.", paid_off: [] }] };
   beat.plant = "";
-  const echo = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "The pond is warm.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false } }));
+  const echo = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "The pond is warm.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: []} }));
   assert.equal(echo.events.planted, "", "the beat planned nothing");
   beat.plant = "The pond is warm.";
-  const again = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "The pond is warm.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false } }));
+  const again = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "The pond is warm.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: []} }));
   assert.equal(again.events.planted, "", "the same words are already open");
 });
 
@@ -220,7 +223,7 @@ test("two plants with the same words get different labels, so a payoff names one
   ] };
   const texts = openPlants(project).map((p) => p.text);
   assert.equal(new Set(texts).size, 2);
-  const out = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: null, paid_off: [openPlants(project).find((p) => p.id === "e0000002").text], reveals_landed: [], behaviors_seen: [], things_seen: [], goal_landed: false } }));
+  const out = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: null, paid_off: [openPlants(project).find((p) => p.id === "e0000002").text], reveals_landed: [], behaviors_seen: [], things_seen: []} }));
   assert.deepEqual(out.events.paid_off, ["e0000002"]);
 });
 
@@ -229,4 +232,33 @@ test("a change value written as old -> new keeps only the new words", async () =
   const tie = project.entanglements.ties[0];
   const out = applyGenerated(schema, project, beat, reply({ changes: [{ section: "ties", item: tie.id, field: "bond", value: `${tie.bond} -> grown close` }] }));
   assert.equal(out.entanglements.ties.find((x) => x.id === tie.id).bond, "grown close");
+});
+
+test("the goal and the spotlighted pressure carry from one chapter into the next plan, with nothing planned about either", async () => {
+  const { project, client } = await planned();
+  project.entanglements.pressures.push({ ...JSON.parse(JSON.stringify(project.entanglements.pressures[0])), id: "pr000002", what: "Winter is coming and the coal is unpaid." });
+  const [first] = project.entanglements.pressures;
+  const beatOne = project.outline.beats[0];
+  assert.equal(beatOne.spotlight, first.id);
+  for (const gone of ["goal_change", "goal_now", "turn", "choice_a", "choice_b", "collision_block"]) assert.equal(gone in beatOne, false, gone);
+  const before = generateRequest(schema, project, beatOne);
+  assert.equal(before.goal, project.setup.goal);
+  assert.deepEqual(before.earlier_goals, []);
+  const written = await generateChapter(client, schema, project).done;
+  assert.equal(written.ok, true, JSON.stringify(written));
+  commitChapter(project, written.outcome);
+  const [entry] = project.summary_events.entries;
+  assert.ok(["achieved", "redefined", "abandoned"].includes(entry.goal_change) && entry.goal_now, "every chapter records how it left the goal");
+  // The next plan starts from the goal the chapter left, and the other pressure takes the spotlight.
+  const next = await planChapter(client, schema, project, suggestedCast(project, 2)).done;
+  assert.equal(next.ok, true);
+  assert.equal(next.beat.spotlight, "pr000002", "the pressure spotlit longest ago is not the one that was just used");
+  const request = planRequest(schema, project, suggestedCast(project, 2));
+  assert.equal(request.goal, entry.goal_now);
+  assert.equal(request.story_goal, project.setup.goal);
+  assert.deepEqual(request.goal_plan.earlier_goals, [project.setup.goal]);
+  placeBeat(project, next.beat);
+  const after = generateRequest(schema, project, next.beat);
+  assert.equal(after.goal, entry.goal_now);
+  assert.deepEqual(after.earlier_goals, [project.setup.goal]);
 });

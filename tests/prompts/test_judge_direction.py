@@ -28,7 +28,7 @@ def test_reversed_questions_break_on_yes():
 
 def test_every_rule_has_a_question_and_no_answer_instruction_is_left():
     found = list(_all_rules())
-    assert len(found) >= 35
+    assert len(found) >= 34
     for path, rule_id, text in found:
         question, breaks = judge_question(text)
         assert question.endswith("?"), (path, rule_id)
