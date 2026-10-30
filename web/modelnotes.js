@@ -1,7 +1,7 @@
 // What the model said, kept in the project so the writer can read it again after reopening the file: how it thought about a
 // chapter (plan notes), what the page showed after a chapter was made (chapter notes), and what it noticed at the end of
 // the story (the end note). No DOM, so Node can test it. The shapes are the Pydantic models PlanNote, ChapterNote and
-// EndNote in pulpermill/schema/project.py, and web/tests/contract-vectors.json holds an example both sides check.
+// EndNote in pulpermill/schema/project.py, and tests/shared/contract-vectors.json holds an example both sides check.
 //
 // These are display records. They are never sent to a model, and nobody edits them. A note is replaced as a whole when the
 // thing it is about is made again, and is dropped when that thing is gone (pruneNotes). A project with no notes has none

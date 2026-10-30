@@ -10,7 +10,7 @@ from pulpermill.prompts import prompts as P
 from test_render import generate_request, plan_request
 
 ROOT = Path(__file__).resolve().parents[2]
-VECTORS = {r["name"]: r["data"] for r in json.loads((ROOT / "web/tests/contract-vectors.json").read_text(encoding="utf-8"))["requests"]}
+VECTORS = {r["name"]: r["data"] for r in json.loads((ROOT / "tests/shared/contract-vectors.json").read_text(encoding="utf-8"))["requests"]}
 
 PROSE = [
     "The harbour board had changed the dock rules again, and nobody on the quay would say who had asked for it.",

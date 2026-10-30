@@ -1,19 +1,19 @@
-"""The backend contract (pulpermill/schema/contract.py) against the examples the page's tests also use
-(web/tests/contract-vectors.json), and against the page's own lists. Reads web/*.js as text, so no JavaScript runs here."""
+"""The backend contract (pulpermill/contract.py) against the examples the page's tests also use
+(tests/shared/contract-vectors.json), and against the page's own lists. Reads web/*.js as text, so no JavaScript runs here."""
 import json, re
 from typing import get_args
 import pytest
 from pydantic import ValidationError
 from helpers import REPO, CARDS, card
-from pulpermill.schema import contract
-from pulpermill.schema.contract import (
+from pulpermill import contract
+from pulpermill.contract import (
     BackendErrorKind, FillableCard, UserCard, HTTP_STATUS, PAGE_ERROR_KINDS, parse_request, parse_reply, error_reply,
     FillRequest, JobRequest, CancelRequest, JudgeRequest, StatusRequest, StyleFitRequest, ErrorReply, OffstageRequest, PlanRequest, GenerateRequest,
     EndStoryRequest, STAGES,
 )
 from pulpermill.schema.project import UserCard as ProjectUserCard
 
-VECTORS = json.loads((REPO / "web" / "tests" / "contract-vectors.json").read_text(encoding="utf-8"))
+VECTORS = json.loads((REPO / "tests" / "shared" / "contract-vectors.json").read_text(encoding="utf-8"))
 LOGIC = (REPO / "web" / "logic.js").read_text(encoding="utf-8")
 CLIENT = (REPO / "web" / "client.js").read_text(encoding="utf-8")
 

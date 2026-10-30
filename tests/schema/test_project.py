@@ -129,7 +129,7 @@ def test_a_lock_reads_outside_in_and_only_the_card_is_required():
 
 
 # ---- What the model said ------------------------------------------------------------------------------------
-VECTORS = json.loads((REPO / "web" / "tests" / "contract-vectors.json").read_text(encoding="utf-8"))["project_notes"]
+VECTORS = json.loads((REPO / "tests" / "shared" / "contract-vectors.json").read_text(encoding="utf-8"))["project_notes"]
 NOTE_MODELS = {"plan_notes": PlanNote, "chapter_notes": ChapterNote, "end_note": EndNote}
 
 
@@ -150,7 +150,7 @@ def test_notes_point_at_beats_and_chapters_and_are_kept_one_per_target():
 
 
 def test_the_notes_the_page_writes_are_valid_and_use_exactly_the_fields_the_schema_has():
-    """The golden notes are also built by the page's own code (web/tests/modelnotes.test.mjs), so both sides agree on the shape."""
+    """The golden notes are also built by the page's own code (tests/web/modelnotes.test.mjs), so both sides agree on the shape."""
     def check(model, data):
         assert set(data) <= set(model.model_fields), (model.__name__, set(data) - set(model.model_fields))
         return model(**data)

@@ -2,11 +2,11 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
-import { createMock } from "../mock.js";
-import { createClient, planChapter, generateChapter, regenerateChapter } from "../client.js";
-import { lockStaticCards } from "../gate.js";
-import { placeBeat, suggestedCast } from "../plan.js";
-import { commitChapter, regenerateGate, projectBefore, applyRegenerated, commitRegenerated, generateRequest } from "../generate.js";
+import { createMock } from "../../web/mock.js";
+import { createClient, planChapter, generateChapter, regenerateChapter } from "../../web/client.js";
+import { lockStaticCards } from "../../web/gate.js";
+import { placeBeat, suggestedCast } from "../../web/plan.js";
+import { commitChapter, regenerateGate, projectBefore, applyRegenerated, commitRegenerated, generateRequest } from "../../web/generate.js";
 
 // A started story with two chapters written by the mock.
 async function twoChapters() {

@@ -1,6 +1,6 @@
 """How a pipeline says "this call failed in a way the page has a word for". The server turns one into the contract's
 error reply and HTTP status. Anything else a pipeline raises is the contract's `server` error."""
-from pulpermill.schema.contract import BackendErrorKind
+from pulpermill.contract import BackendErrorKind
 
 
 class Cancelled(Exception):

@@ -5,8 +5,8 @@ Run from the repository root.
   python tools/run_trials.py --url http://localhost:8080 --runs 3
                                                          asks a llama.cpp server (OpenAI-style /v1/chat/completions) for every section
 
-Each run writes tests/trials/results/<writer version>/<trial>-run<N>.md: the chapter, then the code flags (read the chapter FIRST), and
-tests/trials/results/<writer version>/summary.csv gets one row per run. `run_chapter(request, complete)` is the same loop the backend
+Each run writes evals/trials/results/<writer version>/<trial>-run<N>.md: the chapter, then the code flags (read the chapter FIRST), and
+evals/trials/results/<writer version>/summary.csv gets one row per run. `run_chapter(request, complete)` is the same loop the backend
 will use: `complete(text) -> str` is any function that sends one prompt and returns the reply.
 The --url mode has not run against a real server yet (phase 7 does that)."""
 import argparse
@@ -24,7 +24,7 @@ import trial_set                                                                
 from pulpermill.prompts import prompts as P                                         # noqa: E402
 from pulpermill.prompts.chapter_checks import run_checks, whole_sentences, words                     # noqa: E402
 
-RESULTS = ROOT / "tests" / "trials" / "results"
+RESULTS = ROOT / "evals" / "trials" / "results"
 
 
 def run_chapter(request: dict, complete, target_words: int = 3000) -> tuple[str, list[str]]:

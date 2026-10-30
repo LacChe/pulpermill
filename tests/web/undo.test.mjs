@@ -2,14 +2,14 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
-import { createMock } from "../mock.js";
-import { createClient, planChapter, generateChapter, regenerateChapter } from "../client.js";
-import { lockStaticCards } from "../gate.js";
-import { placeBeat, suggestedCast } from "../plan.js";
-import { commitChapter, commitRegenerated } from "../generate.js";
-import { cardFiles, readCardFile, planImport, applyImport } from "../exporting.js";
-import { settledProject } from "../logic.js";
-import { watch, untouched, sameValue } from "../undo.js";
+import { createMock } from "../../web/mock.js";
+import { createClient, planChapter, generateChapter, regenerateChapter } from "../../web/client.js";
+import { lockStaticCards } from "../../web/gate.js";
+import { placeBeat, suggestedCast } from "../../web/plan.js";
+import { commitChapter, commitRegenerated } from "../../web/generate.js";
+import { cardFiles, readCardFile, planImport, applyImport } from "../../web/exporting.js";
+import { settledProject } from "../../web/logic.js";
+import { watch, untouched, sameValue } from "../../web/undo.js";
 
 test("watch puts the parts back, including ones that did not exist, and declines once they changed", () => {
   const project = { a: [1], b: "x" };

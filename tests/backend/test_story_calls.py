@@ -12,9 +12,9 @@ from pulpermill.backend.engine.base import CancelFlag
 from pulpermill.backend.errors import BackendError, Cancelled
 from pulpermill.backend.pipelines import RunContext, story
 from pulpermill.prompts import prompts as P, tokens
-from pulpermill.schema import contract
+from pulpermill import contract
 
-VECTORS = {r["name"]: r["data"] for r in json.loads((Path(__file__).parents[2] / "web/tests/contract-vectors.json").read_text())["requests"]
+VECTORS = {r["name"]: r["data"] for r in json.loads((Path(__file__).parents[2] / "tests/shared/contract-vectors.json").read_text())["requests"]
            if r["valid"]}
 SENTENCE = ("She walked down to the river and the water was cold against her feet, and she did not look back at the house "
             "that had been her home for all of those years, because there was nothing left in it for her to keep. ")

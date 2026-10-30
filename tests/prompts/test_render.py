@@ -391,7 +391,7 @@ def test_limits_cover_every_field_the_renderers_clip():
 
 # ---- The page's own sample requests ---------------------------------------------------------------------------------
 
-VECTORS = Path(__file__).resolve().parents[2] / "web" / "tests" / "contract-vectors.json"
+VECTORS = Path(__file__).resolve().parents[2] / "tests" / "shared" / "contract-vectors.json"
 
 
 def vector(name):

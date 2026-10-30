@@ -16,11 +16,11 @@ from pulpermill.backend import pipelines, runlog
 from pulpermill.backend.config import Config
 from pulpermill.backend.engine import FakeEngine
 from pulpermill.backend.errors import BackendError
-from pulpermill.schema import contract
+from pulpermill import contract
 
 from server_harness import post, running, wait_idle
 
-VECTORS = {r["name"]: r["data"] for r in json.loads((Path(__file__).parents[2] / "web/tests/contract-vectors.json").read_text())["requests"]
+VECTORS = {r["name"]: r["data"] for r in json.loads((Path(__file__).parents[2] / "tests/shared/contract-vectors.json").read_text())["requests"]
            if r["valid"]}
 FILL = VECTORS["the page's fill_setup request"]
 

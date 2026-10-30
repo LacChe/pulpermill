@@ -2,12 +2,12 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
-import { readProject, projectSnapshot } from "../logic.js";
+import { readProject, projectSnapshot } from "../../web/logic.js";
 import {
   STATIC_CARDS, cardLocked, lockedByStory, lockedByWriter, setWriterLock, storyStarted, lockStaticCards, unlockStaticCards,
-} from "../gate.js";
-import { planGate } from "../plan.js";
-import { regenerateGate } from "../generate.js";
+} from "../../web/gate.js";
+import { planGate } from "../../web/plan.js";
+import { regenerateGate } from "../../web/generate.js";
 
 const ALL = ["style", "characters", "world", "entanglements", "setup", "outline"];
 

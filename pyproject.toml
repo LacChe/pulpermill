@@ -1,0 +1,12 @@
+[project]
+name = "pulpermill"
+version = "0.0.0"
+description = "Pulpermill story-generation pipeline: schema, prompts and backend."
+requires-python = ">=3.13"
+dependencies = ["pydantic", "pyyaml"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -2,12 +2,12 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
-import { createMock } from "../mock.js";
-import { createClient, planChapter, generateChapter } from "../client.js";
-import { lockStaticCards, setWriterLock } from "../gate.js";
-import { placeBeat, suggestedCast, pickSpotlight } from "../plan.js";
-import { applyGenerated, commitChapter } from "../generate.js";
-import { readGenerateReply, validate, settledProject } from "../logic.js";
+import { createMock } from "../../web/mock.js";
+import { createClient, planChapter, generateChapter } from "../../web/client.js";
+import { lockStaticCards, setWriterLock } from "../../web/gate.js";
+import { placeBeat, suggestedCast, pickSpotlight } from "../../web/plan.js";
+import { applyGenerated, commitChapter } from "../../web/generate.js";
+import { readGenerateReply, validate, settledProject } from "../../web/logic.js";
 
 async function planned() {
   const project = await readyProject();

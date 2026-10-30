@@ -2,12 +2,12 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
-import { createMock } from "../mock.js";
-import { createClient, planChapter, generateChapter, endStory } from "../client.js";
-import { lockStaticCards } from "../gate.js";
-import { placeBeat, suggestedCast } from "../plan.js";
-import { commitChapter } from "../generate.js";
-import { storyMarkdown, storyFileName, cardFiles, readCardFile, CARD_FILE_KEY } from "../exporting.js";
+import { createMock } from "../../web/mock.js";
+import { createClient, planChapter, generateChapter, endStory } from "../../web/client.js";
+import { lockStaticCards } from "../../web/gate.js";
+import { placeBeat, suggestedCast } from "../../web/plan.js";
+import { commitChapter } from "../../web/generate.js";
+import { storyMarkdown, storyFileName, cardFiles, readCardFile, CARD_FILE_KEY } from "../../web/exporting.js";
 
 async function story(chapters, withEnd = false) {
   const project = await readyProject();

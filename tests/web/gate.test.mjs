@@ -1,11 +1,11 @@
 import "./text-setup.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readProject, projectSnapshot as projectText, newProject, settledProject, addInstance } from "../logic.js";
+import { readProject, projectSnapshot as projectText, newProject, settledProject, addInstance } from "../../web/logic.js";
 import { schema, readyProject } from "./helpers.mjs";
 import {
   STATIC_CARDS, GATE_CARDS, cardLocked, storyStarted, lockStaticCards, unlockStaticCards, canUnlock, startGate,
-} from "../gate.js";
+} from "../../web/gate.js";
 
 const characters = schema.cards.characters;
 

@@ -2,13 +2,13 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
-import { createMock } from "../mock.js";
-import { createClient, planChapter } from "../client.js";
-import { lockStaticCards } from "../gate.js";
-import { placeBeat, suggestedCast, planRequest, useCounts, nameMap } from "../plan.js";
-import { generateRequest } from "../generate.js";
-import { mentions, usageOf, choose, SEND_MAX } from "../usage.js";
-import { addItem } from "../logic.js";
+import { createMock } from "../../web/mock.js";
+import { createClient, planChapter } from "../../web/client.js";
+import { lockStaticCards } from "../../web/gate.js";
+import { placeBeat, suggestedCast, planRequest, useCounts, nameMap } from "../../web/plan.js";
+import { generateRequest } from "../../web/generate.js";
+import { mentions, usageOf, choose, SEND_MAX } from "../../web/usage.js";
+import { addItem } from "../../web/logic.js";
 
 test("a name counts only as a whole word, and a sentence is never matched by its words", () => {
   assert.equal(mentions("Suvi walked to the Harbour.", "suvi"), true);

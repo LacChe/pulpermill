@@ -2,9 +2,9 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
-import { newProject, settledProject, addInstance, setNote, noteFor } from "../logic.js";
-import { lockStaticCards } from "../gate.js";
-import { cardFiles, readCardFile, fileKind, planImport, planBatchImport, applyImport, linksLost, relinkMap, CARD_FILE_KEY } from "../exporting.js";
+import { newProject, settledProject, addInstance, setNote, noteFor } from "../../web/logic.js";
+import { lockStaticCards } from "../../web/gate.js";
+import { cardFiles, readCardFile, fileKind, planImport, planBatchImport, applyImport, linksLost, relinkMap, CARD_FILE_KEY } from "../../web/exporting.js";
 
 const characters = schema.cards.characters;
 const filesOf = (project) => Object.fromEntries(cardFiles(schema, project).map((f) => [f.name.replace(/^.*?-(style|world|character-\d+)(-.*)?\.json$/, "$1"), f.text]));

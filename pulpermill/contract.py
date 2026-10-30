@@ -2,7 +2,7 @@
 Shapes only. This file runs no model and starts no server; the backend validates every request with parse_request and
 builds every reply from the models below, so a reply that leaves the backend is one the page can read.
 The written description is docs/backend-contract.md. The same examples are checked here and in the page's tests
-(web/tests/contract-vectors.json), so the two sides cannot drift apart without a test failing.
+(tests/shared/contract-vectors.json), so the two sides cannot drift apart without a test failing.
 
 Every call is a POST of one JSON object to <address>/api. The call is named inside it. Every reply is a JSON object
 with "ok": true and the call's own fields, or "ok": false and an "error". The backend is stateless: a request carries

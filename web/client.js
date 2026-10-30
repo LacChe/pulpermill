@@ -74,7 +74,7 @@ export const DEFAULT_TIMEOUTS = {
   offstage: 120000, plan: 300000, generate: 1800000, end_story: 600000,
 };
 
-// The fallback when the body is not an answer. It agrees with HTTP_STATUS in pulpermill/schema/contract.py.
+// The fallback when the body is not an answer. It agrees with HTTP_STATUS in pulpermill/contract.py.
 const STATUS_FAILURES = { 400: "bad_request", 401: "unauthorized", 409: "stopped", 413: "too_long", 429: "busy", 502: "bad_output", 503: "busy" };
 
 // One call to a real backend: POST the request as JSON to <url>/api. The backend answers in the contract's shapes,

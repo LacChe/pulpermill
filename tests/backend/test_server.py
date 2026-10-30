@@ -17,11 +17,11 @@ except ImportError:  # the server's own dependencies are not installed: skip, as
 from pulpermill.backend.config import Config
 from pulpermill.backend.engine import FakeEngine
 from pulpermill.backend.errors import BackendError
-from pulpermill.schema import contract
+from pulpermill import contract
 
 from server_harness import post, running, wait_idle
 
-VECTORS = json.loads((Path(__file__).parents[2] / "web/tests/contract-vectors.json").read_text())
+VECTORS = json.loads((Path(__file__).parents[2] / "tests/shared/contract-vectors.json").read_text())
 VALID = [r for r in VECTORS["requests"] if r["valid"]]
 INVALID = [r for r in VECTORS["requests"] if not r["valid"]]
 

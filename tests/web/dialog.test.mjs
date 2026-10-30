@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { bundle } from "./text-setup.mjs";
 
-const WEB = new URL("../", import.meta.url);
+const WEB = new URL("../../web/", import.meta.url);
 
 test("no part of the page asks with the browser's own confirm box", () => {
   const found = [];

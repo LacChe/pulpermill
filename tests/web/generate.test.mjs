@@ -2,12 +2,12 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
-import { createMock } from "../mock.js";
-import { createClient, planChapter, generateChapter } from "../client.js";
-import { lockStaticCards } from "../gate.js";
-import { placeBeat, chapterInfo, suggestedCast, openPlants, planRequest } from "../plan.js";
-import { generateGate, generateRequest, applyGenerated, commitChapter, previousEnding, inputsKey } from "../generate.js";
-import { readGenerateReply } from "../logic.js";
+import { createMock } from "../../web/mock.js";
+import { createClient, planChapter, generateChapter } from "../../web/client.js";
+import { lockStaticCards } from "../../web/gate.js";
+import { placeBeat, chapterInfo, suggestedCast, openPlants, planRequest } from "../../web/plan.js";
+import { generateGate, generateRequest, applyGenerated, commitChapter, previousEnding, inputsKey } from "../../web/generate.js";
+import { readGenerateReply } from "../../web/logic.js";
 
 const quick = () => { const mock = createMock(schema, { delay: 0 }); return { mock, client: createClient({ setting: { ok: true, kind: "mock" }, mock, pollEvery: 5 }) }; };
 

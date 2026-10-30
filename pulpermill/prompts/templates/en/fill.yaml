@@ -1,5 +1,5 @@
-# Card fill (F). A first working prompt: it is tuned later with the card-fill kit (tests/cardfill). Drafted in
-# docs/prompts/02-writers-brief.md, section 7. The scope lines come from tests/cardfill/00-test-plan.md.
+# Card fill (F). A first working prompt: it is tuned later with the card-fill kit (evals/cardfill). Drafted in
+# docs/prompts/02-writers-brief.md, section 7. The scope lines come from evals/cardfill/00-test-plan.md.
 name: fill
 version: "fill-0.2"
 

@@ -7,12 +7,12 @@ import {
   removeItem, isItemEmpty, fillTemplate, itemTitle, addInstance, removeInstance, findInstance, instanceName,
   refOptions, sourceOfId, pickerSources, blockedValues, lookupLabel, oneOfChoice, chooseOneOf, fieldShown,
   inOneOf, showsOptionalTag,
-} from "../logic.js";
-import { isSupported } from "../render.js";
-import { validate, ruleKind, modelRules, problemsFor, CHECKS, PENDING_CHECKS, legalShifts, similarity, SIMILARITY_LIMIT } from "../logic.js";
-import { filledPaths, problemPath, problemTriggers, shownProblems, problemCounts } from "../logic.js";
+} from "../../web/logic.js";
+import { isSupported } from "../../web/render.js";
+import { validate, ruleKind, modelRules, problemsFor, CHECKS, PENDING_CHECKS, legalShifts, similarity, SIMILARITY_LIMIT } from "../../web/logic.js";
+import { filledPaths, problemPath, problemTriggers, shownProblems, problemCounts } from "../../web/logic.js";
 
-const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
+const schema = JSON.parse(readFileSync(new URL("../../web/data/schema.en.json", import.meta.url), "utf8"));
 const style = schema.cards.style;
 const characters = schema.cards.characters;
 const world = schema.cards.world;
@@ -640,7 +640,7 @@ test("problemCounts splits blocking problems from warnings", () => {
 
 // ---- The backend contract ----
 
-const contract = await import("../logic.js");
+const contract = await import("../../web/logic.js");
 const { fillRequest, readFillReply, judgeRequest, readJudgeReply, styleFitRequest, readStyleFitReply, readReply, readStatus,
   failure, relatedCards, ERROR_KINDS, FILLABLE } = contract;
 
@@ -806,7 +806,7 @@ test("a style fit reply says whether it fits", () => {
 // ---- Saving, opening and the recovery copy ----
 
 const importIo = {};
-const io = await import("../logic.js");
+const io = await import("../../web/logic.js");
 Object.assign(importIo, io);
 const { settledProject, projectSnapshot, hasUnsavedChanges, projectFileName, readProject,
   RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering } = importIo;
@@ -922,7 +922,7 @@ test("a blank recovery copy is not worth offering, and a bad one is ignored", ()
 
 // ---- What a tab or a dropdown entry says ----
 
-const { cardStatus, combineStatus, projectStatus } = await import("../logic.js");
+const { cardStatus, combineStatus, projectStatus } = await import("../../web/logic.js");
 const reviewOf = () => ({ touched: new Set(), validated: false });
 const miniCard = {
   id: "mini", label: "Mini",
@@ -1007,7 +1007,7 @@ test("each character is judged with its own review state", () => {
 
 // ---- Fixed and live fields ----
 
-const { flagsUsed } = await import("../logic.js");
+const { flagsUsed } = await import("../../web/logic.js");
 
 test("a card says which of the fixed and live flags it uses", () => {
   assert.deepEqual(flagsUsed(style), { fixed: false, changes: false });
@@ -1027,8 +1027,8 @@ test("no field is both fixed and live, so it never gets two tags", () => {
   for (const card of Object.values(schema.cards)) walk(card.fields, card.id);
 });
 
-// ---- Shared vectors: web/tests/vectors.json ----
-const vectors = JSON.parse(readFileSync(new URL("./vectors.json", import.meta.url), "utf8")).cases;
+// ---- Shared vectors: tests/shared/rule-vectors.json ----
+const vectors = JSON.parse(readFileSync(new URL("../shared/rule-vectors.json", import.meta.url), "utf8")).cases;
 
 for (const c of vectors) {
   test(`vector: ${c.card} / ${c.rule}: ${c.name}`, () => {
@@ -1053,7 +1053,7 @@ test("the vectors cover every code rule, both broken and not broken", () => {
 
 // ---- Landing a fill ----
 
-const landing = await import("../logic.js");
+const landing = await import("../../web/logic.js");
 const { wordsToId, resolveFillLinks, planFill, setCardValues, filledFieldKeys } = landing;
 const landEnt = schema.cards.entanglements;
 const landSetup = schema.cards.setup;
@@ -1176,7 +1176,7 @@ test("setting values in place keeps the same object, never touches the id, and U
 
 // ---- The writer's notes ----
 
-const notesApi = await import("../logic.js");
+const notesApi = await import("../../web/logic.js");
 const { noteFor, setNote, setExample } = notesApi;
 
 test("a note is kept per card, and per character for Characters; a blank note is no note", () => {
@@ -1228,13 +1228,13 @@ test("deleting a character takes that character's note with it", () => {
 });
 
 // ---- The contract vectors ----
-// web/tests/contract-vectors.json is shared with the backend's tests (tests/schema/test_contract.py): the page must build
+// tests/shared/contract-vectors.json is shared with the backend's tests (tests/schema/test_contract.py): the page must build
 // exactly the golden requests and read every valid reply, and the backend must accept the same requests and replies.
 
-const contractVectors = JSON.parse(readFileSync(new URL("./contract-vectors.json", import.meta.url), "utf8"));
-const vectorsApi = await import("../logic.js");
-const planApi = await import("../plan.js");
-const generateApi = await import("../generate.js");
+const contractVectors = JSON.parse(readFileSync(new URL("../shared/contract-vectors.json", import.meta.url), "utf8"));
+const vectorsApi = await import("../../web/logic.js");
+const planApi = await import("../../web/plan.js");
+const generateApi = await import("../../web/generate.js");
 
 test("the golden requests are exactly what the page builds", () => {
   const project = {

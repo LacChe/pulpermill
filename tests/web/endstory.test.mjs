@@ -2,14 +2,14 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
-import { createMock } from "../mock.js";
-import { createClient, planChapter, generateChapter, endStory } from "../client.js";
-import { lockStaticCards } from "../gate.js";
-import { placeBeat, suggestedCast } from "../plan.js";
-import { commitChapter } from "../generate.js";
-import { endGate, endStoryRequest, landEndStory, afterStoryChanges, afterStoryStale, afterStoryView, chaptersFingerprint } from "../endstory.js";
-import { setEndNote } from "../modelnotes.js";
-import { readEndStoryReply } from "../logic.js";
+import { createMock } from "../../web/mock.js";
+import { createClient, planChapter, generateChapter, endStory } from "../../web/client.js";
+import { lockStaticCards } from "../../web/gate.js";
+import { placeBeat, suggestedCast } from "../../web/plan.js";
+import { commitChapter } from "../../web/generate.js";
+import { endGate, endStoryRequest, landEndStory, afterStoryChanges, afterStoryStale, afterStoryView, chaptersFingerprint } from "../../web/endstory.js";
+import { setEndNote } from "../../web/modelnotes.js";
+import { readEndStoryReply } from "../../web/logic.js";
 
 async function finished(chapters = 2) {
   const project = await readyProject();

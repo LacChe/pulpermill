@@ -1,5 +1,5 @@
 """Keeps the page's rule checks and the shared test vectors in step with the schema.
-Reads web/logic.js and web/tests/vectors.json as text, so no JavaScript has to run here."""
+Reads web/logic.js and tests/shared/rule-vectors.json as text, so no JavaScript has to run here."""
 import json, re
 import pytest
 from helpers import REPO, CARD_IDS as ALL_CARD_IDS, card
@@ -8,7 +8,7 @@ from helpers import REPO, CARD_IDS as ALL_CARD_IDS, card
 CARD_IDS = [cid for cid in ALL_CARD_IDS if not card(cid)[4].get("hidden")]
 
 LOGIC = (REPO / "web" / "logic.js").read_text(encoding="utf-8")
-VECTORS = json.loads((REPO / "web" / "tests" / "vectors.json").read_text(encoding="utf-8"))["cases"]
+VECTORS = json.loads((REPO / "tests" / "shared" / "rule-vectors.json").read_text(encoding="utf-8"))["cases"]
 
 
 def code_rules(cid):

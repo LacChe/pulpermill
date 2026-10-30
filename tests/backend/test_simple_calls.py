@@ -9,9 +9,9 @@ from pulpermill.backend.engine import FakeEngine
 from pulpermill.backend.engine.base import CancelFlag
 from pulpermill.backend.errors import BackendError
 from pulpermill.backend.pipelines import RunContext, simple
-from pulpermill.schema import contract
+from pulpermill import contract
 
-VECTORS = {r["name"]: r["data"] for r in json.loads((Path(__file__).parents[2] / "web/tests/contract-vectors.json").read_text())["requests"]
+VECTORS = {r["name"]: r["data"] for r in json.loads((Path(__file__).parents[2] / "tests/shared/contract-vectors.json").read_text())["requests"]
            if r["valid"]}
 
 

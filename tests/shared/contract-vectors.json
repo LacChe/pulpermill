@@ -1,5 +1,5 @@
 {
-  "note": "Shared by the page's tests (web/tests/logic.test.mjs section 'The contract vectors') and the backend's (tests/schema/test_contract.py). `requests`: valid ones marked `golden` are exactly what the page builds for the project in the page test; the rest are mistakes the backend must refuse. `replies`: what the backend may send; the page must read every valid one and refuse every invalid one. Cases where the two sides are deliberately not equally strict (extra keys, values of the wrong kind for a particular card) are left out.",
+  "note": "Shared by the page's tests (tests/web/logic.test.mjs section 'The contract vectors') and the backend's (tests/schema/test_contract.py). `requests`: valid ones marked `golden` are exactly what the page builds for the project in the page test; the rest are mistakes the backend must refuse. `replies`: what the backend may send; the page must read every valid one and refuse every invalid one. Cases where the two sides are deliberately not equally strict (extra keys, values of the wrong kind for a particular card) are left out.",
   "requests": [
     {
       "name": "the page's status request",
@@ -1788,7 +1788,7 @@
     }
   ],
   "project_notes": {
-    "note": "What the model said, as the page keeps it in the project file. The page's own code builds these (web/tests/modelnotes.test.mjs, ids aside) and the Pydantic models accept them (tests/schema/test_project.py), so the two agree on the shape.",
+    "note": "What the model said, as the page keeps it in the project file. The page's own code builds these (tests/web/modelnotes.test.mjs, ids aside) and the Pydantic models accept them (tests/schema/test_project.py), so the two agree on the shape.",
     "plan_notes": [
       {
         "id": "p0000001",

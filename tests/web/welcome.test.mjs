@@ -2,13 +2,13 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { schema, readyProject } from "./helpers.mjs";
-import { newProject } from "../logic.js";
-import { createMock } from "../mock.js";
-import { createClient, planChapter, generateChapter } from "../client.js";
-import { lockStaticCards } from "../gate.js";
-import { placeBeat, suggestedCast } from "../plan.js";
-import { commitChapter } from "../generate.js";
-import { welcomeSteps, STEP_IDS } from "../welcome.js";
+import { newProject } from "../../web/logic.js";
+import { createMock } from "../../web/mock.js";
+import { createClient, planChapter, generateChapter } from "../../web/client.js";
+import { lockStaticCards } from "../../web/gate.js";
+import { placeBeat, suggestedCast } from "../../web/plan.js";
+import { commitChapter } from "../../web/generate.js";
+import { welcomeSteps, STEP_IDS } from "../../web/welcome.js";
 
 const states = (project) => Object.fromEntries(welcomeSteps(schema, project).map((s) => [s.id, s.state]));
 

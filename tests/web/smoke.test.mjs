@@ -3,10 +3,10 @@ import "./text-setup.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { msg } from "../text.js";
+import { msg } from "../../web/text.js";
 
 test("the page exists and has a title", () => {
-  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const html = readFileSync(new URL("../../web/index.html", import.meta.url), "utf8");
   assert.match(html, /<title data-text="page.title"><\/title>/);
   assert.equal(msg("page.title"), "Pulpermill");
 });

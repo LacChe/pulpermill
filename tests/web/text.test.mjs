@@ -2,7 +2,7 @@ import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
-import { msg, fill, section, joinList, setText } from "../text.js";
+import { msg, fill, section, joinList, setText } from "../../web/text.js";
 import { bundle } from "./text-setup.mjs";
 
 // ---- The helpers ---------------------------------------------------------------------------
@@ -63,7 +63,7 @@ test("every {mark} in the bundle is a plain word, so fill can find it", () => {
 
 // ---- The bundle and the code agree -------------------------------------------------------
 
-const WEB = new URL("../", import.meta.url);
+const WEB = new URL("../../web/", import.meta.url);
 const sourceFiles = readdirSync(WEB).filter((f) => f.endsWith(".js") && !["text.js", "mock.js"].includes(f));
 const read = (name) => readFileSync(new URL(name, WEB), "utf8");
 const sources = Object.fromEntries(sourceFiles.map((f) => [f, read(f)]));

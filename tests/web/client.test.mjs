@@ -2,13 +2,13 @@ import "./text-setup.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { newProject, settledProject, addInstance, addItem, projectSnapshot, modelRules, setCardValues } from "../logic.js";
-import { createMock, MOCK_FLAG } from "../mock.js";
+import { newProject, settledProject, addInstance, addItem, projectSnapshot, modelRules, setCardValues } from "../../web/logic.js";
+import { createMock, MOCK_FLAG } from "../../web/mock.js";
 import {
   parseBackendSetting, readStoredSetting, settingText, blockedByPage, createClient, fillCard, judgeCard, checkStyleFit,
-} from "../client.js";
+} from "../../web/client.js";
 
-const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
+const schema = JSON.parse(readFileSync(new URL("../../web/data/schema.en.json", import.meta.url), "utf8"));
 const characters = schema.cards.characters;
 const world = schema.cards.world;
 const noSleep = () => Promise.resolve();
@@ -360,8 +360,8 @@ test("one failed status check among good ones does not end the call", async () =
 // ---- Planning a chapter ----
 
 import { readyProject } from "./helpers.mjs";
-import { lockStaticCards } from "../gate.js";
-import { planChapter } from "../client.js";
+import { lockStaticCards } from "../../web/gate.js";
+import { planChapter } from "../../web/client.js";
 
 async function startedProject() {
   const p = lockStaticCards(await readyProject());

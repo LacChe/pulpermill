@@ -21,7 +21,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response, StreamingResponse
 from starlette.routing import Route
 
-from pulpermill.schema import contract
+from pulpermill import contract
 from pulpermill.schema.project import SCHEMA_VERSION
 
 from . import pipelines as default_pipelines

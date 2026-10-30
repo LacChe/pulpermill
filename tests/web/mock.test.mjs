@@ -5,10 +5,10 @@ import { readFileSync } from "node:fs";
 import {
   newProject, settledProject, addInstance, addItem, fillRequest, readFillReply, planFill, setCardValues, judgeRequest,
   readJudgeReply, styleFitRequest, readStyleFitReply, readStatus, modelRules, validate, FILLABLE,
-} from "../logic.js";
-import { createMock, MOCK_FLAG } from "../mock.js";
+} from "../../web/logic.js";
+import { createMock, MOCK_FLAG } from "../../web/mock.js";
 
-const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
+const schema = JSON.parse(readFileSync(new URL("../../web/data/schema.en.json", import.meta.url), "utf8"));
 const characters = schema.cards.characters;
 
 // A project with two people and a power, an example chapter to fill from, and every card settled.
@@ -182,7 +182,7 @@ test("with only one person there is nobody to tie them to, so the sample leaves 
 
 // ---- Story calls ----
 
-import { readOffstageReply, readPlanReply, readGenerateReply, readEndStoryReply } from "../logic.js";
+import { readOffstageReply, readPlanReply, readGenerateReply, readEndStoryReply } from "../../web/logic.js";
 
 const storyBase = { schema_version: 1, language: "en" };
 

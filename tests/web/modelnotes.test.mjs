@@ -3,13 +3,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { schema } from "./helpers.mjs";
-import { newProject, projectSnapshot, readProject } from "../logic.js";
+import { newProject, projectSnapshot, readProject } from "../../web/logic.js";
 import {
   setPlanNote, planNoteFor, setChapterNote, chapterNoteFor, setEndNote, setEndProblems, endNoteFor, copyNote, putNote, removeNote,
   copyEndNote, putEndNote, pruneNotes,
-} from "../modelnotes.js";
+} from "../../web/modelnotes.js";
 
-const golden = JSON.parse(readFileSync(new URL("./contract-vectors.json", import.meta.url), "utf8")).project_notes;
+const golden = JSON.parse(readFileSync(new URL("../shared/contract-vectors.json", import.meta.url), "utf8")).project_notes;
 const stripIds = (value) => JSON.parse(JSON.stringify(value, (key, v) => (key === "id" ? undefined : v)));
 
 test("the notes the page writes have exactly the fields of the shared example, which the Pydantic models also accept", () => {

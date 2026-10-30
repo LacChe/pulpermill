@@ -1,9 +1,9 @@
 import "./text-setup.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createMock } from "../mock.js";
-import { createClient } from "../client.js";
-import { nextIconState, headAt, STEPS, TURN } from "../favicon.js";
+import { createMock } from "../../web/mock.js";
+import { createClient } from "../../web/client.js";
+import { nextIconState, headAt, STEPS, TURN } from "../../web/favicon.js";
 import { schema } from "./helpers.mjs";
 
 test("a call starting makes the icon generating, whatever it was", () => {

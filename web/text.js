@@ -38,7 +38,7 @@ function lookup(path) {
 }
 
 // The text at `key`. A key the bundle does not have comes back as itself, so the gap shows on the page; the tie test
-// (web/tests/text.test.mjs) keeps that from happening.
+// (tests/web/text.test.mjs) keeps that from happening.
 export function msg(key, values) {
   const found = lookup(key);
   return typeof found === "string" ? fill(found, values) : String(key);

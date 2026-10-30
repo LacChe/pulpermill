@@ -8,12 +8,12 @@ import yaml
 from pulpermill.prompts import prompts as P
 from pulpermill.prompts import schemas as S
 from pulpermill.prompts import textfiles as tx
-from pulpermill.schema import contract
+from pulpermill import contract
 
 from schema_lite import errors, valid
 from test_render import all_ids, generate_request, plan_request
 
-VECTORS = json.loads((Path(__file__).parents[2] / "web" / "tests" / "contract-vectors.json").read_text(encoding="utf-8"))
+VECTORS = json.loads((Path(__file__).parents[2] / "tests" / "shared" / "contract-vectors.json").read_text(encoding="utf-8"))
 GOLDEN = {r["name"]: r["data"] for r in VECTORS["requests"] if r.get("golden")}
 TEMPLATES = ("writer", "planner", "events", "shifts", "fill", "judge", "style_fit", "offstage", "end_story")
 

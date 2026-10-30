@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
-import { newProject, settledProject, addInstance, fillRequest, readFillReply, planFill, setCardValues, findInstance } from "../logic.js";
-import { createMock } from "../mock.js";
+import { newProject, settledProject, addInstance, fillRequest, readFillReply, planFill, setCardValues, findInstance } from "../../web/logic.js";
+import { createMock } from "../../web/mock.js";
 
-export const schema = JSON.parse(readFileSync(new URL("../data/schema.en.json", import.meta.url), "utf8"));
+export const schema = JSON.parse(readFileSync(new URL("../../web/data/schema.en.json", import.meta.url), "utf8"));
 const characters = schema.cards.characters;
 
 // A project every card of which the mock has filled in, with the two things the mock cannot make sensible on its own set by hand.

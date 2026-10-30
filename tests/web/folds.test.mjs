@@ -1,10 +1,10 @@
 import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { remember, foldedItems, openState, forgetFolds } from "../folds.js";
-import { secondsSince } from "../elapsed.js";
-import { createClient } from "../client.js";
-import { createMock } from "../mock.js";
+import { remember, foldedItems, openState, forgetFolds } from "../../web/folds.js";
+import { secondsSince } from "../../web/elapsed.js";
+import { createClient } from "../../web/client.js";
+import { createMock } from "../../web/mock.js";
 import { schema } from "./helpers.mjs";
 
 const fakeDetails = () => {

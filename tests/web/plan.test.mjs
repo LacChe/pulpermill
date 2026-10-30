@@ -1,15 +1,15 @@
 import "./text-setup.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { addInstance, addItem, readPlanReply } from "../logic.js";
-import { createMock } from "../mock.js";
-import { lockStaticCards } from "../gate.js";
+import { addInstance, addItem, readPlanReply } from "../../web/logic.js";
+import { createMock } from "../../web/mock.js";
+import { lockStaticCards } from "../../web/gate.js";
 import { schema, readyProject } from "./helpers.mjs";
 import {
   CAST_MAX, chapterInfo, currentGoal, openPlants, availableReveals, useCounts, castChoices, duePressure, suggestedCast, castProblem,
   pickSpotlight, shiftsForChapter, offstageDue, entanglementsHash, planIsStale, planGate, planRequest, offstageRequest,
   latestShifts, landBeat, placeBeat, beatBlockers, beatForChapter,
-} from "../plan.js";
+} from "../../web/plan.js";
 
 const world = schema.cards.world;
 const rulesField = world.fields.find((f) => f.key === "rules");
@@ -393,7 +393,7 @@ test("a complete mock plan passes the Outline card's blocking rules", async () =
 });
 
 test("staleBeatIds names the beats marked as possibly out of step, and castKey ignores order", async () => {
-  const { staleBeatIds, castKey } = await import("../plan.js");
+  const { staleBeatIds, castKey } = await import("../../web/plan.js");
   const project = { outline: { beats: [{ id: "b1", stale: true }, { id: "b2", stale: false }, { id: "b3" }] } };
   assert.deepEqual([...staleBeatIds(project)], ["b1"]);
   assert.equal(staleBeatIds({}).size, 0);
@@ -431,7 +431,7 @@ test("with no pressure, or one that names nobody else, the suggestion is by use 
 });
 
 // ---- The goal arc -------------------------------------------------------------------------------------------------
-import { goalArc, goalDue } from "../plan.js";
+import { goalArc, goalDue } from "../../web/plan.js";
 
 test("the goal arc follows the Events entries: each new goal starts a count, a reworded one does not", async () => {
   const p = await started();

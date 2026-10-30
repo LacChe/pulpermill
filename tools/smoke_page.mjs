@@ -2,8 +2,8 @@
 // style_fit and a status check. It uses the mock to build a ready project, then talks to the real address.
 //   python -m pulpermill.backend --fake --port 8000 &
 //   node tools/smoke_page.mjs http://127.0.0.1:8000 [token]
-import { readyProject, schema } from "../web/tests/helpers.mjs";
-import "../web/tests/text-setup.mjs";
+import { readyProject, schema } from "../tests/web/helpers.mjs";
+import "../tests/web/text-setup.mjs";
 import { createClient, parseBackendSetting, planChapter, generateChapter, endStory, checkStyleFit } from "../web/client.js";
 import { placeBeat, suggestedCast } from "../web/plan.js";
 import { lockStaticCards } from "../web/gate.js";

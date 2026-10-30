@@ -5,8 +5,8 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { crc32, dosDate, makeZip } from "../zip.js";
-import { cardFiles, cardsZipName } from "../exporting.js";
+import { crc32, dosDate, makeZip } from "../../web/zip.js";
+import { cardFiles, cardsZipName } from "../../web/exporting.js";
 import { schema, readyProject } from "./helpers.mjs";
 
 const when = new Date(2026, 9, 24, 14, 30, 10);
