@@ -1,8 +1,9 @@
 """The conversation between the page and the backend: what the page sends and what comes back.
 Shapes only. This file runs no model and starts no server; the backend validates every request with parse_request and
 builds every reply from the models below, so a reply that leaves the backend is one the page can read.
-The written description is docs/backend-contract.md. The same examples are checked here and in the page's tests
-(tests/shared/contract-vectors.json), so the two sides cannot drift apart without a test failing.
+The same examples are checked here (tests/schema/test_contract.py) and in the page's tests (tests/web/, reading
+tests/shared/contract-vectors.json), so the two sides cannot drift apart without a test failing. The contract is frozen at
+the end of P3 (P0, A7): a change needs a new dated amendment to the Decision Record.
 
 Every call is a POST of one JSON object to <address>/api. The call is named inside it. Every reply is a JSON object
 with "ok": true and the call's own fields, or "ok": false and an "error". The backend is stateless: a request carries
@@ -66,7 +67,7 @@ class CancelRequest(Strict):
 
 
 class FillRequest(Envelope):
-    """Fill one card from the writer's note and/or the example chapter."""
+    """Fill one card from the writer's note and/or the example chapter. A fill of Entanglements concerns ties and holdings only."""
     call: Literal["fill"]
     card: FillableCard
     instance: str | None = None             # which character, for Characters; null for every other card
@@ -107,91 +108,56 @@ class StyleFitRequest(Envelope):
 
 
 # ---- The story calls ----------------------------------------------------------------------------------------------
-# The page does the code work (spotlight, legal shifts, open plants, available reveals, which cards are in play) and
-# sends the result; the backend renders prose from it, runs the model and answers in words. Cards and records inside
-# these requests are the project's own values, copied, with their ids, filtered to the cast and what is in play.
-
-Shift = Literal["harder", "easier"]
-
-
-class OffstageRequest(Envelope):
-    """Plan, only when the page says an offstage change is due: what do background groups and places do this chapter?"""
-    call: Literal["offstage"]
-    chapter: int
-    chapter_count: int
-    cast: list[dict[str, Any]]
-    world: dict[str, Any]                   # the groups and places that may change, with the places' use counts
-    entanglements: dict[str, Any]           # only the ties, holdings and pressures those touch
-    latest_events: dict[str, Any] | None = None    # the last written chapter's Events entry; none for chapter 1
-    earlier_offstage: list[dict[str, Any]] = []    # [{chapter, did}] the background moves already made, oldest first
+# The page does the code work (picking the spotlight tie, the cast, what is in play, and the effective state: each card's base
+# values plus its shifts, P0 A6) and sends the result. The backend renders prose from it, runs the model and answers in words.
+# It never applies a shift and never makes an id. Cards and records inside these requests are the project's own values,
+# copied, with their ids, already reduced to what is in play (how they are reduced is the page's choice, not the contract's).
 
 
 class PlanRetry(Strict):
     """A first attempt the page's block rules refused, sent back with the rules' words so the second attempt can fix it."""
-    thinking: str
     beat: dict[str, Any]
     problems: list[str]
 
 
-class PlanRequest(Envelope):
-    """Think, then fill the beat. One call; the reply carries both the thinking and the beat."""
-    call: Literal["plan"]
+class _StoryRequest(Envelope):
+    """What `plan` and `generate` share: where we are, the voice, who is in the chapter and how they are tied."""
     chapter: int
     chapter_count: int
     style: dict[str, Any]
-    setup: dict[str, Any]
-    goal: str | None = None                 # the goal the story stands on now: Setup's goal, then what the last chapter's Events entry says the goal became
-    story_goal: str | None = None           # Setup's goal, when the chapters have moved off it
-    goal_plan: dict[str, Any] | None = None  # {due, age, since, earlier_goals}: the goal arc's advice for this chapter
-    cast: list[dict[str, Any]]
-    world: dict[str, Any]
-    entanglements: dict[str, Any]
-    spotlight: dict[str, Any]               # the pressure the page chose
-    legal_shifts: list[Shift]
-    open_plants: list[dict[str, Any]]       # [{text, chapter}]; a payoff is answered with a plant's text
-    available_reveals: list[dict[str, Any]]
-    use_counts: dict[str, Any]
-    earlier_beats: list[dict[str, Any]]
-    earlier_events: list[dict[str, Any]]
-    latest_shifts: list[dict[str, Any]]
-    offstage: dict[str, Any] | None = None  # {did, reach} from an offstage call
+    setup: dict[str, Any]                   # `generate` sends the opening (normal, disruption) only in chapter 1
+    protagonist: str                        # the protagonist's character id
+    cast: list[dict[str, Any]]              # effective Characters cards, with ids
+    world: dict[str, Any]                   # effective World values: places and objects, the groups in play, rules, terms
+    ties: list[dict[str, Any]]              # the ties among the cast, plus ties from a cast member to a group, with ids
+    holdings: list[dict[str, Any]]          # holdings of cast members and of the groups in play, with ids
+
+
+class PlanRequest(_StoryRequest):
+    """Fill the beat's planner fields: where, when_time, aim and plan."""
+    call: Literal["plan"]
+    spotlight: str                          # the id of the spotlight tie, one of `ties`
+    earlier_beats: list[dict[str, Any]]     # earlier beats in words: chapter, where, when, aim, plan
+    earlier_events: list[dict[str, Any]]    # earlier Events entries: chapter, happened, changed
     retry: PlanRetry | None = None
 
+    @model_validator(mode="after")
+    def _spotlight_is_one_of_the_ties(self):
+        if self.spotlight not in {t.get("id") for t in self.ties}:
+            raise ValueError("spotlight must be the id of one of the ties sent")
+        return self
 
-class GenerateRequest(Envelope):
-    """Write the chapter, then the Events pass, then the Shifts and Entanglements pass. One call, all or nothing."""
+
+class GenerateRequest(_StoryRequest):
+    """Write the chapter, then say what happened and what changed. One call, all or nothing."""
     call: Literal["generate"]
-    chapter: int
-    chapter_count: int
-    style: dict[str, Any]
-    setup: dict[str, Any]                   # normal and disruption only in chapter 1
-    goal: str | None = None                 # the goal the chapter begins from (the Events pass says how the chapter leaves it)
-    story_goal: str | None = None           # Setup's goal, when the chapters have moved off it
-    earlier_goals: list[str] = []           # the goals the story has had before this one, oldest first: a new goal is not a rewording of these
-    cast: list[dict[str, Any]]
-    world: dict[str, Any]
-    entanglements: dict[str, Any]
-    standing: list[dict[str, Any]]          # "where they stand now": the latest shift values per cast member
     earlier_events: list[dict[str, Any]]
-    previous_ending: str | None = None
-    beat: dict[str, Any]                    # the beat in words, not ids
-    open_plants: list[dict[str, Any]]
-    available_reveals: list[dict[str, Any]]
+    previous_ending: str | None = None      # the end of the last chapter, or null for chapter 1
+    beat: dict[str, Any]                    # the beat in words, not ids, including its aim and plan
 
 
-class EndStoryRequest(Envelope):
-    """After the last chapter: update Characters and World from what the records say happened."""
-    call: Literal["end_story"]
-    style: dict[str, Any]
-    setup: dict[str, Any]
-    characters: list[dict[str, Any]]
-    world: dict[str, Any]
-    events: list[dict[str, Any]]
-    shifts: list[dict[str, Any]]
-
-
-Request = Annotated[Union[StatusRequest, JobRequest, CancelRequest, FillRequest, JudgeRequest, StyleFitRequest, OffstageRequest, PlanRequest,
-                          GenerateRequest, EndStoryRequest], Field(discriminator="call")]
+Request = Annotated[Union[StatusRequest, JobRequest, CancelRequest, FillRequest, JudgeRequest, StyleFitRequest, PlanRequest,
+                          GenerateRequest], Field(discriminator="call")]
 _request = TypeAdapter(Request)
 
 
@@ -204,7 +170,7 @@ def parse_request(data: Any):
 
 class ErrorBody(Strict):
     kind: BackendErrorKind
-    detail: str = ""                        # shown to the writer for server and bad_request only; plain words
+    detail: str = ""                        # displayed to the writer for server and bad_request only; plain words
 
 
 class ErrorReply(Strict):
@@ -213,22 +179,32 @@ class ErrorReply(Strict):
     error: ErrorBody
 
 
-# What a busy backend may say it is doing, so the page can show progress by asking status. Not a promise of order.
-Stage = Literal["offstage", "think", "beat", "retry", "write", "events", "shifts", "update"]
-STAGES = ("offstage", "think", "beat", "retry", "write", "events", "shifts", "update")
+class Progress(Strict):
+    """What a busy backend says it is doing, so the page can show progress by asking status. `name` is any short word the
+    backend likes; the page shows a generic label for one it does not know. `index` is the step number, from 1, and `of` is
+    the number of steps when that is known."""
+    name: str = Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")
+    index: int = Field(ge=1)
+    of: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def _index_is_within_of(self):
+        if self.of is not None and self.index > self.of:
+            raise ValueError("index cannot be larger than of")
+        return self
 
 
 class StatusReply(Strict):
     ok: Literal[True]
     state: Literal["idle", "busy"]
-    stage: Stage | None = None              # only when busy, and only if the backend knows
+    stage: Progress | None = None           # only when busy, and only if the backend knows
 
 
 class JobReply(Strict):
     """A call that has not finished: the answer to `job` while it runs, or when the backend does not know it."""
     ok: Literal[True]
     state: Literal["running", "unknown"]
-    stage: Stage | None = None
+    stage: Progress | None = None
 
 
 class CancelReply(Strict):
@@ -267,67 +243,65 @@ class StyleFitReply(Strict):
     message: str = ""                       # when it does not fit: what to look at, in the writer's language
 
 
-class OffstageReply(Strict):
-    """What the background did and how it reaches the protagonist. Both, or the page refuses the move."""
-    ok: Literal[True]
-    did: str
-    reach: str
-
-
 class PlanReply(Strict):
-    """The planner's free-text thinking (shown to the writer) and the beat's fields by key. Links are words: a place's
-    name, character names, a rule's statement, and a payoff is the wording of an open plant that was sent."""
+    """The beat's planner fields by key: where, when_time, aim and plan. A link is a word (a place's name). The plan text is
+    part of the beat."""
     ok: Literal[True]
-    thinking: str
     beat: dict[str, Any]
 
 
-GoalChange = Literal["achieved", "redefined", "abandoned"]
-
-
 class EventsOut(Strict):
-    """What the chapter text shows happened. Links are names or the wording that was sent."""
+    """What the chapter text shows happened."""
     happened: str
     changed: str | None = None
-    planted: str | None = None
-    paid_off: list[str] = []
-    reveals_landed: list[str] = []
-    behaviors_seen: list[str] = []
-    things_seen: list[str] = []
-    goal_change: GoalChange                 # how the chapter left the goal it began with
-    goal_now: str                           # what the protagonist wants from here on
+
+
+class ListOp(Strict):
+    """One operation on a list field inside a patch. `id` names an existing item exactly as it was sent; the backend turns
+    what the model referred to into those ids and never makes one. `values` holds the item's values, with words, not ids,
+    for links; the page turns the words into ids and gives each `add` its id when the shift lands."""
+    op: Literal["add", "replace", "remove"]
+    id: str | None = Field(default=None, min_length=1)
+    values: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def _is_consistent(self):
+        if self.op == "add":
+            if self.id is not None:
+                raise ValueError("add names no id: the page gives the new item its id")
+            if not self.values:
+                raise ValueError("add needs values")
+        elif self.op == "replace":
+            if self.id is None:
+                raise ValueError("replace needs the id of an existing item")
+            if not self.values:
+                raise ValueError("replace needs values")
+        else:
+            if self.id is None:
+                raise ValueError("remove needs the id of an existing item")
+            if self.values is not None:
+                raise ValueError("remove takes no values")
+        return self
+
+
+# A patch value is a scalar's new value, or, for a list field, a list of operations.
+PatchValue = Union[list[ListOp], str, int, float, bool, None]
 
 
 class ShiftOut(Strict):
-    """One character who moved. At least one of the five is given; the page refuses an empty entry."""
-    character: str
-    believes: str | None = None
-    fears: str | None = None
-    wants: str | None = None
-    refuses: str | None = None
-    decided: str | None = None
+    """What changed for one card, as a sparse copy of that card (P0, A1 to A3). The page stores it as a shift and checks the
+    patch against the card (validate_patch in pulpermill/schema/shifts.py); the contract carries its shape only."""
+    card: Literal["characters", "world", "entanglements"]
+    target: str | None = None               # the character id as sent, for Characters; null for World and Entanglements
+    patch: dict[str, PatchValue]            # a partial card: a scalar is its new value, a list field is a list of ListOp
 
-
-class Change(Strict):
-    """A proposed change to one live Entanglements field. `item` is the id the page sent; the backend never makes one."""
-    section: Literal["ties", "holdings", "knowledge", "pressures"]
-    item: str
-    field: str
-    value: Any                              # a name for a link, a list of names for several, words for text
-
-
-class NewKnowledge(Strict):
-    """A proposed new Knowledge entry: someone who has come to know, suspect or be misled about something that has no line
-    yet, or someone who joins a line that already exists. For a new line exactly one of `rule` (the wording of a World rule) and
-    `fact` (free text) is meant; the page drops an entry that gives both or neither, and one whose person or rule it cannot find.
-    For an existing line `entry` is its id as the page sent it (the backend turns the handle back into it) and `rule` and `fact`
-    are empty. The backend never makes an id."""
-    person: str
-    status: Literal["knows", "suspects", "misled"]
-    rule: str | None = None
-    fact: str | None = None
-    belief: str | None = None               # for "misled": the false thing they believe instead
-    entry: str | None = None                # the id of an existing Knowledge line this person joins
+    @model_validator(mode="after")
+    def _target_matches_card(self):
+        if (self.card == "characters") != (self.target is not None):
+            raise ValueError("target is the character id for Characters, and null for World and Entanglements")
+        if not self.patch:
+            raise ValueError("a patch holds nothing")
+        return self
 
 
 class GenerateReply(Strict):
@@ -335,21 +309,11 @@ class GenerateReply(Strict):
     chapter_text: str
     events: EventsOut
     shifts: list[ShiftOut]
-    changes: list[Change]
-    new_knowledge: list[NewKnowledge] = []      # optional: a reply without it is a reply with none
-    shown: list[str] = []                       # optional: ids of the knowledge entries, ties and holdings the chapter actually showed
-
-
-class EndStoryReply(Strict):
-    """Characters (each with the id it was sent) and World, as they are after the story. The page forces fixed fields back."""
-    ok: Literal[True]
-    characters: list[dict[str, Any]]
-    world: dict[str, Any]
 
 
 REPLIES: dict[str, type[Strict]] = {
     "status": StatusReply, "job": JobReply, "cancel": CancelReply, "fill": FillReply, "judge": JudgeReply, "style_fit": StyleFitReply,
-    "offstage": OffstageReply, "plan": PlanReply, "generate": GenerateReply, "end_story": EndStoryReply,
+    "plan": PlanReply, "generate": GenerateReply,
 }
 _error = TypeAdapter(ErrorReply)
 
