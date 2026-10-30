@@ -11,7 +11,8 @@ from .world import World
 from .entanglements import Entanglements
 from .setup import Setup
 from .outline import Outline
-from .summaries import SummaryEvents, SummaryShifts, EntanglementsHistory
+from .summaries import SummaryEvents
+from .shifts import Shifts
 
 SCHEMA_VERSION = 3          # bump when the file format changes, so older files can be recognised and migrated
 
@@ -20,12 +21,11 @@ CARD_FIELDS = {
     "style": "style",
     "characters": "characters",          # a list: a project holds any number of characters
     "world": "world",
-    "entanglements": "entanglements",    # the current state; history keeps the state each chapter was written from
+    "entanglements": "entanglements",    # the base card; the state in force in any chapter is computed by the page from it and the shifts
     "setup": "setup",
     "outline": "outline",
     "summary_events": "summary_events",
-    "summary_shifts": "summary_shifts",
-    "entanglements_history": "entanglements_history",
+    "shifts": "shifts",
 }
 
 
@@ -66,11 +66,13 @@ class Chapter(Item):
 
 
 class AfterStory(Item):
-    """The end-of-story copy: the portable root cards updated to reflect what happened. The originals stay
-    untouched in the project, so a new story can start fresh or from this copy. The user can download it."""
+    """The end-of-story copy: Style, Characters, World and the final Entanglements, updated to reflect what happened (the
+    shifts folded into the cards by the page). Nothing else. The originals stay untouched in the project, so a new story
+    can start fresh or from this copy. The user can download it."""
     style: Style = spec(None, None, "card", card_of="style", filled_by="code")
     characters: list[Characters] = spec(None, None, "card", repeat=True, uncapped=True, card_of="characters", filled_by="code")
     world: World = spec(None, None, "card", card_of="world", filled_by="code")
+    entanglements: Entanglements = spec(None, None, "card", card_of="entanglements", filled_by="code")     # the final ties and holdings
 
 
 # ---- What the model said, kept so the user can read it again after reopening the file -------------------------
@@ -93,17 +95,9 @@ class ChapterNote(Item):
     before: str | None = spec("textarea", None, "note", required=False, filled_by="code")
 
 
-class ForcedFields(Item):
-    """Fixed fields of one character that the model changed at the end of the story and the page put back."""
-    character: str = spec("text", None, "note", filled_by="code")      # the name as the user saw it
-    fields: str = spec("text", None, "note", filled_by="code")         # the fields' keys, separated by commas
-
-
 class EndNote(Item):
-    """What the page noticed about the end-of-story copy: fixed fields put back, fields dropped because they did not fit,
-    and how many problems the copy has that its card would stop generating on."""
-    forced: list[ForcedFields] = spec(None, None, "pairs", required=False, default=[], repeat=True, uncapped=True)
-    dropped: str | None = spec("text", None, "note", required=False, filled_by="code")     # field keys, separated by commas
+    """What the page noticed about the end-of-story copy: how many problems the copy has that its card would stop
+    generating on, and what it was made from."""
     problems: int = spec("number", None, "note", required=False, default=0, filled_by="code")
     # A short fingerprint of the written chapters the copy was made from. The page compares it with the chapters as they are
     # now, and says the copy may be out of date when they differ. Display only; a note without it is never called out of date.
@@ -131,8 +125,7 @@ class Project(Item):
 
     # Records
     summary_events: SummaryEvents = spec(None, "records", "card", card_of="summary_events")
-    summary_shifts: SummaryShifts = spec(None, "records", "card", card_of="summary_shifts")
-    entanglements_history: EntanglementsHistory = spec(None, "records", "card", card_of="entanglements_history")
+    shifts: Shifts = spec(None, "records", "card", card_of="shifts")
 
     # The story
     chapters: list[Chapter] = spec(None, "story", "pairs", repeat=True, uncapped=True)
@@ -153,21 +146,22 @@ PROJECT_RULES = [
          when="beat numbers do not start at 1 without gaps, there are more beats than Setup's chapter count, "
               "a chapter's beat does not exist, or two chapters share a beat",
          check="chapter_sequence"),
-    Rule(id="chapter_markers", severity="block", fields=["chapters", "summary_events", "entanglements_history"],
-         when="a written chapter is missing its events entry, its history snapshot or (when anyone moved) its shifts. "
+    Rule(id="chapter_markers", severity="block", fields=["chapters", "summary_events"],
+         when="a written chapter is missing its events entry (shifts are optional: a chapter in which nothing changed has none). "
               "The backend is stateless and the page commits a chapter with all its records as one unit, so a chapter is "
               "either complete or does not exist; a failed call leaves nothing behind and is redone by pressing generate again",
          check="chapter_markers"),
     Rule(id="links_resolve", severity="block",
-         fields=["characters", "world", "setup", "entanglements", "outline", "summary_events", "summary_shifts",
-                 "entanglements_history", "chapters", "card_notes", "chapter_notes", "locks"],
+         fields=["characters", "world", "setup", "entanglements", "outline", "summary_events", "shifts",
+                 "chapters", "card_notes", "chapter_notes", "locks"],
          when="a link in any card, note or lock points at something that does not exist in this project (for example a protagonist who is not among the characters)",
          check="links_resolve"),
     Rule(id="after_story_ready", severity="block", fields=["after_story", "chapters", "setup"],
          when="an end-of-story copy exists before every chapter up to Setup's chapter count is written",
          check="after_story_ready"),
-    Rule(id="after_story_ids_match", severity="block", fields=["after_story", "characters", "world"],
-         when="the updated characters and world do not keep the ids of the originals (so links and comparisons stay meaningful)",
+    Rule(id="after_story_ids_match", severity="block", fields=["after_story", "characters", "world", "entanglements"],
+         when="the updated characters, world and entanglements do not keep the ids of the originals, including the ids of every "
+              "character, place, object, group, rule and term, and of the ties and holdings (so links and comparisons stay meaningful)",
          check="ids_match"),
     Rule(id="note_character_for_characters", severity="block", fields=["card_notes"],
          when="a note for the Characters card does not say which character it is about",

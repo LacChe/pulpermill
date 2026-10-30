@@ -18,7 +18,9 @@ InputType = Literal["text", "textarea", "number", "select", "select-multiple", "
 # Text templates may use {value}, {items}, and {name} (the card's own name field, if it has one).
 #   snapshot: a whole copy of another card, kept as a record and never sent to the model
 #   card  : (project file only) a whole card held by the project; the field says which with card_of
-Kind = Literal["rule", "axis", "note", "free", "items", "pairs", "snapshot", "card"]
+#   patch : (shifts only) a sparse copy of another card, holding only what changed; its shape comes from that card's
+#           schema (see shifts.py), so it is not a single HTML control and has no input type
+Kind = Literal["rule", "axis", "note", "free", "items", "pairs", "snapshot", "card", "patch"]
 
 
 # Every repeating list holds at most this many items (stories run 5 to 10 chapters, so list
@@ -31,6 +33,7 @@ def spec(input: InputType | None, group: str | None, kind: Kind, required: bool 
 
     Extra flags used so far:
       fixed=True   a fact the story must never change (always sent in full)
+      identity=True  (list item fields) says which item this is: set when the item is added and never changed by a shift
       repeat=True  a repeating list; 'input' is None and the item model declares the inputs
       counted=True list items carry use counts in project state (so each item needs an id)
       filled_by="planner"|"code"  who fills it first (beats only so far); everything stays human editable

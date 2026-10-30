@@ -25,7 +25,7 @@ def test_lists_are_items_with_ids_and_caps_follow_the_policy(cid):
 def test_input_types_are_html_and_selects_have_choices_or_a_ref(cid):
     for n, f in all_fields(card(cid)[0]):
         meta = f.json_schema_extra
-        if meta["kind"] == "snapshot":
+        if meta["kind"] in ("snapshot", "patch"):       # not a single HTML control: a whole card, or a partial card
             continue
         assert meta["input"] in ALLOWED_INPUTS, n
         is_choice = meta["input"] in ("select", "select-multiple")

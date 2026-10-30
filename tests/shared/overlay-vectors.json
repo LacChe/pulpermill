@@ -1,0 +1,2784 @@
+{
+ "about": "Shared test cases for shifts (P0 A1 to A3, A6, A13). `overlay` defines how effective cards are computed from base cards and shift entries; the page code (P5a) is tested against it, and Python only checks that every patch in it passes validate_patch (it never applies one). `patch_validation` is checked by Python against validate_patch.",
+ "overlay_rules": [
+  "A case gives base cards, shift entries, a map from each beat id to its chapter number, and the chapter the state is wanted for.",
+  "The wanted state is the one going INTO that chapter: an entry for chapter N is applied only when the wanted chapter is greater than N.",
+  "Entries are applied in chapter order, then in the order they are listed (recorded). An entry applies to the card of its kind: `characters` to the base character whose id is its target, `world` and `entanglements` to that card.",
+  "A scalar field in a patch replaces the value. A list field holds operations, applied in order: `add` appends {id, ...values} at the end; `replace` merges its values into the item with that id, keeping the item's other keys and its place; `remove` deletes the item with that id.",
+  "A `replace` or `remove` of an id that is not in the list (never added, or already removed) changes nothing, and neither does it stop the rest of the patch. An `add` of an id that is already there is not defined here and is not tested.",
+  "Base cards are abbreviated: they hold only the fields a case uses (every list item keeps its id). The expected cards are in the same abbreviated form, for every card the case gives as base, with keys in the same order. A card with no shifts is returned as it was."
+ ],
+ "overlay": [
+  {
+   "name": "scalar_set_then_set_again_later_wins",
+   "why": "Two scalar shifts to one field: the later chapter's value wins.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "being left behind"
+     }
+    },
+    {
+     "beat": "b0000002",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "fire"
+     }
+    }
+   ],
+   "chapter": 4,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "fire",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "scalar_state_before_the_later_shift_keeps_the_earlier_value",
+   "why": "The same two shifts, wanted for chapter 2: only chapter 1's shift has happened.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "being left behind"
+     }
+    },
+    {
+     "beat": "b0000002",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "fire"
+     }
+    }
+   ],
+   "chapter": 2,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "being left behind",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "list_add_appends_the_new_item",
+   "why": "An add puts the new item, with the id it carries, at the end of the list.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "add",
+        "id": "e5f6a7b8",
+        "values": {
+         "text": "to leave town"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "beat": "b0000002",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "replace",
+        "id": "e5f6a7b8",
+        "values": {
+         "text": "to leave town tonight"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "beat": "b0000003",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "remove",
+        "id": "e5f6a7b8"
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 2,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       },
+       {
+        "id": "e5f6a7b8",
+        "text": "to leave town"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "list_add_then_replace_the_added_item",
+   "why": "A later replace finds the item the earlier add made.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "add",
+        "id": "e5f6a7b8",
+        "values": {
+         "text": "to leave town"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "beat": "b0000002",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "replace",
+        "id": "e5f6a7b8",
+        "values": {
+         "text": "to leave town tonight"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "beat": "b0000003",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "remove",
+        "id": "e5f6a7b8"
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 3,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       },
+       {
+        "id": "e5f6a7b8",
+        "text": "to leave town tonight"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "list_remove_the_added_item",
+   "why": "Add, replace, then remove: the list is back to the base list.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "add",
+        "id": "e5f6a7b8",
+        "values": {
+         "text": "to leave town"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "beat": "b0000002",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "replace",
+        "id": "e5f6a7b8",
+        "values": {
+         "text": "to leave town tonight"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "beat": "b0000003",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "remove",
+        "id": "e5f6a7b8"
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 4,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "replace_changes_only_the_keys_it_carries",
+   "why": "A replace with one key leaves the item's other keys and its place in the list alone.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "world": {
+     "name": "The Harbour",
+     "history": "Rebuilt after the flood.",
+     "places": [
+      {
+       "id": "p0000001",
+       "name": "The Quay",
+       "description": "Wet planks and gulls.",
+       "effect": "Everyone whispers."
+      }
+     ],
+     "objects": [
+      {
+       "id": "o0000001",
+       "name": "The ledger",
+       "description": "Water-stained.",
+       "significance": "Names every debt."
+      }
+     ]
+    }
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "world",
+     "target": null,
+     "patch": {
+      "places": [
+       {
+        "op": "replace",
+        "id": "p0000001",
+        "values": {
+         "effect": "Everyone lowers their voice."
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 2,
+   "expected": {
+    "world": {
+     "name": "The Harbour",
+     "history": "Rebuilt after the flood.",
+     "places": [
+      {
+       "id": "p0000001",
+       "name": "The Quay",
+       "description": "Wet planks and gulls.",
+       "effect": "Everyone lowers their voice."
+      }
+     ],
+     "objects": [
+      {
+       "id": "o0000001",
+       "name": "The ledger",
+       "description": "Water-stained.",
+       "significance": "Names every debt."
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "replace_keeps_the_item_in_place_among_others",
+   "why": "Replacing the first of two items does not move it.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "add",
+        "id": "e5f6a7b8",
+        "values": {
+         "text": "to leave town"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "beat": "b0000002",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "replace",
+        "id": "a1b2c3d4",
+        "values": {
+         "text": "to be trusted"
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 3,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be trusted"
+       },
+       {
+        "id": "e5f6a7b8",
+        "text": "to leave town"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "an_entry_for_chapter_3_is_not_seen_for_chapter_3",
+   "why": "A shift made in chapter 3 is the state going into chapter 4, not into chapter 3.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000003",
+     "card": "characters",
+     "target": "c0000002",
+     "patch": {
+      "fear": "crowds"
+     }
+    }
+   ],
+   "chapter": 3,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "an_entry_for_chapter_3_is_seen_for_chapter_4",
+   "why": "The same shift, wanted for chapter 4.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000003",
+     "card": "characters",
+     "target": "c0000002",
+     "patch": {
+      "fear": "crowds"
+     }
+    }
+   ],
+   "chapter": 4,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "crowds",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "shifts_of_later_chapters_are_never_seen",
+   "why": "Entries for chapters 3 and 5, wanted for chapter 4: only chapter 3's shows.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000003",
+     "card": "characters",
+     "target": "c0000002",
+     "patch": {
+      "fear": "crowds"
+     }
+    },
+    {
+     "beat": "b0000005",
+     "card": "characters",
+     "target": "c0000002",
+     "patch": {
+      "fear": "silence"
+     }
+    }
+   ],
+   "chapter": 4,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "crowds",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "replace_of_an_id_that_does_not_exist_changes_nothing",
+   "why": "The item is not there, so the replace is ignored (no item is made).",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "replace",
+        "id": "ffffffff",
+        "values": {
+         "text": "to vanish"
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 2,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "remove_of_an_id_that_does_not_exist_changes_nothing",
+   "why": "The item is not there, so the remove is ignored.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "remove",
+        "id": "ffffffff"
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 2,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "replace_after_the_item_was_removed_changes_nothing",
+   "why": "A removed item is gone: a later replace of it is ignored and does not bring it back.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "remove",
+        "id": "a1b2c3d4"
+       }
+      ]
+     }
+    },
+    {
+     "beat": "b0000002",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "wants": [
+       {
+        "op": "replace",
+        "id": "a1b2c3d4",
+        "values": {
+         "text": "to be safe again"
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 3,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": []
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "one_bad_operation_does_not_stop_the_good_ones_in_the_same_patch",
+   "why": "Operations in one patch are applied in order; an ignored one does not stop the rest.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "heights",
+      "wants": [
+       {
+        "op": "remove",
+        "id": "ffffffff"
+       },
+       {
+        "op": "add",
+        "id": "e5f6a7b8",
+        "values": {
+         "text": "to leave town"
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 2,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "heights",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       },
+       {
+        "id": "e5f6a7b8",
+        "text": "to leave town"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "two_characters_with_different_targets_do_not_affect_each_other",
+   "why": "Each character's shifts apply to that character only, even in the same chapter and on the same field.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "fire"
+     }
+    },
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000002",
+     "patch": {
+      "fear": "crowds"
+     }
+    },
+    {
+     "beat": "b0000002",
+     "card": "characters",
+     "target": "c0000002",
+     "patch": {
+      "wants": [
+       {
+        "op": "replace",
+        "id": "a2b3c4d5",
+        "values": {
+         "text": "to be left alone"
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 3,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "fire",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "crowds",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be left alone"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a_shift_for_one_character_does_not_touch_the_world_or_the_entanglements",
+   "why": "Cards of different kinds are independent.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ],
+    "world": {
+     "name": "The Harbour",
+     "history": "Rebuilt after the flood.",
+     "places": [
+      {
+       "id": "p0000001",
+       "name": "The Quay",
+       "description": "Wet planks and gulls.",
+       "effect": "Everyone whispers."
+      }
+     ],
+     "objects": [
+      {
+       "id": "o0000001",
+       "name": "The ledger",
+       "description": "Water-stained.",
+       "significance": "Names every debt."
+      }
+     ]
+    },
+    "entanglements": {
+     "ties": [
+      {
+       "id": "t0000001",
+       "tie_from": "c0000001",
+       "tie_to": "c0000002",
+       "bond": "sister",
+       "edge": "to protect him"
+      }
+     ],
+     "holdings": [
+      {
+       "id": "h0000001",
+       "holdee": "o0000001",
+       "held_by": "c0000001"
+      }
+     ]
+    }
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "fire"
+     }
+    }
+   ],
+   "chapter": 2,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "fire",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ],
+    "world": {
+     "name": "The Harbour",
+     "history": "Rebuilt after the flood.",
+     "places": [
+      {
+       "id": "p0000001",
+       "name": "The Quay",
+       "description": "Wet planks and gulls.",
+       "effect": "Everyone whispers."
+      }
+     ],
+     "objects": [
+      {
+       "id": "o0000001",
+       "name": "The ledger",
+       "description": "Water-stained.",
+       "significance": "Names every debt."
+      }
+     ]
+    },
+    "entanglements": {
+     "ties": [
+      {
+       "id": "t0000001",
+       "tie_from": "c0000001",
+       "tie_to": "c0000002",
+       "bond": "sister",
+       "edge": "to protect him"
+      }
+     ],
+     "holdings": [
+      {
+       "id": "h0000001",
+       "holdee": "o0000001",
+       "held_by": "c0000001"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "no_shifts_returns_the_base_cards_unchanged",
+   "why": "An empty list of shifts.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ],
+    "world": {
+     "name": "The Harbour",
+     "history": "Rebuilt after the flood.",
+     "places": [
+      {
+       "id": "p0000001",
+       "name": "The Quay",
+       "description": "Wet planks and gulls.",
+       "effect": "Everyone whispers."
+      }
+     ],
+     "objects": [
+      {
+       "id": "o0000001",
+       "name": "The ledger",
+       "description": "Water-stained.",
+       "significance": "Names every debt."
+      }
+     ]
+    },
+    "entanglements": {
+     "ties": [
+      {
+       "id": "t0000001",
+       "tie_from": "c0000001",
+       "tie_to": "c0000002",
+       "bond": "sister",
+       "edge": "to protect him"
+      }
+     ],
+     "holdings": [
+      {
+       "id": "h0000001",
+       "holdee": "o0000001",
+       "held_by": "c0000001"
+      }
+     ]
+    }
+   },
+   "shifts": [],
+   "chapter": 3,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ],
+    "world": {
+     "name": "The Harbour",
+     "history": "Rebuilt after the flood.",
+     "places": [
+      {
+       "id": "p0000001",
+       "name": "The Quay",
+       "description": "Wet planks and gulls.",
+       "effect": "Everyone whispers."
+      }
+     ],
+     "objects": [
+      {
+       "id": "o0000001",
+       "name": "The ledger",
+       "description": "Water-stained.",
+       "significance": "Names every debt."
+      }
+     ]
+    },
+    "entanglements": {
+     "ties": [
+      {
+       "id": "t0000001",
+       "tie_from": "c0000001",
+       "tie_to": "c0000002",
+       "bond": "sister",
+       "edge": "to protect him"
+      }
+     ],
+     "holdings": [
+      {
+       "id": "h0000001",
+       "holdee": "o0000001",
+       "held_by": "c0000001"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "chapter_1_always_sees_the_base_cards",
+   "why": "Nothing can have shifted before chapter 1.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "fire"
+     }
+    }
+   ],
+   "chapter": 1,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "tie_edge_change",
+   "why": "A replace on a tie changes its edge; its two ends, its bond and its id stay.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "entanglements": {
+     "ties": [
+      {
+       "id": "t0000001",
+       "tie_from": "c0000001",
+       "tie_to": "c0000002",
+       "bond": "sister",
+       "edge": "to protect him"
+      }
+     ],
+     "holdings": [
+      {
+       "id": "h0000001",
+       "holdee": "o0000001",
+       "held_by": "c0000001"
+      }
+     ]
+    }
+   },
+   "shifts": [
+    {
+     "beat": "b0000002",
+     "card": "entanglements",
+     "target": null,
+     "patch": {
+      "ties": [
+       {
+        "op": "replace",
+        "id": "t0000001",
+        "values": {
+         "edge": "to keep him from finding out"
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 3,
+   "expected": {
+    "entanglements": {
+     "ties": [
+      {
+       "id": "t0000001",
+       "tie_from": "c0000001",
+       "tie_to": "c0000002",
+       "bond": "sister",
+       "edge": "to keep him from finding out"
+      }
+     ],
+     "holdings": [
+      {
+       "id": "h0000001",
+       "holdee": "o0000001",
+       "held_by": "c0000001"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "holding_holder_change",
+   "why": "A replace on a holding changes who holds it; what is held (the holdee) stays.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "entanglements": {
+     "ties": [
+      {
+       "id": "t0000001",
+       "tie_from": "c0000001",
+       "tie_to": "c0000002",
+       "bond": "sister",
+       "edge": "to protect him"
+      }
+     ],
+     "holdings": [
+      {
+       "id": "h0000001",
+       "holdee": "o0000001",
+       "held_by": "c0000001"
+      }
+     ]
+    }
+   },
+   "shifts": [
+    {
+     "beat": "b0000002",
+     "card": "entanglements",
+     "target": null,
+     "patch": {
+      "holdings": [
+       {
+        "op": "replace",
+        "id": "h0000001",
+        "values": {
+         "held_by": "c0000002"
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 3,
+   "expected": {
+    "entanglements": {
+     "ties": [
+      {
+       "id": "t0000001",
+       "tie_from": "c0000001",
+       "tie_to": "c0000002",
+       "bond": "sister",
+       "edge": "to protect him"
+      }
+     ],
+     "holdings": [
+      {
+       "id": "h0000001",
+       "holdee": "o0000001",
+       "held_by": "c0000002"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "tie_add_carries_its_identity_and_remove_takes_it_away",
+   "why": "An add sets the ends of a new tie; a later remove of the first tie leaves only the new one.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "entanglements": {
+     "ties": [
+      {
+       "id": "t0000001",
+       "tie_from": "c0000001",
+       "tie_to": "c0000002",
+       "bond": "sister",
+       "edge": "to protect him"
+      }
+     ],
+     "holdings": [
+      {
+       "id": "h0000001",
+       "holdee": "o0000001",
+       "held_by": "c0000001"
+      }
+     ]
+    }
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "entanglements",
+     "target": null,
+     "patch": {
+      "ties": [
+       {
+        "op": "add",
+        "id": "t0000002",
+        "values": {
+         "tie_from": "c0000002",
+         "tie_to": "c0000001",
+         "bond": "brother",
+         "edge": "to be forgiven"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "beat": "b0000002",
+     "card": "entanglements",
+     "target": null,
+     "patch": {
+      "ties": [
+       {
+        "op": "remove",
+        "id": "t0000001"
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 3,
+   "expected": {
+    "entanglements": {
+     "ties": [
+      {
+       "id": "t0000002",
+       "tie_from": "c0000002",
+       "tie_to": "c0000001",
+       "bond": "brother",
+       "edge": "to be forgiven"
+      }
+     ],
+     "holdings": [
+      {
+       "id": "h0000001",
+       "holdee": "o0000001",
+       "held_by": "c0000001"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "world_scalar_shift_has_no_target",
+   "why": "A World entry has no target and sets a scalar field of the World card.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "world": {
+     "name": "The Harbour",
+     "history": "Rebuilt after the flood.",
+     "places": [
+      {
+       "id": "p0000001",
+       "name": "The Quay",
+       "description": "Wet planks and gulls.",
+       "effect": "Everyone whispers."
+      }
+     ],
+     "objects": [
+      {
+       "id": "o0000001",
+       "name": "The ledger",
+       "description": "Water-stained.",
+       "significance": "Names every debt."
+      }
+     ]
+    }
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "world",
+     "target": null,
+     "patch": {
+      "history": "Rebuilt after the flood, then burned."
+     }
+    }
+   ],
+   "chapter": 2,
+   "expected": {
+    "world": {
+     "name": "The Harbour",
+     "history": "Rebuilt after the flood, then burned.",
+     "places": [
+      {
+       "id": "p0000001",
+       "name": "The Quay",
+       "description": "Wet planks and gulls.",
+       "effect": "Everyone whispers."
+      }
+     ],
+     "objects": [
+      {
+       "id": "o0000001",
+       "name": "The ledger",
+       "description": "Water-stained.",
+       "significance": "Names every debt."
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "entries_are_applied_in_chapter_order_even_when_recorded_out_of_order",
+   "why": "Applied in chapter order, then in the order recorded: the chapter 2 entry is listed first but chapter 3's value wins.",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000003",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "silence"
+     }
+    },
+    {
+     "beat": "b0000002",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "fire"
+     }
+    }
+   ],
+   "chapter": 4,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "silence",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "scalar_and_list_operations_in_one_patch",
+   "why": "One entry may carry scalar values and list operations together (the first example in the P2 spec).",
+   "beats": {
+    "b0000001": 1,
+    "b0000002": 2,
+    "b0000003": 3,
+    "b0000004": 4,
+    "b0000005": 5
+   },
+   "base": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "the dark",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be safe"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   },
+   "shifts": [
+    {
+     "beat": "b0000001",
+     "card": "characters",
+     "target": "c0000001",
+     "patch": {
+      "fear": "being left behind",
+      "wants": [
+       {
+        "op": "replace",
+        "id": "a1b2c3d4",
+        "values": {
+         "text": "to be trusted"
+        }
+       },
+       {
+        "op": "add",
+        "id": "e5f6a7b8",
+        "values": {
+         "text": "to leave town"
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "chapter": 2,
+   "expected": {
+    "characters": [
+     {
+      "id": "c0000001",
+      "name": "Ines",
+      "fear": "being left behind",
+      "wants": [
+       {
+        "id": "a1b2c3d4",
+        "text": "to be trusted"
+       },
+       {
+        "id": "e5f6a7b8",
+        "text": "to leave town"
+       }
+      ]
+     },
+     {
+      "id": "c0000002",
+      "name": "Tomas",
+      "fear": "deep water",
+      "wants": [
+       {
+        "id": "a2b3c4d5",
+        "text": "to be forgiven"
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "patch_validation": [
+  {
+   "name": "scalar_on_a_character",
+   "card": "characters",
+   "patch": {
+    "fear": "being left behind"
+   },
+   "problems": []
+  },
+  {
+   "name": "scalar_and_list_operations_together",
+   "card": "characters",
+   "patch": {
+    "fear": "being left behind",
+    "wants": [
+     {
+      "op": "replace",
+      "id": "a1b2c3d4",
+      "values": {
+       "text": "to be trusted"
+      }
+     },
+     {
+      "op": "add",
+      "id": "e5f6a7b8",
+      "values": {
+       "text": "to leave town"
+      }
+     }
+    ]
+   },
+   "problems": []
+  },
+  {
+   "name": "add_a_behavior_with_both_boxes",
+   "card": "characters",
+   "patch": {
+    "behaviors": [
+     {
+      "op": "add",
+      "id": "b1b1b1b1",
+      "values": {
+       "state": "feels watched",
+       "tendency": "goes quiet"
+      }
+     }
+    ]
+   },
+   "problems": []
+  },
+  {
+   "name": "remove_a_value",
+   "card": "characters",
+   "patch": {
+    "values": [
+     {
+      "op": "remove",
+      "id": "v1v1v1v1"
+     }
+    ]
+   },
+   "problems": []
+  },
+  {
+   "name": "scalar_on_the_world",
+   "card": "world",
+   "patch": {
+    "history": "Rebuilt after the flood, then burned."
+   },
+   "problems": []
+  },
+  {
+   "name": "replace_one_key_of_a_place",
+   "card": "world",
+   "patch": {
+    "places": [
+     {
+      "op": "replace",
+      "id": "p0000001",
+      "values": {
+       "effect": "Everyone lowers their voice."
+      }
+     }
+    ]
+   },
+   "problems": []
+  },
+  {
+   "name": "add_a_place_with_every_key",
+   "card": "world",
+   "patch": {
+    "places": [
+     {
+      "op": "add",
+      "id": "p0000002",
+      "values": {
+       "name": "The Mill",
+       "description": "Cold and loud.",
+       "effect": "Nobody can talk."
+      }
+     }
+    ]
+   },
+   "problems": []
+  },
+  {
+   "name": "tie_edge_replace",
+   "card": "entanglements",
+   "patch": {
+    "ties": [
+     {
+      "op": "replace",
+      "id": "t0000001",
+      "values": {
+       "edge": "to keep him from finding out"
+      }
+     }
+    ]
+   },
+   "problems": []
+  },
+  {
+   "name": "tie_add_may_set_its_ends",
+   "card": "entanglements",
+   "patch": {
+    "ties": [
+     {
+      "op": "add",
+      "id": "t0000002",
+      "values": {
+       "tie_from": "c0000002",
+       "tie_to": "c0000001",
+       "bond": "brother",
+       "edge": "to be forgiven"
+      }
+     }
+    ]
+   },
+   "problems": []
+  },
+  {
+   "name": "holding_holder_replace",
+   "card": "entanglements",
+   "patch": {
+    "holdings": [
+     {
+      "op": "replace",
+      "id": "h0000001",
+      "values": {
+       "held_by": "c0000002"
+      }
+     }
+    ]
+   },
+   "problems": []
+  },
+  {
+   "name": "holding_add_may_set_the_holdee",
+   "card": "entanglements",
+   "patch": {
+    "holdings": [
+     {
+      "op": "add",
+      "id": "h0000002",
+      "values": {
+       "holdee": "p0000001",
+       "held_by": "c0000001"
+      }
+     }
+    ]
+   },
+   "problems": []
+  },
+  {
+   "name": "fixed_field_name",
+   "card": "characters",
+   "patch": {
+    "name": "Ines B."
+   },
+   "problems": [
+    {
+     "code": "fixed_field",
+     "field": "name"
+    }
+   ]
+  },
+  {
+   "name": "fixed_field_next_to_a_good_one",
+   "card": "characters",
+   "patch": {
+    "age": 35,
+    "fear": "fire"
+   },
+   "problems": [
+    {
+     "code": "fixed_field",
+     "field": "age"
+    }
+   ]
+  },
+  {
+   "name": "fixed_field_appearance",
+   "card": "characters",
+   "patch": {
+    "appearance": "Taller."
+   },
+   "problems": [
+    {
+     "code": "fixed_field",
+     "field": "appearance"
+    }
+   ]
+  },
+  {
+   "name": "unknown_field",
+   "card": "characters",
+   "patch": {
+    "nickname": "Nes"
+   },
+   "problems": [
+    {
+     "code": "unknown_field",
+     "field": "nickname"
+    }
+   ]
+  },
+  {
+   "name": "the_system_id_is_not_a_field_to_shift",
+   "card": "world",
+   "patch": {
+    "id": "w0000001"
+   },
+   "problems": [
+    {
+     "code": "unknown_field",
+     "field": "id"
+    }
+   ]
+  },
+  {
+   "name": "a_field_of_another_card",
+   "card": "world",
+   "patch": {
+    "fear": "fire"
+   },
+   "problems": [
+    {
+     "code": "unknown_field",
+     "field": "fear"
+    }
+   ]
+  },
+  {
+   "name": "identity_field_changed_tie_from",
+   "card": "entanglements",
+   "patch": {
+    "ties": [
+     {
+      "op": "replace",
+      "id": "t0000001",
+      "values": {
+       "tie_from": "c0000002"
+      }
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "identity_field",
+     "field": "ties.tie_from"
+    }
+   ]
+  },
+  {
+   "name": "identity_field_changed_tie_to_with_a_good_key",
+   "card": "entanglements",
+   "patch": {
+    "ties": [
+     {
+      "op": "replace",
+      "id": "t0000001",
+      "values": {
+       "tie_to": "c0000003",
+       "edge": "to let go"
+      }
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "identity_field",
+     "field": "ties.tie_to"
+    }
+   ]
+  },
+  {
+   "name": "identity_field_changed_holdee",
+   "card": "entanglements",
+   "patch": {
+    "holdings": [
+     {
+      "op": "replace",
+      "id": "h0000001",
+      "values": {
+       "holdee": "o0000002"
+      }
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "identity_field",
+     "field": "holdings.holdee"
+    }
+   ]
+  },
+  {
+   "name": "wrong_type_scalar_number",
+   "card": "characters",
+   "patch": {
+    "fear": 5
+   },
+   "problems": [
+    {
+     "code": "bad_type",
+     "field": "fear"
+    }
+   ]
+  },
+  {
+   "name": "wrong_type_scalar_list",
+   "card": "world",
+   "patch": {
+    "history": [
+     "a",
+     "b"
+    ]
+   },
+   "problems": [
+    {
+     "code": "bad_type",
+     "field": "history"
+    }
+   ]
+  },
+  {
+   "name": "wrong_type_list_field_holds_text",
+   "card": "characters",
+   "patch": {
+    "wants": "to leave town"
+   },
+   "problems": [
+    {
+     "code": "bad_type",
+     "field": "wants"
+    }
+   ]
+  },
+  {
+   "name": "wrong_type_inside_an_item",
+   "card": "characters",
+   "patch": {
+    "wants": [
+     {
+      "op": "replace",
+      "id": "a1b2c3d4",
+      "values": {
+       "text": 7
+      }
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "bad_type",
+     "field": "wants.text"
+    }
+   ]
+  },
+  {
+   "name": "add_without_an_id",
+   "card": "characters",
+   "patch": {
+    "wants": [
+     {
+      "op": "add",
+      "values": {
+       "text": "to leave town"
+      }
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "missing_id",
+     "field": "wants"
+    }
+   ]
+  },
+  {
+   "name": "replace_without_an_id",
+   "card": "characters",
+   "patch": {
+    "wants": [
+     {
+      "op": "replace",
+      "values": {
+       "text": "to leave town"
+      }
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "missing_id",
+     "field": "wants"
+    }
+   ]
+  },
+  {
+   "name": "remove_without_an_id",
+   "card": "world",
+   "patch": {
+    "places": [
+     {
+      "op": "remove"
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "missing_id",
+     "field": "places"
+    }
+   ]
+  },
+  {
+   "name": "add_missing_a_required_value",
+   "card": "entanglements",
+   "patch": {
+    "ties": [
+     {
+      "op": "add",
+      "id": "t0000002",
+      "values": {
+       "tie_from": "c0000002",
+       "tie_to": "c0000001",
+       "bond": "brother"
+      }
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "missing_value",
+     "field": "ties.edge"
+    }
+   ]
+  },
+  {
+   "name": "values_key_that_is_not_an_item_field",
+   "card": "characters",
+   "patch": {
+    "wants": [
+     {
+      "op": "replace",
+      "id": "a1b2c3d4",
+      "values": {
+       "colour": "red"
+      }
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "unknown_item_field",
+     "field": "wants.colour"
+    }
+   ]
+  },
+  {
+   "name": "unknown_operation",
+   "card": "characters",
+   "patch": {
+    "wants": [
+     {
+      "op": "move",
+      "id": "a1b2c3d4"
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "bad_operation",
+     "field": "wants"
+    }
+   ]
+  },
+  {
+   "name": "remove_with_values",
+   "card": "characters",
+   "patch": {
+    "wants": [
+     {
+      "op": "remove",
+      "id": "a1b2c3d4",
+      "values": {
+       "text": "x"
+      }
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "bad_operation",
+     "field": "wants"
+    }
+   ]
+  },
+  {
+   "name": "replace_that_changes_nothing",
+   "card": "characters",
+   "patch": {
+    "wants": [
+     {
+      "op": "replace",
+      "id": "a1b2c3d4",
+      "values": {}
+     }
+    ]
+   },
+   "problems": [
+    {
+     "code": "empty_values",
+     "field": "wants"
+    }
+   ]
+  },
+  {
+   "name": "list_field_with_no_operations",
+   "card": "characters",
+   "patch": {
+    "wants": []
+   },
+   "problems": [
+    {
+     "code": "empty_list",
+     "field": "wants"
+    }
+   ]
+  },
+  {
+   "name": "empty_patch",
+   "card": "characters",
+   "patch": {},
+   "problems": [
+    {
+     "code": "empty_patch",
+     "field": ""
+    }
+   ]
+  },
+  {
+   "name": "empty_patch_for_the_world",
+   "card": "world",
+   "patch": {},
+   "problems": [
+    {
+     "code": "empty_patch",
+     "field": ""
+    }
+   ]
+  },
+  {
+   "name": "patch_is_not_an_object",
+   "card": "entanglements",
+   "patch": [
+    "ties"
+   ],
+   "problems": [
+    {
+     "code": "bad_type",
+     "field": ""
+    }
+   ]
+  }
+ ]
+}

@@ -4,22 +4,21 @@ import pytest
 from pydantic import ValidationError
 from helpers import *
 from pulpermill.schema.common import MAX_ITEMS
+from pulpermill.schema.project import CARD_FIELDS
 
 
 def test_list_cap_is_five_and_only_these_lists_are_exempt():
     assert MAX_ITEMS == 5
     assert UNCAPPED == {("entanglements", "ties"), ("entanglements", "holdings"), ("world", "places"), ("world", "objects"),
-                        ("outline", "beats"), ("summary_events", "entries"), ("summary_shifts", "shifts"),
-                        ("entanglements_history", "states")}
+                        ("outline", "beats"), ("summary_events", "entries"), ("shifts", "entries")}
 
 
 def test_card_chain_and_types():
     assert CARD_IDS == ["style", "characters", "world", "entanglements", "setup", "outline",
-                        "summary_events", "summary_shifts", "entanglements_history"]
+                        "summary_events", "shifts"]
     assert {c: CARDS[c][4]["between_chapters"] for c in CARD_IDS} == {
         "style": "static", "characters": "static", "world": "static", "entanglements": "static",
-        "setup": "static", "outline": "append", "summary_events": "per_chapter", "summary_shifts": "per_chapter",
-        "entanglements_history": "per_chapter"}
+        "setup": "static", "outline": "append", "summary_events": "per_chapter", "shifts": "per_chapter"}
 
 
 def test_no_count_or_rotation_flags_and_no_live_fields_remain_on_the_cards():
@@ -165,9 +164,10 @@ def test_style_everything_set_by_the_human_is_a_field_with_text():
 def test_chapter_number_lives_only_on_the_beat_and_everything_else_links_to_it():
     from pulpermill.schema.outline import Beat
     from pulpermill.schema.project import Chapter
-    from pulpermill.schema.summaries import EventsEntry, CharacterShift, ChapterState
+    from pulpermill.schema.summaries import EventsEntry
+    from pulpermill.schema.shifts import ShiftEntry
     assert Beat.model_fields["chapter"].json_schema_extra["filled_by"] == "code"
-    for model in (Chapter, EventsEntry, CharacterShift, ChapterState):
+    for model in (Chapter, EventsEntry, ShiftEntry):
         assert "chapter" not in model.model_fields, model.__name__
         assert model.model_fields["beat"].json_schema_extra["ref"] == ["outline.beats"], model.__name__
     assert Beat.model_fields["stale"].json_schema_extra["filled_by"] == "code" and Beat.model_fields["stale"].default is False
@@ -175,17 +175,67 @@ def test_chapter_number_lives_only_on_the_beat_and_everything_else_links_to_it()
 
 def test_records_are_one_per_beat_and_replaced_not_appended():
     assert {r.id: r for r in CARDS["summary_events"][3]}["events_beat_unique"].params == {"field": "beat"}
-    assert {r.id: r for r in CARDS["entanglements_history"][3]}["history_beat_unique"].params == {"field": "beat"}
-    shifts = {r.id: r for r in CARDS["summary_shifts"][3]}
-    assert shifts["shift_unique_per_chapter"].params == {"fields": ["beat", "character"]}
-    assert shifts["shifts_per_chapter_max"].params == {"group_by": "beat", "max": 5}
+    shifts = {r.id: r for r in CARDS["shifts"][3]}
+    assert shifts["shift_unique"].params == {"fields": ["beat", "card", "target"]}
+    assert shifts["shifts_per_chapter_max"].params == {"group_by": "beat", "max": 7}
 
 
-def test_shifts_hold_abstract_inner_change_and_no_hides():      # P2 replaces this record
-    from pulpermill.schema.summaries import CharacterShift, SHIFT_TEXT
-    assert "hides" not in CharacterShift.model_fields
-    assert SHIFT_TEXT == ["believes", "fears", "wants", "refuses", "decided"]
-    CharacterShift(beat="b1", character="c1", decided="to stay")
+def test_the_old_shift_and_history_records_are_gone():
+    import pulpermill.schema as schema
+    import pulpermill.schema.summaries as summaries
+    import pulpermill.schema.project as project
+    for gone in ("SummaryShifts", "CharacterShift", "SHIFT_TEXT", "SHIFTS_CARD", "SHIFTS_RULES", "SHIFTS_GROUPS",
+                 "EntanglementsHistory", "ChapterState", "HISTORY_CARD", "HISTORY_RULES", "HISTORY_GROUPS"):
+        assert not hasattr(summaries, gone), gone
+    for gone in ("SummaryShifts", "EntanglementsHistory", "ForcedFields"):
+        assert not hasattr(project, gone), gone
+    assert set(project.CARD_FIELDS) == set(schema.CARDS)
+    assert not any("history" in n for n in fields_of(project.Project))
+    for lang in LANGS:       # one wording file per card, and no leftovers
+        assert sorted(f.stem for f in (ROOT / "text" / lang).glob("*.yaml")) == sorted(CARD_IDS + ["common"])
+
+
+def test_shifts_is_a_hidden_record_sent_to_the_model_with_one_uncapped_list():
+    meta = CARDS["shifts"][4]
+    assert meta["type"] == "record" and meta["hidden"] and meta["sent_to_model"] and meta["between_chapters"] == "per_chapter"
+    from pulpermill.schema.shifts import Shifts, ShiftEntry
+    assert list(fields_of(Shifts)) == ["entries"]
+    assert fields_of(Shifts)["entries"].json_schema_extra["uncapped"] and item_model(fields_of(Shifts)["entries"]) is ShiftEntry
+    assert CARD_FIELDS["shifts"] == "shifts"
+
+
+def test_a_shift_entry_has_a_beat_a_card_a_target_and_a_patch():
+    from pulpermill.schema.shifts import ShiftEntry, MAX_SHIFTS_PER_CHAPTER
+    assert MAX_SHIFTS_PER_CHAPTER == 7
+    assert list(fields_of(ShiftEntry)) == ["beat", "card", "target", "patch"]
+    meta = {n: f.json_schema_extra for n, f in fields_of(ShiftEntry).items()}
+    assert meta["beat"]["ref"] == ["outline.beats"] and meta["beat"]["filled_by"] == "code"
+    assert set(options_of(fields_of(ShiftEntry)["card"])) == {"characters", "world", "entanglements"}
+    assert meta["target"]["ref"] == ["characters"] and not fields_of(ShiftEntry)["target"].is_required()
+    assert meta["patch"]["kind"] == "patch" and fields_of(ShiftEntry)["patch"].is_required()
+    e = ShiftEntry(beat="b1", card="world", patch={"history": "x"})
+    assert e.target is None and len(e.id) == 8
+
+
+def test_shift_rules():
+    rules = {r.id: r for r in CARDS["shifts"][3]}
+    assert set(rules) == {"shift_unique", "shifts_per_chapter_max", "shift_target_in_cast", "shift_patch_valid",
+                          "shift_link_broken", "shift_patch_not_empty", "shift_is_a_change"}
+    for rid, r in rules.items():
+        assert r.severity == ("warn" if rid == "shift_is_a_change" else "block"), rid
+    assert rules["shift_is_a_change"].needs_model and not any(r.needs_model for i, r in rules.items() if i != "shift_is_a_change")
+    assert rules["shift_target_in_cast"].context == ["beat_casts"]
+    assert {"beat_ids", "character_ids", "world_item_ids"} <= set(rules["shift_link_broken"].context)
+    assert rules["shift_patch_valid"].check == "patch_valid"
+
+
+def test_every_fixed_field_and_item_identity_is_marked_in_the_schema():
+    from pulpermill.schema.entanglements import Tie, Holding
+    from pulpermill.schema.characters import Characters
+    fixed = {n for n, f in fields_of(Characters).items() if f.json_schema_extra.get("fixed")}
+    assert fixed == {"name", "age", "sex", "appearance"}
+    ident = {m.__name__: {n for n, f in m.model_fields.items() if (f.json_schema_extra or {}).get("identity")} for m in (Tie, Holding)}
+    assert ident == {"Tie": {"tie_from", "tie_to"}, "Holding": {"holdee"}}
 
 
 def test_a_beat_remembers_what_it_was_planned_from():

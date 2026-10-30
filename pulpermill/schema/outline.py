@@ -9,7 +9,7 @@ from .common import spec, Rule, Item
 CARD = {
     "id": "outline",
     "type": "growing",
-    "reads": ["style", "characters", "world", "entanglements", "setup", "summary_events", "summary_shifts"],
+    "reads": ["style", "characters", "world", "entanglements", "setup", "summary_events", "shifts"],
     "portable": False,
     "between_chapters": "append",
 }

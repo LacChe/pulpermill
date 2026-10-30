@@ -18,9 +18,9 @@ LANGS = sorted(p.name for p in (ROOT / "text").iterdir() if p.is_dir())
 UNCAPPED = {("entanglements", "ties"), ("entanglements", "holdings"),
             ("world", "places"), ("world", "objects"),
             ("outline", "beats"), ("summary_events", "entries"),
-            ("summary_shifts", "shifts"), ("entanglements_history", "states")}   # exceptions to the 5-item list cap
+            ("shifts", "entries")}   # exceptions to the 5-item list cap
 BLOCK_CHECKS = {"fields_differ", "holding_pairs_allowed", "ref_exists", "includes_value", "tie_ends_in_cast",
-                "unique_across_items", "at_least_one", "max_per_group"}   # checks a block rule on a card may name (project rules have their own list in test_project.py)
+                "unique_across_items", "max_per_group", "target_in_cast", "patch_valid", "not_empty"}   # checks a block rule on a card may name (project rules have their own list in test_project.py)
 COMMON_KEYS = {"missing", "not_allowed", "too_many", "invalid"}
 
 CASES = [(cid, lang) for cid in CARD_IDS for lang in LANGS]

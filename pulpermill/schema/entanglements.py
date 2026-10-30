@@ -1,6 +1,6 @@
 """Entanglements card: the connections between people, groups, things and places.
 Glue (static): reads Characters and World, not portable. It holds ties and holdings only. The card is locked once the
-story starts and changes only through shifts (the shift layer, P2).
+story starts and changes only through shifts (see shifts.py). A tie's two ends and a holding's holdee are its identity (`identity=True`).
 It is the only card that links to other cards, always by id. The writer prompt shows names."""
 from .common import spec, Rule, Item
 
@@ -32,14 +32,14 @@ PEOPLE = ["characters", "world.powers"]
 
 
 class Tie(Item):
-    tie_from: str = spec("select", None, "note", ref=PEOPLE)
-    tie_to: str = spec("select", None, "note", ref=PEOPLE)
+    tie_from: str = spec("select", None, "note", ref=PEOPLE, identity=True)
+    tie_to: str = spec("select", None, "note", ref=PEOPLE, identity=True)
     bond: str = spec("text", None, "note")      # what the tie is ("mother")
     edge: str = spec("text", None, "note")      # what the tie means for the 'from' person: their driver ("to care for him")
 
 
 class Holding(Item):
-    holdee: str = spec("select", None, "note", ref=["world.objects", "world.places"])
+    holdee: str = spec("select", None, "note", ref=["world.objects", "world.places"], identity=True)
     held_by: str = spec("select", None, "note", ref=["characters", "world.powers", "world.places"],
                         ref_filter_by="holdee")
 

@@ -2071,7 +2071,7 @@
     "entanglements",
     "setup",
     "summary_events",
-    "summary_shifts"
+    "shifts"
    ],
    "portable": false,
    "between_chapters": "append",

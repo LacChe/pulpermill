@@ -1,0 +1,48 @@
+# English text for the Shifts record. Pipeline-only: hidden from the user, but sent to the writer model.
+# A shift is a sparse copy of a card: only what changed in one chapter. Help text is for people reading the schema.
+card:
+  label: "Shifts"
+  summary: "What changed for each card in each chapter, as a sparse copy of the card that holds only the changed values. The cards are locked once the story starts, so this is how people, the world and their ties move. One entry per card that appeared in a chapter."
+groups:
+  entries: {label: "Entries", help: "One per card that appeared in the chapter: each cast character, the world and the entanglements."}
+fields:
+  entries:
+    label: "Entries"
+    help: "One entry per card that changed in a chapter. Fixed fields (name, age, sex, appearance) never appear."
+    lead_in: "How the cards have changed so far (a changed value wins over the card where they disagree):\n{items}"
+    item_template: "Chapter {beat}, {card} {target}: {patch}"
+    item_join: "\n"
+    item_fields:
+      beat: {label: "Chapter", help: "Which chapter, shown as its number. Set by the system."}
+      card:
+        label: "Card"
+        help: "Which card changed."
+        options:
+          characters: {label: "Character", expand: "a character"}
+          world: {label: "World", expand: "the world"}
+          entanglements: {label: "Entanglements", expand: "the ties and holdings"}
+      target: {label: "Character", help: "Who changed. Only for a character; empty for the world and the entanglements."}
+      patch: {label: "What changed", help: "A partial card holding only the values that changed, in the card's own field keys. A single value holds its new value; a list holds add, replace or remove operations on its items. Never a fixed field, and never the identity of an existing item."}
+rules:
+  shift_unique:
+    message: "Two entries are for the same chapter, card and character."
+    fix: "Merge them into one entry."
+  shifts_per_chapter_max:
+    message: "More than seven entries are recorded for one chapter."
+    fix: "Keep one entry per card that appeared: at most five characters, the world and the entanglements."
+  shift_target_in_cast:
+    message: "A character entry names someone who is not in this chapter's cast, or names no one."
+    fix: "Record changes only for characters who appeared, and name the character."
+  shift_patch_valid:
+    message: "A patch is not valid for its card."
+    fix: "Use only the card's changeable fields, with the right kind of value, and no fixed fields or item identities."
+  shift_link_broken:
+    message: "An entry points to a chapter, character or other item that no longer exists."
+    fix: "Remove the entry, or point it at something that exists."
+  shift_patch_not_empty:
+    message: "A patch holds nothing."
+    fix: "Record what changed, or leave the entry out."
+  shift_is_a_change:
+    message: "This records a standing trait, not something that changed this chapter."
+    fix: "Record only what is different now."
+    judge_prompt: "Does each entry state something that changed in this chapter, rather than a standing trait? Answer yes or no for each. Rewrite or drop any that fail."

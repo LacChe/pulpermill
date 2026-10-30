@@ -6,7 +6,7 @@ from helpers import *
 from typing import get_args
 from pulpermill.schema.project import (
     Project, AfterStory, Chapter, CardNote, Lock, UserCard, CARD_FIELDS, PROJECT_RULES, SCHEMA_VERSION,
-    ChangeLine, ChapterNote, ForcedFields, EndNote,
+    ChangeLine, ChapterNote, EndNote,
 )
 from pulpermill.schema.common import MAX_ITEMS
 
@@ -22,6 +22,8 @@ def sample(model):
 
 def sample_value(f):
     meta = f.json_schema_extra
+    if meta["kind"] == "patch":
+        return {"fear": "being left behind"}
     if is_list_field(f):
         return [sample(item_model(f))]
     if meta["kind"] in ("card", "snapshot"):
@@ -46,10 +48,23 @@ def test_every_registered_card_has_a_home_in_the_project():
                      "chapter_notes", "end_note"}
 
 
-def test_after_story_holds_updated_copies_of_the_portable_root_cards():
+def test_after_story_holds_updated_copies_of_style_characters_world_and_the_final_entanglements():
     fields = fields_of(AfterStory)
-    assert {f.json_schema_extra["card_of"] for f in fields.values()} == {"style", "characters", "world"}
+    assert list(fields) == ["style", "characters", "world", "entanglements"]
+    assert {f.json_schema_extra["card_of"] for f in fields.values()} == {"style", "characters", "world", "entanglements"}
     assert all(CARDS[c][4]["portable"] for c in ("style", "characters", "world"))
+    assert all(f.json_schema_extra["filled_by"] == "code" for f in fields.values())
+    assert fields["entanglements"].annotation is CARDS["entanglements"][0]
+
+
+def test_after_story_ids_match_covers_the_entanglements_and_markers_and_links_know_the_shifts_record():
+    rules = {r.id: r for r in PROJECT_RULES}
+    assert set(rules["after_story_ids_match"].fields) == {"after_story", "characters", "world", "entanglements"}
+    assert "ties" in rules["after_story_ids_match"].when and "holdings" in rules["after_story_ids_match"].when
+    assert rules["chapter_markers"].fields == ["chapters", "summary_events"]       # a written chapter needs its Events entry; shifts are optional
+    assert "shifts" not in rules["chapter_markers"].fields and "optional" in rules["chapter_markers"].when
+    assert "shifts" in rules["links_resolve"].fields
+    assert fields_of(Project)["shifts"].json_schema_extra["card_of"] == "shifts"
 
 
 def test_only_characters_chapters_notes_and_locks_are_uncapped_in_the_project():
@@ -65,7 +80,8 @@ def test_full_project_round_trips_through_json_with_ids_intact():
     back = Project.model_validate_json(p.model_dump_json())
     assert back == p
     assert back.id == p.id and back.characters[0].id == p.characters[0].id
-    assert back.entanglements_history.states[0].state.ties[0].id == p.entanglements_history.states[0].state.ties[0].id
+    assert back.after_story.entanglements.ties[0].id == p.after_story.entanglements.ties[0].id
+    assert back.shifts.entries[0].id == p.shifts.entries[0].id and back.shifts.entries[0].patch == {"fear": "being left behind"}
 
 
 def test_a_story_in_progress_has_no_after_story():
@@ -158,9 +174,10 @@ def test_the_notes_the_page_writes_are_valid_and_use_exactly_the_fields_the_sche
         for line in entry.get("changes", []):
             check(ChangeLine, line)
         assert len(note.warnings) == len(entry.get("warnings", []))
-    end = check(EndNote, VECTORS["end_note"])
-    for entry in VECTORS["end_note"]["forced"]:
-        check(ForcedFields, entry)
+    # contract-vectors.json still carries the end note's old forced/dropped keys until P3 regenerates it; the schema no longer has them
+    stale = {"forced", "dropped"}
+    assert set(VECTORS["end_note"]) - set(EndNote.model_fields) <= stale
+    end = check(EndNote, {k: v for k, v in VECTORS["end_note"].items() if k not in stale})
     assert end.problems == VECTORS["end_note"]["problems"]
     assert end.made_from == VECTORS["end_note"]["made_from"]
 
@@ -171,3 +188,11 @@ def test_notes_round_trip_inside_a_project_with_ids_intact():
     p.end_note = EndNote(**VECTORS["end_note"])
     back = Project.model_validate_json(p.model_dump_json())
     assert back == p and back.chapter_notes[0].id == VECTORS["chapter_notes"][0]["id"]
+
+
+def test_the_end_note_keeps_only_the_problem_count_and_what_the_copy_was_made_from():
+    assert list(fields_of(EndNote)) == ["problems", "made_from"]
+    import pulpermill.schema.project as project
+    assert not hasattr(project, "ForcedFields")
+    e = EndNote()
+    assert e.problems == 0 and e.made_from is None
