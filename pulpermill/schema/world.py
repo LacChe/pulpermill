@@ -1,6 +1,5 @@
 """World card: what exists and what is true. Root, portable, static.
 Names no characters and never says who holds, knows or wants something (that is Entanglements)."""
-from typing import Literal
 from .common import spec, Rule, Item
 
 CARD = {
@@ -26,8 +25,6 @@ RENDER_ORDER = [
     ["rules", "terms"],
 ]
 
-RuleStatus = Literal["common", "uncommon", "false_belief"]
-
 
 class Place(Item):
     name: str = spec("text", None, "note")
@@ -51,9 +48,7 @@ class Power(Item):
 class WorldRule(Item):
     statement: str = spec("textarea", None, "note")
     cost: str = spec("textarea", None, "note")
-    status: RuleStatus = spec("select", None, "axis")
     when_broken: str = spec("textarea", None, "note")
-    truth: str | None = spec("textarea", None, "note", required=False)   # only for 'false_belief' rules
 
 
 class Term(Item):
@@ -70,10 +65,10 @@ class World(Item):
     history: str = spec("textarea", "overview", "free")                       # source doc: optional
 
     # Places
-    places: list[Place] = spec(None, "places", "pairs", repeat=True, counted=True, uncapped=True)   # no cap: a request carries the relevant, least used
+    places: list[Place] = spec(None, "places", "pairs", repeat=True, uncapped=True)   # no cap: a world has many; the page sends at most 5 random ones
 
     # Things
-    objects: list[Thing] = spec(None, "things", "pairs", repeat=True, counted=True, uncapped=True)   # source doc: optional
+    objects: list[Thing] = spec(None, "things", "pairs", repeat=True, uncapped=True)   # source doc: optional; no cap, the page sends at most 5 random ones
 
     # Powers (labelled "Groups" in the UI)
     powers: list[Power] = spec(None, "powers", "pairs", repeat=True)          # source doc: optional
@@ -122,7 +117,4 @@ RULES = [
     Rule(id="rule_when_broken_clear", severity="warn", fields=["rules"],
          when="'when broken' does not say whether breaking the rule is impossible, punished, shameful or has a side effect",
          needs_model=True),
-    Rule(id="rule_false_needs_truth", severity="block", fields=["rules"],
-         when="a rule marked as a Myth has no truth stated",
-         check="required_if", params={"field": "truth", "when": {"status": "false_belief"}}),
 ]

@@ -6,13 +6,13 @@ from helpers import *
 from typing import get_args
 from pulpermill.schema.project import (
     Project, AfterStory, Chapter, CardNote, Lock, UserCard, CARD_FIELDS, PROJECT_RULES, SCHEMA_VERSION,
-    PlanNote, ChangeLine, ChapterNote, ForcedFields, EndNote,
+    ChangeLine, ChapterNote, ForcedFields, EndNote,
 )
 from pulpermill.schema.common import MAX_ITEMS
 
 PROJECT_CHECKS = {"chapter_sequence", "chapter_markers", "links_resolve",
                   "after_story_ready", "ids_match", "required_if", "unique_across_items", "lock_target_exists"}
-PROJECT_UNCAPPED = {"characters", "chapters", "after_story.characters", "card_notes", "plan_notes", "chapter_notes", "locks"}   # any number of characters, notes and locks
+PROJECT_UNCAPPED = {"characters", "chapters", "after_story.characters", "card_notes", "chapter_notes", "locks"}   # any number of characters, notes and locks
 
 
 def sample(model):
@@ -43,7 +43,7 @@ def test_every_registered_card_has_a_home_in_the_project():
         assert model is CARDS[cid][0], cid
     extra = set(fields) - set(CARD_FIELDS.values())
     assert extra == {"title", "schema_version", "output_language", "example_chapter", "card_notes", "chapters", "after_story", "locks",
-                     "plan_notes", "chapter_notes", "end_note"}
+                     "chapter_notes", "end_note"}
 
 
 def test_after_story_holds_updated_copies_of_the_portable_root_cards():
@@ -130,23 +130,22 @@ def test_a_lock_reads_outside_in_and_only_the_card_is_required():
 
 # ---- What the model said ------------------------------------------------------------------------------------
 VECTORS = json.loads((REPO / "tests" / "shared" / "contract-vectors.json").read_text(encoding="utf-8"))["project_notes"]
-NOTE_MODELS = {"plan_notes": PlanNote, "chapter_notes": ChapterNote, "end_note": EndNote}
+NOTE_MODELS = {"chapter_notes": ChapterNote, "end_note": EndNote}
 
 
 def test_the_model_notes_are_optional_so_older_projects_still_load():
     p = sample(Project)
-    assert p.plan_notes == [] and p.chapter_notes == [] and p.end_note is None
+    assert p.chapter_notes == [] and p.end_note is None
     fields = fields_of(Project)
     assert not any(fields[n].is_required() for n in NOTE_MODELS)
 
 
-def test_notes_point_at_beats_and_chapters_and_are_kept_one_per_target():
-    assert fields_of(PlanNote)["beat"].json_schema_extra["ref"] == ["outline.beats"]
+def test_notes_point_at_chapters_and_are_kept_one_per_target():
     assert fields_of(ChapterNote)["chapter"].json_schema_extra["ref"] == ["chapters"]
     rules = {r.id: r for r in PROJECT_RULES}
-    assert rules["plan_note_unique"].params == {"fields": ["beat"]}
+    assert "plan_note_unique" not in rules
     assert rules["chapter_note_unique"].params == {"fields": ["chapter"]}
-    assert {"plan_notes", "chapter_notes"} <= set(rules["links_resolve"].fields)
+    assert "chapter_notes" in rules["links_resolve"].fields and "plan_notes" not in rules["links_resolve"].fields
 
 
 def test_the_notes_the_page_writes_are_valid_and_use_exactly_the_fields_the_schema_has():
@@ -154,8 +153,6 @@ def test_the_notes_the_page_writes_are_valid_and_use_exactly_the_fields_the_sche
     def check(model, data):
         assert set(data) <= set(model.model_fields), (model.__name__, set(data) - set(model.model_fields))
         return model(**data)
-    for entry in VECTORS["plan_notes"]:
-        check(PlanNote, entry)
     for entry in VECTORS["chapter_notes"]:
         note = check(ChapterNote, entry)
         for line in entry.get("changes", []):
@@ -170,8 +167,7 @@ def test_the_notes_the_page_writes_are_valid_and_use_exactly_the_fields_the_sche
 
 def test_notes_round_trip_inside_a_project_with_ids_intact():
     p = sample(Project)
-    p.plan_notes = [PlanNote(**e) for e in VECTORS["plan_notes"]]
     p.chapter_notes = [ChapterNote(**e) for e in VECTORS["chapter_notes"]]
     p.end_note = EndNote(**VECTORS["end_note"])
     back = Project.model_validate_json(p.model_dump_json())
-    assert back == p and back.plan_notes[0].id == VECTORS["plan_notes"][0]["id"]
+    assert back == p and back.chapter_notes[0].id == VECTORS["chapter_notes"][0]["id"]

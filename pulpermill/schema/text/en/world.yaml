@@ -9,7 +9,7 @@ groups:
   places: {label: "Places", help: "Locations that act on the people in them."}
   things: {label: "Things", help: "Objects that matter. No owner and no location."}
   powers: {label: "Groups", help: "Institutions, organisations, nations and crowds."}
-  truths: {label: "Rules", help: "What is true here, what it costs, and who knows."}
+  truths: {label: "Rules", help: "How the world works, and what each rule costs."}
   vocabulary: {label: "Vocabulary", help: "Invented or local words."}
 fields:
   name:
@@ -100,20 +100,12 @@ fields:
     delete_confirm: "Delete this rule?"
     item_title: "{statement}"
     lead_in: "What is true in {name}:\n{items}"
-    item_template: "{statement} ({status}). Cost: {cost} When broken: {when_broken}"
+    item_template: "{statement} Cost: {cost} When broken: {when_broken}"
     item_join: "\n"
     item_fields:
       statement: {label: "Statement", help: "What is true.", placeholder: "e.g. Nobody may refuse a guest water."}
       cost: {label: "Cost", help: "What using or living by this rule costs.", placeholder: "e.g. Hosts go thirsty in a drought.", examples: {good: ["Hosts go thirsty in a drought"], avoid: ["It is just how things are"]}}
-      status:
-        label: "Status"
-        help: "Common knowledge: everyone knows it, and it is true. Hidden: true, but known to few. Myth: widely believed, but false. Who exactly knows is recorded in Entanglements."
-        options:
-          common: {label: "Common knowledge", expand: "common knowledge", description: "Everyone knows it, and it is true: the gates close at dusk."}
-          uncommon: {label: "Hidden", expand: "known only to a few", description: "True, but few know it: the gates cannot be opened from outside."}
-          false_belief: {label: "Myth", expand: "widely believed but false; the truth is: {truth}", description: "Widely believed, but false: people say the river is cursed. You then say what is really true."}
       when_broken: {label: "When broken", help: "Whether breaking it is impossible, punished, shameful, or has a side effect. A hard limit and a priced choice work differently.", placeholder: "e.g. Punished: the household is shunned.", examples: {good: ["Punished: the household is shunned", "Impossible: the door will not open to a stranger refused"], avoid: ["Bad things happen"]}}
-      truth: {label: "The truth", help: "Only for a Myth: what is actually true.", placeholder: "e.g. The custom was invented by the Guild to keep every door open to its collectors.", visible_if: {status: "false_belief"}}
   terms:
     label: "Vocabulary"
     help: "Invented or local words and names, each with a one-line meaning, so the story stays consistent."
@@ -172,6 +164,3 @@ rules:
     message: "'When broken' doesn't say what happens."
     fix: "Say whether breaking it is impossible, punished, shameful, or has a side effect."
     judge_prompt: "For each rule, does 'when broken' say whether breaking it is impossible, punished, shameful, or has a side effect? Answer yes or no for each. Rewrite any that fail."
-  rule_false_needs_truth:
-    message: "A rule marked 'Myth' has no truth stated."
-    fix: "Add what is actually true. The story needs it to tell the difference."

@@ -2,10 +2,10 @@
 # The protagonist is shown by name, never by id.
 card:
   label: "Setup"
-  summary: "The springboard: who we follow, what just broke their normal, and what pushes them forward. It holds no plan and no ending, and it never changes during the story."
+  summary: "The springboard: who we follow, what just broke their normal, and how long the story runs. It holds no goal, no plan and no ending, and it never changes during the story."
 groups:
   opening: {label: "Opening", help: "Who we follow and what just broke."}
-  push: {label: "Push", help: "What pushes them forward, and why they can't stop."}
+  push: {label: "Length", help: "How long the story runs."}
 fields:
   protagonist:
     label: "Protagonist"
@@ -32,27 +32,9 @@ fields:
       good: ["The ledger went missing", "A stranger arrives carrying a letter in her mother's hand"]
       avoid: ["things are tense", "her life falls apart"]
     lead_in: "What just broke that normal: {value}"
-  goal:
-    label: "Goal"
-    help: "What the protagonist is concretely trying to do, narrowing one of their wants into this story. It can be acted on in scenes, a reader could tell whether it succeeded, failed or stopped mattering, and it costs something. During the story the current goal is worked out from this and from any redefinitions in the beats; once it is achieved or abandoned the story winds down."
-    placeholder: "e.g. Get the ledger back before Friday's audit."
-    why: "Every chapter's plan is checked against this, so make it something you can watch happen."
-    examples:
-      good: ["Get the ledger back before the audit", "Win the apprenticeship before the guild votes"]
-      avoid: ["find peace", "become a better person"]
-    lead_in: "The protagonist is now trying to: {value}"
-  stakes:
-    label: "What's at stake"
-    help: "What happens if they do nothing or quit. This is why they can't walk away. Tie it to a want, a value or a pressure already on the cards. It can be a friendship, a reputation or a chance at happiness, not only a loss."
-    placeholder: "e.g. If the audit finds the books short, she loses the shop and the neighbours who trust her."
-    why: "This is what keeps the protagonist from walking away when the goal gets hard."
-    examples:
-      good: ["She loses the shop her mother left her", "Her brother never forgives her"]
-      avoid: ["bad things happen", "everything is lost"]
-    lead_in: "If the protagonist does nothing or quits: {value}"
   chapter_count:
     label: "Chapter count"
-    help: "A budget, not a fixed route. If the goal resolves early, the remaining chapters carry the aftermath."
+    help: "A budget, not a fixed route."
     placeholder: "e.g. 12"
     why: "The model plans toward this number and knows when it is writing the last chapter."
     lead_in: "The story runs for {value} chapters."
@@ -68,23 +50,6 @@ rules:
     message: "This describes a condition, not an event."
     fix: "Say what happened, like 'the ledger went missing', not 'things are tense'."
     judge_prompt: "Does this text describe something that happened, an event, rather than a standing condition? Answer yes or no. If no, suggest a rewrite as an event."
-  goal_is_action:
-    message: "This reads like a feeling or a theme, not something to act on."
-    fix: "Say what they are concretely trying to do, like 'get the ledger back before the audit'."
-    judge_prompt: "Is this something a person can act on in scenes, such as getting, finding, stopping or reaching something? Answer yes or no. If no, suggest a rewrite as an action."
-  goal_checkable:
-    message: "A reader couldn't tell whether this succeeded, failed or stopped mattering."
-    fix: "Make it something with a clear outcome."
-    judge_prompt: "Could a reader tell whether this goal succeeded, failed or stopped mattering? Answer yes or no. If no, suggest a sharper version."
-  goal_touches_cards:
-    message: "This goal doesn't connect to anything on the other cards."
-    fix: "Narrow one of the protagonist's wants into it, or add a pressure or tie that bears on it. A goal that touches nothing has nothing to collide with."
-    judge_prompt: "Does this goal narrow one of the protagonist's wants, and bear on at least one pressure or tie? Answer yes or no for each. If no, suggest the closest connection, or a new pressure for the writer to accept or reject."
-  stakes_has_cost:
-    message: "This doesn't name a cost or a gain."
-    fix: "Say what is lost or gained if they do nothing or quit. It can be a friendship, a reputation or a chance at happiness."
-    judge_prompt: "Does this text name something the protagonist would lose or miss out on if they did nothing or quit? Answer yes or no. If no, suggest one."
-  stakes_tie_to_cards:
-    message: "This isn't tied to a want, value or pressure already on the cards."
-    fix: "Tie it to something the protagonist wants or protects, or to a pressure."
-    judge_prompt: "Does this text tie to one of the protagonist's wants or values, or to a pressure? Answer yes or no. If no, suggest the closest tie."
+  protagonist_has_tie:
+    message: "The protagonist is at neither end of any tie."
+    fix: "Add a tie that starts or ends at the protagonist, so their edge can drive the story. Advice only: a protagonist with no tie is allowed."

@@ -1,16 +1,12 @@
 """Pipeline records made while a chapter is generated, so an unfinished story can resume and a chapter can be redone.
 Hidden from the user and never edited by hand. One entry per chapter, found through the chapter's beat (a beat link,
 never a stored chapter number); regenerating a chapter replaces its entries as a whole, keeping their ids. Three cards:
-  summary_events        what happened (the outer story), plus the changed line, planted and paid-off plants, and the goal as the chapter left it
+  summary_events        what happened (the outer story), plus the changed line
   summary_shifts        how people changed (the inner story)
   entanglements_history the Entanglements card as each chapter was written from (what the user saw when generating)
 Use counts for behaviors, places and things are tallied from these entries and from Outline beats, never stored as counters."""
-from typing import Literal
 from .common import spec, Rule, Item
 from .entanglements import Entanglements
-
-GoalChange = Literal["achieved", "redefined", "abandoned"]
-MAX_OPEN_PLANTS = 2        # a chapter plants at most one thing (a single field), and at most two plants stay open
 
 # ---------------------------------------------------------------- Events
 EVENTS_CARD = {
@@ -30,20 +26,6 @@ class EventsEntry(Item):
     beat: str = spec("select", None, "note", ref=["outline.beats"], filled_by="code")      # which chapter; its number lives on the beat
     happened: str = spec("textarea", None, "note", filled_by="extractor")
     changed: str | None = spec("text", None, "note", required=False, filled_by="extractor")      # empty if nothing changed
-    planted: str | None = spec("text", None, "note", required=False, filled_by="extractor")      # at most one per chapter
-    paid_off: list[str] | None = spec("select-multiple", None, "note", required=False, max_selected=MAX_OPEN_PLANTS,
-                                      ref=["summary_events.entries"], filled_by="extractor")     # entries whose plant was resolved here
-    reveals_landed: list[str] | None = spec("select-multiple", None, "note", required=False, max_selected=5,
-                                            ref=["world.rules"], filled_by="extractor")
-    behaviors_seen: list[str] | None = spec("select-multiple", None, "note", required=False, max_selected=5,
-                                            ref=["characters.behaviors"], filled_by="extractor")
-    things_seen: list[str] | None = spec("select-multiple", None, "note", required=False, max_selected=5,
-                                         ref=["world.objects"], filled_by="extractor")
-    entanglements_shown: list[str] | None = spec("select-multiple", None, "note", required=False,
-                                                 ref=["entanglements.knowledge", "entanglements.ties", "entanglements.holdings"],
-                                                 filled_by="extractor")     # the knowledge, ties and holdings the chapter actually showed (a pressure's use is the spotlight)
-    goal_change: GoalChange = spec("select", None, "axis", filled_by="extractor")     # how the chapter left the goal it began with: achieved, redefined (a later stage of the same thread) or abandoned
-    goal_now: str = spec("text", None, "note", filled_by="extractor")      # what the protagonist wants from here on, written forward from how the chapter ended; the next plan starts from it
 
 
 class SummaryEvents(Item):
@@ -54,20 +36,11 @@ EVENTS_RULES = [
     Rule(id="events_beat_unique", severity="block", fields=["entries"],
          when="two entries are for the same chapter (the same beat)",
          check="unique_across_items", params={"field": "beat"}),
-    Rule(id="open_plants_max", severity="block", fields=["entries"],
-         when="more than two plants are open at once (a plant is open from the chapter that plants it until a later chapter pays it off)",
-         check="open_plants_max", params={"max": MAX_OPEN_PLANTS}),
-    Rule(id="paid_off_valid", severity="block", fields=["entries"],
-         when="a payoff points at an entry that planted nothing, is not earlier, or was already paid off",
-         check="paid_off_valid"),
     Rule(id="events_link_broken", severity="block", fields=["entries"],
-         when="a beat, rule, behavior or thing pointed to no longer exists",
-         check="ref_exists", context=["beat_ids", "world_item_ids", "behavior_ids"]),
+         when="a beat pointed to no longer exists",
+         check="ref_exists", context=["beat_ids"]),
     Rule(id="changed_is_one_sentence", severity="warn", fields=["entries"],
          when="the changed line is longer than one short sentence",
-         needs_model=True),
-    Rule(id="goal_now_advances", severity="warn", fields=["entries"],
-         when="the goal as it now stands rewords the goal the chapter began with, or the goals before it, instead of taking a step on from them or meeting a new obstacle",
          needs_model=True),
 ]
 

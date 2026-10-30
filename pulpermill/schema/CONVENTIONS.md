@@ -86,7 +86,7 @@ No text field has a maximum length: limits depend on model context with everythi
 26. **Filtered choices.** A field can be filtered by another field in the same item (`ref_filter_by`). The pairing data is a table in the card file (`HOLDING_PAIRS`: what may hold what).
 27. **Live fields.** `changes=True` marks fields that move during a story; unflagged fields are fixed once set. Only a `mutable` card may have them. How changes are proposed and applied is pipeline.
 28. **Either/or and conditional fields** are `required=False` plus a `block` rule: `exactly_one` (a fact is a world rule or free text; a pressure has an agent or a circumstance), `required_if` (`when` a field has a value, or `when_present` another field is filled).
-29. **Block rules are for structure the pipeline cannot work around:** `required_if`, `exactly_one`, `fields_differ`, `holding_pairs_allowed`, `ref_exists` (a link whose target was removed, flagged until fixed). Lint keeps this list closed.
+29. **Block rules are for structure the pipeline cannot work around:** `fields_differ`, `holding_pairs_allowed`, `ref_exists` (a link whose target was removed, flagged until fixed), `includes_value` (the cast has the protagonist), `tie_ends_in_cast` (the characters at both ends of the spotlight tie are in the cast), and for the hidden records `unique_across_items`, `at_least_one`, `max_per_group`. Lint keeps this list closed (`BLOCK_CHECKS` in `tests/schema/helpers.py`).
 30. **Pressure rotation, spotlight and agent moves** are pipeline. The schema only holds the fields, the `changes` flags and a warning above three active pressures.
 
 ## Established by Setup
