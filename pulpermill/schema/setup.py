@@ -1,5 +1,5 @@
 """Setup card: the springboard. Launch (fixed), one per story, not portable, never changes.
-Who we follow, what just broke, and what pushes them forward. It holds no plan and no ending."""
+Who we follow, what just broke, and how long the story runs. It holds no goal, no plan and no ending."""
 from pydantic import BaseModel
 from .common import spec, Rule
 
@@ -18,7 +18,7 @@ GROUPS = [
 
 RENDER_ORDER = [
     ["protagonist", "normal", "disruption"],
-    ["goal", "stakes", "chapter_count"],
+    ["chapter_count"],
 ]
 
 
@@ -30,12 +30,10 @@ class Setup(BaseModel):
     disruption: str = spec("textarea", "opening", "free")
 
     # Push
-    goal: str = spec("textarea", "push", "free")
-    stakes: str = spec("textarea", "push", "free")                   # source doc: optional
     chapter_count: int = spec("number", "push", "free")              # a budget; forced in code
 
 
-# [drives story] marks rules that guard what pushes the protagonist.
+# [drives story] marks rules that guard what drives the story.
 RULES = [
     Rule(id="protagonist_link_broken", severity="block", fields=["protagonist"],
          when="the protagonist was removed or renamed in Characters",
@@ -46,19 +44,7 @@ RULES = [
     Rule(id="disruption_is_event", severity="warn", fields=["disruption"],
          when="the disruption is a condition ('things are tense') and not an event",
          needs_model=True),
-    Rule(id="goal_is_action", severity="warn", fields=["goal"],                    # drives story
-         when="the goal is a theme or a feeling ('find peace') and not something to act on in scenes",
-         needs_model=True),
-    Rule(id="goal_checkable", severity="warn", fields=["goal"],                    # drives story
-         when="a reader could not tell whether the goal succeeded, failed or stopped mattering",
-         needs_model=True),
-    Rule(id="goal_touches_cards", severity="warn", fields=["goal"],                # drives story
-         when="the goal does not narrow one of the protagonist's wants, or bears on no pressure or tie in Entanglements",
-         needs_model=True, context=["protagonist_wants", "pressures", "ties"]),
-    Rule(id="stakes_has_cost", severity="warn", fields=["stakes"],                 # drives story
-         when="the stakes name no cost or gain (it can be a friendship, a reputation or a chance at happiness)",
-         needs_model=True),
-    Rule(id="stakes_tie_to_cards", severity="warn", fields=["stakes"],             # drives story
-         when="the stakes are tied to no want, value or pressure already on the cards",
-         needs_model=True, context=["protagonist_wants", "protagonist_values", "pressures"]),
+    Rule(id="protagonist_has_tie", severity="warn", fields=["protagonist"],        # drives story
+         when="the protagonist is at neither end of any tie in Entanglements (advice only: a protagonist with no tie is allowed)",
+         check="person_has_tie", context=["ties"]),
 ]

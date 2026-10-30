@@ -13,7 +13,7 @@ from .setup import Setup
 from .outline import Outline
 from .summaries import SummaryEvents, SummaryShifts, EntanglementsHistory
 
-SCHEMA_VERSION = 2          # bump when the file format changes, so older files can be recognised and migrated
+SCHEMA_VERSION = 3          # bump when the file format changes, so older files can be recognised and migrated
 
 # Which project field holds each registered card (checked by a test so a new card cannot be forgotten).
 CARD_FIELDS = {
@@ -77,13 +77,6 @@ class AfterStory(Item):
 # Display records: the page shows them and nobody edits them. They are never sent to a model, and the pipeline does not
 # read them. Each is replaced as a whole when the thing it is about is made again, and goes when that thing goes.
 
-class PlanNote(Item):
-    """How the planner thought about one chapter, shown to the user. Planning the chapter again replaces it."""
-    beat: str = spec("select", None, "note", ref=["outline.beats"], filled_by="code")
-    thinking: str = spec("textarea", None, "note", filled_by="planner")
-    retried: bool = spec("checkbox", None, "note", required=False, default=False, filled_by="code")   # the first try broke a rule
-
-
 class ChangeLine(Item):
     """One value the chapter changed in Entanglements, as the user was shown it (words, not ids)."""
     label: str = spec("text", None, "note", filled_by="code")
@@ -145,8 +138,7 @@ class Project(Item):
     chapters: list[Chapter] = spec(None, "story", "pairs", repeat=True, uncapped=True)
     after_story: AfterStory | None = spec(None, "story", "card", required=False, card_of="after_story")
 
-    # What the model said (display only; see PlanNote)
-    plan_notes: list[PlanNote] = spec(None, "notes", "pairs", required=False, default=[], repeat=True, uncapped=True)
+    # What the model said (display only; see ChapterNote)
     chapter_notes: list[ChapterNote] = spec(None, "notes", "pairs", required=False, default=[], repeat=True, uncapped=True)
     end_note: EndNote | None = spec(None, "notes", "card", required=False, card_of="end_note")
 
@@ -168,7 +160,7 @@ PROJECT_RULES = [
          check="chapter_markers"),
     Rule(id="links_resolve", severity="block",
          fields=["characters", "world", "setup", "entanglements", "outline", "summary_events", "summary_shifts",
-                 "entanglements_history", "chapters", "card_notes", "plan_notes", "chapter_notes", "locks"],
+                 "entanglements_history", "chapters", "card_notes", "chapter_notes", "locks"],
          when="a link in any card, note or lock points at something that does not exist in this project (for example a protagonist who is not among the characters)",
          check="links_resolve"),
     Rule(id="after_story_ready", severity="block", fields=["after_story", "chapters", "setup"],
@@ -183,9 +175,6 @@ PROJECT_RULES = [
     Rule(id="note_unique_per_target", severity="block", fields=["card_notes"],
          when="two notes are for the same card (or, for Characters, the same character)",
          check="unique_across_items", params={"fields": ["card", "character"]}),
-    Rule(id="plan_note_unique", severity="block", fields=["plan_notes"],
-         when="two plan notes are for the same beat",
-         check="unique_across_items", params={"fields": ["beat"]}),
     Rule(id="chapter_note_unique", severity="block", fields=["chapter_notes"],
          when="two chapter notes are for the same chapter",
          check="unique_across_items", params={"fields": ["chapter"]}),

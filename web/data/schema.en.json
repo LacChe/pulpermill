@@ -1,5 +1,5 @@
 {
- "schema_version": 2,
+ "schema_version": 3,
  "lang": "en",
  "max_items": 5,
  "common": {
@@ -858,7 +858,6 @@
      "kind": "pairs",
      "group": "inner_conflict",
      "required": true,
-     "counted": true,
      "max_items": 5,
      "repeat": true,
      "why": "Gives the model a person who acts differently as they feel differently, not one fixed mood.",
@@ -1156,7 +1155,7 @@
      "id": "truths",
      "collapsed": false,
      "label": "Rules",
-     "help": "What is true here, what it costs, and who knows."
+     "help": "How the world works, and what each rule costs."
     },
     {
      "id": "vocabulary",
@@ -1243,7 +1242,6 @@
      "kind": "pairs",
      "group": "places",
      "required": true,
-     "counted": true,
      "uncapped": true,
      "repeat": true,
      "why": "A place that acts on people gives a scene something to push against.",
@@ -1306,7 +1304,6 @@
      "kind": "pairs",
      "group": "things",
      "required": true,
-     "counted": true,
      "uncapped": true,
      "repeat": true,
      "why": "A thing matters because someone wants it. This is where you say why.",
@@ -1458,31 +1455,6 @@
        }
       },
       {
-       "key": "status",
-       "label": "Status",
-       "help": "Common knowledge: everyone knows it, and it is true. Hidden: true, but known to few. Myth: widely believed, but false. Who exactly knows is recorded in Entanglements.",
-       "input": "select",
-       "kind": "axis",
-       "required": true,
-       "options": [
-        {
-         "value": "common",
-         "label": "Common knowledge",
-         "description": "Everyone knows it, and it is true: the gates close at dusk."
-        },
-        {
-         "value": "uncommon",
-         "label": "Hidden",
-         "description": "True, but few know it: the gates cannot be opened from outside."
-        },
-        {
-         "value": "false_belief",
-         "label": "Myth",
-         "description": "Widely believed, but false: people say the river is cursed. You then say what is really true."
-        }
-       ]
-      },
-      {
        "key": "when_broken",
        "label": "When broken",
        "help": "Whether breaking it is impossible, punished, shameful, or has a side effect. A hard limit and a priced choice work differently.",
@@ -1498,18 +1470,6 @@
         "avoid": [
          "Bad things happen"
         ]
-       }
-      },
-      {
-       "key": "truth",
-       "label": "The truth",
-       "help": "Only for a Myth: what is actually true.",
-       "input": "textarea",
-       "kind": "note",
-       "required": false,
-       "placeholder": "e.g. The custom was invented by the Guild to keep every door open to its collectors.",
-       "visible_if": {
-        "status": "false_belief"
        }
       }
      ]
@@ -1703,24 +1663,6 @@
      "needs_model": true,
      "message": "'When broken' doesn't say what happens.",
      "fix": "Say whether breaking it is impossible, punished, shameful, or has a side effect."
-    },
-    {
-     "id": "rule_false_needs_truth",
-     "severity": "block",
-     "fields": [
-      "rules"
-     ],
-     "check": "required_if",
-     "params": {
-      "field": "truth",
-      "when": {
-       "status": "false_belief"
-      }
-     },
-     "context": [],
-     "needs_model": false,
-     "message": "A rule marked 'Myth' has no truth stated.",
-     "fix": "Add what is actually true. The story needs it to tell the difference."
     }
    ]
   },
@@ -1732,9 +1674,9 @@
     "world"
    ],
    "portable": false,
-   "between_chapters": "mutable",
+   "between_chapters": "static",
    "label": "Entanglements",
-   "summary": "The live connections in this story: ties between people, who holds what, who knows what, and what is pressing on them. It changes as the story moves.",
+   "summary": "The connections in this story: ties between people and groups, and who holds what. It is locked once the story starts.",
    "groups": [
     {
      "id": "ties",
@@ -1747,25 +1689,13 @@
      "collapsed": false,
      "label": "Holdings",
      "help": "Who holds or controls which thing or place."
-    },
-    {
-     "id": "knowledge",
-     "collapsed": false,
-     "label": "Knowledge",
-     "help": "Who knows, suspects or has been misled about a fact."
-    },
-    {
-     "id": "pressures",
-     "collapsed": false,
-     "label": "Pressures",
-     "help": "Circumstances and agents pushing on the story."
     }
    ],
    "fields": [
     {
      "key": "ties",
      "label": "Ties",
-     "help": "How people and groups are connected. A tie points one way: how 'from' stands toward 'to'.",
+     "help": "How people and groups are connected. A tie points one way: how 'from' stands toward 'to'. Its edge is what the tie means to 'from', and it drives them.",
      "input": null,
      "kind": "pairs",
      "group": "ties",
@@ -1815,7 +1745,6 @@
        "input": "text",
        "kind": "note",
        "required": true,
-       "changes": true,
        "placeholder": "e.g. owes her since the fire",
        "examples": {
         "good": [
@@ -1830,17 +1759,16 @@
       {
        "key": "edge",
        "label": "Edge",
-       "help": "A concrete aim between these two people right now: what 'from' wants from, or hides from, 'to' (wants to pass her test, hides the missing key). Abstract desires belong on the character.",
+       "help": "What this tie means to 'from': their driver in it (to care for him, to be forgiven by her). The bond says what the tie is; the edge says what it makes 'from' want.",
        "input": "text",
        "kind": "note",
        "required": true,
-       "changes": true,
-       "placeholder": "e.g. hides the missing key",
-       "why": "The edge is what makes a tie do something in this chapter.",
+       "placeholder": "e.g. to care for him",
+       "why": "The edge is what makes a tie drive a chapter.",
        "examples": {
         "good": [
-         "wants to pass her test",
-         "hides the missing key"
+         "to care for him",
+         "to be forgiven by her"
         ],
         "avoid": [
          "resents her",
@@ -1853,14 +1781,14 @@
     {
      "key": "holdings",
      "label": "Holdings",
-     "help": "Who holds or controls which thing or place. Moves as things change hands.",
+     "help": "Who holds or controls which thing or place.",
      "input": null,
      "kind": "pairs",
      "group": "holdings",
      "required": true,
      "uncapped": true,
      "repeat": true,
-     "why": "Who holds what moves the plot: things change hands and places get controlled.",
+     "why": "Who holds what gives things and places an owner the story can fight over.",
      "empty": "No holdings yet. Add who holds or controls a thing or place.",
      "add": "Add a holding",
      "delete_confirm": "Delete this holding?",
@@ -1883,7 +1811,7 @@
       {
        "key": "held_by",
        "label": "Held by",
-       "help": "Who holds it now. The choices depend on what it is.",
+       "help": "Who holds it. The choices depend on what it is.",
        "input": "select",
        "kind": "note",
        "required": true,
@@ -1893,257 +1821,10 @@
         "world.places"
        ],
        "ref_filter_by": "holdee",
-       "changes": true,
        "placeholder": "Choose who holds it",
-       "why": "Moves as things change hands, and the model updates it after each chapter.",
+       "why": "Tells the model who has the thing or place when the story starts.",
        "no_options": "Nobody can hold this yet. Add characters, groups or places first.",
        "filtered_note": "Only holders that make sense for this kind of thing are listed."
-      }
-     ]
-    },
-    {
-     "key": "knowledge",
-     "label": "Knowledge",
-     "help": "One thing, and what each person or group stands towards it: who knows it, who suspects it, who has been misled about it. It is measured against what is true in the story, which cannot be wrong. Someone who is simply unaware is left out.",
-     "input": null,
-     "kind": "pairs",
-     "group": "knowledge",
-     "required": true,
-     "uncapped": true,
-     "repeat": true,
-     "why": "A secret only matters if someone can act on what they know, or fail to.",
-     "one_of": [
-      {
-       "fields": [
-        "rule",
-        "fact"
-       ],
-       "label": "This is about",
-       "options": {
-        "rule": "A rule of the world",
-        "fact": "Something else"
-       }
-      }
-     ],
-     "empty": "No knowledge entries yet. Add something, and who knows, suspects or was misled about it.",
-     "add": "Add what people know",
-     "delete_confirm": "Delete this entry?",
-     "item_title": "{rule}{fact}",
-     "item_fields": [
-      {
-       "key": "rule",
-       "label": "World rule",
-       "help": "A rule from World this is about.",
-       "input": "select",
-       "kind": "note",
-       "required": false,
-       "ref": [
-        "world.rules"
-       ],
-       "placeholder": "Choose a rule from World",
-       "no_options": "No rules yet. Add some in World first."
-      },
-      {
-       "key": "fact",
-       "label": "Other fact",
-       "help": "Or a short fact of your own, when it isn't a world rule.",
-       "input": "text",
-       "kind": "note",
-       "required": false,
-       "placeholder": "e.g. The key is hidden in the well"
-      },
-      {
-       "key": "knows",
-       "label": "Knows it",
-       "help": "Has the true story: knows the key is in the well. Characters or groups; someone is in only one of the three lists.",
-       "input": "select-multiple",
-       "kind": "note",
-       "required": false,
-       "default": [],
-       "ref": [
-        "characters",
-        "world.powers"
-       ],
-       "changes": true,
-       "placeholder": "Choose who knows it",
-       "no_options": "No characters or groups yet. Add some in Characters or World first."
-      },
-      {
-       "key": "suspects",
-       "label": "Suspects it",
-       "help": "Has a hunch and could act on it, but isn't sure: suspects the key is in the well.",
-       "input": "select-multiple",
-       "kind": "note",
-       "required": false,
-       "default": [],
-       "ref": [
-        "characters",
-        "world.powers"
-       ],
-       "changes": true,
-       "placeholder": "Choose who suspects it",
-       "no_options": "No characters or groups yet. Add some in Characters or World first."
-      },
-      {
-       "key": "misled",
-       "label": "Misled about it",
-       "help": "Believes something false: thinks the key is in the attic.",
-       "input": "select-multiple",
-       "kind": "note",
-       "required": false,
-       "default": [],
-       "ref": [
-        "characters",
-        "world.powers"
-       ],
-       "changes": true,
-       "placeholder": "Choose who is misled",
-       "no_options": "No characters or groups yet. Add some in Characters or World first."
-      },
-      {
-       "key": "belief",
-       "label": "What they believe instead",
-       "help": "Only when someone is misled about something true: the false thing they take to be true instead. Leave it empty for a Myth, where the Myth itself is what they believe.",
-       "input": "text",
-       "kind": "note",
-       "required": false,
-       "changes": true,
-       "placeholder": "e.g. The key is in the attic",
-       "visible_if": {
-        "misled": "filled"
-       }
-      }
-     ]
-    },
-    {
-     "key": "pressures",
-     "label": "Pressures",
-     "help": "What is pressing on people, from a circumstance or from someone with their own wants.",
-     "input": null,
-     "kind": "pairs",
-     "group": "pressures",
-     "required": true,
-     "max_items": 5,
-     "repeat": true,
-     "why": "Pressure is what gets the next chapter moving. Three or fewer at once keeps each one felt.",
-     "one_of": [
-      {
-       "fields": [
-        "source_agent",
-        "source_circumstance"
-       ],
-       "label": "Pushed by",
-       "options": {
-        "source_agent": "Someone",
-        "source_circumstance": "A circumstance"
-       }
-      }
-     ],
-     "empty": "No pressures yet. Add what is pushing on people right now.",
-     "add": "Add a pressure",
-     "delete_confirm": "Delete this pressure?",
-     "item_title": "{what}",
-     "item_fields": [
-      {
-       "key": "what",
-       "label": "What",
-       "help": "What is pressing, and what happens if it is ignored.",
-       "input": "textarea",
-       "kind": "note",
-       "required": true,
-       "changes": true,
-       "placeholder": "e.g. The Guild audits the wells by month's end, and any well found short is shut down.",
-       "examples": {
-        "good": [
-         "The Guild audits the wells by month's end, and any well found short is shut down"
-        ],
-        "avoid": [
-         "tension is rising"
-        ]
-       }
-      },
-      {
-       "key": "source_agent",
-       "label": "Agent",
-       "help": "A character or group behind it.",
-       "input": "select",
-       "kind": "note",
-       "required": false,
-       "ref": [
-        "characters",
-        "world.powers"
-       ],
-       "placeholder": "Choose a character or group",
-       "no_options": "No characters or groups yet. Add some in Characters or World first."
-      },
-      {
-       "key": "source_circumstance",
-       "label": "Circumstance",
-       "help": "Or a circumstance with no one behind it, like a storm or a deadline.",
-       "input": "text",
-       "kind": "note",
-       "required": false,
-       "placeholder": "e.g. a drought, or a deadline"
-      },
-      {
-       "key": "next_move",
-       "label": "Agent's next move",
-       "help": "Only when an agent is behind it: what they want in this situation, not their general wants.",
-       "input": "text",
-       "kind": "note",
-       "required": false,
-       "changes": true,
-       "placeholder": "e.g. Plans to call in the loan before the audit",
-       "examples": {
-        "good": [
-         "Plans to call in the loan before the audit"
-        ],
-        "avoid": [
-         "Wants power",
-         "Wants to be loved"
-        ]
-       },
-       "visible_if": {
-        "source_agent": "filled"
-       }
-      },
-      {
-       "key": "bears_on",
-       "label": "Bears on",
-       "help": "Who it falls on: characters or groups.",
-       "input": "select-multiple",
-       "kind": "note",
-       "required": true,
-       "ref": [
-        "characters",
-        "world.powers"
-       ],
-       "changes": true,
-       "placeholder": "Choose who it falls on",
-       "no_options": "No characters or groups yet. Add some in Characters or World first."
-      },
-      {
-       "key": "status",
-       "label": "Status",
-       "help": "A pressure is active until its next move has happened in a written chapter. The system marks it resolved then, and later chapters stop planning around it. You can change it.",
-       "input": "select",
-       "kind": "axis",
-       "required": false,
-       "default": "active",
-       "changes": true,
-       "why": "Keeps a pressure that has played out from taking the spotlight again.",
-       "options": [
-        {
-         "value": "active",
-         "label": "Active",
-         "description": "The Guild has not yet closed the wells."
-        },
-        {
-         "value": "resolved",
-         "label": "Resolved",
-         "description": "The Guild closed the wells, and the story has moved on from it."
-        }
-       ]
       }
      ]
     }
@@ -2183,103 +1864,11 @@
      "fix": "Pick a holder from the list offered for it."
     },
     {
-     "id": "knowledge_one_fact",
-     "severity": "block",
-     "fields": [
-      "knowledge"
-     ],
-     "check": "exactly_one",
-     "params": {
-      "fields": [
-       "rule",
-       "fact"
-      ]
-     },
-     "context": [],
-     "needs_model": false,
-     "message": "Give either a world rule or a fact of your own, not both or neither.",
-     "fix": "Fill in one of the two."
-    },
-    {
-     "id": "knowledge_someone",
-     "severity": "block",
-     "fields": [
-      "knowledge"
-     ],
-     "check": "any_filled",
-     "params": {
-      "fields": [
-       "knows",
-       "suspects",
-       "misled"
-      ]
-     },
-     "context": [],
-     "needs_model": false,
-     "message": "No one is listed as knowing, suspecting or being misled.",
-     "fix": "Add at least one person or group to one of the three lists."
-    },
-    {
-     "id": "knowledge_one_standing",
-     "severity": "block",
-     "fields": [
-      "knowledge"
-     ],
-     "check": "disjoint_lists",
-     "params": {
-      "fields": [
-       "knows",
-       "suspects",
-       "misled"
-      ]
-     },
-     "context": [],
-     "needs_model": false,
-     "message": "Someone is in more than one of the lists.",
-     "fix": "Keep each person or group in only one of knows, suspects and misled."
-    },
-    {
-     "id": "pressure_one_source",
-     "severity": "block",
-     "fields": [
-      "pressures"
-     ],
-     "check": "exactly_one",
-     "params": {
-      "fields": [
-       "source_agent",
-       "source_circumstance"
-      ]
-     },
-     "context": [],
-     "needs_model": false,
-     "message": "Give either an agent or a circumstance, not both or neither.",
-     "fix": "Fill in one of the two."
-    },
-    {
-     "id": "next_move_for_agents",
-     "severity": "block",
-     "fields": [
-      "pressures"
-     ],
-     "check": "required_if",
-     "params": {
-      "field": "next_move",
-      "when_present": "source_agent"
-     },
-     "context": [],
-     "needs_model": false,
-     "message": "A pressure with an agent needs the agent's next move.",
-     "fix": "Say what the agent wants to do next in this situation."
-    },
-    {
      "id": "link_broken",
      "severity": "block",
      "fields": [
       "ties",
-      "holdings",
-      "knowledge",
-      "pressures"
+      "holdings"
      ],
      "check": "ref_exists",
      "params": {},
@@ -2301,52 +1890,8 @@
      "params": {},
      "context": [],
      "needs_model": true,
-     "message": "This edge doesn't say what one side wants from, or hides from, the other right now.",
-     "fix": "Say what 'from' is after or keeping back, not just how they feel."
-    },
-    {
-     "id": "pressure_has_consequence",
-     "severity": "warn",
-     "fields": [
-      "pressures"
-     ],
-     "check": "",
-     "params": {},
-     "context": [],
-     "needs_model": true,
-     "message": "A pressure doesn't say what happens if it's ignored.",
-     "fix": "Add the cost of doing nothing."
-    },
-    {
-     "id": "pressure_next_move_in_situation",
-     "severity": "warn",
-     "fields": [
-      "pressures"
-     ],
-     "check": "",
-     "params": {},
-     "context": [],
-     "needs_model": true,
-     "message": "A next move reads as the agent's general wants.",
-     "fix": "Say what they want to do in this situation."
-    },
-    {
-     "id": "pressures_active_count",
-     "severity": "warn",
-     "fields": [
-      "pressures"
-     ],
-     "check": "item_count",
-     "params": {
-      "max": 3,
-      "skip": {
-       "status": "resolved"
-      }
-     },
-     "context": [],
-     "needs_model": false,
-     "message": "More than three pressures are active.",
-     "fix": "Let the weakest one fade or end, so the others get room."
+     "message": "This edge doesn't say what the tie means to this person.",
+     "fix": "Say what 'from' wants the tie to give or do, like 'to care for him', not just how they feel."
     }
    ],
    "holding_pairs": {
@@ -2373,7 +1918,7 @@
    "portable": false,
    "between_chapters": "static",
    "label": "Setup",
-   "summary": "The springboard: who we follow, what just broke their normal, and what pushes them forward. It holds no plan and no ending, and it never changes during the story.",
+   "summary": "The springboard: who we follow, what just broke their normal, and how long the story runs. It holds no goal, no plan and no ending, and it never changes during the story.",
    "groups": [
     {
      "id": "opening",
@@ -2384,8 +1929,8 @@
     {
      "id": "push",
      "collapsed": false,
-     "label": "Push",
-     "help": "What pushes them forward, and why they can't stop."
+     "label": "Length",
+     "help": "How long the story runs."
     }
    ],
    "fields": [
@@ -2446,51 +1991,9 @@
      }
     },
     {
-     "key": "goal",
-     "label": "Goal",
-     "help": "What the protagonist is concretely trying to do, narrowing one of their wants into this story. It can be acted on in scenes, a reader could tell whether it succeeded, failed or stopped mattering, and it costs something. During the story the current goal is worked out from this and from any redefinitions in the beats; once it is achieved or abandoned the story winds down.",
-     "input": "textarea",
-     "kind": "free",
-     "group": "push",
-     "required": true,
-     "placeholder": "e.g. Get the ledger back before Friday's audit.",
-     "why": "Every chapter's plan is checked against this, so make it something you can watch happen.",
-     "examples": {
-      "good": [
-       "Get the ledger back before the audit",
-       "Win the apprenticeship before the guild votes"
-      ],
-      "avoid": [
-       "find peace",
-       "become a better person"
-      ]
-     }
-    },
-    {
-     "key": "stakes",
-     "label": "What's at stake",
-     "help": "What happens if they do nothing or quit. This is why they can't walk away. Tie it to a want, a value or a pressure already on the cards. It can be a friendship, a reputation or a chance at happiness, not only a loss.",
-     "input": "textarea",
-     "kind": "free",
-     "group": "push",
-     "required": true,
-     "placeholder": "e.g. If the audit finds the books short, she loses the shop and the neighbours who trust her.",
-     "why": "This is what keeps the protagonist from walking away when the goal gets hard.",
-     "examples": {
-      "good": [
-       "She loses the shop her mother left her",
-       "Her brother never forgives her"
-      ],
-      "avoid": [
-       "bad things happen",
-       "everything is lost"
-      ]
-     }
-    },
-    {
      "key": "chapter_count",
      "label": "Chapter count",
-     "help": "A budget, not a fixed route. If the goal resolves early, the remaining chapters carry the aftermath.",
+     "help": "A budget, not a fixed route.",
      "input": "number",
      "kind": "free",
      "group": "push",
@@ -2542,77 +2045,19 @@
      "fix": "Say what happened, like 'the ledger went missing', not 'things are tense'."
     },
     {
-     "id": "goal_is_action",
+     "id": "protagonist_has_tie",
      "severity": "warn",
      "fields": [
-      "goal"
+      "protagonist"
      ],
-     "check": "",
-     "params": {},
-     "context": [],
-     "needs_model": true,
-     "message": "This reads like a feeling or a theme, not something to act on.",
-     "fix": "Say what they are concretely trying to do, like 'get the ledger back before the audit'."
-    },
-    {
-     "id": "goal_checkable",
-     "severity": "warn",
-     "fields": [
-      "goal"
-     ],
-     "check": "",
-     "params": {},
-     "context": [],
-     "needs_model": true,
-     "message": "A reader couldn't tell whether this succeeded, failed or stopped mattering.",
-     "fix": "Make it something with a clear outcome."
-    },
-    {
-     "id": "goal_touches_cards",
-     "severity": "warn",
-     "fields": [
-      "goal"
-     ],
-     "check": "",
+     "check": "person_has_tie",
      "params": {},
      "context": [
-      "protagonist_wants",
-      "pressures",
       "ties"
      ],
-     "needs_model": true,
-     "message": "This goal doesn't connect to anything on the other cards.",
-     "fix": "Narrow one of the protagonist's wants into it, or add a pressure or tie that bears on it. A goal that touches nothing has nothing to collide with."
-    },
-    {
-     "id": "stakes_has_cost",
-     "severity": "warn",
-     "fields": [
-      "stakes"
-     ],
-     "check": "",
-     "params": {},
-     "context": [],
-     "needs_model": true,
-     "message": "This doesn't name a cost or a gain.",
-     "fix": "Say what is lost or gained if they do nothing or quit. It can be a friendship, a reputation or a chance at happiness."
-    },
-    {
-     "id": "stakes_tie_to_cards",
-     "severity": "warn",
-     "fields": [
-      "stakes"
-     ],
-     "check": "",
-     "params": {},
-     "context": [
-      "protagonist_wants",
-      "protagonist_values",
-      "pressures"
-     ],
-     "needs_model": true,
-     "message": "This isn't tied to a want, value or pressure already on the cards.",
-     "fix": "Tie it to something the protagonist wants or protects, or to a pressure."
+     "needs_model": false,
+     "message": "The protagonist is at neither end of any tie.",
+     "fix": "Add a tie that starts or ends at the protagonist, so their edge can drive the story. Advice only: a protagonist with no tie is allowed."
     }
    ]
   },
@@ -2644,7 +2089,7 @@
     {
      "key": "beats",
      "label": "Beats",
-     "help": "Each beat sets up a chapter: where it opens, what the protagonist is after in this scene, and where it ends. The pressure in focus is what that aim meets; how the meeting goes is for the chapter to decide.",
+     "help": "Each beat sets up a chapter: where it opens, who is on stage, the tie in the spotlight, what the protagonist is after, and the plan the writer follows. The aim and the spotlight tie are what the chapter makes collide; how the meeting goes is for the chapter to decide.",
      "input": null,
      "kind": "pairs",
      "group": "beats",
@@ -2703,20 +2148,9 @@
        "why": "The model starts mid-scene at this moment, and later plans read these times as a timeline."
       },
       {
-       "key": "when_gap",
-       "label": "Time since last chapter",
-       "help": "How long it has been. Leave blank for chapter 1.",
-       "input": "text",
-       "kind": "note",
-       "required": false,
-       "filled_by": "planner",
-       "placeholder": "e.g. Three days later",
-       "why": "Lets the model account for what happened in between."
-      },
-      {
        "key": "cast",
        "label": "Cast",
-       "help": "Who is on stage. You pick it before planning, and the system suggests the least-used characters. The protagonist is always included.",
+       "help": "Who is on stage. You pick it before planning. The protagonist and both characters of the spotlight tie must be included.",
        "input": "select-multiple",
        "kind": "note",
        "required": true,
@@ -2730,15 +2164,30 @@
        "no_options": "No characters yet. Add some in Characters first."
       },
       {
-       "key": "collision_goal",
-       "label": "The protagonist is after",
-       "help": "The one step this scene takes toward the story's goal now, written so that it already runs into the pressure in focus. The writer plays the meeting between the two, and how it goes decides what the goal and the pressure become.",
+       "key": "spotlight",
+       "label": "Spotlight",
+       "help": "The tie this chapter is about: its two characters and their relationship. The system picks one at random, and you can change it. Both characters must be in the cast.",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "entanglements.ties"
+       ],
+       "filled_by": "code",
+       "placeholder": "Choose a tie",
+       "why": "Gives the chapter a relationship to work on, and spreads the story across the ties instead of one thread taking over.",
+       "no_options": "No ties yet. Add some in Entanglements first."
+      },
+      {
+       "key": "aim",
+       "label": "What the protagonist is after",
+       "help": "What the protagonist is trying to get or do in this chapter. The planner writes it each chapter, so that it runs into the spotlight tie. The writer plays the meeting between the two.",
        "input": "text",
        "kind": "note",
        "required": true,
        "filled_by": "planner",
        "placeholder": "e.g. Get the guild clerk to sign the permit before the auditor arrives",
-       "why": "Gives the chapter its engine: a step someone is taking, and a pressure that meets it.",
+       "why": "Gives the chapter its engine: something the protagonist is going after, and a tie it meets.",
        "examples": {
         "good": [
          "Get the guild clerk to sign the permit before the auditor arrives",
@@ -2751,164 +2200,20 @@
        }
       },
       {
-       "key": "shift",
-       "label": "Shift",
-       "help": "Whether this chapter makes things harder or easier. Easier is a breath, never a pause: it still changes something, and the next chapter is harder. Choices that aren't allowed right now are disabled.",
-       "input": "select",
-       "kind": "axis",
-       "required": true,
-       "filled_by": "planner",
-       "limited_by": "code",
-       "why": "Keeps the story from becoming one long escalation, or one long rest.",
-       "disabled_reason": "Pacing doesn't allow this here. The limits come from the chapter number, the chapter count set in Setup, and the earlier shifts.",
-       "options": [
-        {
-         "value": "harder",
-         "label": "Harder",
-         "description": "Ines finds the ledger, and finds the last pages torn out."
-        },
-        {
-         "value": "easier",
-         "label": "Easier",
-         "description": "The shop is quiet, and a neighbour finally tells Ines what she saw."
-        }
-       ]
-      },
-      {
-       "key": "ends_on",
-       "label": "Ends on",
-       "help": "A conceptual stopping point that leaves a question open.",
-       "input": "text",
+       "key": "plan",
+       "label": "Plan",
+       "help": "The planner's plan for this chapter: what happens, and in what order. The writer sees it. You can edit it before generating.",
+       "input": "textarea",
        "kind": "note",
        "required": true,
        "filled_by": "planner",
-       "placeholder": "e.g. Ines finds her own initials in the ledger's last entry",
-       "why": "A stopping point that leaves a question open is what makes a reader turn the page.",
-       "examples": {
-        "good": [
-         "Ines finds her own initials in the ledger's last entry"
-        ],
-        "avoid": [
-         "The chapter ends",
-         "Ines goes home"
-        ]
-       }
-      },
-      {
-       "key": "reveal_rule",
-       "label": "Reveal",
-       "help": "A Hidden rule or a Myth from World that comes to light this chapter. A rule that has already come to light in a written chapter can't be chosen again; one that was planned but did not land can.",
-       "input": "select",
-       "kind": "note",
-       "required": false,
-       "ref": [
-        "world.rules"
-       ],
-       "ref_where": {
-        "status": [
-         "uncommon",
-         "false_belief"
-        ]
-       },
-       "filled_by": "planner",
-       "placeholder": "Choose a rule to reveal",
-       "why": "A hidden truth reaches the page only through a reveal, so this is the moment one comes out.",
-       "no_options": "Nothing left to reveal. Add a Hidden rule or a Myth in World, or every one has already come to light."
-      },
-      {
-       "key": "reveal_learners",
-       "label": "Who learns it",
-       "help": "Which characters learn the revealed rule.",
-       "input": "select-multiple",
-       "kind": "note",
-       "required": false,
-       "ref": [
-        "characters"
-       ],
-       "filled_by": "human",
-       "placeholder": "Choose who learns it",
-       "why": "Sets who the model expects to be in the know after this chapter.",
-       "no_options": "No characters yet. Add some in Characters first.",
-       "visible_if": {
-        "reveal_rule": "filled"
-       }
-      },
-      {
-       "key": "plant",
-       "label": "Plant",
-       "help": "One thing this chapter should set up for later. Optional. It counts as open only once the chapter has actually planted it.",
-       "input": "text",
-       "kind": "note",
-       "required": false,
-       "filled_by": "planner",
-       "placeholder": "e.g. The landlord keeps a locked back room",
-       "why": "Something small set up now can pay off in a later chapter.",
-       "examples": {
-        "good": [
-         "The landlord keeps a locked back room"
-        ],
-        "avoid": [
-         "Something important",
-         "A clue"
-        ]
-       }
-      },
-      {
-       "key": "payoff",
-       "label": "Pay off",
-       "help": "Open plants this chapter should resolve, up to two. Optional. A plant that was planned but not written is not open.",
-       "input": "select-multiple",
-       "kind": "note",
-       "required": false,
-       "ref": [
-        "summary_events.entries"
-       ],
-       "filled_by": "planner",
-       "max_selected": 2,
-       "placeholder": "Choose a plant to pay off",
-       "why": "Resolving an earlier plant makes the chapters before it feel like they mattered.",
-       "no_options": "No open plants yet. A plant is open once a written chapter has set it up and nothing has paid it off."
-      },
-      {
-       "key": "offstage_did",
-       "label": "Offstage move",
-       "help": "Optional. Something that changed in the background since the last chapter, away from the cast: a group acting, a place changing. It is never about the spotlighted pressure, which always involves someone on stage. The offstage pass writes it.",
-       "input": "text",
-       "kind": "note",
-       "required": false,
-       "filled_by": "planner",
-       "placeholder": "e.g. The guild closed the east market gate",
-       "why": "The world keeps changing while the protagonist isn't looking, and this records what changed."
-      },
-      {
-       "key": "offstage_reach",
-       "label": "How it reaches the protagonist",
-       "help": "How the offstage change reaches the protagonist this chapter.",
-       "input": "text",
-       "kind": "note",
-       "required": false,
-       "filled_by": "planner",
-       "placeholder": "e.g. Ines finds the long way round to the print shop"
-      },
-      {
-       "key": "spotlight",
-       "label": "Spotlight",
-       "help": "The pressure this chapter puts in focus, which the protagonist's aim meets. It always involves someone in the cast: its agent, or a character or group it bears on. The system picks it so planning stays consistent, and you can change it.",
-       "input": "select",
-       "kind": "note",
-       "required": true,
-       "ref": [
-        "entanglements.pressures"
-       ],
-       "filled_by": "code",
-       "placeholder": "Choose a pressure",
-       "why": "Rotates attention across the pressures, so one thread doesn't take over every chapter.",
-       "no_options": "No pressures yet. Add some in Entanglements first."
+       "placeholder": "Written by the planner",
+       "why": "This is what the writer follows, so change it if the chapter should go differently."
       },
       {
        "key": "planned_from",
        "label": "Planned from",
-       "help": "A fingerprint of the live state this beat was planned from. Set by the system. If the live state changes afterward, the beat is flagged as planned from older state.",
+       "help": "A fingerprint of what this beat was planned from. Set by the system. If that changes afterward, the beat is flagged as planned from older state.",
        "input": "text",
        "kind": "note",
        "required": false,
@@ -2926,15 +2231,11 @@
       "beats"
      ],
      "check": "ref_exists",
-     "params": {
-      "skip": [
-       "payoff"
-      ]
-     },
+     "params": {},
      "context": [
       "character_ids",
       "world_item_ids",
-      "pressure_ids"
+      "tie_ids"
      ],
      "needs_model": false,
      "message": "A beat points to something that no longer exists.",
@@ -2957,108 +2258,22 @@
      "fix": "Add the protagonist. They are in every chapter."
     },
     {
-     "id": "when_gap_after_first",
+     "id": "spotlight_pair_in_cast",
      "severity": "block",
      "fields": [
       "beats"
      ],
-     "check": "required_if",
-     "params": {
-      "field": "when_gap",
-      "unless": {
-       "chapter": 1
-      }
-     },
-     "context": [],
-     "needs_model": false,
-     "message": "A chapter after the first needs the time since the last one.",
-     "fix": "Say how long it has been."
-    },
-    {
-     "id": "reveal_not_repeated",
-     "severity": "block",
-     "fields": [
-      "beats"
-     ],
-     "check": "not_already_landed",
-     "params": {
-      "field": "reveal_rule",
-      "landed_in": "summary_events.reveals_landed"
-     },
-     "context": [
-      "landed_reveals"
-     ],
-     "needs_model": false,
-     "message": "This rule has already come to light in a written chapter.",
-     "fix": "Pick a different rule, or leave the reveal empty."
-    },
-    {
-     "id": "payoff_is_open_plant",
-     "severity": "block",
-     "fields": [
-      "beats"
-     ],
-     "check": "paid_off_valid",
-     "params": {
-      "field": "payoff"
-     },
-     "context": [],
-     "needs_model": false,
-     "message": "A payoff points at something that wasn't planted, isn't earlier, or was already paid off.",
-     "fix": "Pick only plants that were set up in an earlier chapter and are still open."
-    },
-    {
-     "id": "offstage_both_or_neither",
-     "severity": "block",
-     "fields": [
-      "beats"
-     ],
-     "check": "all_or_none",
-     "params": {
-      "fields": [
-       "offstage_did",
-       "offstage_reach"
-      ]
-     },
-     "context": [],
-     "needs_model": false,
-     "message": "An offstage change needs both what changed and how it reaches the protagonist.",
-     "fix": "Fill in both, or clear both."
-    },
-    {
-     "id": "shift_legal",
-     "severity": "block",
-     "fields": [
-      "beats"
-     ],
-     "check": "legal_shift",
-     "params": {},
-     "context": [
-      "chapter",
-      "chapter_count",
-      "earlier_shifts"
-     ],
-     "needs_model": false,
-     "message": "This shift isn't allowed here.",
-     "fix": "Pick the other one. Pacing limits come from the chapter number and what is still open."
-    },
-    {
-     "id": "spotlight_in_cast",
-     "severity": "warn",
-     "fields": [
-      "beats"
-     ],
-     "check": "pressure_touches_cast",
+     "check": "tie_ends_in_cast",
      "params": {
       "field": "spotlight",
       "cast": "cast"
      },
      "context": [
-      "pressures"
+      "ties"
      ],
      "needs_model": false,
-     "message": "The spotlighted pressure doesn't involve anyone in the cast.",
-     "fix": "Pick a pressure that bears on someone on stage, or change the cast."
+     "message": "A character in the spotlight tie is not in the cast.",
+     "fix": "Add both characters of the tie to the cast, or pick a different spotlight tie."
     },
     {
      "id": "aim_not_repeated",
@@ -3068,7 +2283,7 @@
      ],
      "check": "similar_to_earlier",
      "params": {
-      "field": "collision_goal"
+      "field": "aim"
      },
      "context": [
       "earlier_aims",
@@ -3077,19 +2292,6 @@
      "needs_model": false,
      "message": "This aim is too close to an earlier one.",
      "fix": "Aim at a different step, or at what the last chapter changed."
-    },
-    {
-     "id": "ends_on_open_question",
-     "severity": "warn",
-     "fields": [
-      "beats"
-     ],
-     "check": "",
-     "params": {},
-     "context": [],
-     "needs_model": true,
-     "message": "This stopping point doesn't leave a question open.",
-     "fix": "End on a moment that makes the reader ask what comes next."
     }
    ]
   }

@@ -51,7 +51,7 @@ class Characters(Item):
     # Inner conflict
     flaw: str = spec("textarea", "inner_conflict", "free")
     values: list[TextItem] = spec(None, "inner_conflict", "items", repeat=True)   # source doc: optional
-    behaviors: list[Behavior] = spec(None, "inner_conflict", "pairs", repeat=True, counted=True)  # source doc: optional
+    behaviors: list[Behavior] = spec(None, "inner_conflict", "pairs", repeat=True)  # source doc: optional
 
     # Texture
     competence: str = spec("textarea", "texture", "free")               # source doc: optional
