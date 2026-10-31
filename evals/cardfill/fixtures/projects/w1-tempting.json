@@ -1,7 +1,7 @@
 {
   "id": "w1-tempting",
   "title": "W1 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -150,5 +150,18 @@
       "speech": "Loud and warm, laughing mid-sentence.",
       "history": "Spent years at the deepest wrecks, past where anyone else would go."
     }
-  ]
+  ],
+  "outline": {
+    "id": "w1-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "w1-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "w1-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

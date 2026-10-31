@@ -1,7 +1,7 @@
 {
   "id": "case-3",
   "title": "Case 3",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -46,5 +46,18 @@
       "character": null,
       "text": "Pim is the main character. Normal: she gets up at four to light the small ovens and deliver bread, and Orla is always quiet and busy. Disruption: one night the Weather Oven goes cold though nobody put it out, and three days of thick grey fog roll in. Goal: relight the Weather Oven properly and learn to bake the weather loaf before the harvest fair. Stakes: Orla's place as baker, and the fair. About six chapters."
     }
-  ]
+  ],
+  "outline": {
+    "id": "case-3-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "case-3-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "case-3-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

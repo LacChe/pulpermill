@@ -1,7 +1,7 @@
 {
   "id": "c7-tempting",
   "title": "C7 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Lucan Marsh, 45, man. Wants to be admired."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c7-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c7-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c7-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

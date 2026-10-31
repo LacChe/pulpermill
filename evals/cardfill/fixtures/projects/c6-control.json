@@ -1,7 +1,7 @@
 {
   "id": "c6-control",
   "title": "C6 control",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Ravi Oduya, 33, man. When he feels cornered he gets sarcastic. When he's relaxed he whistles. When he's ashamed he works late."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c6-control-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c6-control-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c6-control-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

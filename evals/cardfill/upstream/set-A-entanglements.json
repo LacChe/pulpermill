@@ -29,27 +29,5 @@
       "holdee": "a-dock9",
       "held_by": "a-authority"
     }
-  ],
-  "knowledge": [
-    {
-      "id": "a-k1",
-      "rule": "a-rule-dump",
-      "fact": null,
-      "person": "a-teodora",
-      "status": "knows"
-    }
-  ],
-  "pressures": [
-    {
-      "id": "a-p1",
-      "what": "The Authority is closing Dock 9 next month and selling off the wrecks; if it goes ahead, every diver who works there loses their livelihood.",
-      "source_agent": "a-authority",
-      "source_circumstance": null,
-      "next_move": "Post the closure notice on the Dock 9 gate and send the first inspectors.",
-      "bears_on": [
-        "a-imre",
-        "a-teodora"
-      ]
-    }
   ]
 }

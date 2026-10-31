@@ -1,7 +1,7 @@
 {
   "id": "case-10",
   "title": "Case 10",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -40,5 +40,18 @@
       "character": null,
       "text": "dell = lead. normal: 3 runs a wk, same faces, same cups of water. disruption: board announces water price doubling on the line. goal: keep the railway running thru the summer. stakes: jobs, the towns. 6 chaps"
     }
-  ]
+  ],
+  "outline": {
+    "id": "case-10-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "case-10-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "case-10-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

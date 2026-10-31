@@ -1,7 +1,7 @@
 {
   "id": "case-8",
   "title": "Case 8",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -40,5 +40,18 @@
       "character": null,
       "text": "the keeper and the ferry lady can't stand each other"
     }
-  ]
+  ],
+  "outline": {
+    "id": "case-8-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "case-8-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "case-8-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

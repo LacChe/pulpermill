@@ -1,7 +1,7 @@
 {
   "id": "c7-control",
   "title": "C7 control",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Lucan Marsh, 45, man. Wants to be admired, and wants to be left alone."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c7-control-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c7-control-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c7-control-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

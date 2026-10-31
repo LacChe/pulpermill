@@ -1,7 +1,7 @@
 {
   "id": "c6-tempting",
   "title": "C6 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Ravi Oduya, 33, man. When he's in a bar fight he punches the wall. When he gets a letter he doesn't like he burns it."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c6-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c6-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c6-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

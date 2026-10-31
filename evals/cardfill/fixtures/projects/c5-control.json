@@ -1,7 +1,7 @@
 {
   "id": "c5-control",
   "title": "C5 control",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Hester Vane, 52, woman. She values honesty, loyalty to her friends, and earning what she has."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c5-control-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c5-control-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c5-control-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

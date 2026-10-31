@@ -1,7 +1,7 @@
 {
   "id": "c8-input",
   "title": "C8 input",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Odalys Prewitt, 28, woman. Five foot two, a gap in her front teeth, a white streak in her left eyebrow, left-handed, always wears a man's wristwatch that is too big for her."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c8-input-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c8-input-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c8-input-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

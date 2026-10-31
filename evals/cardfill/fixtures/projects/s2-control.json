@@ -1,7 +1,7 @@
 {
   "id": "s2-control",
   "title": "S2 control",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Genre: heist caper, playful and tense. Third person, past tense, quick and dry."
     }
-  ]
+  ],
+  "outline": {
+    "id": "s2-control-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "s2-control-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "s2-control-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

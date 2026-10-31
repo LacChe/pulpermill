@@ -1,7 +1,7 @@
 {
   "id": "w5-control",
   "title": "W5 control",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Valdis is a split kingdom. A civil war split the realm in two, and the country now runs on steam engines at the docks, with no electricity."
     }
-  ]
+  ],
+  "outline": {
+    "id": "w5-control-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "w5-control-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "w5-control-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

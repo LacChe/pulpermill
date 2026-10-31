@@ -1,7 +1,7 @@
 {
   "id": "c3-tempting",
   "title": "C3 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Barnaby Quillfeather, grumpy lighthouse keeper."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c3-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c3-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c3-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

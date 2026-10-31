@@ -1,7 +1,7 @@
 {
   "id": "w2-tempting",
   "title": "W2 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Tern Station is a salvage habitat orbiting a dead gas giant. The Salvage Authority runs it and is planning to close Dock 9 next month."
     }
-  ]
+  ],
+  "outline": {
+    "id": "w2-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "w2-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "w2-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

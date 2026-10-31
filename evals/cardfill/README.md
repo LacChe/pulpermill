@@ -1,3 +1,5 @@
+> **Note (P6a):** the case text, `01-probe-catalog.md` and `02-probe-inputs.md` predate the redesign and may still mention removed fields (pressures, knowledge, goal and stakes, rule status and truth). They are to be revised in P6b. Only the upstream sets and fixtures have been migrated to the new schema.
+
 # Card-fill test kit
 
 This kit tests how well the Pulpermill pipeline turns free-form text into cards. The text is an example chapter, per-card notes, or both. The cards are Style, Characters, World, Entanglements and Setup. The results are used to tune the card-fill prompts.

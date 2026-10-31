@@ -1,7 +1,7 @@
 {
   "id": "w5-tempting",
   "title": "W5 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Valdis is a split kingdom. King Aldric's betrayal split the realm in two, and it is now a dark, oppressive age of decay."
     }
-  ]
+  ],
+  "outline": {
+    "id": "w5-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "w5-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "w5-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

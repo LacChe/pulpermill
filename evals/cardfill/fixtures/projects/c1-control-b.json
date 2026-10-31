@@ -1,7 +1,7 @@
 {
   "id": "c1-control-b",
   "title": "C1 control-b",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Dana Whitlock, 31, woman, junior librarian. Wants to be respected for her work."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c1-control-b-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c1-control-b-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c1-control-b-shifts",
+    "entries": []
+  },
+  "chapters": []
 }
