@@ -173,7 +173,9 @@ def test_the_stage_moves_through_write_events_shifts():
             if stage and (not seen or seen[-1] != stage):
                 seen.append(stage)
             time.sleep(0.01)
-        assert seen == ["write", "events", "shifts"], seen
+        assert [s["name"] for s in seen] == ["write", "events", "shifts"] and [s["index"] for s in seen] == [1, 2, 3] and all(s["of"] == 3 for s in seen), seen
+        for s in seen:
+            contract.parse_reply("status", {"ok": True, "state": "busy", "stage": s})
 
 
 def test_stop_cancels_inference_and_idle_comes_only_after_it_has_ended():

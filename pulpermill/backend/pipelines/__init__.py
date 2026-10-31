@@ -1,15 +1,19 @@
-"""One module per call. Each pipeline is `run(request, ctx) -> reply dict`. `canned` answers every call with a valid sample
-reply and exists so the server and the page can be exercised with no model; the real pipelines replace it call by call."""
+"""Every call is answered the same way: the prompter gives a flow, the runner runs it (runner.run_call). `canned` answers every call
+with a valid sample reply and no model work, so the server and the page can be exercised with no model (`--fake`)."""
 from .context import RunContext
-from . import canned, simple, story
+from . import canned
 
-PIPELINES = {
-    "fill": simple.fill, "judge": simple.judge, "style_fit": simple.style_fit, "offstage": story.offstage,
-    "plan": story.plan, "generate": story.generate, "end_story": story.end_story,
-}
+CALLS = ("fill", "judge", "style_fit", "plan", "generate")
 
 
-CANNED = {call: getattr(canned, call) for call in PIPELINES}
+def run(request, ctx: RunContext) -> dict:
+    """The reply for one model call. Raises BackendError, Cancelled, or anything else (the server calls that `server`)."""
+    from .. import runner
+    return runner.run_call(request, ctx)
+
+
+PIPELINES = {call: run for call in CALLS}
+CANNED = {call: getattr(canned, call) for call in CALLS}
 
 
 def run_canned(request, ctx: RunContext) -> dict:
@@ -17,9 +21,4 @@ def run_canned(request, ctx: RunContext) -> dict:
     return CANNED[request.call](request, ctx)
 
 
-def run(request, ctx: RunContext) -> dict:
-    """The reply for one model call. Raises BackendError, Cancelled, or anything else (the server calls that `server`)."""
-    return PIPELINES[request.call](request, ctx)
-
-
-__all__ = ["RunContext", "PIPELINES", "CANNED", "run", "run_canned"]
+__all__ = ["RunContext", "PIPELINES", "CANNED", "CALLS", "run", "run_canned"]

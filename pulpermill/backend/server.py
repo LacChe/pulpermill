@@ -24,12 +24,15 @@ from starlette.routing import Route
 from pulpermill import contract
 from pulpermill.schema.project import SCHEMA_VERSION
 
+from pulpermill.prompter import load_prompter
+
 from . import pipelines as default_pipelines
 from . import runlog
 from .config import Config
 from .engine.base import CancelFlag, Engine
 from .errors import BackendError, Cancelled
 from .pipelines.context import RunContext
+from .runner import check_n_ctx
 
 log = logging.getLogger("pulpermill")
 
@@ -40,6 +43,13 @@ CORS = {
     "access-control-max-age": "600",
 }
 TOKEN_HEADER = "x-pulpermill-token"
+
+
+class _Named:
+    """The name and version the run record shows for a pipeline that uses no prompter."""
+
+    def __init__(self, name: str, version: str):
+        self.name, self.version = name, version
 
 
 def _fail(kind: str, detail: str = "") -> JSONResponse:
@@ -54,11 +64,11 @@ def _short(error: ValidationError) -> str:
 
 
 class Job:
-    """Whether a model call is running, and what stage it says it is in. The only state the server keeps."""
+    """Whether a model call is running, and what stage it says it is in (`{name, index, of}`). The only state the server keeps."""
 
     def __init__(self):
         self._lock = threading.Lock()
-        self._stage: str | None = None
+        self._stage: dict | None = None
 
     def try_begin(self) -> bool:
         return self._lock.acquire(blocking=False)
@@ -72,12 +82,18 @@ class Job:
         return self._lock.locked()
 
     @property
-    def stage(self) -> str | None:
+    def stage(self) -> dict | None:
         return self._stage if self.busy else None
 
-    def set_stage(self, stage: str | None) -> None:
-        if stage is None or stage in contract.STAGES:
-            self._stage = stage
+    def set_stage(self, stage: dict | None) -> None:
+        """Keeps only a stage the contract can send, so a status reply is always one the page can read."""
+        if stage is None:
+            self._stage = None
+            return
+        try:
+            self._stage = contract.Progress(**stage).model_dump()
+        except (ValidationError, TypeError):
+            log.warning("a stage the contract cannot carry was ignored")
 
 
 class JobRecord:
@@ -115,12 +131,19 @@ class JobStore:
                 del self._records[old.id]
 
 
-def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], dict] | None = None) -> Starlette:
-    """`run(request_model, ctx) -> reply dict` answers one model call. It defaults to the pipelines package."""
-    run = run or default_pipelines.run
+def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], dict] | None = None, prompter=None) -> Starlette:
+    """`run(request_model, ctx) -> reply dict` answers one model call. It defaults to the pipelines package, which answers through the
+    prompter the config names (loaded here, so an unknown name stops the server at startup). A `run` given by the caller (the canned
+    pipeline) needs none."""
+    if run is None or run is default_pipelines.run:
+        prompter = prompter or load_prompter(config.prompter)
+        run = default_pipelines.run
+        check_n_ctx(engine)
+    elif prompter is None:
+        prompter = _Named("canned", "0")
     job = Job()
     jobs = JobStore(config.jobs_kept)
-    runs = runlog.RunLog(config.log_path, config)
+    runs = runlog.RunLog(config.log_path, config, prompter)
 
     def token_ok(request: Request) -> bool:
         if not config.token:
@@ -134,7 +157,7 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
         started_at = time.time()
         outcome: tuple[str, Any]
         stages = runlog.Stages(job.set_stage)
-        ctx = RunContext(engine=engine, cancel=cancel, set_stage=stages, config=config)
+        ctx = RunContext(engine=engine, cancel=cancel, set_stage=stages, config=config, prompter=prompter)
         try:
             reply = run(model, ctx)
             cancel.raise_if_cancelled()

@@ -2,6 +2,10 @@
 import importlib.util
 import re
 import sys
+import pytest
+
+pytestmark = pytest.mark.skip(reason="PARKED(prompt-design): the trial harness renders the old story prompts, parked by P4")
+
 from pathlib import Path
 
 import prompt_cases as cases

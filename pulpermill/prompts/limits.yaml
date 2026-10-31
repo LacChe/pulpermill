@@ -1,67 +1,31 @@
-# Length caps, in characters, for text that is sent to a model. First guesses: phase 5 replaces them with token budgets
-# measured on the Gemma tokenizer. A cap cuts at the last sentence end that keeps most of the text, and the cut is
-# recorded in the render report, so a clipped field is never silent.
-# Fixed fields (name, age, sex, appearance) are always sent in full and have no cap.
+# What is left of the length limits after P4. The per-field character caps now live on the schema fields (`cap` in spec(...), see
+# pulpermill/schema/common.py), and textfiles.limits() builds the dictionary the renderers read from the schema plus this file.
+# What remains here is not about a current field: counts and switches, text a model wrote (standing, offstage, plants), and caps of
+# fields the redesign removed that the parked story renderers still read. The backend and the stub prompter do not read this file.
 characters:
-  sketch: 700
-  fear: 450
-  flaw: 450
-  competence: 450
-  vulnerability: 450
-  speech: 550
-  history: 700
-  want_item: 220
-  value_item: 220
-  behavior_state: 220
-  behavior_tendency: 280
   max_behaviors: 5
-world:
-  name: 120
-  era_and_technology: 600
-  everyday_life: 700
-  history: 700
-  place_description: 450
-  place_effect: 350
-  object_description: 350
-  object_significance: 350
-  power_nature: 350
-  power_hold: 350
-  power_felt: 300
-  rule_statement: 350
-  rule_cost: 300
-  rule_when_broken: 300
-  rule_truth: 350
-  term_meaning: 200
 entanglements:
-  bond: 300
-  edge: 300
   pressure_what: 450
   next_move: 300
   fact: 300
+world:
+  rule_truth: 350
 setup:
-  normal: 700
-  disruption: 700
   goal: 400
   stakes: 500
 events:
-  happened: 1100
-  changed: 250
   # How many of the latest chapters are told in full. Older chapters shrink to their "changed" line.
   full_chapters_writer: 3
   full_chapters_planner: 4
 beat:
   field: 500
 code:
-  # Numbers and facts the code hands the planner: open plants come from earlier chapters' events, which a model wrote.
   plant: 250
 offstage:
-  # What happened out of sight (a model's reply): each of the two sentences is cut to this.
   field: 350
 standing:
-  # Where each person stands now: the Shifts extractor writes these, so they are model text and get a cap too.
   field: 300
 chapter:
-  # The two-section writer. target_words is a ceiling for the whole chapter, shared by the sections (each may run to half of it);
-  # a chapter ends when its turn lands, so it is often shorter. The second section is shown the whole first section.
+  # The two-section writer (parked). target_words is a ceiling for the whole chapter, shared by the sections.
   target_words: 3000
   sections: 2

@@ -28,41 +28,41 @@ RENDER_ORDER = [
 
 class Place(Item):
     name: str = spec("text", None, "note")
-    description: str = spec("textarea", None, "note")
-    effect: str = spec("textarea", None, "note")          # what the place does to the people in it
+    description: str = spec("textarea", None, "note", cap=450)
+    effect: str = spec("textarea", None, "note", cap=350)          # what the place does to the people in it
 
 
 class Thing(Item):
     name: str = spec("text", None, "note")
-    description: str = spec("textarea", None, "note")
-    significance: str = spec("textarea", None, "note")    # what it can do, or what it means to whoever wants it
+    description: str = spec("textarea", None, "note", cap=350)
+    significance: str = spec("textarea", None, "note", cap=350)    # what it can do, or what it means to whoever wants it
 
 
 class Power(Item):
     name: str = spec("text", None, "note")
-    nature: str = spec("textarea", None, "note")          # what it is
-    hold: str = spec("textarea", None, "note")            # how it holds power
-    felt: str = spec("textarea", None, "note")            # how ordinary people feel it day to day
+    nature: str = spec("textarea", None, "note", cap=350)          # what it is
+    hold: str = spec("textarea", None, "note", cap=350)            # how it holds power
+    felt: str = spec("textarea", None, "note", cap=300)            # how ordinary people feel it day to day
 
 
 class WorldRule(Item):
-    statement: str = spec("textarea", None, "note")
-    cost: str = spec("textarea", None, "note")
-    when_broken: str = spec("textarea", None, "note")
+    statement: str = spec("textarea", None, "note", cap=350)
+    cost: str = spec("textarea", None, "note", cap=300)
+    when_broken: str = spec("textarea", None, "note", cap=300)
 
 
 class Term(Item):
     term: str = spec("text", None, "note")
-    meaning: str = spec("text", None, "note")
+    meaning: str = spec("text", None, "note", cap=200)
 
 
 # Everything is required for now. Comments note what the source doc marked optional.
 class World(Item):
     # Overview
-    name: str = spec("text", "overview", "free")
-    era_and_technology: str = spec("textarea", "overview", "free")
-    everyday_life: str = spec("textarea", "overview", "free")
-    history: str = spec("textarea", "overview", "free")                       # source doc: optional
+    name: str = spec("text", "overview", "free", cap=120)
+    era_and_technology: str = spec("textarea", "overview", "free", cap=600)
+    everyday_life: str = spec("textarea", "overview", "free", cap=700)
+    history: str = spec("textarea", "overview", "free", cap=700)                       # source doc: optional
 
     # Places
     places: list[Place] = spec(None, "places", "pairs", repeat=True, uncapped=True)   # no cap: a world has many; the page sends at most 5 random ones

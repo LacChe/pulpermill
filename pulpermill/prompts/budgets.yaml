@@ -1,21 +1,8 @@
-# Token budgets (phase 5). Everything is counted on the Gemma 3 tokenizer, with the chat template around the prompt.
-# n_ctx is the context the backend loads the model with; the Kaggle T4x2 holds the Q6 27B weights (~22 GB of its 30 GB), so the
-# rest is the key-value cache: Gemma 3 27B needs about 0.25 MB of cache per token (62 layers x 8 key-value heads x 128 x 2 x 2 bytes),
-# so 16,384 tokens is ~4 GB by that count (Gemma 3's sliding-window cache makes it less). Raised from 12,288 after the two-section writer: the test-3 session loaded 12,288 with 1.8 and 4.7 GB of VRAM free. If 16,384 does not load, set 12,288 here and in backend/config.py. Change n_ctx here when the backend is tried on real hardware, and the tests and the report follow.
+# Token budgets. Everything is counted on the Gemma 3 tokenizer, with the chat template around the prompt.
+# n_ctx is the context the backend loads the model with; the launcher refuses to start if config.py differs.
+# Gemma 3 27B needs about 0.25 MB of cache per token, so 16,384 tokens is ~4 GB by that count. Change n_ctx here when the backend is
+# tried on real hardware, and in backend/config.py on purpose.
 n_ctx: 16384
 # Tokens kept free after the prompt and the reply: the template's own tokens, a changed tokenizer, a longer word list.
 margin: 300
-# The most each call may write (max_tokens in the backend). Prose is ~1.35 tokens a word: a 1,500-word section is ~2,000 tokens.
-max_output:
-  writer: 2400           # one section of up to ~1,500 words (~2,000 tokens), with room to finish its last sentence
-  planner_think: 1200
-  planner_beat: 900
-  events: 900
-  shifts: 1000
-  fill: 1000
-  judge: 500
-  style_fit: 400
-  offstage: 400
-  end_story: 1800
-# The chapter text an Events or Shifts prompt carries. The ceiling is 3,000 words (two sections of up to 1,500); 4,000 allows for a section that runs long.
-chapter_words_worst_case: 4000
+# What a step may write (max_output) is not here: it belongs to the step, so the prompter that writes the prompt sets it.
