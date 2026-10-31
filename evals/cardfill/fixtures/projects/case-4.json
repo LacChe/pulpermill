@@ -1,7 +1,7 @@
 {
   "id": "case-4",
   "title": "Case 4",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -46,5 +46,18 @@
       "character": null,
       "text": "Imre is the lead. His normal is diving every shift and drinking in the Spindle after. The disruption: things are getting tense between the divers and the Authority. His goal is to find peace about his brother. Stakes: if he doesn't, he'll never forgive himself. Seven chapters."
     }
-  ]
+  ],
+  "outline": {
+    "id": "case-4-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "case-4-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "case-4-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

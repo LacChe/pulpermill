@@ -1,7 +1,7 @@
 {
   "id": "e2-tempting",
   "title": "E2 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -147,17 +147,13 @@
         "id": "b-rule-dues",
         "statement": "The Mutual's dues are passed on each month to an official at the Customs House.",
         "cost": "Anyone who says so aloud risks the Mutual's retaliation and loses the official's protection.",
-        "status": "uncommon",
-        "when_broken": "The Mutual and the official both lose their income, and whoever exposed them becomes a target.",
-        "truth": null
+        "when_broken": "The Mutual and the official both lose their income, and whoever exposed them becomes a target."
       },
       {
         "id": "b-rule-burials",
         "statement": "The Mutual's dues pay for burials and widows' pensions.",
         "cost": "Owners who withhold dues are accused of shortchanging widows.",
-        "status": "false_belief",
-        "when_broken": "Nothing visible happens; the belief is simply repeated.",
-        "truth": "The burial fund has been empty since before the war."
+        "when_broken": "Nothing visible happens; the belief is simply repeated."
       }
     ],
     "terms": [
@@ -172,5 +168,18 @@
         "meaning": "a Mutual collector"
       }
     ]
-  }
+  },
+  "outline": {
+    "id": "e2-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "e2-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "e2-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

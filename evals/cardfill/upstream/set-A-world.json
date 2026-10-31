@@ -40,17 +40,13 @@
       "id": "a-rule-line",
       "statement": "Divers may not cross the Line, the old debris boundary.",
       "cost": "Anyone caught beyond it loses their license and their air allowance.",
-      "status": "common",
-      "when_broken": "The Authority revokes the license and seals the offender's locker.",
-      "truth": null
+      "when_broken": "The Authority revokes the license and seals the offender's locker."
     },
     {
       "id": "a-rule-dump",
       "statement": "The Authority dumps its own waste beyond the Line, which is the real reason the Line is forbidden.",
       "cost": "Anyone who proves it threatens the Authority's license to run the station.",
-      "status": "uncommon",
-      "when_broken": "The waste drifts back toward the habitat and fouls the dock intakes.",
-      "truth": null
+      "when_broken": "The waste drifts back toward the habitat and fouls the dock intakes."
     }
   ],
   "terms": [

@@ -1,7 +1,7 @@
 {
   "id": "e3-tempting",
   "title": "E3 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -199,9 +199,7 @@
         "id": "c-rule-apple",
         "statement": "The Weather Oven works only when fired with applewood.",
         "cost": "Every winter the village rations the orchard to keep the oven fed.",
-        "status": "false_belief",
-        "when_broken": "If anyone fires it with other wood, the weather is said to turn.",
-        "truth": "Pearwood works just as well; a baker long ago hid this to protect the orchard."
+        "when_broken": "If anyone fires it with other wood, the weather is said to turn."
       }
     ],
     "terms": [
@@ -211,5 +209,18 @@
         "meaning": "a weather forecast baked into bread"
       }
     ]
-  }
+  },
+  "outline": {
+    "id": "e3-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "e3-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "e3-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

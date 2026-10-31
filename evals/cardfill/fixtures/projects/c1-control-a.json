@@ -1,7 +1,7 @@
 {
   "id": "c1-control-a",
   "title": "C1 control-a",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Dana Whitlock, 31, woman, mature student. Wants to succeed and to be trusted."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c1-control-a-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c1-control-a-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c1-control-a-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

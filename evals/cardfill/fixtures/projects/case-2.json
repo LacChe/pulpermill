@@ -1,8 +1,21 @@
 {
   "id": "case-2",
   "title": "Case 2",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "example_chapter": "Hanne parks behind the shed, where her father won't see the car from the kitchen window, and then sits a minute with the engine off. She has rehearsed this on the motorway for two hours. Now every sentence she planned sounds like something from a leaflet.\n\nThe back door is unlocked, as always. Piet is at the table with the radio low, cutting a pear into very small pieces.\n\n\"You didn't say you were coming,\" he says.\n\n\"I was nearby.\"\n\n\"You're never nearby. You live four hours away.\" But he gets up and puts the kettle on, which is his way of saying he's glad. His hands are slower than she remembers. He fills the kettle twice because he forgets he has filled it.\n\nThe kitchen is the same: yellow oilcloth, the clock that runs six minutes fast, the window over the sink where the tomatoes are lined up on the sill to ripen. On the hook by the door hang his keys, the ring with the little brass fish. She looks at them and then at the garden, where the old Volvo sits under a green tarp, and where, she notices, the tarp has a skin of leaves on it that nobody has swept off since autumn.\n\n\"The tomatoes came early,\" Piet says. \"I put them in the window. You can take some.\"\n\n\"I'd like that.\"\n\nHe sets down two cups. They drink. The radio talks about rain somewhere else. She tells him about work, and he asks the right questions in the wrong order, and she lets him.\n\n\"The Volvo,\" she says finally.\n\n\"It's fine. It starts.\"\n\n\"When did you last start it?\"\n\nHe looks at the pear. \"I drive to the shop.\"\n\n\"Papa. The shop is a ten-minute walk, and you walk it. Mrs. Aalto told me.\" She hadn't meant to say that. She sees him take it in: that people have been talking, that his daughter has been told things.\n\n\"Mrs. Aalto,\" he says, \"has an opinion about everything.\"\n\n\"She said you stopped at the crossing last month and didn't know which way to turn.\"\n\nThe clock ticks its six-minutes-fast tick. Piet turns his cup a little on its saucer, a quarter turn, then back.\n\n\"I know which way to turn,\" he says, very quietly. \"I only wanted a moment to look at it.\"\n\nHanne does not say anything. She wants to reach for the keys on the hook, and she wants not to, and neither of these wants is anything she can say aloud. Outside a bird lands on the tarp and takes off again.\n\n\"Take the tomatoes,\" Piet says. \"The green ones too. They'll ripen in a bag.\"\n\nShe carries them to the car in both hands. When she comes back for her coat, the hook by the door is empty, and Piet is at the sink with his back to her, running the tap over nothing.",
-  "card_notes": []
+  "card_notes": [],
+  "outline": {
+    "id": "case-2-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "case-2-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "case-2-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

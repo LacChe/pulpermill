@@ -1,7 +1,7 @@
 {
   "id": "s1-control",
   "title": "S1 control",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "I want the lens to be someone who notices what people do with their hands. Third person, past tense, quiet and a little sad."
     }
-  ]
+  ],
+  "outline": {
+    "id": "s1-control-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "s1-control-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "s1-control-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

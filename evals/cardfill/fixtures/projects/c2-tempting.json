@@ -1,7 +1,7 @@
 {
   "id": "c2-tempting",
   "title": "C2 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Ines Calder, 41, woman. Dov's sister-in-law, a private eye who lost her husband to the docks."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c2-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c2-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c2-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

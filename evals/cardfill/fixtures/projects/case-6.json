@@ -1,7 +1,7 @@
 {
   "id": "case-6",
   "title": "Case 6",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -70,5 +70,18 @@
       "character": null,
       "text": "Vessa is the lead. Normal: life at the abbey, bells at dawn, copying hymns, tending bees, believing nobody is looking for her. Disruption: Regency riders burn the abbey's east cloister at night, looking for her. Goal: reach the Ashen Throne Hall before midwinter and claim her seat on the Regency Council. Stakes: if she fails, the war levy never ends and everyone she loves pays for it. Eight chapters."
     }
-  ]
+  ],
+  "outline": {
+    "id": "case-6-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "case-6-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "case-6-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

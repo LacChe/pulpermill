@@ -1,7 +1,7 @@
 {
   "id": "s1-tempting",
   "title": "S1 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "I want the lens to be a story about grief and betrayal. Third person, past tense, quiet and a little sad."
     }
-  ]
+  ],
+  "outline": {
+    "id": "s1-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "s1-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "s1-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

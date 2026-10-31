@@ -1,7 +1,7 @@
 {
   "id": "c1-tempting-b",
   "title": "C1 tempting-b",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Dana Whitlock, 31, woman, junior librarian. Wants to get promoted to head librarian."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c1-tempting-b-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c1-tempting-b-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c1-tempting-b-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

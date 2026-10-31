@@ -1,7 +1,7 @@
 {
   "id": "w3-variant-a",
   "title": "W3 variant-a",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Karrow Gate is a walled river town. Rule: the gates close at dusk, and everyone knows it."
     }
-  ]
+  ],
+  "outline": {
+    "id": "w3-variant-a-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "w3-variant-a-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "w3-variant-a-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

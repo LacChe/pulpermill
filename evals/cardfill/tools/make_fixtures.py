@@ -8,7 +8,7 @@ import json, pathlib, re
 KIT = pathlib.Path(__file__).resolve().parent.parent
 OUT = KIT / "fixtures"
 CHAIN = ["style", "characters", "world", "entanglements", "setup"]
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 3   # must equal pulpermill.schema.project.SCHEMA_VERSION (tests/evals checks it); older files are refused (P0 A4)
 
 # ---- which card a probe fills, and which fixed upstream cards its project holds
 CARD_OF = {"S": "style", "C": "characters", "W": "world", "E": "entanglements", "U": "setup"}
@@ -37,6 +37,12 @@ def project(fid, title, language, chapter, notes, upstream=None):
     p["card_notes"] = [{"id": f"{fid}-n{i}", "card": card, "character": None, "text": text}
                        for i, (card, text) in enumerate(notes)]
     p.update(upstream or {})
+    # A project nobody has started: no chapters, an empty outline, and empty records. Style and Setup (and any card the fill
+    # is meant to produce) stay absent on purpose: the kit never invents card content. Ids are fixed so reruns give no diff.
+    p["outline"] = {"id": f"{fid}-outline", "beats": []}
+    p["summary_events"] = {"id": f"{fid}-events", "entries": []}
+    p["shifts"] = {"id": f"{fid}-shifts", "entries": []}
+    p["chapters"] = []
     return p
 
 

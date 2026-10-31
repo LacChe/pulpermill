@@ -1,8 +1,21 @@
 {
   "id": "case-11",
   "title": "Case 11",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "example_chapter": "\"Left! Left, you idiot!\"\n\nKit threw himself sideways and the crate where he'd been standing came apart in a spray of splinters. Behind him the shouting got louder. He didn't look back. He had learned that much, at least: looking back cost a step.\n\n\"Ras!\" he yelled. \"Where are you?\"\n\n\"Up!\" The voice came from above, thin and furious. \"Up here, you absolute—move!\"\n\nA rope slapped down beside him. Kit caught it, got a boot against the wall, and climbed hand over hand while somebody's fingers grazed his heel. Five, six, seven feet. His palms burned. A hand closed on the rope below him and the whole line shuddered.\n\n\"Cut it!\" someone shouted.\n\n\"Don't you dare,\" Ras said, and then, much quieter, \"Kit. Kit, pull.\"\n\nHe pulled. The rope jerked. Something gave way underneath him with a crack, and for a long second he hung there with nothing under his boots and the street a long way down. Then Ras had him by the collar and was hauling him over the edge and onto the tiles, and they lay there on their backs, both gasping, while below them the men in the green coats spilled out into the lane and looked up.\n\n\"Don't move,\" Ras whispered.\n\n\"I wasn't going to.\"\n\n\"You were about to say something clever.\"\n\n\"I was about to say,\" Kit said, \"that you owe me a rope.\"\n\nA lantern swung up toward them. The light slid across the eaves and stopped a hand's width from Ras's shoe. Neither of them breathed. Then someone below called out a name, a long way off, and the lantern dropped, and the boots began to move away down the lane in ragged formation.\n\nRas let out a breath that shook. \"The satchel.\"\n\n\"I've got it.\"\n\n\"Show me.\"\n\nKit patted his chest. Nothing. He patted again, harder, and felt his stomach go. \"It was on my shoulder.\"\n\n\"Kit.\"\n\n\"It was on my shoulder, Ras, I swear, it—\"\n\nBelow, in the lane, a man in a green coat bent down and picked something up out of the mud.",
-  "card_notes": []
+  "card_notes": [],
+  "outline": {
+    "id": "case-11-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "case-11-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "case-11-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

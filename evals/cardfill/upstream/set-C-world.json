@@ -46,9 +46,7 @@
       "id": "c-rule-apple",
       "statement": "The Weather Oven works only when fired with applewood.",
       "cost": "Every winter the village rations the orchard to keep the oven fed.",
-      "status": "false_belief",
-      "when_broken": "If anyone fires it with other wood, the weather is said to turn.",
-      "truth": "Pearwood works just as well; a baker long ago hid this to protect the orchard."
+      "when_broken": "If anyone fires it with other wood, the weather is said to turn."
     }
   ],
   "terms": [

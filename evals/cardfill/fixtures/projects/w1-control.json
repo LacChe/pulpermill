@@ -1,7 +1,7 @@
 {
   "id": "w1-control",
   "title": "W1 control",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -150,5 +150,18 @@
       "speech": "Loud and warm, laughing mid-sentence.",
       "history": "Spent years at the deepest wrecks, past where anyone else would go."
     }
-  ]
+  ],
+  "outline": {
+    "id": "w1-control-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "w1-control-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "w1-control-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

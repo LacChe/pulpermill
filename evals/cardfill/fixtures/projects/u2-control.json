@@ -1,7 +1,7 @@
 {
   "id": "u2-control",
   "title": "U2 control",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -193,17 +193,13 @@
         "id": "a-rule-line",
         "statement": "Divers may not cross the Line, the old debris boundary.",
         "cost": "Anyone caught beyond it loses their license and their air allowance.",
-        "status": "common",
-        "when_broken": "The Authority revokes the license and seals the offender's locker.",
-        "truth": null
+        "when_broken": "The Authority revokes the license and seals the offender's locker."
       },
       {
         "id": "a-rule-dump",
         "statement": "The Authority dumps its own waste beyond the Line, which is the real reason the Line is forbidden.",
         "cost": "Anyone who proves it threatens the Authority's license to run the station.",
-        "status": "uncommon",
-        "when_broken": "The waste drifts back toward the habitat and fouls the dock intakes.",
-        "truth": null
+        "when_broken": "The waste drifts back toward the habitat and fouls the dock intakes."
       }
     ],
     "terms": [
@@ -250,28 +246,19 @@
         "holdee": "a-dock9",
         "held_by": "a-authority"
       }
-    ],
-    "knowledge": [
-      {
-        "id": "a-k1",
-        "rule": "a-rule-dump",
-        "fact": null,
-        "person": "a-teodora",
-        "status": "knows"
-      }
-    ],
-    "pressures": [
-      {
-        "id": "a-p1",
-        "what": "The Authority is closing Dock 9 next month and selling off the wrecks; if it goes ahead, every diver who works there loses their livelihood.",
-        "source_agent": "a-authority",
-        "source_circumstance": null,
-        "next_move": "Post the closure notice on the Dock 9 gate and send the first inspectors.",
-        "bears_on": [
-          "a-imre",
-          "a-teodora"
-        ]
-      }
     ]
-  }
+  },
+  "outline": {
+    "id": "u2-control-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "u2-control-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "u2-control-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

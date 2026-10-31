@@ -1,7 +1,7 @@
 {
   "id": "w3-variant-b",
   "title": "W3 variant-b",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Karrow Gate is a walled river town. Rule: the tide gate can't be opened from outside, and only the harbor clerks know it."
     }
-  ]
+  ],
+  "outline": {
+    "id": "w3-variant-b-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "w3-variant-b-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "w3-variant-b-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

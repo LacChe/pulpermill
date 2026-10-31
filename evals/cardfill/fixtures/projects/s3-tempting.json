@@ -1,7 +1,7 @@
 {
   "id": "s3-tempting",
   "title": "S3 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Imre narrates, first person, past tense, set on Tern Station. Bitter, funny, short sentences."
     }
-  ]
+  ],
+  "outline": {
+    "id": "s3-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "s3-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "s3-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

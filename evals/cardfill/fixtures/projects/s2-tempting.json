@@ -1,7 +1,7 @@
 {
   "id": "s2-tempting",
   "title": "S2 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Genre: a heist where the crew gets double-crossed halfway through. Third person, past tense, quick and dry."
     }
-  ]
+  ],
+  "outline": {
+    "id": "s2-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "s2-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "s2-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

@@ -1,7 +1,7 @@
 {
   "id": "c1-tempting-a",
   "title": "C1 tempting-a",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Dana Whitlock, 31, woman, mature student. Wants to pass Mr. Hale's exam and win back her sister's trust."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c1-tempting-a-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c1-tempting-a-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c1-tempting-a-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

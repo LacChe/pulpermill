@@ -1,8 +1,21 @@
 {
   "id": "s4-excerpt-2",
   "title": "S4 excerpt-2",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "example_chapter": "Nadia gets to the platform early, which is her first mistake. The board says the 6:12 is running late, and the board has been saying that since March. A man in a yellow coat eats an orange with great ceremony, one segment at a time, and she watches him instead of the tracks because the tracks make her think of Ilya. When the train finally slides in, it is nearly empty. She takes the seat by the window and puts her bag on the seat beside her so nobody will sit there. Nobody tries. By the second station she has started to feel foolish, the way you do when you have arranged a whole scene for someone who isn't coming.",
-  "card_notes": []
+  "card_notes": [],
+  "outline": {
+    "id": "s4-excerpt-2-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "s4-excerpt-2-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "s4-excerpt-2-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

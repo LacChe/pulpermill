@@ -1,7 +1,7 @@
 {
   "id": "c4-tempting",
   "title": "C4 tempting",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Mira Solenne, 38, woman. She is afraid of failing. Her flaw is that she is terrified of failure. She is vulnerable to anyone who criticizes her for failing. She values success above everything."
     }
-  ]
+  ],
+  "outline": {
+    "id": "c4-tempting-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "c4-tempting-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "c4-tempting-shifts",
+    "entries": []
+  },
+  "chapters": []
 }

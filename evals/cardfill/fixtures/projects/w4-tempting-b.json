@@ -1,7 +1,7 @@
 {
   "id": "w4-tempting-b",
   "title": "W4 tempting-b",
-  "schema_version": 1,
+  "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
@@ -10,5 +10,18 @@
       "character": null,
       "text": "Karrow Gate is a walled river town. Rule: everyone says the old well is haunted. It isn't actually true."
     }
-  ]
+  ],
+  "outline": {
+    "id": "w4-tempting-b-outline",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "w4-tempting-b-events",
+    "entries": []
+  },
+  "shifts": {
+    "id": "w4-tempting-b-shifts",
+    "entries": []
+  },
+  "chapters": []
 }
