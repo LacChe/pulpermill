@@ -11,14 +11,13 @@
 // by itself is ask the backend whether it is idle.
 
 import {
-  readOffstageReply, readPlanReply, readGenerateReply, readEndStoryReply,
+  readPlanReply, readGenerateReply, readStage,
   failure, STORY_CALLS, readStatus, fillRequest, readFillReply, planFill, judgeRequest, readJudgeReply, styleFitRequest,
   readStyleFitReply,
 } from "./logic.js";
 import { generateGate, generateRequest, applyGenerated, inputsKey, regenerateGate, regenerateKey, applyRegenerated } from "./generate.js";
-import { endGate, endStoryRequest, landEndStory } from "./endstory.js";
 import { msg } from "./text.js";
-import { planGate, offstageDue, offstageRequest, planRequest, landBeat, beatForChapter, beatBlockers } from "./plan.js";
+import { planGate, planRequest, landBeat, beatBlockers } from "./plan.js";
 
 // ---- The backend setting ----------------------------------------------------
 // "mock" (the default, so the page works with nothing running) or the address of a backend.
@@ -71,7 +70,7 @@ export function blockedByPage(setting, pageProtocol) {
 
 export const DEFAULT_TIMEOUTS = {
   status: 5000, fill: 180000, judge: 180000, style_fit: 120000,
-  offstage: 120000, plan: 300000, generate: 1800000, end_story: 600000,
+  plan: 300000, generate: 1800000,
 };
 
 // The fallback when the body is not an answer. It agrees with HTTP_STATUS in pulpermill/contract.py.
@@ -152,7 +151,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
         } else {
           misses = 0;
           const next = reply.state === "busy" ? reply.stage ?? null : null;
-          if (next !== stage) { stage = next; changed(); }
+          if (JSON.stringify(next) !== JSON.stringify(stage)) { stage = next; changed(); }
         }
       }
     })();
@@ -181,7 +180,8 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
       const reply = await post(fetchImpl, current.url, { call: "job", job_id: jobId }, signal, secret).catch(() => failure("unreachable"));
       if (reply?.ok === true && reply.state === "running") {
         setConnection("busy");
-        if ((reply.stage ?? null) !== stage) { stage = reply.stage ?? null; changed(); }
+        const next = readStage(reply.stage) ?? null;
+        if (JSON.stringify(next) !== JSON.stringify(stage)) { stage = next; changed(); }
         continue;
       }
       if (reply?.ok === true && reply.state === "unknown") return failure("unreachable", msg("backend.jobGone"));
@@ -344,49 +344,39 @@ export function checkStyleFit(client, schema, project) {
   return { stop: call.stop, done: call.done.then(readStyleFitReply) };
 }
 
-// Plan the next chapter: the offstage move when one is due, then think and fill the beat, and one more try when the
-// Outline's own blocking rules refuse the first beat (the second attempt is told what was wrong). Nothing is changed:
-// it resolves to {ok: true, beat, thinking, offstage, unresolved, dropped, warnings, blockers, retried, replaces} and the page decides
-// what to land. `replaces` is the unwritten beat for the same chapter that landing it would replace.
-// A request the page cannot make resolves to {ok: false, reason} (see planGate); a failed call to its failure.
-export function planChapter(client, schema, project, castIds) {
-  const gate = planGate(project, castIds);
+// Plan a chapter: think and fill the beat, and one more try when the Outline's own blocking rules refuse the first beat (the
+// second attempt is told what was wrong). `beat` is the chapter's beat as the writer left it (the cast and the spotlight tie).
+// Nothing is changed: it resolves to {ok: true, beat, unresolved, dropped, warnings, blockers, retried} and the page decides
+// what to land (placeBeat). A request the page cannot make resolves to {ok: false, reason} (see planGate); a failed call to its failure.
+export function planChapter(client, schema, project, beat) {
+  const gate = planGate(project, beat);
   if (!gate.ok) return refused(gate.reason === "cast" ? `cast_${gate.why}` : gate.reason);
-  const replaces = beatForChapter(project, gate.chapter);
   let current = null;
   let stopped = false;
   const call = (request) => { current = client.start(request); return current.done; };
   const done = (async () => {
-    let offstage = null;
-    if (offstageDue(gate.chapter)) {
-      const read = readOffstageReply(await call(offstageRequest(schema, project, castIds)));
-      if (!read.ok) return read;
-      offstage = { did: read.did, reach: read.reach };
-    }
-    if (stopped) return failure("stopped");
-    let read = readPlanReply(await call(planRequest(schema, project, castIds, { offstage })));
+    let read = readPlanReply(await call(planRequest(schema, project, beat)));
     if (!read.ok) return read;
-    let landed = landBeat(schema, project, castIds, read, { offstage, existing: replaces });
+    let landed = landBeat(schema, project, beat, read);
     let blockers = beatBlockers(schema, project, landed.beat);
     let retried = false;
     if (blockers.length && !stopped) {
       retried = true;
-      const second = readPlanReply(await call(planRequest(schema, project, castIds, { offstage, retry: { thinking: read.thinking, beat: read.beat, problems: blockers } })));
+      const second = readPlanReply(await call(planRequest(schema, project, beat, { retry: { beat: read.beat, problems: blockers } })));
       if (!second.ok) return second;
       read = second;
-      landed = landBeat(schema, project, castIds, read, { offstage, existing: replaces });
+      landed = landBeat(schema, project, beat, read);
       blockers = beatBlockers(schema, project, landed.beat);
     }
-    return { ok: true, beat: landed.beat, thinking: read.thinking, offstage, unresolved: landed.unresolved, dropped: landed.dropped, warnings: landed.warnings, blockers, retried, replaces };
+    return { ok: true, beat: landed.beat, unresolved: landed.unresolved, dropped: landed.dropped, warnings: landed.warnings, blockers, retried };
   })();
   return { done, stop() { stopped = true; current?.stop(); } };
 }
 
-// Write the next chapter: one call that writes it and reads it twice. Nothing is changed: it resolves to
-// {ok: true, outcome, beat, stale} where `outcome` is applyGenerated's (the records, the changed Entanglements, the changes that
-// touch locked values) and the page commits it with commitChapter once the writer has answered any question.
-// {ok: false, reason} when the page cannot make the request (see generateGate), {ok: false, reason: "changed"} when the
-// Entanglements or the beat were edited while the model wrote, and the call's failure otherwise.
+// Write the next chapter: one call that writes it and reads it. Nothing is changed: it resolves to
+// {ok: true, outcome, beat, stale} where `outcome` is applyGenerated's (the chapter, its events, its shifts and the lines the chapter
+// note shows) and the page commits it with commitChapter. {ok: false, reason} when the page cannot make the request (see
+// generateGate), {ok: false, reason: "changed"} when the plan's inputs were edited while the model wrote, and the call's failure otherwise.
 export function generateChapter(client, schema, project) {
   const gate = generateGate(schema, project);
   if (!gate.ok) return { done: Promise.resolve({ ok: false, reason: gate.reason, problems: gate.problems }), stop() {} };
@@ -399,14 +389,13 @@ export function generateChapter(client, schema, project) {
       if (!read.ok) return read;
       const again = generateGate(schema, project);
       if (!again.ok || inputsKey(schema, project, again.beat) !== key) return { ok: false, reason: "changed" };
-      return { ok: true, beat: gate.beat, stale: gate.stale, read, outcome: applyGenerated(schema, project, gate.beat, read, { overwriteLocked: true }) };
+      return { ok: true, beat: gate.beat, stale: gate.stale, read, outcome: applyGenerated(schema, project, gate.beat, read) };
     }),
   };
 }
 
-// Write chapter `number` again, from the state it was first written from. Nothing is changed: it resolves to
+// Write chapter `number` again, from the state going into it. Nothing is changed: it resolves to
 // {ok: true, ctx, read, outcome} (applyRegenerated's outcome, with the old text as `before`), or a failure as generateChapter does.
-// The writer's answer to the locked-values question is applied with applyRegenerated(schema, project, ctx, read, {overwriteLocked}).
 export function regenerateChapter(client, schema, project, number) {
   const gate = regenerateGate(schema, project, number);
   if (!gate.ok) return { done: Promise.resolve({ ok: false, reason: gate.reason, problems: gate.problems }), stop() {} };
@@ -418,23 +407,7 @@ export function regenerateChapter(client, schema, project, number) {
       const read = readGenerateReply(reply);
       if (!read.ok) return read;
       if (regenerateKey(schema, project, number) !== key) return { ok: false, reason: "changed" };
-      return { ok: true, ctx: gate, read, outcome: applyRegenerated(schema, project, gate, read, { overwriteLocked: true }) };
-    }),
-  };
-}
-
-// The end of the story: the model updates Characters and World from the records. Nothing is changed: it resolves to
-// {ok: true, after, forced, dropped} (landEndStory's) and the page stores `after` as project.after_story once the writer has seen
-// it. {ok: false, reason: "not_done"} while a chapter is still to write, and the call's failure otherwise.
-export function endStory(client, schema, project) {
-  const gate = endGate(project);
-  if (!gate.ok) return { done: Promise.resolve({ ok: false, reason: gate.reason }), stop() {} };
-  const call = client.start(endStoryRequest(schema, project));
-  return {
-    stop: call.stop,
-    done: call.done.then((reply) => {
-      const read = readEndStoryReply(reply);
-      return read.ok ? landEndStory(schema, project, read) : read;
+      return { ok: true, ctx: gate, read, outcome: applyRegenerated(schema, project, gate, read) };
     }),
   };
 }

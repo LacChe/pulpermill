@@ -1,16 +1,10 @@
-// The end of the story: after the last chapter the model updates Characters and World from what the records say happened.
-// The page works out what to send, keeps what must not change, and stores the result as the after-story copy. The
-// originals stay as they are. No DOM, so Node can test it.
-//
-// What the page insists on:
-//   - every character comes back with the id it was sent, none missing and none new (otherwise the reply is refused);
-//   - the fixed fields (name, age, sex, appearance) are put back as they were;
-//   - a list item that comes back with an id the page knows keeps it, a new item gets a new id, and an item the model left
-//     out stays as it was (the model may add to the world and change it, it does not delete);
-//   - anything that does not fit a field (wrong kind, not one of the choices) is dropped and the field keeps its old value.
+// The end of the story: after the last chapter the page folds every shift into the cards, with no model call (P0, A9). The
+// result is stored as the after-story copy (Style, Characters, World and the final Entanglements), and the originals stay as
+// they are. No DOM, so Node can test it.
 
-import { envelope, settledProject, isFilled, itemTitle, newId, validate, instanceName } from "./logic.js";
-import { chapterInfo, eventsInWords, nameMap } from "./plan.js";
+import { settledProject, isFilled, validate, instanceName, lookupLabel } from "./logic.js";
+import { foldAll } from "./effective.js";
+import { chapterInfo } from "./plan.js";
 import { msg, joinList } from "./text.js";
 
 const copyOf = (value) => JSON.parse(JSON.stringify(value));
@@ -22,166 +16,101 @@ export function endGate(project) {
   return { ok: true, replaces: Boolean(project.after_story) };
 }
 
-// What the model reads: the cards as they are, and the records in words (never the chapter text).
-export function endStoryRequest(schema, project) {
-  const settled = settledProject(schema, project);
-  const names = nameMap(project);
-  const beats = project.outline?.beats ?? [];
-  const chapterOf = (id) => Number(beats.find((b) => b.id === id)?.chapter) || 0;
-  const shifts = (project.summary_shifts?.shifts ?? [])
-    .map((s) => ({ chapter: chapterOf(s.beat), character: names.get(s.character) ?? s.character,
-      ...Object.fromEntries(["believes", "fears", "wants", "refuses", "decided"].filter((k) => isFilled(s[k])).map((k) => [k, s[k]])) }))
-    .sort((a, b) => a.chapter - b.chapter);
-  return {
-    ...envelope(schema, project, "end_story"),
-    style: copyOf(settled.style),
-    setup: copyOf(settled.setup),
-    characters: copyOf(settled.characters),
-    world: copyOf(settled.world),
-    events: eventsInWords(project),
-    shifts,
-  };
-}
-
-// ---- Taking the reply in ----------------------------------------------------------------
-
-const kindOk = (field, value) => {
-  if (field.input === "select-multiple") return Array.isArray(value) && value.every((v) => typeof v === "string");
-  if (field.input === "number") return value === null || typeof value === "number";
-  if (field.input === "checkbox") return typeof value === "boolean";
-  if (field.options?.length) return typeof value === "string" && (value === "" || field.options.some((o) => o.value === value));
-  return typeof value === "string";
-};
-
-// One set of fields: the model's value where it fits, the old one where it does not. `fixedBack` collects the fixed fields
-// the model changed, `dropped` the keys that did not fit.
-function landFields(fields, was, given, taken, track) {
-  const out = { ...was };
-  for (const field of fields) {
-    if (!(field.key in given)) continue;
-    const value = given[field.key];
-    if (field.fixed) {
-      if (JSON.stringify(value) !== JSON.stringify(was[field.key])) track.forced.push(field.key);
-      continue;
-    }
-    if (field.repeat) {
-      if (!Array.isArray(value) || !value.every((i) => i && typeof i === "object" && !Array.isArray(i))) { track.dropped.push(field.key); continue; }
-      const old = was[field.key] ?? [];
-      const ids = new Map(old.map((i) => [i.id, i]));
-      const seen = new Set();
-      const items = value.map((item) => {
-        const before = ids.get(item.id);
-        const id = before && !seen.has(item.id) ? item.id : newId(taken);
-        seen.add(id);
-        taken.push(id);
-        return { ...landFields(field.item_fields ?? [], before ?? {}, item, taken, { forced: [], dropped: track.dropped }), id };
-      });
-      for (const left of old) if (!seen.has(left.id)) items.push(left);      // left out: stays as it was
-      out[field.key] = items;
-    } else if (kindOk(field, value)) {
-      out[field.key] = value;
-    } else {
-      track.dropped.push(field.key);
-    }
-  }
-  return out;
-}
-
-// The model's reply (checked by readEndStoryReply) as the after-story copy:
-//   {ok: true, after: {style, characters, world}, forced: [{character, fields}], dropped: [key]}
-// or a bad_output failure when the characters do not come back as they were sent.
-export function landEndStory(schema, project, read) {
-  const settled = settledProject(schema, project);
-  const sent = settled.characters.map((c) => c.id);
-  const got = read.characters.map((c) => c.id);
-  const same = sent.length === got.length && sent.every((id) => got.includes(id)) && new Set(got).size === got.length;
-  if (!same) return { ok: false, error: { kind: "bad_output", detail: "The updated characters must be the same people, each with the id it was sent with." } };
-  const taken = [];
-  const forced = [];
-  const dropped = [];
-  const characters = settled.characters.map((was) => {
-    const track = { forced: [], dropped };
-    const next = landFields(schema.cards.characters.fields, was, read.characters.find((c) => c.id === was.id), taken, track);
-    if (track.forced.length) forced.push({ character: instanceName(was), fields: track.forced });
-    next.id = was.id;
-    return next;
-  });
-  const world = landFields(schema.cards.world.fields, settled.world, read.world, taken, { forced: [], dropped });
-  if (settled.world.id) world.id = settled.world.id;
-  return { ok: true, after: { style: copyOf(settled.style), characters, world }, forced, dropped: [...new Set(dropped)] };
+// The after-story copy: the cards as the story left them. Style is copied as it is; Characters, World and Entanglements are the base
+// cards with every shift applied, so every original id is kept. {ok: true, after} or {ok: false, reason}.
+export function makeAfterStory(project) {
+  const gate = endGate(project);
+  if (!gate.ok) return gate;
+  const folded = foldAll(project);
+  return { ok: true, after: { style: copyOf(project.style ?? {}), characters: folded.characters ?? [], world: folded.world ?? {}, entanglements: folded.entanglements ?? {} } };
 }
 
 // ---- What changed, for the review ---------------------------------------------------------------
 
-const titleOf = (field, item) => itemTitle(field, item) || ["name", "state", "statement", "term"].map((k) => item[k]).find(isFilled) || msg("endstory.untitled");
 const words = (value) => (Array.isArray(value) ? joinList(value) : value === null || value === undefined ? "" : String(value));
 
+// A list item in a few words: its first two filled values, links by the name they point at.
+function titleOf(view, field, item) {
+  const parts = (field.item_fields ?? []).filter((d) => isFilled(item[d.key])).slice(0, 2)
+    .map((d) => (d.ref ? lookupLabel(view, d, item[d.key]) : words(item[d.key])));
+  return parts.join(" · ") || msg("endstory.untitled");
+}
+
 // The differences between the cards now and the after-story copy, in words:
-//   [{card: "characters"|"world", who, field, label, kind: "changed"|"added", before, after}]
+//   [{card, who, field, label, kind: "changed"|"added"|"removed", before, after}]
 export function afterStoryChanges(schema, project, after) {
   const settled = settledProject(schema, project);
+  const view = settledProject(schema, { ...project, characters: after.characters, world: after.world, entanglements: after.entanglements });   // the copy, settled the same way
+  after = { characters: view.characters, world: view.world, entanglements: view.entanglements };
   const out = [];
   const compare = (card, who, fields, was, now) => {
     for (const field of fields) {
       if (field.repeat) {
         const old = new Map((was[field.key] ?? []).map((i) => [i.id, i]));
+        const kept = new Set();
         for (const item of now[field.key] ?? []) {
           const before = old.get(item.id);
-          const title = titleOf(field, item);
+          kept.add(item.id);
+          const title = titleOf(view, field, item);
           if (!before) out.push({ card, who, field: field.key, label: field.label, kind: "added", before: "", after: title });
           else if (JSON.stringify(before) !== JSON.stringify(item)) {
-            const keys = (field.item_fields ?? []).filter((d) => JSON.stringify(before[d.key]) !== JSON.stringify(item[d.key]));
-            for (const d of keys) out.push({ card, who, field: field.key, label: msg("endstory.partOf", { field: field.label, title, part: d.label ?? d.key }), kind: "changed", before: words(before[d.key]), after: words(item[d.key]) });
+            for (const d of (field.item_fields ?? []).filter((x) => JSON.stringify(before[x.key]) !== JSON.stringify(item[x.key]))) {
+              out.push({ card, who, field: field.key, label: msg("endstory.partOf", { field: field.label, title, part: d.label ?? d.key }), kind: "changed", before: words(before[d.key]), after: words(item[d.key]) });
+            }
           }
         }
+        for (const [id, item] of old) if (!kept.has(id)) out.push({ card, who, field: field.key, label: field.label, kind: "removed", before: titleOf(settled, field, item), after: "" });
       } else if (JSON.stringify(was[field.key]) !== JSON.stringify(now[field.key])) {
         out.push({ card, who, field: field.key, label: field.label ?? field.key, kind: "changed", before: words(was[field.key]), after: words(now[field.key]) });
       }
     }
   };
   for (const now of after.characters) {
-    compare("characters", instanceName(now), schema.cards.characters.fields, settled.characters.find((c) => c.id === now.id), now);
+    const was = settled.characters.find((c) => c.id === now.id);
+    if (was) compare("characters", instanceName(now), schema.cards.characters.fields, was, now);
   }
   compare("world", settled.world.name ?? "", schema.cards.world.fields, settled.world, after.world);
+  compare("entanglements", schema.cards.entanglements.label, schema.cards.entanglements.fields, settled.entanglements, after.entanglements);
   return out;
 }
 
 // ---- Editing the copy, and knowing when it is out of date -----------------------------------------
 
-// A short fingerprint (8 hex digits, FNV-1a) of what the model read at the end: every written chapter, and the records of what
-// happened and how people changed. A chapter written again changes the records even when its words come out the same; undoing
-// that puts the fingerprint back. The order things are stored in does not matter.
+// A short fingerprint (8 hex digits, FNV-1a) of what the copy was made from: every written chapter and the records of what
+// happened and what changed. A chapter written again changes the records even when its words come out the same; undoing that
+// puts the fingerprint back. The order things are stored in does not matter.
 export function chaptersFingerprint(project) {
   const byId = (list) => [...(list ?? [])].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const text = JSON.stringify([
     byId(project.chapters).map((c) => [c.id, c.text ?? ""]),
     byId(project.summary_events?.entries),
-    byId(project.summary_shifts?.shifts),
+    byId(project.shifts?.entries),
   ]);
   let hash = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) { hash ^= text.charCodeAt(i); hash = Math.imul(hash, 0x01000193) >>> 0; }
   return hash.toString(16).padStart(8, "0");
 }
 
-// True when the copy was made from chapters that have since been written again. A copy with no fingerprint (made before this was
-// kept) is never called out of date, since nothing says it is.
+// True when the copy was made from chapters that have since been written again. A copy with no fingerprint is never called out of date.
 export function afterStoryStale(project) {
   const made = project.end_note?.made_from;
   if (!project.after_story || typeof made !== "string" || !made) return false;
   return made !== chaptersFingerprint(project);
 }
 
-// The project as the copy's cards should see it while the writer edits them: the same project, with the copy's style,
-// characters and world in place of the originals. The copy's own objects are shared, not duplicated, so editing a form edits the copy.
+// The project as the copy's cards should see it while the writer edits them: the same project, with the copy's cards in place of the
+// originals. The copy's own objects are shared, not duplicated, so editing a form edits the copy.
 export function afterStoryView(schema, project) {
-  return { ...settledProject(schema, project), style: project.after_story.style, characters: project.after_story.characters, world: project.after_story.world };
+  return { ...settledProject(schema, project), style: project.after_story.style, characters: project.after_story.characters, world: project.after_story.world, entanglements: project.after_story.entanglements };
 }
 
-// Block problems in the copy, counted per card, so the review can say the copy is not as clean as the original.
+// Block problems in the copy, counted, so the review can say the copy is not as clean as the original.
 export function afterStoryProblems(schema, project, after) {
-  const settled = { ...settledProject(schema, project), characters: after.characters, world: after.world };
+  const settled = { ...settledProject(schema, project), characters: after.characters, world: after.world, entanglements: after.entanglements };
   let count = 0;
-  for (const c of after.characters) count += validate(schema.cards.characters, c, settled, schema.common).problems.filter((p) => p.severity === "block").length;
-  count += validate(schema.cards.world, after.world, settled, schema.common).problems.filter((p) => p.severity === "block").length;
+  const blocking = (card, values) => validate(schema.cards[card], values, settled, schema.common).problems.filter((p) => p.severity === "block").length;
+  for (const c of after.characters) count += blocking("characters", c);
+  count += blocking("world", after.world);
+  count += blocking("entanglements", after.entanglements);
   return count;
 }

@@ -1,489 +1,259 @@
 import "./text-setup.mjs";
-import { test } from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
-import { addInstance, addItem, readPlanReply } from "../../web/logic.js";
-import { createMock } from "../../web/mock.js";
-import { lockStaticCards } from "../../web/gate.js";
-import { schema, readyProject } from "./helpers.mjs";
+import { story, opening, schema } from "./fixture.mjs";
 import {
-  CAST_MAX, chapterInfo, currentGoal, openPlants, availableReveals, useCounts, castChoices, duePressure, suggestedCast, castProblem,
-  pickSpotlight, shiftsForChapter, offstageDue, entanglementsHash, planIsStale, planGate, planRequest, offstageRequest,
-  latestShifts, landBeat, placeBeat, beatBlockers, beatForChapter,
+  pickSpotlight, requiredCast, tiesInPlay, groupsInPlay, holdingsInPlay, newBeat, ensureBeat, castProblem, planGate, planRequest, scene,
+  landBeat, placeBeat, commitPlan, beatBlockers, planIsStale, planInputsHash, chapterInfo, beatForChapter, writtenBeatIds, castKey, staleBeatIds,
 } from "../../web/plan.js";
 
-const world = schema.cards.world;
-const rulesField = world.fields.find((f) => f.key === "rules");
+const copy = (x) => JSON.parse(JSON.stringify(x));
 
-// A started story with three people and a hidden rule, nothing written yet.
-async function started() {
-  const p = await readyProject();
-  const mia = addInstance(p, schema.cards.characters);
-  mia.name = "Mia";
-  const rule = addItem(rulesField, p.world.rules);
-  Object.assign(rule, { statement: "The ledger can be read only at low tide", status: "uncommon", truth: "It is written in tide ink." });
-  p.setup.chapter_count = 6;
-  p.setup.goal = "Find the ledger.";
-  return lockStaticCards(p);
-}
-
-// Writes chapter n into the project by hand: a beat, a chapter that points at it, and an events entry.
-function writeChapter(p, n, { cast, where, spotlight, shift = "harder", events = {}, beat = {} }) {
-  const id = `b000000${n}`;
-  (p.outline ??= { beats: [] }).beats.push({ id, chapter: n, where, cast, spotlight, shift, ...beat });
-  // The text names the cast and the place: a value only counts as used when the written chapter says it.
-  const named = [...cast.map((c) => p.characters.find((x) => x.id === c)?.name), p.world.places.find((x) => x.id === where)?.name].filter(Boolean);
-  (p.chapters ??= []).push({ id: `ch00000${n}`, beat: id, text: `Chapter ${n}. ${named.join(" and ")} were there.` });
-  (p.summary_events ??= { entries: [] }).entries.push({ id: `e000000${n}`, beat: id, happened: `Happened ${n}`, entanglements_shown: spotlight ? [spotlight] : [], ...events });
-  return id;
-}
-
-test("the chapter being planned is the one after the last written", async () => {
-  const p = await started();
-  assert.deepEqual(chapterInfo(p), { written: 0, next: 1, count: 6, done: false });
-  const [suvi, , mia] = p.characters;
-  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id });
-  assert.equal(chapterInfo(p).next, 2);
+test("where the story stands: chapters written, the next one, and whether it is done", () => {
+  const p = story();
+  assert.deepEqual(chapterInfo(p), { written: 1, next: 2, count: 8, done: false });
   p.setup.chapter_count = 1;
   assert.equal(chapterInfo(p).done, true);
-  assert.equal(mia.name, "Mia");
+  assert.deepEqual([...writtenBeatIds(p)], ["b0000001"]);
+  assert.equal(beatForChapter(p, 2).id, "b0000002");
+  assert.equal(beatForChapter(p, 1), null, "a written chapter's beat is not up for planning");
+  assert.equal(castKey(["b", "a"]), castKey(["a", "b"]));
+  p.outline.beats[1].stale = true;
+  assert.deepEqual([...staleBeatIds(p)], ["b0000002"]);
 });
 
-test("the current goal is Setup's, then the goal_now of the last written chapter, however the chapter left it", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  const common = { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id };
-  assert.equal(currentGoal(p), "Find the ledger.");
-  writeChapter(p, 1, { ...common, events: { goal_change: "redefined", goal_now: "Get the ledger out of the city." } });
-  assert.equal(currentGoal(p), "Get the ledger out of the city.");
-  writeChapter(p, 2, { ...common, events: { goal_change: "achieved", goal_now: "Hide the copy of the ledger from the board." } });
-  assert.equal(currentGoal(p), "Hide the copy of the ledger from the board.", "an achieved goal is followed by what the win set up: there is always a goal");
-  const planned = { id: "b0000003", chapter: 3, where: common.where, cast: common.cast, spotlight: common.spotlight };
-  p.outline.beats.push(planned);
-  assert.equal(currentGoal(p), "Hide the copy of the ledger from the board.", "a beat that is planned and not written changes nothing");
+test("the spotlight is a tie of the project, the same one every time, and null with no ties", () => {
+  const p = story();
+  const ids = new Set(p.entanglements.ties.map((t) => t.id));
+  assert.ok(ids.has(pickSpotlight(p, 2).id));
+  assert.equal(pickSpotlight(p, 2).id, pickSpotlight(copy(p), 2).id);
+  const seen = new Set();
+  for (let chapter = 1; chapter < 40; chapter++) seen.add(pickSpotlight(p, chapter).id);
+  assert.equal(seen.size, 2, "every tie gets its turn");
+  p.entanglements.ties = [];
+  assert.equal(pickSpotlight(p, 2), null);
 });
 
-test("an open plant is one planted and not yet paid off, and a reveal is available until it lands", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  const common = { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id };
-  const rule = p.world.rules.find((r) => r.statement.startsWith("The ledger"));
-  assert.deepEqual(availableReveals(p).map((r) => r.statement), ["The ledger can be read only at low tide"]);
-  writeChapter(p, 1, { ...common, events: { planted: "A torn page", reveals_landed: [rule.id] } });
-  assert.deepEqual(openPlants(p), [{ id: "e0000001", text: "A torn page", chapter: 1 }]);
-  assert.deepEqual(availableReveals(p), []);
-  writeChapter(p, 2, { ...common, events: { paid_off: ["e0000001"] } });
-  assert.deepEqual(openPlants(p), []);
+test("the spotlight is picked from the ties as they stand going into the chapter, shifts included", () => {
+  const p = story();
+  p.entanglements.ties = [];
+  p.shifts.entries.push({ id: "s1", beat: "b0000001", card: "entanglements", target: null, patch: { ties: [{ op: "add", id: "t9", values: { tie_from: "c0000001", tie_to: "c0000002", bond: "x", edge: "y" } }] } });
+  assert.equal(pickSpotlight(p, 2).id, "t9");
+  assert.equal(pickSpotlight(p, 1), null);
 });
 
-test("common rules are never offered as reveals", async () => {
-  const p = await started();
-  p.world.rules.forEach((r) => { r.status = "common"; });
-  assert.deepEqual(availableReveals(p), []);
+test("the required cast is the protagonist and the two characters of the tie, never a group", () => {
+  const p = story();
+  assert.deepEqual(requiredCast(p, "t1000001"), ["c0000001", "c0000002"]);
+  assert.deepEqual(requiredCast(p, "t1000002"), ["c0000001"], "the other end is a group");
+  assert.deepEqual(requiredCast(p, "nope"), ["c0000001"]);
+  p.characters.push({ id: "c0000003", name: "Joss" });
+  p.entanglements.ties.push({ id: "t3", tie_from: "c0000003", tie_to: "c0000002", bond: "b", edge: "e" });
+  assert.deepEqual(requiredCast(p, "t3"), ["c0000001", "c0000003", "c0000002"]);
 });
 
-test("the cast suggestion is the protagonist and the two least-used others, and every character is a choice", async () => {
-  const p = await started();
-  const [suvi, ola, mia] = p.characters;
-  const extra = addInstance(p, schema.cards.characters);
-  extra.name = "Dov";
-  p.entanglements.pressures[0].source_agent = suvi.id;      // a pressure that involves only the protagonist, so use counts decide
-  p.entanglements.pressures[0].bears_on = [suvi.id];
-  assert.deepEqual(suggestedCast(p, 1).sort(), [suvi.id, ola.id, mia.id].sort(), "a fresh story: the first two others in order");
-  writeChapter(p, 1, { cast: [suvi.id, ola.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id });
-  const choices = castChoices(p, 2);
-  assert.deepEqual(choices.map((c) => c.name), ["Suvi", "Ola", "Mia", "Dov"]);
-  assert.deepEqual(choices.filter((c) => c.suggested).map((c) => c.name), ["Suvi", "Mia", "Dov"], "Ola was used, so Mia and Dov come first");
-  assert.deepEqual(choices.find((c) => c.name === "Ola"), { id: ola.id, name: "Ola", uses: 1, last: 1, protagonist: false, inPressure: false, suggested: false });
-  assert.equal(choices.find((c) => c.protagonist).id, suvi.id);
-});
-
-test("replanning a chapter does not count its own earlier plan against the cast", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  writeChapter(p, 1, { cast: [suvi.id, ola.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id });
-  assert.equal(useCounts(p, 1).characters[ola.id], undefined);
-  assert.equal(useCounts(p, null).characters[ola.id], 1);
-});
-
-test("a cast needs the protagonist, at most five people, and people who exist", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  assert.equal(castProblem(p, [suvi.id, ola.id]), null);
-  assert.equal(castProblem(p, []), "empty");
-  assert.equal(castProblem(p, [ola.id]), "no_protagonist");
-  assert.equal(castProblem(p, [suvi.id, "nobody"]), "unknown");
-  const many = Array.from({ length: CAST_MAX + 1 }, () => addInstance(p, schema.cards.characters).id);
-  assert.equal(castProblem(p, [suvi.id, ...many]), "too_many");
-});
-
-test("the spotlight is a pressure involving the cast, the least-spotlit first", async () => {
-  const p = await started();
-  const [suvi, ola, mia] = p.characters;
-  const pressures = p.entanglements.pressures;
-  pressures.push({ id: "pr000002", what: "Another", source_agent: ola.id, source_circumstance: "", next_move: "x", bears_on: [] });
-  pressures[0].source_agent = suvi.id;
-  pressures[0].bears_on = [];
-  assert.equal(pickSpotlight(p, [suvi.id]).id, pressures[0].id);
-  assert.equal(pickSpotlight(p, [ola.id]).id, "pr000002");
-  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: pressures[0].id });
-  assert.equal(pickSpotlight(p, [suvi.id, ola.id]).id, "pr000002", "the other one is due now");
-  assert.equal(pickSpotlight(p, [mia.id]).id, "pr000002", "nothing involves Mia: the least-spotlit overall");
-  assert.equal(pickSpotlight(p, [suvi.id, ola.id], 1).id, pressures[0].id, "replanning chapter 1 forgets its own spotlight");
-  p.entanglements.pressures = [];
-  assert.equal(pickSpotlight(p, [suvi.id]), null);
-});
-
-test("the spotlight rotates through every pressure however many the extractor says each chapter showed", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  const pressures = p.entanglements.pressures;
-  for (const id of ["pr000002", "pr000003"]) pressures.push({ id, what: `Pressure ${id}`, source_agent: ola.id, source_circumstance: "", next_move: "x", bears_on: [suvi.id] });
-  pressures[0].source_agent = ola.id;
-  pressures[0].bears_on = [suvi.id];
-  const everything = pressures.map((x) => x.id);
-  const seen = [];
-  for (let n = 1; n <= 6; n++) {
-    const pick = pickSpotlight(p, [suvi.id, ola.id]);
-    seen.push(pick.id);
-    writeChapter(p, n, { cast: [suvi.id, ola.id], where: p.world.places[0].id, spotlight: pick.id, events: { entanglements_shown: everything } });
-  }
-  assert.deepEqual(seen, [...everything, ...everything], "each pressure in turn, the one spotlit longest ago first");
-});
-
-test("a resolved pressure is passed over, and the story still has a spotlight once every pressure is resolved", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  const pressures = p.entanglements.pressures;
-  pressures.push({ id: "pr000002", what: "Another", source_agent: ola.id, source_circumstance: "", next_move: "x", bears_on: [suvi.id] });
-  pressures[0].source_agent = ola.id;
-  pressures[0].bears_on = [suvi.id];
-  pressures[0].status = "resolved";
-  assert.equal(pickSpotlight(p, [suvi.id, ola.id]).id, "pr000002");
-  assert.equal(duePressure(p).id, "pr000002");
-  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: "pr000002" });
-  assert.equal(pickSpotlight(p, [suvi.id, ola.id]).id, "pr000002", "the only live one, even though it was just spotlit");
-  pressures[1].status = "resolved";
-  assert.equal(pickSpotlight(p, [suvi.id, ola.id]).id, pressures[0].id, "all resolved: the least recently spotlit overall");
-});
-
-test("a spotlight the chapter never showed still counts, so the rotation moves on", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  const pressures = p.entanglements.pressures;
-  pressures.push({ id: "pr000002", what: "Another", source_agent: ola.id, source_circumstance: "", next_move: "x", bears_on: [] });
-  pressures[0].source_agent = ola.id;
-  pressures[0].bears_on = [suvi.id];
-  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: pressures[0].id, events: { entanglements_shown: [] } });
-  assert.equal(pickSpotlight(p, [suvi.id, ola.id]).id, "pr000002", "the unshown spotlight was still used");
-  assert.equal(duePressure(p, null).id, "pr000002");
-});
-
-test("legal shifts follow the earlier beats, and an offstage change is due every second chapter", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  const common = { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id };
-  assert.deepEqual(shiftsForChapter(p, 1), ["harder", "easier"]);
-  writeChapter(p, 1, { ...common, shift: "harder" });
-  writeChapter(p, 2, { ...common, shift: "harder" });
-  assert.deepEqual(shiftsForChapter(p, 3), ["easier"], "never a third harder in a row");
-  assert.deepEqual([1, 2, 3, 4, 5, 6].map(offstageDue), [false, true, false, true, false, true]);
-});
-
-test("the plan hash changes with the Entanglements, and a visit alone changes nothing", async () => {
-  const p = await started();
-  const hash = entanglementsHash(schema, p);
-  assert.match(hash, /^[0-9a-f]{8}$/);
-  const beat = { planned_from: hash };
-  assert.equal(planIsStale(schema, p, beat), false);
-  assert.equal(planIsStale(schema, p, { planned_from: "" }), false, "a beat with no hash is not stale");
-  p.entanglements.pressures[0].next_move = "Something new";
-  assert.equal(planIsStale(schema, p, beat), true);
-});
-
-test("a chapter can be planned once the story has started, with a cast, a pressure and chapters left", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  assert.deepEqual(planGate(p, [suvi.id, ola.id]), { ok: true, chapter: 1 });
-  assert.equal(planGate({ ...p, locks: [] }, [suvi.id]).reason, "not_started");
-  assert.deepEqual(planGate(p, [ola.id]), { ok: false, reason: "cast", why: "no_protagonist" });
-  assert.equal(planGate({ ...p, entanglements: { ...p.entanglements, pressures: [] } }, [suvi.id]).reason, "no_pressure");
-  p.setup.chapter_count = 0;
-  assert.equal(planGate(p, [suvi.id]).ok, true, "a story with no count set is not done");
-  const done = await started();
-  done.setup.chapter_count = 1;
-  writeChapter(done, 1, { cast: [suvi.id], where: done.world.places[0].id, spotlight: done.entanglements.pressures[0].id });
-  assert.equal(planGate(done, [suvi.id]).reason, "done");
-});
-
-test("the plan request carries numbers worked out here, names for links, and only the cast", async () => {
-  const p = await started();
-  const [suvi, ola, mia] = p.characters;
-  const request = planRequest(schema, p, [suvi.id, ola.id]);
-  assert.deepEqual([request.call, request.chapter, request.chapter_count, request.goal], ["plan", 1, 6, "Find the ledger."]);
-  assert.deepEqual(request.cast.map((c) => c.name), ["Suvi", "Ola"], "Mia is not on stage, so she is not sent");
-  assert.equal(request.setup.protagonist, "Suvi", "the protagonist is a name, not an id");
-  assert.deepEqual(request.legal_shifts, ["harder", "easier"]);
-  assert.deepEqual(request.available_reveals.map((r) => r.statement), ["The ledger can be read only at low tide"]);
-  assert.deepEqual(request.open_plants, []);
-  assert.equal(request.offstage, null);
-  assert.equal(request.retry, null);
-  assert.equal(request.spotlight.id, p.entanglements.pressures[0].id);
-  assert.equal(request.spotlight.source_agent, p.characters.find((c) => c.id === p.entanglements.pressures[0].source_agent).name, "a link is a name");
-  assert.ok(request.entanglements.ties.length > 0);
-  for (const tie of request.entanglements.ties) assert.ok(["Suvi", "Ola"].includes(tie.tie_from), "a tie is shown from someone on stage");
-  assert.deepEqual(request.use_counts.characters.map((c) => [c.name, c.uses]), [["Suvi", 0], ["Ola", 0], ["Mia", 0]]);
-  assert.equal(JSON.stringify({ ...request, use_counts: null }).includes(mia.id), false, "Mia is nowhere but the use counts");
-  const again = planRequest(schema, p, [suvi.id], { offstage: { did: "x", reach: "y" }, retry: { thinking: "t", beat: { collision_goal: "z" }, problems: ["fix it"] } });
-  assert.deepEqual(again.offstage, { did: "x", reach: "y" });
-  assert.deepEqual(again.retry, { thinking: "t", beat: { collision_goal: "z" }, problems: ["fix it"] });
-});
-
-test("the plan request does not change the project and shows earlier chapters as they were", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  writeChapter(p, 1, { cast: [suvi.id, ola.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id, events: { planted: "A torn page", changed: "She has a page." } });
-  p.summary_shifts = { shifts: [
-    { id: "s1", beat: "b0000001", character: suvi.id, decided: "Keep it secret." },
-    { id: "s2", beat: "b0000001", character: suvi.id, fears: "The board." },
-  ] };
-  const text = JSON.stringify(p);
-  const request = planRequest(schema, p, [suvi.id]);
-  assert.equal(JSON.stringify(p), text);
-  assert.equal(request.chapter, 2);
-  assert.deepEqual(request.open_plants, [{ text: "A torn page", chapter: 1 }]);
-  assert.deepEqual(request.earlier_events.map((e) => [e.chapter, e.happened, e.changed]), [[1, "Happened 1", "She has a page."]]);
-  assert.equal(request.earlier_beats[0].cast.every((name) => typeof name === "string"), true);
-  assert.deepEqual(request.earlier_beats[0].cast, ["Suvi", "Ola"]);
-  assert.deepEqual(request.latest_shifts, [{ character: "Suvi", decided: "Keep it secret.", fears: "The board." }]);
-  assert.deepEqual(latestShifts(p, [ola.id]), []);
-});
-
-test("the offstage request holds only groups, places and what touches them", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  const power = addItem(world.fields.find((f) => f.key === "powers"), p.world.powers);
-  power.name = "The Harbour Board";
-  p.entanglements.pressures.push({ id: "pr000009", what: "The board wants the ledger", source_agent: power.id, source_circumstance: "", next_move: "Raid", bears_on: [suvi.id] });
-  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id, events: { changed: "A page found." } });
-  const request = offstageRequest(schema, p, [suvi.id]);
-  assert.deepEqual([request.call, request.chapter], ["offstage", 2]);
-  assert.deepEqual(request.entanglements.pressures.map((x) => x.id), ["pr000009"]);
-  assert.equal(request.entanglements.pressures[0].source_agent, "The Harbour Board");
-  assert.deepEqual(request.entanglements.pressures[0].bears_on, ["Suvi"]);
-  assert.equal(request.latest_events.chapter, 1);
-  assert.ok(request.world.powers.some((x) => x.name === "The Harbour Board"));
-});
-
-// ---- Landing a plan ----
-
-async function mockPlan(p, castIds, extra = {}) {
-  const mock = createMock(schema, { delay: 0 });
-  const request = { ...planRequest(schema, p, castIds), ...extra };
-  return readPlanReply(await mock.send(request));
+function crowd() {
+  const p = story();
+  p.characters.push({ id: "c0000003", name: "Joss" });
+  p.world.powers.push({ id: "g0000002", name: "The Guild" }, { id: "g0000003", name: "The Crown" });
+  p.entanglements.ties.push(
+    { id: "t3", tie_from: "c0000003", tie_to: "c0000001", bond: "rival", edge: "e" },          // cast member to a character who is out
+    { id: "t4", tie_from: "c0000002", tie_to: "g0000002", bond: "owes", edge: "e" },           // cast member to a second group
+    { id: "t5", tie_from: "g0000001", tie_to: "g0000002", bond: "feud", edge: "e" },           // two groups, both touch the cast
+    { id: "t6", tie_from: "g0000002", tie_to: "g0000003", bond: "treaty", edge: "e" },         // one group touches the cast
+    { id: "t7", tie_from: "g0000003", tie_to: "c0000003", bond: "hunts", edge: "e" },          // nobody in the cast
+  );
+  p.world.powers.push({ id: "g0000004", name: "Far" }, { id: "g0000005", name: "Away" });
+  p.entanglements.ties.push({ id: "t8", tie_from: "g0000004", tie_to: "g0000005", bond: "far", edge: "e" });   // two groups that touch nobody
+  return p;
 }
 
-test("a planned beat lands with ids, and the code fills what the model does not", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  const reply = await mockPlan(p, [suvi.id, ola.id]);
-  const { beat, unresolved } = landBeat(schema, p, [suvi.id, ola.id], reply, { offstage: null });
-  assert.equal(beat.chapter, 1);
-  assert.deepEqual(beat.cast, [suvi.id, ola.id]);
-  assert.equal(beat.spotlight, p.entanglements.pressures[0].id);
-  assert.equal(beat.planned_from, entanglementsHash(schema, p));
-  assert.equal(beat.where, p.world.places[0].id, "the place the model named is now its id");
+test("ties in play: among the cast, cast to group, and group to group when one touches the cast; never a tie to an absent character", () => {
+  const ids = (cast) => tiesInPlay(crowd(), cast).map((t) => t.id);
+  assert.deepEqual(ids(["c0000001", "c0000002"]), ["t1000001", "t1000002", "t4", "t5", "t6"]);
+  assert.deepEqual(ids(["c0000001"]), ["t1000002", "t5"], "t5 joins a group that touches the cast to another; t6 reaches one step further, through a group that does not touch the cast itself, so it is not sent");
+  assert.deepEqual(ids([]), []);
+});
+
+test("the groups in play are the groups at the ends of ties in play, and their holdings are sent with them", () => {
+  const p = crowd();
+  p.entanglements.holdings.push({ id: "h2", holdee: "o0000001", held_by: "c0000002" }, { id: "h3", holdee: "p0000001", held_by: "g0000005" }, { id: "h4", holdee: "p0000002", held_by: "g0000002" });
+  assert.deepEqual(groupsInPlay(p, ["c0000001", "c0000002"]).map((g) => g.id), ["g0000001", "g0000002", "g0000003"]);
+  assert.deepEqual(holdingsInPlay(p, ["c0000001", "c0000002"]).map((h) => h.id), ["h1000001", "h2", "h4"]);
+  assert.deepEqual(holdingsInPlay(p, ["c0000001"]).map((h) => h.id), ["h1000001", "h4"], "g0000002 is in play through the tie between the groups");
+  assert.deepEqual(holdingsInPlay(p, ["c0000002"]).map((h) => h.id), ["h1000001", "h2", "h4"], "a cast member's own holdings, the group they touch, and the group at the other end of that group's tie");
+});
+
+test("a new beat has its code fields set, the picked spotlight, and the required cast", () => {
+  const p = story();
+  p.outline.beats = [p.outline.beats[0]];
+  const beat = newBeat(schema, p, 2);
+  const spot = pickSpotlight(p, 2).id;
+  assert.equal(beat.chapter, 2);
+  assert.equal(beat.spotlight, spot);
+  assert.deepEqual(beat.cast, requiredCast(p, spot));
   assert.equal(beat.stale, false);
-  assert.equal(beat.when_gap, "");
-  assert.ok(beat.collision_goal && beat.ends_on && beat.id);
-  for (const gone of ["turn", "collision_block", "choice_a", "choice_b", "goal_change", "goal_now"]) assert.equal(gone in beat, false, gone);
-  assert.deepEqual(unresolved, []);
+  assert.equal(beat.planned_from, null);
+  assert.equal(beat.aim, "");
+  assert.ok(beat.id && p.outline.beats.every((b) => b.id !== beat.id));
 });
 
-test("the model cannot set the chapter, the cast, the spotlight or the offstage move", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  const reply = { ok: true, thinking: "t", beat: { collision_goal: "She chooses.", chapter: 9, cast: ["x"], spotlight: "zzz", offstage_did: "nope", planned_from: "nope" } };
-  const { beat } = landBeat(schema, p, [suvi.id], reply, { offstage: { did: "Board raids.", reach: "Bells." } });
-  assert.deepEqual([beat.chapter, beat.cast, beat.offstage_did, beat.offstage_reach], [1, [suvi.id], "Board raids.", "Bells."]);
-  assert.notEqual(beat.spotlight, "zzz");
-  assert.notEqual(beat.planned_from, "nope");
+test("ensureBeat makes and places the next chapter's beat once", () => {
+  const p = story();
+  p.outline.beats = [p.outline.beats[0]];
+  const first = ensureBeat(schema, p);
+  assert.equal(first.chapter, 2);
+  assert.equal(p.outline.beats.length, 2);
+  assert.equal(ensureBeat(schema, p).id, first.id);
+  assert.equal(p.outline.beats.length, 2);
 });
 
-test("a shift that is not harder or easier is dropped, and a link that matches nothing is reported", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  const reply = { ok: true, thinking: "t", beat: { collision_goal: "x", shift: "sideways", where: "Nowhere Land" } };
-  const { beat, unresolved, dropped } = landBeat(schema, p, [suvi.id], reply);
-  assert.deepEqual(dropped.sort(), ["shift"]);
-  assert.equal(beat.shift, "");
-  assert.deepEqual(unresolved.map((u) => [u.key, u.words, u.why]), [["where", "Nowhere Land", "none"]]);
+test("a cast must have the protagonist, at most five, real characters, and the spotlight's pair", () => {
+  const p = story();
+  assert.equal(castProblem(p, ["c0000001", "c0000002"], "t1000001"), null);
+  assert.equal(castProblem(p, [], null), "empty");
+  assert.equal(castProblem(p, ["c0000002"], null), "no_protagonist");
+  assert.equal(castProblem(p, ["c0000001", "zzz"], null), "unknown");
+  assert.equal(castProblem(p, ["c0000001"], "t1000001"), "spotlight_pair");
+  assert.equal(castProblem(p, ["c0000001"], "t1000002"), null);
+  p.characters.push(...[3, 4, 5, 6].map((n) => ({ id: `c000000${n}`, name: `N${n}` })));
+  assert.equal(castProblem(p, ["c0000001", "c0000002", "c0000003", "c0000004", "c0000005", "c0000006"], null), "too_many");
 });
 
-test("a reveal the page did not offer is refused, and an offered one lands as its id", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  const rule = p.world.rules.find((r) => r.statement.startsWith("The ledger"));
-  const ok = landBeat(schema, p, [suvi.id], { beat: { reveal_rule: rule.statement, reveal_learners: ["Suvi", "Ola"] } });
-  assert.equal(ok.beat.reveal_rule, rule.id);
-  assert.deepEqual(ok.beat.reveal_learners ?? [], [], "who learns it is read from the chapter afterwards, not planned");
-  p.world.rules[0].status = "common";
-  const common = landBeat(schema, p, [suvi.id], { beat: { reveal_rule: p.world.rules[0].statement } });
-  assert.equal(common.beat.reveal_rule, "");
-  assert.equal(common.unresolved[0].key, "reveal_rule");
+test("planning needs a started story, an open outline, a chapter to write, a tie and a sound cast", () => {
+  const p = story();
+  const beat = p.outline.beats[1];
+  assert.deepEqual(planGate(p, beat), { ok: true, chapter: 2 });
+  assert.equal(planGate({ ...p, locks: [] }, beat).reason, "not_started");
+  assert.equal(planGate({ ...p, locks: [...p.locks, { id: "lx", card: "outline" }] }, beat).reason, "outline_locked");
+  assert.equal(planGate({ ...p, setup: { ...p.setup, chapter_count: 1 } }, beat).reason, "done");
+  assert.equal(planGate(p, { ...beat, spotlight: "nope" }).reason, "no_tie");
+  assert.deepEqual(planGate(p, { ...beat, cast: ["c0000001"] }), { ok: false, reason: "cast", why: "spotlight_pair" });
 });
 
-test("a payoff is the wording of an open plant, and lands as that entry's id", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id, events: { planted: "A torn page" } });
-  const { beat, unresolved } = landBeat(schema, p, [suvi.id], { beat: { payoff: ["A torn page", "A thing never planted"] } });
-  assert.deepEqual(beat.payoff, ["e0000001"]);
-  assert.deepEqual(unresolved.map((u) => u.words), ["A thing never planted"]);
+test("the plan request caps every list at five with the scene's own items kept, and is the same every time", () => {
+  const p = story();
+  for (let i = 0; i < 9; i++) {
+    p.world.places.push({ id: `px${i}`, name: `Place ${i}` });
+    p.world.objects.push({ id: `ox${i}`, name: `Object ${i}` });
+    p.world.rules.push({ id: `rx${i}`, statement: `Rule ${i}` });
+    p.world.terms.push({ id: `tx${i}`, term: `Term ${i}` });
+  }
+  p.characters[0].behaviors = Array.from({ length: 8 }, (_, i) => ({ id: `bx${i}`, state: `s${i}`, tendency: `t${i}` }));
+  const request = planRequest(schema, p, p.outline.beats[1]);
+  assert.equal(request.world.places.length, 5);
+  assert.equal(request.world.rules.length, 5);
+  assert.equal(request.world.terms.length, 5);
+  assert.equal(request.world.objects.length, 5);
+  assert.ok(request.world.objects.some((o) => o.id === "o0000001"), "the ledger is held by a group in play, so it is always sent");
+  assert.equal(request.cast[0].behaviors.length, 5);
+  assert.deepEqual(request, planRequest(schema, copy(p), p.outline.beats[1]));
+  const next = planRequest(schema, p, { ...p.outline.beats[1], chapter: 3 });
+  assert.notDeepEqual(request.world.rules, next.world.rules, "another chapter draws other rules");
 });
 
-test("naming the same plant twice pays it once, and a null plant plants nothing", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id, events: { planted: "A torn page" } });
-  const { beat } = landBeat(schema, p, [suvi.id], { beat: { payoff: ["A torn page", "A torn page"], plant: null } });
-  assert.deepEqual(beat.payoff, ["e0000001"]);
-  assert.equal(beat.plant ?? "", "");
+test("the generate request always carries the beat's place, even when picks would drop it", () => {
+  const p = story();
+  for (let i = 0; i < 12; i++) p.world.places.push({ id: `px${i}`, name: `Place ${i}` });
+  const beat = { ...p.outline.beats[1], where: "px7" };
+  const request = scene(p, 2, beat.cast, { where: beat.where });
+  assert.ok(request.world.places.some((x) => x.id === "px7"));
+  assert.equal(request.world.places.length, 5);
 });
 
-test("placing a beat adds it, then replaces the unwritten beat for that chapter and keeps its id", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  const first = landBeat(schema, p, [suvi.id], { beat: { collision_goal: "First try." } }).beat;
-  assert.equal(placeBeat(p, first), null);
-  assert.equal(p.outline.beats.length, 1);
-  assert.equal(beatForChapter(p, 1).collision_goal, "First try.");
-  const second = landBeat(schema, p, [suvi.id], { beat: { collision_goal: "Second try." } }, { existing: beatForChapter(p, 1) }).beat;
-  assert.equal(second.id, first.id);
-  assert.equal(placeBeat(p, second).collision_goal, "First try.", "what it replaced comes back, so Undo can put it back");
-  assert.equal(p.outline.beats.length, 1);
-  assert.equal(beatForChapter(p, 1).collision_goal, "Second try.");
+test("only the groups in play are sent, and the cast cards come in the beat's order", () => {
+  const p = crowd();
+  const request = planRequest(schema, p, { ...p.outline.beats[1], cast: ["c0000002", "c0000001"] });
+  assert.deepEqual(request.cast.map((c) => c.id), ["c0000002", "c0000001"]);
+  assert.deepEqual(request.world.powers.map((g) => g.id), ["g0000001", "g0000002", "g0000003"]);
+  assert.equal(request.ties.some((t) => t.id === "t3"), false);
 });
 
-test("a written chapter's beat is not offered as the plan, and a beat for the next chapter is", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id });
-  assert.equal(beatForChapter(p, 1), null);
-  assert.equal(beatForChapter(p, 2), null);
+test("the request is built from the effective cards: shifts of earlier chapters count, later ones do not", () => {
+  const p = story();
+  p.shifts.entries.push({ id: "s1", beat: "b0000001", card: "characters", target: "c0000001", patch: { fear: "Fire" } });
+  p.shifts.entries.push({ id: "s2", beat: "b0000002", card: "characters", target: "c0000001", patch: { fear: "Water" } });
+  assert.equal(planRequest(schema, p, p.outline.beats[1]).cast[0].fear, "Fire");
+  assert.equal(p.characters[0].fear, "Being found out", "the base card is never changed");
 });
 
-test("a beat's blocking problems come back in words, and only that beat's", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  const broken = landBeat(schema, p, [suvi.id], { beat: { collision_goal: "x" } }).beat;
-  const words = beatBlockers(schema, p, broken);
-  assert.ok(words.length > 0, "a beat with most fields empty is blocked");
-  assert.ok(words.every((w) => typeof w === "string" && w.length > 3));
-  const missingLead = { ...broken, cast: [ola.id] };
-  assert.ok(beatBlockers(schema, p, missingLead).some((w) => /protagonist/i.test(w)), "no protagonist in the cast");
-  assert.equal(p.outline?.beats?.length ?? 0, 0, "checking a beat does not add it");
+test("a plan goes stale when the cast cards, the ties or the picks it was made from change", () => {
+  const p = story();
+  const beat = p.outline.beats[1];
+  const landed = landBeat(schema, p, beat, { ok: true, beat: { where: "The Archive", when_time: "Dusk", aim: "Suvi wants it.", plan: "A plan." } });
+  placeBeat(p, landed.beat);
+  assert.equal(planIsStale(p, landed.beat), false);
+  assert.equal(planIsStale(p, { ...landed.beat, planned_from: null }), false, "a plan from before the hash is never called stale");
+  const edit = (change) => { const q = copy(p); change(q); return planIsStale(q, q.outline.beats[1]); };
+  assert.equal(edit((q) => { q.characters[1].sketch = "Changed"; }), true);
+  assert.equal(edit((q) => { q.entanglements.ties[0].edge = "changed"; }), true);
+  assert.equal(edit((q) => { q.outline.beats[1].spotlight = "t1000002"; }), true);
+  assert.equal(edit((q) => { q.shifts.entries.push({ id: "s1", beat: "b0000001", card: "characters", target: "c0000001", patch: { fear: "x" } }); }), true);
+  assert.equal(edit((q) => { q.outline.beats[1].aim = "A different aim"; }), false, "the plan's own words are not its inputs");
+  assert.equal(planInputsHash(p, landed.beat), landed.beat.planned_from);
 });
 
-test("a complete mock plan passes the Outline card's blocking rules", async () => {
-  const p = await started();
-  const [suvi, ola] = p.characters;
-  const reply = await mockPlan(p, [suvi.id, ola.id]);
-  const { beat } = landBeat(schema, p, [suvi.id, ola.id], reply);
-  assert.deepEqual(beatBlockers(schema, p, beat), []);
+test("landing a plan: the words become ids, the code fields stay, and what did not match is reported", () => {
+  const p = story();
+  const beat = { ...p.outline.beats[1], where: "", aim: "", plan: "" };
+  const ok = landBeat(schema, p, beat, { ok: true, beat: { where: "the archive", when_time: " Dusk ", aim: "Aim.", plan: "Plan." } });
+  assert.deepEqual([ok.beat.where, ok.beat.when_time, ok.beat.aim, ok.beat.plan], ["p0000001", "Dusk", "Aim.", "Plan."]);
+  assert.deepEqual([ok.beat.id, ok.beat.chapter, ok.beat.spotlight, ok.beat.cast, ok.beat.stale], [beat.id, 2, beat.spotlight, beat.cast, false]);
+  assert.match(ok.beat.planned_from, /^[0-9a-f]{8}$/);
+  const lost = landBeat(schema, p, beat, { ok: true, beat: { where: "The Moon", aim: "Aim.", cast: ["x"], spotlight: "t", extra: "y" } });
+  assert.equal(lost.beat.where, "");
+  assert.deepEqual(lost.unresolved.map((u) => [u.key, u.why]), [["where", "none"]]);
+  assert.deepEqual(lost.dropped.sort(), ["cast", "extra", "spotlight"]);
+  assert.deepEqual([lost.beat.cast, lost.beat.spotlight], [beat.cast, beat.spotlight], "the model never changes the cast or the tie");
+  assert.deepEqual(landBeat(schema, p, beat, { ok: true, beat: { aim: 5 } }).dropped, ["aim"]);
 });
 
-test("staleBeatIds names the beats marked as possibly out of step, and castKey ignores order", async () => {
-  const { staleBeatIds, castKey } = await import("../../web/plan.js");
-  const project = { outline: { beats: [{ id: "b1", stale: true }, { id: "b2", stale: false }, { id: "b3" }] } };
-  assert.deepEqual([...staleBeatIds(project)], ["b1"]);
-  assert.equal(staleBeatIds({}).size, 0);
-  assert.equal(castKey(["b", "a"]), castKey(["a", "b"]));
-  assert.notEqual(castKey(["a"]), castKey(["a", "b"]));
-  assert.equal(castKey(undefined), "");
+test("a place the story added in an earlier chapter can be the beat's place", () => {
+  const p = story();
+  p.shifts.entries.push({ id: "s1", beat: "b0000001", card: "world", target: null, patch: { places: [{ op: "add", id: "p9", values: { name: "The Mill", description: "d", effect: "e" } }] } });
+  const landed = landBeat(schema, p, p.outline.beats[1], { ok: true, beat: { where: "The Mill" } });
+  assert.equal(landed.beat.where, "p9");
 });
 
-test("the suggestion puts the people in the least-spotlit pressure first, and it stays a suggestion", async () => {
-  const p = await started();
-  const [suvi, ola, mia] = p.characters;
-  const dov = addInstance(p, schema.cards.characters);
-  dov.name = "Dov";
-  const [first] = p.entanglements.pressures;
-  first.source_agent = suvi.id; first.bears_on = [suvi.id];
-  const second = { ...JSON.parse(JSON.stringify(first)), id: "pressure2", what: "Dov is owed a debt.", source_agent: dov.id, bears_on: [dov.id, suvi.id] };
-  p.entanglements.pressures.push(second);
-  writeChapter(p, 1, { cast: [suvi.id, ola.id, dov.id], where: p.world.places[0].id, spotlight: first.id });
-  assert.equal(duePressure(p, 2).id, "pressure2", "the first one has been the spotlight, the second has not");
-  const choices = castChoices(p, 2);
-  assert.deepEqual(choices.filter((c) => c.suggested).map((c) => c.name), ["Suvi", "Mia", "Dov"], "Dov is in the due pressure, so he is suggested ahead of Ola, who has been used just as often");
-  assert.deepEqual(choices.filter((c) => c.inPressure).map((c) => c.name), ["Suvi", "Dov"]);
-  assert.equal(choices.find((c) => c.name === "Mia").inPressure, false);
-  assert.ok(pickSpotlight(p, suggestedCast(p, 2), null), "the suggested cast has a pressure to turn on");
-  assert.equal(pickSpotlight(p, suggestedCast(p, 2), 2).id, "pressure2");
+test("placing a beat replaces the one with its id, or adds it", () => {
+  const p = story();
+  const was = placeBeat(p, { ...p.outline.beats[1], aim: "New" });
+  assert.equal(was.aim, "Suvi wants the ledger out before the board counts.");
+  assert.equal(p.outline.beats.length, 2);
+  assert.equal(placeBeat(p, { id: "bnew", chapter: 3 }), null);
+  assert.equal(p.outline.beats.length, 3);
 });
 
-test("with no pressure, or one that names nobody else, the suggestion is by use alone", async () => {
-  const p = await started();
-  const [suvi, ola, mia] = p.characters;
-  assert.equal(duePressure({ ...p, entanglements: { ...p.entanglements, pressures: [] } }), null);
-  p.entanglements.pressures[0].source_agent = suvi.id; p.entanglements.pressures[0].bears_on = [suvi.id];
-  assert.deepEqual(castChoices(p, 1).filter((c) => c.inPressure).map((c) => c.name), ["Suvi"]);
-  assert.deepEqual(suggestedCast(p, 1).sort(), [suvi.id, ola.id, mia.id].sort());
+test("the Outline's block rules judge the beat against the cards going into its chapter", () => {
+  const p = story();
+  const good = { ...p.outline.beats[1] };
+  assert.deepEqual(beatBlockers(schema, p, good), []);
+  const blocked = beatBlockers(schema, p, { ...good, cast: ["c0000002"] });
+  assert.ok(blocked.length > 0, "a cast without the protagonist is blocked");
+  const same = beatBlockers(schema, p, { ...good, aim: p.outline.beats[0].aim });
+  assert.ok(Array.isArray(same));
+  assert.equal(p.outline.beats.length, 2, "checking leaves the project alone");
+  const withMill = story();
+  withMill.shifts.entries.push({ id: "s1", beat: "b0000001", card: "world", target: null, patch: { places: [{ op: "add", id: "p9", values: { name: "The Mill", description: "d", effect: "e" } }] } });
+  assert.deepEqual(beatBlockers(schema, withMill, { ...good, where: "p9" }), [], "a place the story added is a place");
+  assert.ok(beatBlockers(schema, story(), { ...good, where: "p9" }).length > 0, "and without the shift it is not");
 });
 
-// ---- The goal arc -------------------------------------------------------------------------------------------------
-import { goalArc, goalDue } from "../../web/plan.js";
-
-test("the goal arc follows the Events entries: each new goal starts a count, a reworded one does not", async () => {
-  const p = await started();
-  p.setup.chapter_count = 8;
-  const [suvi] = p.characters;
-  const common = { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id };
-  writeChapter(p, 1, { ...common, events: { goal_change: "redefined", goal_now: "Prove that beechwood bakes a reliable loaf" } });
-  let arc = goalArc(p);
-  assert.equal(arc.goal, "Prove that beechwood bakes a reliable loaf");
-  assert.equal(arc.since, 2);
-  assert.deepEqual(arc.goals, ["Find the ledger.", "Prove that beechwood bakes a reliable loaf"]);
-  writeChapter(p, 2, { ...common, events: { goal_change: "redefined", goal_now: "Prove beechwood bakes a reliable loaf" } });
-  arc = goalArc(p);
-  assert.equal(arc.since, 2, "the same goal in other words has stood since chapter 2");
-  assert.equal(arc.goals.length, 2);
-  writeChapter(p, 3, { ...common, events: { goal_change: "abandoned", goal_now: "Learn who paid for the dock repairs." } });
-  arc = goalArc(p);
-  assert.equal(arc.goal, "Learn who paid for the dock repairs.");
-  assert.equal(arc.since, 4);
-  assert.equal(goalDue(p, 4).age, 0);
-  assert.equal(goalDue(p, 6).age, 2);
+test("the first chapter's plan has no earlier beats or events", () => {
+  const o = opening();
+  const request = planRequest(schema, o, o.outline.beats[0]);
+  assert.deepEqual([request.chapter, request.earlier_beats, request.earlier_events], [1, [], []]);
 });
 
-test("the goal arc advises the last chapters and never forbids anything", async () => {
-  const p = await started();
-  p.setup.chapter_count = 6;
-  const [suvi] = p.characters;
-  const common = { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id };
-  assert.equal(goalDue(p, 1).due, null);
-  assert.equal(goalDue(p, 5).due, null, "the goal is still the story's own");
-  assert.equal(goalDue(p, 6).due, "settle");
-  writeChapter(p, 1, { ...common, events: { goal_change: "abandoned", goal_now: "Learn who paid for the dock repairs." } });
-  assert.equal(goalDue(p, 5).due, "return", "the goal has drifted from the story's goal, one chapter before the last");
-});
-
-test("the planner is told the goal, the story's goal once it has moved off it, and the goals before", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  const common = { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id };
-  writeChapter(p, 1, { ...common, events: { goal_change: "redefined", goal_now: "Get the ledger out of the city." } });
-  const request = planRequest(schema, p, [suvi.id]);
-  assert.equal(request.goal, "Get the ledger out of the city.");
-  assert.equal(request.story_goal, "Find the ledger.");
-  assert.deepEqual(request.goal_plan.earlier_goals, ["Find the ledger."]);
-  assert.equal("goal_state" in request, false);
-  assert.equal("goal_now" in landBeat(schema, p, [suvi.id], { ok: true, thinking: "t", beat: { collision_goal: "x", goal_now: "no" } }).beat, false, "a goal is not the planner's to give");
-});
-
-test("the offstage request carries the background moves already made", async () => {
-  const p = await started();
-  const [suvi] = p.characters;
-  writeChapter(p, 1, { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id, beat: { offstage_did: "The board raids the docks." } });
-  writeChapter(p, 2, { cast: [suvi.id], where: p.world.places[0].id, spotlight: p.entanglements.pressures[0].id });
-  assert.deepEqual(offstageRequest(schema, p, [suvi.id]).earlier_offstage, [{ chapter: 1, did: "The board raids the docks." }]);
+test("landing a plan is one commit with an undo that refuses when the Outline was edited since", () => {
+  const p = story();
+  const was = JSON.stringify(p.outline);
+  const { undo } = commitPlan(p, { ...p.outline.beats[1], aim: "A new aim." });
+  assert.equal(p.outline.beats[1].aim, "A new aim.");
+  assert.equal(undo(), true);
+  assert.equal(JSON.stringify(p.outline), was);
+  const second = commitPlan(p, { ...p.outline.beats[1], aim: "Again." });
+  p.outline.beats[1].plan = "Edited by hand.";
+  assert.equal(second.undo(), false);
+  assert.equal(p.outline.beats[1].aim, "Again.");
 });

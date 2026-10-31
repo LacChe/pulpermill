@@ -152,10 +152,18 @@ def test_the_envelope_speaks_the_projects_schema_version():
             assert case["data"]["schema_version"] == SCHEMA_VERSION, case["name"]
 
 
-def test_hand_written_story_requests_are_marked_not_golden_and_the_others_keep_their_names():
+# The one valid story request the page never builds: it shows that the backend accepts a retry that is null. Every other valid
+# story request is built by the page (tests/web/logic.test.mjs) and so is golden, under a name.
+HAND_WRITTEN = {"a plan request with the retry left null"}
+
+
+def test_the_story_requests_the_page_builds_are_golden_and_the_others_keep_their_names():
     for case in VECTORS["requests"]:
         if case["data"].get("call") in STORY_CALLS and case["valid"]:
-            assert case.get("golden") is False, f"{case['name']}: P5a flips this once the page builds the same request"
+            if case["name"] in HAND_WRITTEN:
+                assert case.get("golden") is False, case["name"]
+            else:
+                assert isinstance(case.get("golden"), str) and case["golden"], f"{case['name']}: the page builds this request, so it is golden"
         if case.get("golden") not in (None, False):
             assert isinstance(case["golden"], str)
 

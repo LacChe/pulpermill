@@ -1,29 +1,26 @@
-// Planning the next chapter: everything the page works out in code, and the requests it sends the model. No DOM, so
-// Node can test it. The backend is stateless, so the page works out the deterministic numbers (which chapter, the
-// spotlight, the legal shifts, the goal, the open plants, the reveals still available, the use counts, who is on
-// stage) and sends them; the model only thinks and fills the beat.
+// Planning the next chapter: everything the page works out in code, and the request it sends the model. No DOM, so Node can
+// test it. The backend is stateless and never applies a shift, so the page works out the effective cards (effective.js),
+// picks the spotlight tie and the cast, reduces the lists with seeded random picks (pick.js) and sends the result; the
+// model only fills the beat's planner fields (where, when_time, aim, plan).
 //
-// A chapter is planned from the cards as they stand. The beat remembers a hash of the Entanglements it was planned
-// from, so a later edit to a live field marks the plan as made from older state (it is never replanned by itself).
+// The chapter is about one tie, the spotlight: code picks one at random and the writer may change it. The cast always holds
+// the protagonist and the two characters of that tie (a group is never cast). The beat remembers a hash of what its plan was
+// made from, so a later change to those inputs marks the plan stale (it is never replanned by itself).
 
-import {
-  envelope, blankItem, refOptions, plantLabels, resolveFillLinks, validate, legalShifts, instanceName, isFilled, settledProject,
-  findInstance, similarity, SIMILARITY_LIMIT,
-} from "./logic.js";
+import { envelope, blankItem, wordsToId, validate, isFilled, settledProject, findInstance } from "./logic.js";
+import { effectiveProject } from "./effective.js";
+import { pickMany, rng, projectSeed, PICK_MAX } from "./pick.js";
 import { storyStarted, cardLocked } from "./gate.js";
-import { joinList, msg } from "./text.js";
-import { usageOf, writtenChapters, choose, plannedIds, beatWords, mentions } from "./usage.js";
+import { watch } from "./undo.js";
+import { joinList } from "./text.js";
 
 export const CAST_MAX = 5;               // the beat's cast, protagonist included (the schema's max_selected)
-export const SUGGEST_SIZE = 3;           // how many the page suggests: the protagonist and the two least used
-export const OFFSTAGE_EVERY = 2;         // an offstage change is due in every 2nd chapter
-const REVEALABLE = ["uncommon", "false_belief"];
 
-const copyOf = (value) => JSON.parse(JSON.stringify(value));
+const copyOf = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
 const beatsOf = (project) => project.outline?.beats ?? [];
 const eventsOf = (project) => project.summary_events?.entries ?? [];
-const shiftsOf = (project) => project.summary_shifts?.shifts ?? [];
 const asList = (value) => (Array.isArray(value) ? value : isFilled(value) ? [value] : []);
+const BEAT_FIELD = (schema) => schema.cards.outline.fields.find((f) => f.key === "beats");
 
 // ---- Where the story stands ---------------------------------------------------
 
@@ -54,431 +51,242 @@ export function beatForChapter(project, chapter) {
   return beatsOf(project).find((b) => Number(b.chapter) === chapter && !done.has(b.id)) ?? null;
 }
 
-const chapterOfBeat = (project, id) => Number(beatsOf(project).find((b) => b.id === id)?.chapter) || null;
+export const chapterOfBeat = (project, id) => Number(beatsOf(project).find((b) => b.id === id)?.chapter) || null;
 
-// ---- The goal arc ----------------------------------------------------------------------------
-// The story starts on Setup's goal. Nobody plans a goal change: after each written chapter the Events pass says how the chapter left
-// the goal it began with (`goal_change`) and what the protagonist wants from there on (`goal_now`), and that is the goal the next
-// chapter is planned from. A goal worded again as it stood is the same goal, so it does not restart the count of chapters it has stood.
-//   {story, goal, goals, since}
-//   goals  every goal the story has had, in order, the current one last
-//   since  the first chapter that pursued the current goal
+const isCharacter = (project, id) => (project.characters ?? []).some((c) => c.id === id);
+const groupIds = (project) => new Set((project.world?.powers ?? []).map((g) => g.id));
 
-export function goalArc(project) {
-  const story = isFilled(project.setup?.goal) ? project.setup.goal.trim() : null;
-  const arc = { story, goal: story, goals: story ? [story] : [], since: 1 };
-  const rows = eventsOf(project).map((e) => ({ e, chapter: chapterOfBeat(project, e.beat) })).filter((x) => x.chapter !== null && writtenBeatIds(project).has(x.e.beat))
-    .sort((a, b) => a.chapter - b.chapter);
-  for (const { e, chapter } of rows) {
-    if (!isFilled(e.goal_now)) continue;
-    const now = e.goal_now.trim();
-    if (arc.goal && similarity(now, arc.goal) >= SIMILARITY_LIMIT) { arc.goal = now; continue; }
-    arc.goal = now;
-    arc.goals.push(now);
-    arc.since = chapter + 1;
+// ---- The spotlight and the cast ------------------------------------------------
+
+// The tie the chapter is about: one of the ties as they stand going into the chapter (shifts included), picked at random from
+// the project and the chapter, so asking again gives the same tie. Null when there is no tie.
+export function pickSpotlight(project, chapter) {
+  const ties = effectiveProject(project, chapter).entanglements?.ties ?? [];
+  if (!ties.length) return null;
+  const next = rng(projectSeed(project), chapter, "spotlight");
+  return copyOf(ties[Math.floor(next() * ties.length)]);
+}
+
+// Who the chapter must have: the protagonist and the characters at the two ends of the spotlight tie (an end that is a group is
+// not cast). `project` should be the effective project when the tie may have come from a shift.
+export function requiredCast(project, spotlightId) {
+  const tie = (project.entanglements?.ties ?? []).find((t) => t.id === spotlightId);
+  const ids = [];
+  const add = (id) => { if (isFilled(id) && isCharacter(project, id) && !ids.includes(id)) ids.push(id); };
+  add(project.setup?.protagonist);
+  if (tie) { add(tie.tie_from); add(tie.tie_to); }
+  return ids;
+}
+
+// Every tie among the cast, every tie between a cast member and a group, and a tie between two groups when one of them touches
+// the cast (P0, decision 6). A tie to a character who is not in the cast is not sent.
+export function tiesInPlay(project, cast) {
+  const people = new Set(asList(cast));
+  const groups = groupIds(project);
+  const ties = project.entanglements?.ties ?? [];
+  const chosen = new Set();
+  const touching = new Set();
+  for (const t of ties) {
+    const from = people.has(t.tie_from);
+    const to = people.has(t.tie_to);
+    if (from && to) chosen.add(t.id);
+    else if (from && groups.has(t.tie_to)) { chosen.add(t.id); touching.add(t.tie_to); }
+    else if (to && groups.has(t.tie_from)) { chosen.add(t.id); touching.add(t.tie_from); }
   }
-  return arc;
+  for (const t of ties) {
+    if (groups.has(t.tie_from) && groups.has(t.tie_to) && (touching.has(t.tie_from) || touching.has(t.tie_to))) chosen.add(t.id);
+  }
+  return ties.filter((t) => chosen.has(t.id)).map(copyOf);
 }
 
-// Setup's goal, replaced by each written chapter's goal_now.
-export const currentGoal = (project) => goalArc(project).goal;
-
-// How the goal stands for the chapter about to be planned. `due` is advice, never a rule:
-//   settle   the last chapter: the story's goal should end, won or lost
-//   return   the chapter before the last, with the goal away from the story's goal: turn back toward it
-//   null     nothing to add
-export function goalDue(project, chapter) {
-  const arc = goalArc(project);
-  const count = Number(project.setup?.chapter_count) || 0;
-  const age = Math.max(0, chapter - arc.since);
-  const away = Boolean(arc.story && arc.goal) && arc.goal !== arc.story && similarity(arc.goal, arc.story) < SIMILARITY_LIMIT;
-  if (count && chapter >= count) return { arc, due: "settle", age };
-  if (count && chapter === count - 1 && away) return { arc, due: "return", age };
-  return { arc, due: null, age };
+// The groups that appear at the end of a tie in play.
+export function groupsInPlay(project, cast) {
+  const groups = groupIds(project);
+  const ends = new Set(tiesInPlay(project, cast).flatMap((t) => [t.tie_from, t.tie_to]).filter((id) => groups.has(id)));
+  return (project.world?.powers ?? []).filter((g) => ends.has(g.id)).map(copyOf);
 }
 
-// Earlier entries that planted something no later entry has paid off.
-export function openPlants(project) {
-  const paidOff = new Set(eventsOf(project).flatMap((e) => e.paid_off ?? []));
-  const labels = plantLabels(project);
-  return eventsOf(project)
-    .filter((e) => isFilled(e.planted) && !paidOff.has(e.id))
-    .map((e) => ({ id: e.id, text: labels.get(e.id) ?? e.planted.trim(), chapter: chapterOfBeat(project, e.beat) }))
-    .sort((a, b) => (a.chapter ?? 0) - (b.chapter ?? 0));
+// What the cast, and the groups in play, hold.
+export function holdingsInPlay(project, cast) {
+  const holders = new Set([...asList(cast), ...groupsInPlay(project, cast).map((g) => g.id)]);
+  return (project.entanglements?.holdings ?? []).filter((h) => holders.has(h.held_by)).map(copyOf);
 }
 
-// World rules the story may still bring to light: not common, and not landed in a written chapter.
-export function availableReveals(project) {
-  const landed = new Set(eventsOf(project).flatMap((e) => e.reveals_landed ?? []));
-  return (project.world?.rules ?? [])
-    .filter((r) => REVEALABLE.includes(r.status) && !landed.has(r.id) && isFilled(r.statement))
-    .map((r) => ({ id: r.id, statement: r.statement.trim(), truth: r.truth ?? "", status: r.status }));
+// A new beat for a chapter: the code's fields are set, the spotlight is picked, and the cast starts as the required cast. The
+// planner's fields are blank. `chapter` defaults to the next one to write.
+export function newBeat(schema, project, chapter = chapterInfo(project).next) {
+  const taken = beatsOf(project).map((b) => b.id);
+  const eff = effectiveProject(project, chapter);
+  const tie = pickSpotlight(project, chapter);
+  return { ...blankItem(BEAT_FIELD(schema), taken), chapter, stale: false, cast: requiredCast(eff, tie?.id), spotlight: tie?.id ?? "", planned_from: null };
 }
 
-// ---- Use counts and the cast ---------------------------------------------------
-// A value is used in a chapter only when it appears in that chapter's written text (see usage.js); a beat that planned it but has
-// not been written, or a chapter that never names it, uses nothing up. `except` leaves out the chapter being planned or written
-// again, so replanning it does not count itself.
-
-export function useCounts(project, except = null) {
-  const used = usageOf(project, except);
-  const counts = { characters: {}, places: {}, lastSeen: {}, behaviors: {}, things: {}, used };
-  const take = (bucket, list) => { for (const x of list ?? []) if (used[x.id]) counts[bucket][x.id] = used[x.id].uses; };
-  take("characters", project.characters);
-  take("places", project.world?.places);
-  take("things", project.world?.objects);
-  take("behaviors", (project.characters ?? []).flatMap((c) => c.behaviors ?? []));
-  for (const c of project.characters ?? []) if (used[c.id]) counts.lastSeen[c.id] = used[c.id].last;
-  return counts;
+// The unwritten beat for the next chapter, made and put in the Outline when there is none yet. Returns it.
+export function ensureBeat(schema, project) {
+  const chapter = chapterInfo(project).next;
+  const existing = beatForChapter(project, chapter);
+  if (existing) return existing;
+  const beat = newBeat(schema, project, chapter);
+  placeBeat(project, beat);
+  return beat;
 }
 
-// The pressures the story is still playing out: the active ones, or every pressure once all of them have resolved (the story
-// goes on, and the spotlight still needs something to turn on).
-export function livePressures(project) {
-  const all = project.entanglements?.pressures ?? [];
-  const active = all.filter((p) => p.status !== "resolved");
-  return active.length ? active : all;
-}
-
-// The pressures in the order the spotlight takes them: the fewest chapters in the spotlight first, then the one spotlit longest
-// ago, then the order the writer listed them (usage.js counts the spotlight as a pressure's use). `except` leaves out the chapter
-// being planned or written again, so replanning it does not count itself.
-function byAttention(project, pressures, except = null) {
-  const used = usageOf(project, except);
-  return pressures.map((p, order) => ({ p, order }))
-    .sort((a, b) => (used[a.p.id]?.uses ?? 0) - (used[b.p.id]?.uses ?? 0) || (used[a.p.id]?.last ?? 0) - (used[b.p.id]?.last ?? 0) || a.order - b.order)
-    .map((x) => x.p);
-}
-
-// The pressure that has had the least attention so far, or null when there is none. It is the one the next chapter should turn
-// on, so the people in it are the ones worth having on stage.
-export function duePressure(project, except = null) {
-  return byAttention(project, livePressures(project), except)[0] ?? null;
-}
-
-// Every character as a choice for the cast, with how much they have been used, and a suggestion: the protagonist and
-// two others. The others are the people in the pressure that has had the least attention (see duePressure) first, then the
-// least-used (fewest chapters, then the longest since they last appeared). It is only a suggestion: the ticks start there and
-// the writer changes them freely. Plain code, no model. {id, name, uses, last, protagonist, inPressure, suggested}
-export function castChoices(project, chapter) {
-  const counts = useCounts(project, chapter);
-  const lead = project.setup?.protagonist;
-  const due = duePressure(project, chapter);
-  const inDue = new Set(due ? [due.source_agent, ...asList(due.bears_on)].filter(Boolean) : []);
-  const all = (project.characters ?? []).map((c, order) => ({
-    id: c.id, name: instanceName(c), uses: counts.characters[c.id] ?? 0, last: counts.lastSeen[c.id] ?? null, protagonist: c.id === lead,
-    inPressure: inDue.has(c.id), order,
-  }));
-  const others = all.filter((c) => !c.protagonist)
-    .sort((a, b) => Number(b.inPressure) - Number(a.inPressure) || a.uses - b.uses || (a.last ?? 0) - (b.last ?? 0) || a.order - b.order)
-    .slice(0, Math.max(0, SUGGEST_SIZE - 1));
-  const suggested = new Set([...all.filter((c) => c.protagonist), ...others].map((c) => c.id));
-  return all.map(({ order, ...c }) => ({ ...c, suggested: suggested.has(c.id) }));
-}
-
-export const suggestedCast = (project, chapter) => castChoices(project, chapter).filter((c) => c.suggested).map((c) => c.id);
-
-// Whether a cast can be used: the protagonist is in, there are at most CAST_MAX, and everyone exists.
-export function castProblem(project, castIds) {
+// Whether a cast can be used: the protagonist is in, there are at most CAST_MAX, everyone exists, and (when the spotlight is
+// given) both characters of the spotlight tie are in. Returns null, or why not: empty, too_many, no_protagonist, unknown, spotlight_pair.
+export function castProblem(project, castIds, spotlightId = null) {
   const ids = asList(castIds);
   if (!ids.length) return "empty";
   if (ids.length > CAST_MAX) return "too_many";
   if (!ids.includes(project.setup?.protagonist)) return "no_protagonist";
   if (ids.some((id) => !findInstance(project, { id: "characters", many_per_project: true }, id))) return "unknown";
+  if (spotlightId && requiredCast({ ...project, setup: { ...project.setup, protagonist: null } }, spotlightId).some((id) => !ids.includes(id))) return "spotlight_pair";
   return null;
 }
 
-// ---- The spotlight and the shifts ------------------------------------------------
+// ---- What the model is sent ------------------------------------------------------------
 
-// The pressure this chapter is about: always one that involves someone on stage, the least recently spotlit first (see
-// byAttention). A resolved pressure is passed over. With none involving the cast, the least-spotlit overall; the beat's own rule
-// then warns about it.
-export function pickSpotlight(project, castIds, except = null) {
-  const pressures = livePressures(project);
-  if (!pressures.length) return null;
-  const involves = (p) => [p.source_agent, ...asList(p.bears_on)].some((id) => asList(castIds).includes(id));
-  const pool = pressures.filter(involves);
-  return byAttention(project, pool.length ? pool : pressures, except)[0];
+const placeName = (project, id) => (project.world?.places ?? []).find((p) => p.id === id)?.name ?? "";
+
+// A beat in words, the way the writer reads it: its place by name, and no ids or code fields.
+export function beatInWords(project, beat) {
+  return { where: placeName(project, beat.where), when_time: beat.when_time ?? "", aim: beat.aim ?? "", plan: beat.plan ?? "" };
 }
 
-// The shifts the chapter may take, from the earlier beats' pacing.
-export function shiftsForChapter(project, chapter) {
-  return legalShifts(beatsOf(project).filter((b) => Number(b.chapter) !== chapter), { chapter });
+// Earlier beats in words for the planner: chapter, where, when, aim and plan.
+export function earlierBeats(project, chapter) {
+  return beatsOf(project).filter((b) => Number(b.chapter) < chapter).sort((a, b) => a.chapter - b.chapter)
+    .map((b) => ({ chapter: Number(b.chapter), where: placeName(project, b.where), when: b.when_time ?? "", aim: b.aim ?? "", plan: b.plan ?? "" }));
 }
 
-export function offstageDue(chapter) {
-  return chapter > 1 && chapter % OFFSTAGE_EVERY === 0;
+// Earlier Events entries in words: chapter, what happened and what changed.
+export function eventsInWords(project, upTo = Infinity) {
+  return eventsOf(project)
+    .map((e) => ({ chapter: chapterOfBeat(project, e.beat), happened: e.happened, changed: e.changed ?? "" }))
+    .filter((e) => e.chapter !== null && e.chapter <= upTo)
+    .sort((a, b) => a.chapter - b.chapter);
+}
+
+// What the cast, the world and their entanglements look like to the model: the effective cards (`project` is an effective
+// project) reduced to what the scene needs, with every list cut to at most PICK_MAX by seeded picks. Always kept: the cast's own
+// cards, the beat's `where`, and the places and objects held by the cast or the groups in play.   {cast, world, ties, holdings}
+export function scene(project, chapter, castIds, { where = null } = {}) {
+  const seed = projectSeed(project);
+  const cast = asList(castIds);
+  const holdings = holdingsInPlay(project, cast);
+  const held = holdings.map((h) => h.holdee);
+  const pick = (salt, items, must = []) => pickMany(items, PICK_MAX, rng(seed, chapter, salt), { must });
+  const w = project.world ?? {};
+  const people = cast.map((id) => (project.characters ?? []).find((c) => c.id === id)).filter(Boolean).map((c) => {
+    const out = copyOf(c);
+    if (Array.isArray(out.behaviors)) out.behaviors = pick(`behaviors:${c.id}`, out.behaviors);
+    return out;
+  });
+  return {
+    cast: people,
+    world: {
+      ...copyOf(w),
+      places: pick("places", copyOf(w.places ?? []), [where, ...held]),
+      objects: pick("objects", copyOf(w.objects ?? []), held),
+      powers: groupsInPlay(project, cast),
+      rules: pick("rules", copyOf(w.rules ?? [])),
+      terms: pick("terms", copyOf(w.terms ?? [])),
+    },
+    ties: tiesInPlay(project, cast),
+    holdings,
+  };
 }
 
 // ---- The stale-plan hash ------------------------------------------------------------
 
-function hashText(text) {
+export function hashText(text) {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, "0");
 }
 
-// A short fingerprint of the Entanglements as they stand (blank fields filled in, so a visit alone changes nothing).
-export function entanglementsHash(schema, project) {
-  return hashText(JSON.stringify(settledProject(schema, project).entanglements));
+// A short fingerprint of what a plan is made from: the spotlight, the effective cast cards, the ties in play and the picks (the
+// lists are cut by the same seeded picks the request uses, without the place the plan itself chose).
+export function planInputsHash(project, beat) {
+  const chapter = Number(beat.chapter);
+  return hashText(JSON.stringify([beat.spotlight ?? "", scene(effectiveProject(project, chapter), chapter, beat.cast)]));
 }
 
-// The plan was made from Entanglements that have changed since.
-export function planIsStale(schema, project, beat) {
-  return Boolean(beat?.planned_from) && beat.planned_from !== entanglementsHash(schema, project);
+// The plan was made from inputs that have changed since.
+export function planIsStale(project, beat) {
+  return Boolean(beat?.planned_from) && beat.planned_from !== planInputsHash(project, beat);
 }
 
 // ---- Can a chapter be planned? -------------------------------------------------------
 
-// {ok, chapter} or {ok: false, reason}: not_started, done, no_pressure, cast (with `why`).
-export function planGate(project, castIds) {
+// {ok, chapter} or {ok: false, reason}: not_started, outline_locked, done, no_tie, cast (with `why`).
+export function planGate(project, beat) {
   if (!storyStarted(project)) return { ok: false, reason: "not_started" };
   if (cardLocked(project, "outline")) return { ok: false, reason: "outline_locked" };    // planning writes into the Outline card
   const info = chapterInfo(project);
   if (info.done) return { ok: false, reason: "done" };
-  if (!(project.entanglements?.pressures ?? []).length) return { ok: false, reason: "no_pressure" };
-  const why = castProblem(project, castIds);
+  const chapter = Number(beat?.chapter) || info.next;
+  const eff = effectiveProject(project, chapter);
+  if (!(eff.entanglements?.ties ?? []).some((t) => t.id === beat?.spotlight)) return { ok: false, reason: "no_tie" };
+  const why = castProblem(eff, beat.cast, beat.spotlight);
   if (why) return { ok: false, reason: "cast", why };
-  return { ok: true, chapter: info.next };
+  return { ok: true, chapter };
 }
 
-// ---- What the model is sent ------------------------------------------------------------
-// Links become names (the model never sees an id except on an item it may change later), and each request carries only the
-// cast and what is in play.
+// ---- The plan request --------------------------------------------------------------------
 
-const NAMED_SOURCES = ["characters", "world.places", "world.objects", "world.powers", "world.rules"];
-
-export function nameMap(project) {
-  const names = new Map(refOptions(project, NAMED_SOURCES, "").map((o) => [o.value, o.label || "(unnamed)"]));
-  const labels = plantLabels(project);
-  for (const e of eventsOf(project)) if (isFilled(e.planted)) names.set(e.id, labels.get(e.id) ?? e.planted.trim());   // a payoff names the plant it resolves
-  return names;
-}
-
-// An item with every link field turned into a name (or a list of names). Its own id stays.
-export function named(defs, item, names) {
-  const out = { ...item };
-  for (const def of defs) {
-    if (!def.ref || !(def.key in item)) continue;
-    const value = item[def.key];
-    out[def.key] = Array.isArray(value) ? value.map((id) => names.get(id) ?? id) : isFilled(value) ? names.get(value) ?? value : value;
-  }
-  return out;
-}
-
-export function fieldDefs(schema, cardId, listKey) {
-  return schema.cards[cardId].fields.find((f) => f.key === listKey)?.item_fields ?? [];
-}
-
-export const castCards = (project, castIds) => asList(castIds).map((id) => (project.characters ?? []).find((c) => c.id === id)).filter(Boolean);
-
-// The Entanglements the cast can see: ties they hold, what they hold, what they know, and (for the planner) every pressure. Each
-// kind is cut to the few least used (usage.js), with everything the beat names kept. `beat` is the chapter's beat when there is
-// one; for the planner it is only the pressure in focus.
-export function entanglementsFor(schema, project, castIds, names, { allPressures, beat = null }) {
-  const cast = asList(castIds);
-  const e = settledProject(schema, project).entanglements;
-  const used = usageOf(project);
-  const nameOfId = (id) => names.get(id) ?? "";
-  const planned = (items, label, extra = () => false) => new Set(items.filter((i) => plannedIds(beat, [i], label).size || extra(i)).map((i) => i.id));
-  const pick = (key, items, label, extra, near) => choose(items, used, { planned: planned(items, label, extra), near })
-    .map((i) => named(fieldDefs(schema, "entanglements", key), i, names));
-  const touchesCast = (p) => [p.source_agent, ...asList(p.bears_on)].some((id) => cast.includes(id));
-  const standing = (k) => [...asList(k.knows), ...asList(k.suspects), ...asList(k.misled)];
-  const words = beatWords(beat);
-  const placesAndThings = [...(project.world?.places ?? []), ...(project.world?.objects ?? [])];
-  const thingName = (id) => placesAndThings.find((x) => x.id === id)?.name;
-  return {
-    ties: pick("ties", e.ties.filter((t) => cast.includes(t.tie_from)), () => "", (t) => cast.includes(t.tie_to)),
-    holdings: pick("holdings", e.holdings.filter((h) => cast.includes(h.held_by)), () => "", (h) => Boolean(words) && mentions(words, thingName(h.holdee))),
-    knowledge: pick("knowledge", e.knowledge.filter((k) => standing(k).some((id) => cast.includes(id))),
-      () => "", (k) => (k.rule && k.rule === beat?.reveal_rule) || (Boolean(words) && mentions(words, k.rule ? (project.world?.rules ?? []).find((r) => r.id === k.rule)?.statement : k.fact)),
-      (k) => standing(k).filter((id) => cast.includes(id)).length),
-    pressures: pick("pressures", (allPressures ? e.pressures : e.pressures.filter(touchesCast)).filter((p) => p.status !== "resolved" || p.id === beat?.spotlight), () => "", () => false),
-  };
-}
-
-const withCounts = (items, counts) => items.map((i) => ({ ...i, uses: counts[i.id] ?? 0 }));
-
-// The places and things a request carries: the beat's own, then the least used, five in all (usage.js).
-export function rotating(project, w, beat = null, except = null) {
-  const used = usageOf(project, except);
-  const cast = new Set(asList(beat?.cast));
-  const held = new Map((project.entanglements?.holdings ?? []).map((h) => [h.holdee, h.held_by]));
-  return {
-    places: choose(w.places, used, { planned: plannedIds(beat, w.places, (p) => p.name) }),
-    objects: choose(w.objects, used, { planned: plannedIds(beat, w.objects, (o) => o.name), near: (o) => Number(cast.has(held.get(o.id))) }),
-  };
-}
-
-function worldFor(schema, project, castIds, names) {
-  const w = settledProject(schema, project).world;
-  const counts = useCounts(project, chapterInfo(project).next);
-  const held = new Map((project.entanglements?.holdings ?? []).map((h) => [h.holdee, names.get(h.held_by) ?? ""]));
-  const sent = rotating(project, w, null, chapterInfo(project).next);
-  return {
-    name: w.name, era_and_technology: w.era_and_technology, everyday_life: w.everyday_life,
-    places: withCounts(sent.places, counts.places),
-    objects: withCounts(sent.objects, counts.things).map((o) => ({ ...o, held_by: held.get(o.id) ?? "" })),
-    powers: w.powers,
-    rules: w.rules,
-  };
-}
-
-export function beatInWords(schema, project, beat, names) {
-  const defs = schema.cards.outline.fields.find((f) => f.key === "beats").item_fields;
-  const out = named(defs, beat, names);
-  const pressure = (project.entanglements?.pressures ?? []).find((p) => p.id === beat.spotlight);
-  out.spotlight = pressure?.what ?? "";
-  delete out.planned_from; delete out.stale;
-  return out;
-}
-
-export function eventsInWords(project, upTo = Infinity) {
-  return eventsOf(project)
-    .map((e) => ({ chapter: chapterOfBeat(project, e.beat), happened: e.happened, changed: e.changed ?? "", planted: e.planted ?? "" }))
-    .filter((e) => e.chapter !== null && e.chapter <= upTo)
-    .sort((a, b) => a.chapter - b.chapter);
-}
-
-// The latest value of each shift field for each cast member, the way the writer's own prompt shows "where they stand now".
-export function latestShifts(project, castIds, names = nameMap(project)) {
-  const cast = asList(castIds);
-  const rows = shiftsOf(project).map((s) => ({ s, chapter: chapterOfBeat(project, s.beat) ?? 0 })).sort((a, b) => a.chapter - b.chapter);
-  const out = [];
-  for (const id of cast) {
-    const standing = { character: names.get(id) ?? id };
-    for (const { s } of rows) {
-      if (s.character !== id) continue;
-      for (const key of ["believes", "fears", "wants", "refuses", "decided"]) if (isFilled(s[key])) standing[key] = s[key];
-    }
-    if (Object.keys(standing).length > 1) out.push(standing);
-  }
-  return out;
-}
-
-// Offstage: what do the background groups and places do this chapter? Only the groups, places and what touches them.
-export function offstageRequest(schema, project, castIds) {
-  const chapter = chapterInfo(project).next;
-  const names = nameMap(project);
-  const e = settledProject(schema, project).entanglements;
-  const w = settledProject(schema, project).world;
-  const background = new Set([...w.powers, ...w.places].map((x) => x.id));
-  const touches = (...ids) => ids.flat().some((id) => background.has(id));
-  const out = (key, items) => items.map((i) => named(fieldDefs(schema, "entanglements", key), i, names));
-  const counts = useCounts(project, chapter);
-  const last = eventsInWords(project).at(-1) ?? null;
-  return {
-    ...envelope(schema, project, "offstage"),
-    chapter, chapter_count: chapterInfo(project).count,
-    cast: castCards(project, castIds).map(copyOf),
-    world: { powers: w.powers, places: withCounts(rotating(project, w, null, chapter).places, counts.places) },
-    entanglements: {
-      ties: out("ties", choose(e.ties.filter((t) => touches(t.tie_from, t.tie_to)), counts.used)),
-      holdings: out("holdings", choose(e.holdings.filter((h) => touches(h.held_by)), counts.used)),
-      pressures: out("pressures", choose(e.pressures.filter((p) => p.status !== "resolved" && touches(p.source_agent, asList(p.bears_on))), counts.used)),
-    },
-    latest_events: last,
-    earlier_offstage: beatsOf(project).filter((b) => Number(b.chapter) < chapter && String(b.offstage_did ?? "").trim() !== "")
-      .sort((a, b) => Number(a.chapter) - Number(b.chapter)).map((b) => ({ chapter: Number(b.chapter), did: b.offstage_did })),
-  };
-}
-
-// What the planner is told about the goal: the goal the story stands on now, the story's own goal when the chapters have moved off
-// it, and the goal arc's advice for this chapter.
-function goalFields(project, chapter) {
-  const { arc, due, age } = goalDue(project, chapter);
-  return {
-    goal: arc.goal,
-    story_goal: arc.story && arc.goal !== arc.story ? arc.story : null,
-    goal_plan: { due, age, since: arc.since, earlier_goals: arc.goals.filter((g) => g !== arc.goal) },
-  };
-}
-
-// The plan: think, then fill the beat. `offstage` is {did, reach} from an offstage call, `retry` {thinking, beat, problems}.
-export function planRequest(schema, project, castIds, { offstage = null, retry = null } = {}) {
-  const info = chapterInfo(project);
-  const chapter = info.next;
-  const names = nameMap(project);
-  const spotlight = pickSpotlight(project, castIds, chapter);
-  const counts = useCounts(project, chapter);
-  const defs = fieldDefs(schema, "entanglements", "pressures");
-  const earlier = beatsOf(project).filter((b) => Number(b.chapter) < chapter).sort((a, b) => a.chapter - b.chapter);
-  const asPerson = (id) => names.get(id) ?? id;
-  const characters = (project.characters ?? []);
-  return {
+// Plan chapter `beat.chapter`. `beat` holds the spotlight and the cast (the page's own picks, which the writer may have changed).
+// `retry` is {beat, problems} when the first try was refused by the Outline's block rules.
+export function planRequest(schema, project, beat, { retry = null } = {}) {
+  const chapter = Number(beat.chapter);
+  const eff = effectiveProject(project, chapter);
+  const request = {
     ...envelope(schema, project, "plan"),
-    chapter, chapter_count: info.count,
-    style: copyOf(settledProject(schema, project).style),
-    setup: { ...copyOf(settledProject(schema, project).setup), protagonist: asPerson(project.setup?.protagonist) },
-    ...goalFields(project, chapter),
-    cast: castCards(project, castIds).map(copyOf),
-    world: worldFor(schema, project, castIds, names),
-    entanglements: entanglementsFor(schema, project, castIds, names, { allPressures: true, beat: { spotlight: spotlight?.id, cast: castIds } }),
-    spotlight: spotlight ? named(defs, spotlight, names) : {},
-    legal_shifts: shiftsForChapter(project, chapter),
-    open_plants: openPlants(project).map(({ text, chapter: c }) => ({ text, chapter: c })),
-    available_reveals: availableReveals(project).map(({ statement, truth, status }) => ({ statement, truth, status })),
-    use_counts: {
-      characters: characters.map((c) => ({ name: instanceName(c), uses: counts.characters[c.id] ?? 0, last: counts.lastSeen[c.id] ?? null })),
-      places: rotating(project, settledProject(schema, project).world, null, chapter).places.map((p) => ({ name: p.name, uses: counts.places[p.id] ?? 0 })),
-      behaviors: characters.flatMap((c) => (c.behaviors ?? []).map((b) => ({ character: instanceName(c), state: b.state, uses: counts.behaviors[b.id] ?? 0 }))),
-      things: rotating(project, settledProject(schema, project).world, null, chapter).objects.map((o) => ({ name: o.name, uses: counts.things[o.id] ?? 0 })),
-    },
-    earlier_beats: earlier.map((b) => beatInWords(schema, project, b, names)),
-    earlier_events: eventsInWords(project, chapter - 1),
-    latest_shifts: latestShifts(project, castIds, names),
-    offstage: offstage ? { did: offstage.did, reach: offstage.reach } : null,
-    retry: retry ? { thinking: retry.thinking, beat: copyOf(retry.beat), problems: [...retry.problems] } : null,
+    chapter, chapter_count: chapterInfo(project).count,
+    style: copyOf(eff.style ?? {}),
+    setup: copyOf(eff.setup ?? {}),
+    protagonist: eff.setup?.protagonist ?? "",
+    ...scene(eff, chapter, beat.cast),
+    spotlight: beat.spotlight,
+    earlier_beats: earlierBeats(eff, chapter),
+    earlier_events: eventsInWords(eff, chapter - 1),
   };
+  if (retry) request.retry = { beat: copyOf(retry.beat), problems: [...retry.problems] };
+  return request;
 }
 
 // ---- Landing the beat ------------------------------------------------------------------------
 
-const BEAT_FIELD = (schema) => schema.cards.outline.fields.find((f) => f.key === "beats");
-
-// The model's beat (links in words) as a beat item with ids: {beat, unresolved, dropped}.
-//   unresolved  links that matched nothing or two entries (left empty), as resolveFillLinks reports them
-//   dropped     keys the model gave that were not usable (a shift that is neither harder nor easier, and so on)
-// The code-filled fields (chapter, cast, spotlight, planned_from, the offstage move) are set here, never by the model.
-export function landBeat(schema, project, castIds, reply, { offstage = null, existing = null } = {}) {
-  const field = BEAT_FIELD(schema);
-  const info = chapterInfo(project);
-  const planner = field.item_fields.filter((f) => f.filled_by === "planner" && !["offstage_did", "offstage_reach"].includes(f.key));
-  const given = {};
-  const dropped = [];
+// The model's beat (links in words) as the beat with ids: {beat, unresolved, dropped, warnings}.
+//   beat        `existing` with its planner fields replaced; the code and human fields (id, chapter, cast, spotlight) are kept and
+//               planned_from is the hash of what this plan was made from
+//   unresolved  links that matched nothing or two entries (left empty): [{field, key, words, why}]
+//   dropped     keys the model gave that were not usable (not a planner field, or text of the wrong kind)
+export function landBeat(schema, project, existing, reply) {
+  const chapter = Number(existing.chapter);
+  const eff = effectiveProject(project, chapter);
+  const planner = BEAT_FIELD(schema).item_fields.filter((f) => f.filled_by === "planner");
+  const given = reply.beat ?? {};
+  const beat = copyOf(existing);
+  const unresolved = [];
+  const dropped = Object.keys(given).filter((key) => !planner.some((f) => f.key === key));
   for (const def of planner) {
-    const value = reply.beat?.[def.key];
-    if (!isFilled(value)) continue;
-    if (def.options?.length && !def.options.some((o) => o.value === value)) { dropped.push(def.key); continue; }
-    given[def.key] = value;
+    if (!(def.key in given)) continue;
+    const value = given[def.key];
+    if (typeof value !== "string") { dropped.push(def.key); continue; }
+    if (def.ref) {
+      const found = wordsToId(eff, def.ref, value);
+      if (!found.id) { unresolved.push({ field: "beats", key: def.key, words: value, why: found.several ? "several" : "none" }); beat[def.key] = ""; continue; }
+      beat[def.key] = found.id;
+    } else {
+      beat[def.key] = value.trim();
+    }
   }
-  const { values, unresolved } = resolveFillLinks({ fields: [{ ...field, item_fields: planner }] }, { beats: [given] }, project);
-  const beat = { ...blankItem(field, (beatsOf(project)).map((b) => b.id)), ...(values.beats?.[0] ?? {}) };
-  // A reveal must be one the page offered. A common or already-landed rule is not.
-  if (beat.reveal_rule && !availableReveals(project).some((r) => r.id === beat.reveal_rule)) {
-    unresolved.push({ field: "beats", key: "reveal_rule", words: given.reveal_rule, why: "none" });
-    beat.reveal_rule = "";
-  }
-  // A plant the story already has open is not new. Keep the beat's payoff for it, but plant nothing.
-  if (isFilled(beat.plant)) {
-    const same = (a, b) => String(a).trim().replace(/\s+/g, " ").toLowerCase().replace(/[.!?]+$/, "") === String(b).trim().replace(/\s+/g, " ").toLowerCase().replace(/[.!?]+$/, "");
-    const known = (project.summary_events?.entries ?? []).some((e) => isFilled(e.planted) && same(e.planted, beat.plant));
-    if (known) { dropped.push("plant"); beat.plant = ""; }
-  }
-  if (Array.isArray(beat.payoff)) beat.payoff = [...new Set(beat.payoff)];   // the same plant named twice pays it once
-  if (existing) beat.id = existing.id;
-  const spotlight = pickSpotlight(project, castIds, info.next);
-  Object.assign(beat, {
-    chapter: info.next, stale: false, cast: asList(castIds).slice(), spotlight: spotlight?.id ?? "",
-    planned_from: entanglementsHash(schema, project),
-    offstage_did: offstage?.did ?? "", offstage_reach: offstage?.reach ?? "",
-  });
-  if (info.next === 1) beat.when_gap = "";
+  Object.assign(beat, { chapter, stale: false });
+  beat.planned_from = planInputsHash(project, beat);
   return { beat, unresolved, dropped, warnings: [] };
 }
 
-// Puts the beat into the outline: replaces the unwritten beat for the same chapter, or adds it. Returns what it replaced.
+// Puts the beat into the outline: replaces the beat with the same id, or adds it. Returns what it replaced.
 export function placeBeat(project, beat) {
   const outline = project.outline ?? (project.outline = { beats: [] });
   const beats = outline.beats ?? (outline.beats = []);
@@ -488,14 +296,23 @@ export function placeBeat(project, beat) {
   return null;
 }
 
-// The blocking problems the Outline card's own rules find in one beat, as the words the writer would read. This is what
-// the retry sends back to the model, and what stops Generate when the second attempt still fails.
+// Lands a plan: puts the beat in the Outline as one commit. Returns {undo}: it puts the Outline back as it was and answers true, or
+// answers false and changes nothing when the Outline was edited since.
+export function commitPlan(project, beat) {
+  const undo = watch(project, ["outline"]);
+  placeBeat(project, beat);
+  undo.settle();
+  return { undo: () => undo.undo() };
+}
+
+// The blocking problems the Outline card's own rules find in one beat, as the words the writer would read. This is what the
+// retry sends back to the model, and what stops Generate when the second attempt still fails. The beat is checked against the
+// cards as they stood going into its chapter.
 export function beatBlockers(schema, project, beat) {
-  const trial = copyOf(project);
+  const trial = effectiveProject(project, Number(beat.chapter));
   placeBeat(trial, copyOf(beat));
   const settled = settledProject(schema, trial);
   return validate(schema.cards.outline, settled.outline, settled, schema.common)
     .problems.filter((p) => p.severity === "block" && p.item === beat.id)
     .map((p) => joinList([p.message, p.fix].filter(Boolean), "sentence"));
 }
-

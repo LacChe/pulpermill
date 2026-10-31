@@ -9,7 +9,8 @@ import {
   inOneOf, showsOptionalTag,
 } from "../../web/logic.js";
 import { isSupported } from "../../web/render.js";
-import { validate, ruleKind, modelRules, problemsFor, CHECKS, PENDING_CHECKS, legalShifts, similarity, SIMILARITY_LIMIT } from "../../web/logic.js";
+import { story, opening } from "./fixture.mjs";
+import { validate, ruleKind, modelRules, problemsFor, CHECKS, PENDING_CHECKS, similarity, SIMILARITY_LIMIT } from "../../web/logic.js";
 import { filledPaths, problemPath, problemTriggers, shownProblems, problemCounts } from "../../web/logic.js";
 
 const schema = JSON.parse(readFileSync(new URL("../../web/data/schema.en.json", import.meta.url), "utf8"));
@@ -361,35 +362,17 @@ test("a beat added by hand takes the next chapter number", () => {
   assert.equal(itemTitle(beatsField, list[0]), "Chapter 1");
 });
 
-test("ref_where keeps only rules with the wanted status, and drops rules that already came to light", () => {
-  const project = {
-    world: { rules: [
-      { id: "r1", statement: "Open secret", status: "common" },
-      { id: "r2", statement: "Hidden", status: "uncommon" },
-      { id: "r3", statement: "A myth", status: "false_belief" },
-      { id: "r4", statement: "Already out", status: "uncommon" },
-    ] },
-    summary_events: { entries: [{ id: "e1", reveals_landed: ["r4"] }] },
-  };
-  const where = { status: ["uncommon", "false_belief"] };
+test("ref_where keeps only the entries whose key holds a wanted value; keep lets a saved choice stay", () => {
+  const project = { world: { rules: [{ id: "r1", statement: "Open", kind: "a" }, { id: "r2", statement: "Hidden", kind: "b" }, { id: "r3", statement: "Myth", kind: "c" }] } };
+  const where = { kind: ["b", "c"] };
   assert.deepEqual(refOptions(project, ["world.rules"], "Unnamed", { where }).map((o) => o.value), ["r2", "r3"]);
-  assert.deepEqual(refOptions(project, ["world.rules"], "Unnamed", { where, keep: ["r4"] }).map((o) => o.value), ["r2", "r3", "r4"]);
-  assert.equal(refOptions(project, ["world.rules"]).length, 4);
+  assert.deepEqual(refOptions(project, ["world.rules"], "Unnamed", { where, keep: ["r1"] }).map((o) => o.value), ["r1", "r2", "r3"]);
+  assert.equal(refOptions(project, ["world.rules"]).length, 3);
 });
 
-test("payoff offers only open plants, named by what was planted", () => {
-  const project = { summary_events: { entries: [
-    { id: "e1", planted: "A locked back room" },
-    { id: "e2", planted: "A stranger's letter", paid_off: [] },
-    { id: "e3", planted: "", paid_off: ["e1"] },
-    { id: "e4", happened: "nothing planted" },
-  ] } };
-  assert.deepEqual(refOptions(project, ["summary_events.entries"]).map((o) => [o.value, o.label]), [["e2", "A stranger's letter"]]);
-});
-
-test("pressures are named by what they are", () => {
-  const project = { entanglements: { pressures: [{ id: "p1", what: "The audit" }] } };
-  assert.equal(refOptions(project, ["entanglements.pressures"])[0].label, "The audit");
+test("a link is named by the entry's name, statement or term, and unnamed ones by the given word", () => {
+  const project = { world: { rules: [{ id: "r1", statement: "Debts are written" }], terms: [{ id: "t1", term: "toll" }], places: [{ id: "p1" }] } };
+  assert.deepEqual(refOptions(project, ["world.rules", "world.terms", "world.places"], "?").map((o) => o.label), ["Debts are written", "toll", "?"]);
 });
 
 // ---- Validation ----
@@ -856,7 +839,6 @@ test("a saved project reads back as the same project", () => {
   const text = projectSnapshot(schema, project);
   const read = readProject(text, schema);
   assert.equal(read.ok, true);
-  assert.equal(read.older, false);
   assert.equal(projectSnapshot(schema, read.project), text);
   assert.equal(read.project.characters[0].name, "Mara");
 });
@@ -875,7 +857,11 @@ test("opening says why a file cannot be used", () => {
   assert.equal(readProject("null", schema).reason, "not_project");
   assert.equal(readProject('{"title":"x"}', schema).reason, "not_project");
   assert.equal(readProject(`{"schema_version":"${v}"}`, schema).reason, "not_project");
-  assert.equal(readProject(`{"schema_version":${v + 1}}`, schema).reason, "newer");
+  for (const other of [v + 1, v - 1]) {
+    const refused = readProject(`{"schema_version":${other}}`, schema);
+    assert.deepEqual([refused.ok, refused.reason], [false, "version"]);
+    assert.match(refused.message, new RegExp(`version ${other}.*version ${v}`));
+  }
   const bad = readProject(`{"schema_version":${v},"characters":{"a":1}}`, schema);
   assert.deepEqual([bad.ok, bad.reason, bad.card], [false, "damaged", "characters"]);
   assert.equal(readProject(`{"schema_version":${v},"characters":[1]}`, schema).reason, "damaged");
@@ -1247,19 +1233,25 @@ test("the golden requests are exactly what the page builds", () => {
       { id: "n0000002", card: "characters", character: "c0000001", text: "An archivist." },
     ],
   };
+  const twoStories = story();
+  const blankOpening = () => { const p = opening(); p.setup.normal = ""; p.setup.disruption = ""; return p; };
   const built = {
     status: { call: "status" },
     fill_setup: vectorsApi.fillRequest(schema, project, "setup").request,
     fill_character: vectorsApi.fillRequest(schema, project, "characters", "c0000001").request,
     judge_world: vectorsApi.judgeRequest(schema, project, "world", { name: "The Salt Coast", everyday_life: "Ordinary." }, ["everyday_has_friction"]),
     style_fit: vectorsApi.styleFitRequest(schema, project).request,
-    offstage: planApi.offstageRequest(schema, project, ["c0000001"]),
-    plan: planApi.planRequest(schema, project, ["c0000001"]),
-    generate: generateApi.generateRequest(schema, project, { id: "b0000001", chapter: 1, cast: ["c0000001"], spotlight: "" }),
+    plan: planApi.planRequest(schema, twoStories, twoStories.outline.beats[1]),
+    plan_retry: planApi.planRequest(schema, twoStories, twoStories.outline.beats[1], {
+      retry: { beat: { where: "The Archive", when_time: "Dusk", aim: "Suvi wants the ledger.", plan: "Nothing changes." }, problems: ["The aim is too like chapter 1's aim."] },
+    }),
+    plan_chapter_1: planApi.planRequest(schema, blankOpening(), blankOpening().outline.beats[0]),
+    generate: generateApi.generateRequest(schema, twoStories, twoStories.outline.beats[1]),
+    generate_chapter_1: generateApi.generateRequest(schema, opening(), opening().outline.beats[0]),
   };
   const golden = contractVectors.requests.filter((v) => v.golden);
   assert.deepEqual(golden.map((v) => v.golden).sort(), Object.keys(built).sort(), "every request the page makes has a golden case");
-  for (const v of golden) assert.deepEqual(built[v.golden], v.data, v.name);
+  for (const v of golden) assert.deepEqual(JSON.parse(JSON.stringify(built[v.golden])), v.data, v.name);
 });
 
 test("every valid reply is read and every invalid one refused", () => {
@@ -1269,14 +1261,14 @@ test("every valid reply is read and every invalid one refused", () => {
       case "fill": return vectorsApi.readFillReply(schema.cards[v.card], v.data);
       case "judge": return vectorsApi.readJudgeReply(schema.cards[v.card], v.values, v.asked, v.data);
       case "style_fit": return vectorsApi.readStyleFitReply(v.data);
-      case "offstage": return vectorsApi.readOffstageReply(v.data);
+      case "job": return vectorsApi.readJobReply(v.data);
+      case "cancel": return vectorsApi.readCancelReply(v.data);
       case "plan": return vectorsApi.readPlanReply(v.data);
       case "generate": return vectorsApi.readGenerateReply(v.data);
-      case "end_story": return vectorsApi.readEndStoryReply(v.data);
       default: throw new Error(`no reader for ${v.call}`);
     }
   };
-  assert.deepEqual([...new Set(contractVectors.replies.map((v) => v.call))].sort(), ["end_story", "fill", "generate", "judge", "offstage", "plan", "status", "style_fit"]);
+  assert.deepEqual([...new Set(contractVectors.replies.map((v) => v.call))].sort(), ["cancel", "fill", "generate", "job", "judge", "plan", "status", "style_fit"]);
   for (const v of contractVectors.replies) {
     const result = read(v);
     // A failure the backend may send is read as a failure with its kind; any other reply is read when it is valid.
@@ -1287,27 +1279,36 @@ test("every valid reply is read and every invalid one refused", () => {
   }
 });
 
-test("a busy status may name its stage; an unknown stage is ignored and an idle one never has one", () => {
-  assert.deepEqual(vectorsApi.readStatus({ ok: true, state: "busy", stage: "events" }), { ok: true, state: "busy", stage: "events" });
-  assert.deepEqual(vectorsApi.readStatus({ ok: true, state: "busy", stage: "dreaming" }), { ok: true, state: "busy" });
-  assert.deepEqual(vectorsApi.readStatus({ ok: true, state: "idle", stage: "write" }), { ok: true, state: "idle" });
-  assert.deepEqual(vectorsApi.STORY_CALLS, ["offstage", "plan", "generate", "end_story"]);
+test("a busy status may name its stage as {name, index, of}; an idle one never has one", () => {
+  const stage = { name: "events", index: 2, of: 3 };
+  assert.deepEqual(vectorsApi.readStatus({ ok: true, state: "busy", stage }), { ok: true, state: "busy", stage });
+  assert.deepEqual(vectorsApi.readStatus({ ok: true, state: "busy", stage: { name: "dreaming", index: 1 } }), { ok: true, state: "busy", stage: { name: "dreaming", index: 1, of: null } });
+  assert.deepEqual(vectorsApi.readStatus({ ok: true, state: "idle", stage }), { ok: true, state: "idle" });
+  assert.equal(vectorsApi.readStatus({ ok: true, state: "busy", stage: "write" }).error.kind, "bad_output");
+  assert.deepEqual(vectorsApi.STORY_CALLS, ["plan", "generate"]);
 });
 
-test("a chapter reply is tidied: text trimmed, empty shift boxes dropped, lists defaulted", () => {
+test("a stage is put in words: a known name by its label, an unknown one generically, with the step when it is known", () => {
+  assert.equal(vectorsApi.stageText(null), "");
+  assert.match(vectorsApi.stageText({ name: "write", index: 1, of: 3 }), /writing the chapter.*step 1 of 3/);
+  assert.equal(vectorsApi.stageText({ name: "dreaming", index: 1, of: null }), "The model is working…");
+  assert.match(vectorsApi.stageText({ name: "dreaming", index: 2, of: 4 }), /working.*step 2 of 4/);
+});
+
+test("a chapter reply is tidied: text kept, events trimmed, the shifts read as they are", () => {
   const read = vectorsApi.readGenerateReply({
-    ok: true, chapter_text: "Text.", events: { happened: " Happened. ", changed: "  ", goal_change: "redefined", goal_now: " Find the ledger. " },
-    shifts: [{ character: " Suvi ", believes: "  ", decided: " Stay. " }], changes: [],
+    ok: true, chapter_text: "Text.", events: { happened: " Happened. ", changed: "  " },
+    shifts: [{ card: "characters", target: "c1", patch: { fear: "fire", wants: [{ op: "add", values: { text: "x" } }] } }, { card: "world", patch: { history: "h" } }],
   });
   assert.equal(read.ok, true);
-  assert.deepEqual(read.events, { happened: "Happened.", changed: null, planted: null, goal_change: "redefined", goal_now: "Find the ledger.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [] });
-  assert.deepEqual(read.shifts, [{ character: "Suvi", decided: "Stay." }]);
-  const noGoal = vectorsApi.readGenerateReply({ ok: true, chapter_text: "Text.", events: { happened: "Happened." }, shifts: [], changes: [] });
-  assert.equal(noGoal.error.kind, "bad_output", "how the chapter left the goal is always answered");
-  assert.equal(vectorsApi.readGenerateReply({ ok: true, chapter_text: "Text.", events: { happened: "Happened.", goal_change: "stands", goal_now: "x" }, shifts: [], changes: [] }).ok, false);
+  assert.deepEqual(read.events, { happened: "Happened.", changed: null });
+  assert.deepEqual(read.shifts.map((s) => [s.card, s.target]), [["characters", "c1"], ["world", null]]);
+  assert.equal(vectorsApi.readGenerateReply({ ok: true, chapter_text: "Text.", events: {}, shifts: [] }).error.kind, "bad_output");
+  assert.equal(vectorsApi.readGenerateReply({ ok: true, chapter_text: "Text.", events: { happened: "H" }, shifts: [], extra: 1 }).ok, false);
 });
 
-test("an offstage move needs both parts", () => {
-  assert.equal(vectorsApi.readOffstageReply({ ok: true, did: "x", reach: "  " }).error.kind, "bad_output");
-  assert.deepEqual(vectorsApi.readOffstageReply({ ok: true, did: " a ", reach: "b" }), { ok: true, did: "a", reach: "b" });
+test("a plan reply holds a beat and nothing else", () => {
+  assert.deepEqual(vectorsApi.readPlanReply({ ok: true, beat: { aim: "x" } }), { ok: true, beat: { aim: "x" } });
+  assert.equal(vectorsApi.readPlanReply({ ok: true, beat: "x" }).error.kind, "bad_output");
+  assert.equal(vectorsApi.readPlanReply({ ok: true, beat: {}, thinking: "x" }).error.kind, "bad_output");
 });

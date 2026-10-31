@@ -2,7 +2,7 @@
 // page's own labels from the text bundle (web/data/text.en.json), through STRINGS below.
 import {
   FILLABLE, addItem, blockedValues, canAdd, chooseOneOf, fieldShown, filledFieldKeys, filledPaths, flagsUsed, groupedFields,
-  isFilled, isItemEmpty, itemTitle, legalShifts, lookupLabel, modelRules, oneOfChoice, pickerSources, problemCounts,
+  isFilled, isItemEmpty, itemTitle, lookupLabel, modelRules, oneOfChoice, pickerSources, problemCounts,
   problemPath, refOptions, removeItem, showsOptionalTag, shownProblems, validate,
 } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
@@ -313,24 +313,6 @@ function fieldBlock(field, values, path, ctx, scope) {
     let sync = () => {};
     const cards = radioCards(path, field.label, field.options || [], values[field.key], (next) => { onInput(next); sync(); });
     block.append(cards);
-    if (field.limited_by === "code" && field.key === "shift" && ctx.list) {
-      // Pacing: the choices the earlier chapters leave open. A choice already made stays selectable so it can be seen and fixed.
-      const reason = el("p", { class: "note" });
-      const update = () => {
-        const legal = legalShifts(ctx.list, values);
-        let any = false;
-        for (const input of cards.querySelectorAll("input")) {
-          input.disabled = !legal.includes(input.value) && values[field.key] !== input.value;
-          any = any || !legal.includes(input.value);
-        }
-        reason.textContent = any ? field.disabled_reason : "";
-        reason.hidden = !any;
-      };
-      // One chapter's shift limits the next ones, so every beat's choices follow a change in any beat.
-      scope.live.push(update);
-      ctx.siblings?.add(update);
-      block.append(reason);
-    }
     if (field.required === false) {
       const clear = el("button", { type: "button", class: "clear", text: STRINGS.clear });
       sync = () => { clear.hidden = !isFilled(values[field.key]); };

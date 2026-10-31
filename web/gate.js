@@ -1,12 +1,13 @@
 // The story-start gate and the card locks. No DOM, so Node can test it.
 //
-// Starting the story locks Style, Characters, World and Setup: from then on only the live fields of Entanglements and
-// each chapter's plan change. A lock is an entry in the project's `locks` list, so the project file says what is
-// locked and the backend reads the same thing. A card is locked by a lock that names the card and nothing narrower.
+// Starting the story locks Style, Characters, World, Entanglements and Setup (P0, A12): from then on only the Outline (each
+// chapter's plan) is edited, and what changes in the other cards is recorded as shifts. A lock is a UI restriction only: the
+// model sees no difference. A lock is an entry in the project's `locks` list, so the project file says what is locked. A card
+// is locked by a lock that names the card and nothing narrower.
 //
-// Two kinds of whole-card lock, told apart by `by`: the story's own (no `by`), which starting the story sets on the four
+// Two kinds of whole-card lock, told apart by `by`: the story's own (no `by`), which starting the story sets on the five
 // static cards, and the writer's (`by: "writer"`), which the lock button on any of the six cards sets so nothing is changed
-// by accident. Either one makes the card read-only. The story has started when all four static cards carry the story's lock,
+// by accident. Either one makes the card read-only. The story has started when all five static cards carry the story's lock,
 // so locking cards by hand never starts it.
 //
 // Before the lock, the gate asks two things. The first is code: every card must be free of blocking problems.
@@ -14,10 +15,10 @@
 
 import { newId, settledProject, validate, instanceName } from "./logic.js";
 
-// Fixed once the story starts.
-export const STATIC_CARDS = ["style", "characters", "world", "setup"];
-// Every card the gate checks. Entanglements stays editable, but it has to be sound when the story starts.
-export const GATE_CARDS = ["style", "characters", "world", "entanglements", "setup"];
+// Locked once the story starts (P0, A12). The Outline stays editable.
+export const STATIC_CARDS = ["style", "characters", "world", "entanglements", "setup"];
+// Every card the gate checks before the story starts: the same five.
+export const GATE_CARDS = STATIC_CARDS;
 
 export const WRITER = "writer";
 
@@ -48,8 +49,11 @@ export function setWriterLock(project, cardId, on) {
   return project;
 }
 
-// Adds the story's lock to each static card that has none. Locks the writer set by hand stay as they are.
+// Adds the story's lock to each of the five cards that has none. Locks the writer set by hand stay as they are.
+// The project gets its id here when it has none: the id seeds the random picks (spotlight, lists), so it is fixed before the first
+// plan and never changes, and the picks do not move when the title is edited.
 export function lockStaticCards(project) {
+  if (!project.id) project.id = newId();
   const locks = project.locks ?? (project.locks = []);
   for (const card of STATIC_CARDS) {
     if (!lockedByStory(project, card)) locks.push({ id: newId(locks.map((l) => l.id)), card });
@@ -57,7 +61,7 @@ export function lockStaticCards(project) {
   return project;
 }
 
-// Takes the story's locks off the static cards. Locks the writer set (whole-card or narrower) stay.
+// Takes the story's locks off the five cards. Locks the writer set (whole-card or narrower) stay.
 export function unlockStaticCards(project) {
   project.locks = (project.locks ?? []).filter((lock) => !STATIC_CARDS.some((card) => storyLock(lock, card)));
   return project;

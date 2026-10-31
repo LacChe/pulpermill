@@ -1,5 +1,5 @@
 // A stand-in for the backend, so the page can be built, tested and shown on GitHub Pages with no model running.
-// It answers the same calls the real backend will (fill, judge, style_fit, offstage, plan, generate, end_story, status) (see "The backend contract" in logic.js) in the same shapes,
+// It answers the same calls the real backend will (fill, judge, style_fit, plan, generate, status) (see "The backend contract" in logic.js) in the same shapes,
 // so the page cannot tell the difference. It writes no story: its answers are plain samples that are valid for the
 // schema, which is enough to see every state the page has to handle.
 //
@@ -108,56 +108,30 @@ export function createMock(schema, options = {}) {
   };
 
   // ---- The story calls: plain samples that are valid for the shapes ----
-  const names = (list) => (Array.isArray(list) ? list : []).map((entry) => entry?.name).filter(Boolean);
+  const AIMS = ["find who took the ledger", "get past the harbour clerk", "keep a promise to an old friend", "reach the island before the tide", "burn the evidence", "ask forgiveness",
+    "cross the border unseen", "win back the shop", "learn what the letter says", "stand up to the board"];
 
-  const offstage = () => ({ ok: true, did: "Mock offstage move: a background group acts.", reach: "Mock reach: word of it gets to the protagonist." });
-
-  const plan = (request, nth) => {
-    const beats = schema.cards.outline.fields.find((f) => f.key === "beats");
-    const related = { characters: request.cast ?? [], world: request.world ?? {} };
-    const skip = ["offstage_did", "offstage_reach", "cast"];
-    const wanted = beats.item_fields.filter((f) => f.filled_by === "planner" && !skip.includes(f.key));
-    const beat = sampleFields(beats, wanted, related, nth);
-    if (request.legal_shifts?.length) beat.shift = request.legal_shifts[0];
-    if (request.chapter === 1) delete beat.when_gap;
-    const plant = (request.open_plants ?? [])[0];
-    if (plant?.text) beat.payoff = [plant.text];
-    return { ok: true, thinking: `Mock thinking for chapter ${request.chapter}: two directions, the second one is chosen.`, beat };
+  const plan = (request) => {
+    const place = (request.world?.places ?? [])[0]?.name;
+    const tie = (request.ties ?? []).find((t) => t.id === request.spotlight);
+    const beat = {
+      when_time: `Mock time ${request.chapter}`,
+      aim: `Mock aim: ${AIMS[(request.chapter - 1) % AIMS.length]}`,
+      plan: `Mock plan for chapter ${request.chapter}${tie ? `, about ${tie.bond}` : ""}.`,
+    };
+    if (place) beat.where = place;
+    return { ok: true, beat };
   };
 
   const generate = (request) => {
     const beat = request.beat ?? {};
-    const who = names(request.cast)[0];
-    const pressure = (request.entanglements?.pressures ?? [])[0];
-    const tie = (request.entanglements?.ties ?? [])[0];
-    const last = request.chapter >= request.chapter_count;
+    const who = (request.cast ?? [])[0];
     return {
       ok: true,
-      chapter_text: `Mock chapter ${request.chapter} of ${request.chapter_count}. ${beat.collision_goal ?? ""}`.trim(),
-      events: {
-        happened: `Mock events of chapter ${request.chapter}.`, changed: "Mock change.", planted: beat.plant ?? null,
-        paid_off: beat.payoff ?? [], reveals_landed: beat.reveal_rule ? [beat.reveal_rule] : [],
-        behaviors_seen: [], things_seen: [],
-        goal_change: last ? "achieved" : "redefined", goal_now: `Mock aim ${request.chapter + 1}: reach the next stage of ${request.goal ?? "the goal"}`,
-      },
-      shifts: who ? [{ character: who, decided: "Mock decision." }] : [],
-      shown: tie?.id ? [tie.id] : [],
-      changes: pressure?.id ? [{ section: "pressures", item: pressure.id, field: "next_move", value: "Mock next move." }] : [],
-      // A line the cards do not have yet: someone comes to know a landed reveal, or suspects something (so the review has one to show).
-      new_knowledge: !who ? [] : beat.reveal_rule
-        ? [{ person: who, status: "knows", rule: beat.reveal_rule, fact: null }]
-        : request.chapter === 1 ? [{ person: who, status: "suspects", rule: null, fact: `Mock suspicion in chapter ${request.chapter}.` }] : [],
+      chapter_text: `Mock chapter ${request.chapter} of ${request.chapter_count}. ${beat.aim ?? ""}`.trim(),
+      events: { happened: `Mock events of chapter ${request.chapter}.`, changed: "Mock change." },
+      shifts: who ? [{ card: "characters", target: who.id, patch: { fear: `Mock fear after chapter ${request.chapter}` } }] : [],
     };
-  };
-
-  // The characters and world as sent, with a few changes so the review has something to show: a changed sketch, a changed
-  // name (which the page must put back), and one new place.
-  const endStory = (request) => {
-    const characters = JSON.parse(JSON.stringify(request.characters ?? []));
-    const world = JSON.parse(JSON.stringify(request.world ?? {}));
-    if (characters[0]) { characters[0].sketch = `${characters[0].sketch ?? ""} (Mock: changed by the story.)`.trim(); characters[0].name = `${characters[0].name} (changed)`; }
-    if (world.places?.[0]) { const { id, ...place } = world.places[0]; world.places.push({ ...place, name: "Mock new place" }); }
-    return { ok: true, characters, world };
   };
 
   const judge = (request) => {
@@ -189,17 +163,15 @@ export function createMock(schema, options = {}) {
   // What a bad output looks like for each call: the envelope is fine, the content is not.
   const garbled = (call) => (call === "fill" ? { ok: true, values: ["not", "a", "card"] }
     : call === "judge" ? { ok: true, results: "none" }
-    : call === "offstage" ? { ok: true, did: "Only half a move." }
-    : call === "plan" ? { ok: true, thinking: "", beat: "not a beat" }
-    : call === "generate" ? { ok: true, chapter_text: "", events: {}, shifts: [], changes: [], new_knowledge: [] }
-    : call === "end_story" ? { ok: true, characters: "nobody", world: {} } : { ok: true, fits: "maybe" });
+    : call === "plan" ? { ok: true, beat: "not a beat" }
+    : call === "generate" ? { ok: true, chapter_text: "", events: {}, shifts: [] } : { ok: true, fits: "maybe" });
 
-  // The stages a story call goes through, so status can say where it is. Each takes an equal share of the delay.
-  const STAGES_OF = { offstage: ["offstage"], plan: ["think", "beat"], generate: ["write", "events", "shifts"], end_story: ["update"] };
+  // The stages a story call goes through, so status can say where it is: {name, index, of}. Each takes an equal share of the delay.
+  const STAGES_OF = { plan: ["think", "beat"], generate: ["write", "events", "shifts"] };
   async function through(call, signal, retrying) {
     const list = retrying && call === "plan" ? ["retry", "beat"] : STAGES_OF[call] ?? [];
     if (!list.length) return wait(delay, signal);
-    for (const name of list) { stage = name; await wait(delay / list.length, signal); }
+    for (const [i, name] of list.entries()) { stage = { name, index: i + 1, of: list.length }; await wait(delay / list.length, signal); }
   }
 
   async function send(request, { signal } = {}) {
@@ -221,10 +193,8 @@ export function createMock(schema, options = {}) {
         case "fill": return fill(request, nth);
         case "judge": return judge(request);
         case "style_fit": return styleFit(request);
-        case "offstage": return offstage(request);
-        case "plan": return plan(request, nth);
+        case "plan": return plan(request);
         case "generate": return generate(request);
-        case "end_story": return endStory(request);
         default: return failure("bad_request", `The mock does not know the call ${request?.call}.`);
       }
     } finally {

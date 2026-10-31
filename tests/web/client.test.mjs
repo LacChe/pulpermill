@@ -293,13 +293,13 @@ test("stop() ends the call this page has going, and does nothing when there is n
 // ---- Story calls: progress and a lost connection ----
 
 const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const generateRequest = { call: "generate", schema_version: 1, language: "en", chapter: 1, chapter_count: 3, beat: {}, cast: [], entanglements: {} };
+const generateRequest = { call: "generate", schema_version: 3, language: "en", chapter: 1, chapter_count: 3, beat: {}, cast: [] };
 
 test("while a story call runs the page asks status and shows the stage the backend names, then clears it", async () => {
   const mock = createMock(schema, { delay: 120 });
   const client = createClient({ setting: { kind: "mock" }, mock, sleep: realSleep, pollEvery: 10 });
   const seen = [];
-  client.onChange((state) => { if (state.stage && seen.at(-1) !== state.stage) seen.push(state.stage); });
+  client.onChange((state) => { if (state.stage && seen.at(-1) !== state.stage.name) seen.push(state.stage.name); });
   const reply = await client.start(generateRequest).done;
   assert.equal(reply.ok, true);
   assert.deepEqual(seen, ["write", "events", "shifts"]);
@@ -311,8 +311,8 @@ test("a plan that is retried names the retry stage", async () => {
   const mock = createMock(schema, { delay: 80 });
   const client = createClient({ setting: { kind: "mock" }, mock, sleep: realSleep, pollEvery: 5 });
   const seen = new Set();
-  client.onChange((state) => { if (state.stage) seen.add(state.stage); });
-  await client.start({ call: "plan", schema_version: 1, language: "en", chapter: 1, chapter_count: 3, retry: { thinking: "x", beat: {}, problems: ["y"] } }).done;
+  client.onChange((state) => { if (state.stage) seen.add(state.stage.name); });
+  await client.start({ call: "plan", schema_version: 3, language: "en", chapter: 1, chapter_count: 3, retry: { beat: {}, problems: ["y"] } }).done;
   assert.ok(seen.has("retry"));
 });
 
@@ -347,12 +347,12 @@ test("one failed status check among good ones does not end the call", async () =
   let checks = 0;
   const fetchImpl = async (url, { body }) => {
     const request = JSON.parse(body);
-    if (request.call === "status") { checks += 1; if (checks === 2) throw new TypeError("blip"); return json({ ok: true, state: "busy", stage: "write" }); }
+    if (request.call === "status") { checks += 1; if (checks === 2) throw new TypeError("blip"); return json({ ok: true, state: "busy", stage: { name: "write", index: 1, of: 3 } }); }
     await realSleep(80);
-    return json({ ok: true, did: "a", reach: "b" });
+    return json({ ok: true, chapter_text: "Text.", events: { happened: "H" }, shifts: [] });
   };
   const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: realSleep, pollEvery: 5, lostAfter: 3 });
-  const reply = await client.start({ call: "offstage", schema_version: 1, language: "en" }).done;
+  const reply = await client.start(generateRequest).done;
   assert.equal(reply.ok, true);
   assert.ok(checks > 2);
 });
@@ -361,7 +361,9 @@ test("one failed status check among good ones does not end the call", async () =
 
 import { readyProject } from "./helpers.mjs";
 import { lockStaticCards } from "../../web/gate.js";
-import { planChapter } from "../../web/client.js";
+import { planChapter, generateChapter, regenerateChapter } from "../../web/client.js";
+import { makeAfterStory } from "../../web/endstory.js";
+import { ensureBeat } from "../../web/plan.js";
 
 async function startedProject() {
   const p = lockStaticCards(await readyProject());
@@ -369,65 +371,55 @@ async function startedProject() {
   return p;
 }
 
-test("planning calls the model for a beat, with no offstage move in chapter 1, and changes nothing", async () => {
+test("planning calls the model once for a beat, with the cast and the spotlight the page chose, and changes nothing", async () => {
   const p = await startedProject();
+  const beat = ensureBeat(schema, p);
   const text = JSON.stringify(p);
   const mock = countingMock();
-  const result = await planChapter(mockClient(mock), schema, p, [p.characters[0].id]).done;
-  assert.equal(result.ok, true);
+  const result = await planChapter(mockClient(mock), schema, p, beat).done;
+  assert.equal(result.ok, true, JSON.stringify(result));
   assert.deepEqual(mock.seen.map((r) => r.call), ["plan"]);
+  assert.equal(mock.seen[0].spotlight, beat.spotlight);
+  assert.deepEqual(mock.seen[0].cast.map((c) => c.id), beat.cast);
   assert.equal(result.beat.chapter, 1);
-  assert.equal(result.offstage, null);
   assert.equal(result.retried, false);
   assert.deepEqual(result.blockers, []);
-  assert.match(result.thinking, /chapter 1/);
+  assert.deepEqual([result.beat.cast, result.beat.spotlight], [beat.cast, beat.spotlight]);
+  assert.match(result.beat.planned_from, /^[0-9a-f]{8}$/);
   assert.equal(JSON.stringify(p), text, "the page decides what to land");
-});
-
-test("an offstage move comes first when one is due, and goes into the plan request and the beat", async () => {
-  const p = await startedProject();
-  const [suvi] = p.characters;
-  p.outline = { beats: [{ id: "b1", chapter: 1, where: p.world.places[0].id, cast: [suvi.id], spotlight: p.entanglements.pressures[0].id, shift: "harder" }] };
-  p.chapters = [{ id: "c1", beat: "b1", text: "One." }];
-  p.summary_events = { entries: [{ id: "e1", beat: "b1", happened: "It happened." }] };
-  const mock = countingMock();
-  const result = await planChapter(mockClient(mock), schema, p, [suvi.id]).done;
-  assert.deepEqual(mock.seen.map((r) => r.call), ["offstage", "plan"]);
-  assert.deepEqual(mock.seen[1].offstage, result.offstage);
-  assert.equal(result.beat.offstage_did, result.offstage.did);
-  assert.equal(result.beat.chapter, 2);
 });
 
 test("a beat the blocking rules refuse is sent back once with the rules' words, and the second answer is used", async () => {
   const p = await startedProject();
-  const [suvi] = p.characters;
+  const beat = ensureBeat(schema, p);
   const mock = countingMock();
   const send = mock.send;
   let first = true;
   mock.send = async (request, extra) => {
     const reply = await send(request, extra);
-    if (request.call === "plan" && first) { first = false; return { ...reply, beat: { ...reply.beat, collision_goal: "" } }; }
+    if (request.call === "plan" && first) { first = false; return { ...reply, beat: { ...reply.beat, aim: "" } }; }
     return reply;
   };
-  const result = await planChapter(mockClient(mock), schema, p, [suvi.id]).done;
+  const result = await planChapter(mockClient(mock), schema, p, beat).done;
   assert.deepEqual(mock.seen.map((r) => r.call), ["plan", "plan"]);
-  assert.equal(mock.seen[0].retry, null);
+  assert.equal("retry" in mock.seen[0], false);
   assert.ok(mock.seen[1].retry.problems.length > 0);
-  assert.equal(mock.seen[1].retry.beat.collision_goal, "", "the failed attempt goes back as it was");
+  assert.equal(mock.seen[1].retry.beat.aim, "", "the failed attempt goes back as it was");
   assert.equal(result.retried, true);
   assert.deepEqual(result.blockers, []);
-  assert.ok(result.beat.collision_goal);
+  assert.ok(result.beat.aim);
 });
 
 test("a beat that still fails after the retry is returned with its problems, never retried again", async () => {
   const p = await startedProject();
+  const beat = ensureBeat(schema, p);
   const mock = countingMock();
   const send = mock.send;
   mock.send = async (request, extra) => {
     const reply = await send(request, extra);
-    return request.call === "plan" ? { ...reply, beat: { ...reply.beat, collision_goal: "" } } : reply;
+    return request.call === "plan" ? { ...reply, beat: { ...reply.beat, aim: "" } } : reply;
   };
-  const result = await planChapter(mockClient(mock), schema, p, [p.characters[0].id]).done;
+  const result = await planChapter(mockClient(mock), schema, p, beat).done;
   assert.equal(mock.seen.length, 2);
   assert.equal(result.ok, true);
   assert.equal(result.retried, true);
@@ -436,32 +428,93 @@ test("a beat that still fails after the retry is returned with its problems, nev
 
 test("a failed call changes nothing and comes back as its failure", async () => {
   const p = await startedProject();
+  const beat = ensureBeat(schema, p);
   const mock = countingMock();
   mock.queue("busy");
-  const result = await planChapter(mockClient(mock), schema, p, [p.characters[0].id]).done;
-  assert.equal(result.error.kind, "busy");
+  assert.equal((await planChapter(mockClient(mock), schema, p, beat).done).error.kind, "busy");
   const bad = countingMock();
   bad.queue("bad_output");
-  assert.equal((await planChapter(mockClient(bad), schema, p, [p.characters[0].id]).done).error.kind, "bad_output");
+  assert.equal((await planChapter(mockClient(bad), schema, p, beat).done).error.kind, "bad_output");
 });
 
 test("a plan the page cannot make says why, without calling the model", async () => {
   const p = await startedProject();
+  const beat = ensureBeat(schema, p);
   const mock = countingMock();
   const client = mockClient(mock);
-  assert.equal((await planChapter(client, schema, { ...p, locks: [] }, [p.characters[0].id]).done).reason, "not_started");
-  assert.equal((await planChapter(client, schema, p, [p.characters[1].id]).done).reason, "cast_no_protagonist");
+  assert.equal((await planChapter(client, schema, { ...p, locks: [] }, beat).done).reason, "not_started");
+  assert.equal((await planChapter(client, schema, p, { ...beat, cast: p.characters.slice(1).map((c) => c.id) }).done).reason, "cast_no_protagonist");
+  assert.equal((await planChapter(client, schema, p, { ...beat, spotlight: "nope" }).done).reason, "no_tie");
   assert.equal(mock.seen.length, 0);
 });
 
 test("Stop ends the plan and no second call is made", async () => {
   const p = await startedProject();
+  const beat = ensureBeat(schema, p);
   const mock = countingMock({ delay: 60 });
-  const call = planChapter(mockClient(mock), schema, p, [p.characters[0].id]);
+  const call = planChapter(mockClient(mock), schema, p, beat);
   setTimeout(() => call.stop(), 10);
   const result = await call.done;
   assert.equal(result.error.kind, "stopped");
   assert.equal(mock.seen.length, 1);
+});
+
+test("writing a chapter is one call, and resolves to the outcome without changing the project", async () => {
+  const { writeNext } = await import("./helpers.mjs");
+  const p = await startedProject();
+  const mock = countingMock();
+  const client = mockClient(mock);
+  await writeNext(client, p);
+  const beat = ensureBeat(schema, p);
+  const plan = await planChapter(client, schema, p, beat).done;
+  Object.assign(beat, plan.beat);
+  const text = JSON.stringify(p);
+  mock.seen.length = 0;
+  const result = await generateChapter(client, schema, p).done;
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.deepEqual(mock.seen.map((r) => r.call), ["generate"]);
+  assert.match(result.outcome.chapter.text, /Mock chapter 2/);
+  assert.equal(result.outcome.shifts.length, 1);
+  assert.equal(JSON.stringify(p), text);
+});
+
+test("a chapter the page cannot ask for says why; a plan edited while the model wrote is refused as changed", async () => {
+  const p = await startedProject();
+  assert.equal((await generateChapter(mockClient(), schema, p).done).reason, "no_beat");
+  const beat = ensureBeat(schema, p);
+  const plan = await planChapter(mockClient(), schema, p, beat).done;
+  Object.assign(beat, plan.beat);
+  const slow = countingMock({ delay: 40 });
+  const call = generateChapter(mockClient(slow), schema, p);
+  setTimeout(() => { beat.aim = "Edited meanwhile."; }, 5);
+  assert.equal((await call.done).reason, "changed");
+});
+
+test("writing chapter 1 again goes back to the state going into it", async () => {
+  const { writeNext } = await import("./helpers.mjs");
+  const p = await startedProject();
+  const client = mockClient(countingMock());
+  await writeNext(client, p);
+  await writeNext(client, p);
+  const result = await regenerateChapter(client, schema, p, 1).done;
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(result.outcome.chapter.id, p.chapters[0].id);
+  assert.match(result.outcome.before, /Mock chapter 1/);
+  assert.equal((await regenerateChapter(client, schema, p, 9).done).reason, "no_chapter");
+});
+
+test("the end of the story needs no model call", async () => {
+  const p = await startedProject();
+  assert.equal(makeAfterStory(p).reason, "not_done");
+  const { writeNext } = await import("./helpers.mjs");
+  p.setup.chapter_count = 1;
+  const mock = countingMock();
+  await writeNext(mockClient(mock), p);
+  mock.seen.length = 0;
+  const done = makeAfterStory(p);
+  assert.equal(done.ok, true);
+  assert.equal(mock.seen.length, 0);
+  assert.equal(done.after.characters[0].fear, "Mock fear after chapter 1");
 });
 
 test("every request to a real backend skips the ngrok warning, and carries the token only when one is set", async () => {
@@ -516,13 +569,13 @@ test("a named call whose connection drops is fetched by name until it is done", 
     const request = jobOf(init);
     seen.push(request);
     if (request.call === "status") return json({ ok: true, state: "busy" });
-    if (request.call === "job") { polls += 1; return polls < 3 ? json({ ok: true, state: "running", stage: "write" }) : json({ ok: true, did: "a", reach: "b" }); }
+    if (request.call === "job") { polls += 1; return polls < 3 ? json({ ok: true, state: "running", stage: { name: "write", index: 1, of: 3 } }) : json({ ok: true, chapter_text: "Text.", events: { happened: "H" }, shifts: [] }); }
     throw new TypeError("network error");              // the call itself
   };
   const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: noSleep, pollEvery: 1000, recoverEvery: 1, recoverFor: 100 });
-  const reply = await client.start({ call: "offstage", schema_version: 1, language: "en" }).done;
+  const reply = await client.start(generateRequest).done;
   assert.equal(reply.ok, true);
-  const first = seen.find((r) => r.call === "offstage");
+  const first = seen.find((r) => r.call === "generate");
   assert.match(first.job_id, /^[A-Za-z0-9_-]{8,64}$/);
   assert.ok(seen.filter((r) => r.call === "job").every((r) => r.job_id === first.job_id));
   assert.equal(client.state.working, false);
@@ -535,7 +588,7 @@ test("a call the backend no longer knows is unreachable, with nothing to fetch",
     throw new TypeError("network error");
   };
   const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: noSleep, recoverEvery: 1, recoverFor: 10 });
-  const reply = await client.start({ call: "offstage", schema_version: 1, language: "en" }).done;
+  const reply = await client.start(generateRequest).done;
   assert.equal(reply.error.kind, "unreachable");
   assert.match(reply.error.detail, /no longer has this call/);
 });
@@ -547,7 +600,7 @@ test("a finished call that failed hands back its own error when fetched", async 
     throw new TypeError("network error");
   };
   const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: noSleep, recoverEvery: 1, recoverFor: 10 });
-  const reply = await client.start({ call: "offstage", schema_version: 1, language: "en" }).done;
+  const reply = await client.start(generateRequest).done;
   assert.equal(reply.error.kind, "bad_output");
 });
 
@@ -561,11 +614,11 @@ test("Stop tells the backend to cancel the named call", async () => {
     return new Promise((resolve, reject) => init.signal?.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" }))));
   };
   const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: noSleep });
-  const call = client.start({ call: "offstage", schema_version: 1, language: "en" });
+  const call = client.start(generateRequest);
   call.stop();
   const reply = await call.done;
   assert.equal(reply.error.kind, "stopped");
-  const sent = seen.find((r) => r.call === "offstage");
+  const sent = seen.find((r) => r.call === "generate");
   assert.ok(seen.some((r) => r.call === "cancel" && r.job_id === sent.job_id));
 });
 

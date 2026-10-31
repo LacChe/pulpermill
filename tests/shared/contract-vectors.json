@@ -448,7 +448,7 @@
     },
     {
       "name": "a plan request",
-      "golden": false,
+      "golden": "plan",
       "valid": true,
       "data": {
         "call": "plan",
@@ -757,7 +757,7 @@
     },
     {
       "name": "a plan retry carries the first attempt and the rules' words",
-      "golden": false,
+      "golden": "plan_retry",
       "valid": true,
       "data": {
         "call": "plan",
@@ -922,7 +922,7 @@
     },
     {
       "name": "a plan for chapter 1 has no earlier beats or events",
-      "golden": false,
+      "golden": "plan_chapter_1",
       "valid": true,
       "data": {
         "call": "plan",
@@ -3010,7 +3010,7 @@
     },
     {
       "name": "a generate request",
-      "golden": false,
+      "golden": "generate",
       "valid": true,
       "data": {
         "call": "generate",
@@ -3158,7 +3158,7 @@
     },
     {
       "name": "a generate request for chapter 1 opens the story",
-      "golden": false,
+      "golden": "generate_chapter_1",
       "valid": true,
       "data": {
         "call": "generate",

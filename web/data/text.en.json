@@ -53,7 +53,8 @@
     "unnamed": "unnamed",
     "afterStory": "after-story",
     "afterStoryLabel": "After the story: ",
-    "project": "pulpermill-project"
+    "project": "pulpermill-project",
+    "wrongVersion": "This file was saved in version {found} of the project format, and this page reads version {expected}. It cannot be opened."
   },
   "backend": {
     "answered": "The backend answered {status}.",
@@ -63,34 +64,15 @@
   "records": {
     "whyMatchesNothing": "“{words}” matches nothing in the cards",
     "whyMatchesSeveral": "“{words}” matches more than one entry in the cards",
-    "whyEmptyList": "an empty list",
-    "whyNotName": "not a name",
-    "whyNotChoice": "“{value}” is not one of the choices",
-    "whyNoWords": "no words",
-    "whyNoEntry": "there is no such entry",
-    "whyNoChange": "that field does not change",
-    "whyLocked": "it is locked",
-    "whyBreaksRule": "it would break a rule: {why}",
-    "unmatchedNone": "{what} “{words}” matches nothing, so it was left out.",
-    "unmatchedSeveral": "{what} “{words}” matches more than one entry, so it was left out.",
-    "whatReveal": "The reveal",
-    "whatThing": "The thing",
-    "whatCharacter": "The character",
-    "payoffNotOpen": "The payoff “{words}” is not an open plant, so it was left out.",
-    "revealAgain": "A reveal that had already come to light was named again, so it was left out.",
-    "behaviorNone": "The behavior “{words}” matches no behavior of the cast, so it was left out.",
-    "behaviorSeveral": "The behavior “{words}” matches more than one behavior of the cast, so it was left out.",
-    "plantsFull": "Two plants were already open, so what this chapter planted (“{planted}”) is not counted as a plant.",
-    "revealStillAvailable": "The beat planned a reveal that the chapter did not make, so it is still available.",
-    "notInChapter": "“{name}” moved, but was not in this chapter, so it was left out.",
-    "shiftTwice": "“{name}” appeared twice in the shifts, so the second was left out.",
-    "knowledgeUnchanged": "A reveal landed, but nobody's knowledge changed. Check the Knowledge list in Entanglements.",
-    "changeLeftOut": "A proposed change to {field} was left out: {why}.",
-    "laterNoPlant": "A later chapter paid off something this chapter planted, and the new version plants nothing.",
-    "laterStale": "The {n} later chapter(s) were written from the old version. They stay as they are, and their beats are marked stale.",
-    "newKnowledge": "New Knowledge entry",
-    "newKnowledgeTo": "{what} ({standing})",
-    "knowledgeOneFact": "it must name either a World rule or a fact, not both and not neither"
+    "whyNoItem": "there is no such item to {op}",
+    "whyNoCharacter": "there is no such character",
+    "whyEmpty": "nothing was left to change",
+    "shiftLeftOut": "A change to {what} was left out: {why}.",
+    "shiftPartLeftOut": "Part of a change to {what} was left out: {why}.",
+    "shiftTwice": "Two changes were given for {what}, so the second was left out.",
+    "shiftsTooMany": "More than {max} cards changed in one chapter, so the rest were left out.",
+    "notInChapter": "“{name}” changed, but was not in this chapter, so it was left out.",
+    "laterStale": "The {n} later chapter(s) were written from the old version. They stay as they are, and their beats are marked stale."
   },
   "endstory": {
     "untitled": "(untitled)",
@@ -501,5 +483,38 @@
       "Until you give a model connection, the page uses a built-in sample model that writes placeholder text, so you can try everything first."
     ],
     "hide": "Hide this guide"
+  },
+  "patch": {
+    "operation": "Operation {n} of {key}: ",
+    "unknownCard": "“{card}” is not a card that can be shifted ({cards}).",
+    "notObject": "A patch must be an object of field keys.",
+    "emptyPatch": "The patch holds nothing.",
+    "unknownField": "{key} is not a field of {card}.",
+    "fixedField": "{key} is fixed and never changes.",
+    "notList": "{key} must be a list of operations.",
+    "emptyList": "{key} holds no operations.",
+    "opNotObject": "{where}must be an object with an op and an id.",
+    "opUnknown": "{where}op must be one of: add, replace, remove.",
+    "opExtra": "{where}{op} does not take: {extra}.",
+    "missingId": "{where}{op} needs the id of the item.",
+    "needsValues": "{where}{op} needs values, an object of the item's fields.",
+    "emptyValues": "{where}replace holds no values, so it changes nothing.",
+    "unknownItemField": "{where}{name} is not a field of an item in {key}.",
+    "identityField": "{where}{name} says which item this is and cannot be changed.",
+    "missingValue": "{where}add needs a value for {name}.",
+    "badType": "{where}{key} has the wrong type.",
+    "badOption": "{where}{key} must be one of: {options} (got {got})."
+  },
+  "progress": {
+    "generic": "The model is working…",
+    "step": "{label} (step {index} of {of})",
+    "names": {
+      "think": "The model is thinking it through…",
+      "beat": "The model is filling in the beat…",
+      "retry": "The model is trying the beat again…",
+      "write": "The model is writing the chapter…",
+      "events": "The model is noting what happened…",
+      "shifts": "The model is noting what changed…"
+    }
   }
 }

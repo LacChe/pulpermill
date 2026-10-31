@@ -2,6 +2,7 @@
  "schema_version": 3,
  "lang": "en",
  "max_items": 5,
+ "max_shifts_per_chapter": 7,
  "common": {
   "missing": {
    "message": "{label} is empty.",
@@ -1719,6 +1720,7 @@
         "characters",
         "world.powers"
        ],
+       "identity": true,
        "placeholder": "Choose a character or group",
        "no_options": "No characters or groups yet. Add some in Characters or World first.",
        "disabled_reason": "Already the other end of this tie. A tie can't point at itself."
@@ -1734,6 +1736,7 @@
         "characters",
         "world.powers"
        ],
+       "identity": true,
        "placeholder": "Choose a character or group",
        "no_options": "No characters or groups yet. Add some in Characters or World first.",
        "disabled_reason": "Already the other end of this tie. A tie can't point at itself."
@@ -1805,6 +1808,7 @@
         "world.objects",
         "world.places"
        ],
+       "identity": true,
        "placeholder": "Choose a thing or place",
        "no_options": "No things or places yet. Add some in World first."
       },

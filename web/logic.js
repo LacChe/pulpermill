@@ -1,7 +1,7 @@
 // Deterministic page logic, written once and kept free of the DOM so Node can test it.
 // Everything here works on plain objects: the schema JSON and the project object.
 
-import { msg, joinList } from "./text.js";
+import { msg, joinList, section } from "./text.js";
 
 // A value counts as filled when the writer has put something in it.
 export function isFilled(value) {
@@ -254,20 +254,22 @@ export function projectFileName(project, fallback = msg("files.project")) {
 // Turn the text of a file into a project, or say why not. The reasons are codes; the page words them.
 //   unreadable   not JSON at all
 //   not_project  JSON, but not a Pulpermill project (no schema_version)
-//   newer        saved by a newer version of the page than this one
+//   version      saved in another version of the format than this page speaks: refused, with one plain message (P0, A4)
 //   damaged      a card holds the wrong kind of thing (`card` names it)
-// An older file still opens, and comes back with `older: true` so the page can say so.
+// Nothing is migrated: only a file of the current version opens.
 export function readProject(text, schema) {
   let data;
   try {
-    data = JSON.parse(String(text).replace(/^﻿/, ""));
+    data = JSON.parse(String(text).replace(/^\ufeff/, ""));
   } catch {
     return { ok: false, reason: "unreadable" };
   }
   if (!data || typeof data !== "object" || Array.isArray(data) || !Number.isInteger(data.schema_version)) {
     return { ok: false, reason: "not_project" };
   }
-  if (data.schema_version > schema.schema_version) return { ok: false, reason: "newer" };
+  if (data.schema_version !== schema.schema_version) {
+    return { ok: false, reason: "version", message: msg("files.wrongVersion", { found: data.schema_version, expected: schema.schema_version }) };
+  }
   for (const id of schema.order) {
     const card = schema.cards[id];
     const held = data[id];
@@ -276,7 +278,7 @@ export function readProject(text, schema) {
     const fine = card.many_per_project ? Array.isArray(held) && held.every(isObject) : isObject(held);
     if (!fine) return { ok: false, reason: "damaged", card: id };
   }
-  return { ok: true, project: data, older: data.schema_version < schema.schema_version };
+  return { ok: true, project: data };
 }
 
 // The safety copy kept in the browser while the writer works. The file stays the real save.
@@ -317,31 +319,12 @@ export function worthRecovering(schema, recovered) {
 
 // ---- Links to other cards ------------------------------------------------
 // A field with `ref` picks from lists elsewhere in the project. A source is "characters" or "<card>.<list>".
-const NAME_KEYS = ["name", "statement", "term", "what", "planted"];
+const NAME_KEYS = ["name", "statement", "term"];
 
 function sourceList(project, source) {
   if (source === "characters") return project.characters ?? [];
   const [cardId, key] = source.split(".");
   return project[cardId]?.[key] ?? [];
-}
-
-// A plant is named by its words, and two chapters can plant the same words. Past the first, the label carries the chapter,
-// so a payoff names exactly one plant and the page and the model agree on which.
-export function plantLabels(project) {
-  const beats = project.outline?.beats ?? [];
-  const chapterOf = (id) => beats.find((b) => b.id === id)?.chapter;
-  const planted = (project.summary_events?.entries ?? []).filter((e) => isFilled(e.planted))
-    .sort((a, b) => (Number(chapterOf(a.beat)) || 0) - (Number(chapterOf(b.beat)) || 0));
-  const seen = new Map();
-  const out = new Map();
-  for (const e of planted) {
-    const words = e.planted.trim();
-    const key = words.replace(/\s+/g, " ").toLowerCase();
-    const n = (seen.get(key) ?? 0) + 1;
-    seen.set(key, n);
-    out.set(e.id, n === 1 ? words : `${words.replace(/[.!?]+$/, "")} (chapter ${chapterOf(e.beat) ?? "?"})`);
-  }
-  return out;
 }
 
 function entryLabel(item, unnamed) {
@@ -354,23 +337,13 @@ function entryLabel(item, unnamed) {
 // Every entry of the given sources as {value: id, label, source}. `unnamed` is shown for entries with no name yet.
 // `options.where` ({key: [values]}) keeps only entries whose key holds one of the values (ref_where).
 // `options.keep` lists ids that stay in the list even when the filters would drop them, so a saved choice is not lost.
-// Two sources are narrowed by what the story has already done:
-//   summary_events.entries  only entries that planted something and have not been paid off yet (an open plant)
-//   world.rules, when a filter is given  rules that have not already come to light (reveals_landed)
 export function refOptions(project, sources, unnamed = msg("common.unnamed"), options = {}) {
   const { where, keep = [] } = options;
-  const paidOff = new Set((project.summary_events?.entries ?? []).flatMap((e) => e.paid_off ?? []));
-  const landed = new Set((project.summary_events?.entries ?? []).flatMap((e) => e.reveals_landed ?? []));
-  const labels = sources.includes("summary_events.entries") ? plantLabels(project) : new Map();
   const out = [];
   for (const source of sources) {
     for (const item of sourceList(project, source)) {
-      if (!keep.includes(item.id)) {
-        if (source === "summary_events.entries" && (!isFilled(item.planted) || paidOff.has(item.id))) continue;
-        if (where && source === "world.rules" && landed.has(item.id)) continue;
-        if (where && !Object.entries(where).every(([key, allowed]) => allowed.includes(item[key]))) continue;
-      }
-      out.push({ value: item.id, label: source === "summary_events.entries" && labels.has(item.id) ? labels.get(item.id) : entryLabel(item, unnamed), source });
+      if (!keep.includes(item.id) && where && !Object.entries(where).every(([key, allowed]) => allowed.includes(item[key]))) continue;
+      out.push({ value: item.id, label: entryLabel(item, unnamed), source });
     }
   }
   return out;
@@ -687,14 +660,17 @@ export function flagsUsed(card) {
 //   style_fit  Does the protagonist's personality allow the chosen person, tense and voice? Request {style,
 //              protagonist}. Reply {ok, fits, message}.
 //
-//   offstage   Plan, only when due: what do background groups and places do? Reply {ok, did, reach}.
-//   plan       Think, then fill the beat. Reply {ok, thinking, beat}. The beat is by field key, links in words.
-//   generate   Write the chapter, then the Events pass, then the Shifts pass. Reply {ok, chapter_text, events,
-//              shifts, changes}. All or nothing: the page commits the chapter and its records as one unit.
-//   end_story  Update Characters and World from the records. Reply {ok, characters, world}.
-//   The page works out everything deterministic (spotlight, legal shifts, open plants, goal, which cards are in
-//   play) and sends it; the backend renders prose and runs the model. Progress is not streamed: while a long call
-//   runs the page asks `status`, which may name the stage ({state: "busy", stage: "write"}).
+//   plan       Fill the beat's planner fields (where, when_time, aim, plan) for the spotlight tie. Request {chapter,
+//              chapter_count, style, setup, protagonist, cast, world, ties, holdings, spotlight, earlier_beats,
+//              earlier_events, retry?}. Reply {ok, beat}. The beat is by field key, links in words.
+//   generate   Write the chapter, say what happened, and propose the shifts. Request as plan, without the spotlight
+//              and with previous_ending and the beat. Reply {ok, chapter_text, events, shifts}. All or nothing: the page
+//              commits the chapter and its records as one unit.
+//   There is no call for the end of the story: the page folds the shifts into the cards itself (endstory.js).
+//   The page works out everything deterministic (the effective cards, the spotlight, the cast, what is in play, the
+//   seeded random picks) and sends it; the backend renders prose and runs the model, and keeps nothing between calls.
+//   Progress is not streamed: while a long call runs the page asks `status`, which may name the stage
+//   ({state: "busy", stage: {name: "write", index: 1, of: 3}}).
 //
 //   `related` holds the cards this card reads (schema `reads`), by card id: the few cards that matter to it,
 //   never the whole project.
@@ -707,9 +683,8 @@ export const FILLABLE = ["style", "characters", "world", "entanglements", "setup
 // Made by the page itself: unreachable (nothing answered), timeout (no answer in time).
 export const ERROR_KINDS = ["busy", "bad_request", "bad_output", "too_long", "stopped", "server", "unauthorized", "unreachable", "timeout"];
 
-// The calls that take long enough to show progress for, and the stages a busy backend may name.
-export const STORY_CALLS = ["offstage", "plan", "generate", "end_story"];
-export const STAGES = ["offstage", "think", "beat", "retry", "write", "events", "shifts", "update"];
+// The calls that take long enough to show progress for. A busy backend may name the stage it is in (see readStage).
+export const STORY_CALLS = ["plan", "generate"];
 
 export function envelope(schema, project, call) {
   return { call, schema_version: schema.schema_version, language: project.output_language || schema.lang };
@@ -737,12 +712,59 @@ export function readReply(reply) {
   return reply;
 }
 
+// What a busy backend says it is doing: {name, index, of}. `name` is any short word, `index` counts from 1, `of` is how many steps
+// there are or null when that is not known. Anything else is not a stage. Returns the stage, null when there is none, or
+// undefined when what came is not a stage.
+export function readStage(stage) {
+  if (stage === undefined || stage === null) return null;
+  if (!isObject(stage) || Object.keys(stage).some((k) => !["name", "index", "of"].includes(k))) return undefined;
+  const { name, index } = stage;
+  const of = stage.of ?? null;
+  if (typeof name !== "string" || !/^[A-Za-z0-9_-]{1,32}$/.test(name)) return undefined;
+  if (!Number.isInteger(index) || index < 1) return undefined;
+  if (of !== null && (!Number.isInteger(of) || of < 1 || index > of)) return undefined;
+  return { name, index, of };
+}
+
+// How a stage is put in words: its name when the page knows it, a generic line when it does not, and "step i of n" when the
+// number of steps is known.
+const STAGE_TEXT = {
+  think: "progress.names.think", beat: "progress.names.beat", retry: "progress.names.retry",
+  write: "progress.names.write", events: "progress.names.events", shifts: "progress.names.shifts",
+};
+
+export function stageText(stage) {
+  if (!stage) return "";
+  const label = Object.hasOwn(STAGE_TEXT, stage.name) ? msg(STAGE_TEXT[stage.name]) : msg("progress.generic");
+  return stage.of ? msg("progress.step", { label, index: stage.index, of: stage.of }) : label;
+}
+
 export function readStatus(reply) {
   const checked = readReply(reply);
   if (!checked.ok) return checked;
-  if (checked.state !== "idle" && checked.state !== "busy") return failure("bad_output", "The state is neither idle nor busy.");
-  const stage = STAGES.includes(checked.stage) ? checked.stage : null;
+  if (checked.state !== "idle" && checked.state !== "busy") return failure("bad_output", "the state is neither idle nor busy.");
+  const stage = readStage(checked.stage);
+  if (stage === undefined) return failure("bad_output", "the stage is not a name with a step number.");
   return stage && checked.state === "busy" ? { ok: true, state: checked.state, stage } : { ok: true, state: checked.state };
+}
+
+// The answer to `job`: the call is still running, or the backend never heard of it (it restarted). A running job may name its stage.
+export function readJobReply(reply) {
+  const checked = readReply(reply);
+  if (!checked.ok) return checked;
+  if (Object.keys(checked).some((k) => !["ok", "state", "stage"].includes(k))) return failure("bad_output", "the job answer has a field nobody knows.");
+  if (checked.state !== "running" && checked.state !== "unknown") return failure("bad_output", "the job is neither running nor unknown.");
+  const stage = readStage(checked.stage);
+  if (stage === undefined) return failure("bad_output", "the stage is not a name with a step number.");
+  return stage && checked.state === "running" ? { ok: true, state: checked.state, stage } : { ok: true, state: checked.state };
+}
+
+// The answer to `cancel`: the call was cancelled, or the backend did not know it.
+export function readCancelReply(reply) {
+  const checked = readReply(reply);
+  if (!checked.ok) return checked;
+  if (Object.keys(checked).some((k) => !["ok", "state"].includes(k)) || !["cancelled", "unknown"].includes(checked.state)) return failure("bad_output", "the cancel answer is neither cancelled nor unknown.");
+  return { ok: true, state: checked.state };
 }
 
 // Fill: {ok: true, request} or {ok: false, reason}. The model may only fill a card when there is something to fill it
@@ -995,82 +1017,62 @@ export function readStyleFitReply(reply) {
 // turn them into ids, the way the fill does. A reply whose shape is wrong is a bad_output and changes nothing.
 
 const isText = (value) => typeof value === "string";
-const isOptionalText = (value) => value === undefined || value === null || typeof value === "string";
-const isTextList = (value) => Array.isArray(value) && value.every(isText);
 const bad = (detail) => failure("bad_output", detail);
+const onlyKeys = (object, keys) => Object.keys(object).every((k) => keys.includes(k));
+const SHIFT_CARD_IDS = ["characters", "world", "entanglements"];
+const OP_KINDS = ["add", "replace", "remove"];
 
-export function readOffstageReply(reply) {
-  const checked = readReply(reply);
-  if (!checked.ok) return checked;
-  if (!isText(checked.did) || !isText(checked.reach)) return bad("The offstage move needs words for what happened and how it reaches the protagonist.");
-  if (!checked.did.trim() || !checked.reach.trim()) return bad("The offstage move is missing one of its two parts.");
-  return { ok: true, did: checked.did.trim(), reach: checked.reach.trim() };
-}
-
+// The plan's reply: the beat's planner fields by key (where, when_time, aim, plan). Links are words; landBeat turns them into ids.
 export function readPlanReply(reply) {
   const checked = readReply(reply);
   if (!checked.ok) return checked;
-  if (!isText(checked.thinking)) return bad("The plan has no thinking text.");
-  if (!isObject(checked.beat)) return bad("The plan has no beat.");
-  return { ok: true, thinking: checked.thinking, beat: checked.beat };
+  if (!onlyKeys(checked, ["ok", "beat"])) return bad("the plan has a field nobody knows.");
+  if (!isObject(checked.beat)) return bad("the plan has no beat.");
+  return { ok: true, beat: checked.beat };
 }
 
-const SHIFT_TEXT = ["believes", "fears", "wants", "refuses", "decided"];
-const CHANGE_SECTIONS = ["ties", "holdings", "knowledge", "pressures"];
-export const KNOWLEDGE_STATUSES = ["knows", "suspects", "misled"];
-export const GOAL_CHANGES = ["achieved", "redefined", "abandoned"];
+// One operation on a list field, as the contract's ListOp says: add names no id and has values, replace names an id and has
+// values, remove names an id and has no values.
+function operationProblem(op) {
+  if (!isObject(op) || !onlyKeys(op, ["op", "id", "values"])) return "an operation is not an object of op, id and values.";
+  if (!OP_KINDS.includes(op.op)) return "an operation is not an add, a replace or a remove.";
+  const named = op.id !== undefined && op.id !== null;
+  if (named && (!isText(op.id) || !op.id)) return "an operation names an id that is not text.";
+  const hasValues = op.values !== undefined && op.values !== null;
+  if (hasValues && !isObject(op.values)) return "an operation's values are not an object.";
+  if (op.op === "add" && (named || !hasValues || !Object.keys(op.values).length)) return "an add names no id and needs values.";
+  if (op.op === "replace" && (!named || !hasValues || !Object.keys(op.values).length)) return "A replace needs the id of an item and values.";
+  if (op.op === "remove" && (!named || hasValues)) return "A remove needs the id of an item and no values.";
+  return null;
+}
 
+const isScalar = (v) => v === null || ["string", "number", "boolean"].includes(typeof v);
+
+// The chapter's reply: its text, what happened (and what changed) and the shifts, each a sparse copy of one card.
 export function readGenerateReply(reply) {
   const checked = readReply(reply);
   if (!checked.ok) return checked;
-  if (!isText(checked.chapter_text) || !checked.chapter_text.trim()) return bad("The chapter text is empty.");
+  if (!onlyKeys(checked, ["ok", "chapter_text", "events", "shifts"])) return bad("the chapter has a field nobody knows.");
+  if (!isText(checked.chapter_text) || !checked.chapter_text.trim()) return bad("the chapter text is empty.");
   const e = checked.events;
-  if (!isObject(e) || !isText(e.happened) || !e.happened.trim()) return bad("The chapter's events are missing.");
-  if (!isOptionalText(e.changed) || !isOptionalText(e.planted)) return bad("The chapter's events have text of the wrong kind.");
-  const lists = ["paid_off", "reveals_landed", "behaviors_seen", "things_seen"];
-  for (const key of lists) if (e[key] !== undefined && !isTextList(e[key])) return bad(`The events' ${key} is not a list of names.`);
-  if (!GOAL_CHANGES.includes(e.goal_change) || !isText(e.goal_now) || !e.goal_now.trim()) return bad("The chapter's events do not say how the goal ended up.");
-  if (!Array.isArray(checked.shifts)) return bad("The chapter's shifts are missing.");
+  if (!isObject(e) || !onlyKeys(e, ["happened", "changed"]) || !isText(e.happened) || !e.happened.trim()) return bad("the chapter's events are missing.");
+  if (e.changed !== undefined && e.changed !== null && !isText(e.changed)) return bad("the chapter's events have text of the wrong kind.");
+  if (!Array.isArray(checked.shifts)) return bad("the chapter's shifts are missing.");
   const shifts = [];
   for (const shift of checked.shifts) {
-    if (!isObject(shift) || !isText(shift.character) || !shift.character.trim()) return bad("A shift does not say who moved.");
-    for (const key of SHIFT_TEXT) if (!isOptionalText(shift[key])) return bad(`A shift's ${key} is not text.`);
-    shifts.push({ character: shift.character.trim(), ...Object.fromEntries(SHIFT_TEXT.filter((k) => isText(shift[k]) && shift[k].trim()).map((k) => [k, shift[k].trim()])) });
-  }
-  if (!Array.isArray(checked.changes)) return bad("The proposed changes are missing.");
-  for (const change of checked.changes) {
-    if (!isObject(change) || !CHANGE_SECTIONS.includes(change.section) || !isText(change.item) || !isText(change.field) || !("value" in change)) {
-      return bad("A proposed change does not say what to change.");
+    if (!isObject(shift) || !onlyKeys(shift, ["card", "target", "patch"])) return bad("A shift is not a card, a target and a patch.");
+    if (!SHIFT_CARD_IDS.includes(shift.card)) return bad("A shift is for a card that cannot be shifted.");
+    const target = shift.target ?? null;
+    if ((shift.card === "characters") !== (typeof target === "string" && target !== "")) return bad("A shift names a character only for Characters.");
+    if (!isObject(shift.patch) || !Object.keys(shift.patch).length) return bad("A shift's patch holds nothing.");
+    for (const value of Object.values(shift.patch)) {
+      if (Array.isArray(value)) {
+        for (const op of value) { const why = operationProblem(op); if (why) return bad(why); }
+      } else if (!isScalar(value)) return bad("A patch holds a value that is neither a scalar nor a list of operations.");
     }
+    shifts.push({ card: shift.card, target, patch: shift.patch });
   }
-  // New Knowledge entries are optional. Each says who, how they stand, and which rule or fact (the page checks the rest).
-  const proposed = checked.new_knowledge ?? [];
-  if (!Array.isArray(proposed)) return bad("The new knowledge entries are not a list.");
-  const newKnowledge = [];
-  for (const entry of proposed) {
-    if (!isObject(entry) || !isText(entry.person) || !entry.person.trim() || !KNOWLEDGE_STATUSES.includes(entry.status)) return bad("A new knowledge entry does not say who or how they stand.");
-    if (!isOptionalText(entry.rule) || !isOptionalText(entry.fact) || !isOptionalText(entry.belief) || !isOptionalText(entry.entry)) return bad("A new knowledge entry's rule, fact, belief or entry is not text.");
-    newKnowledge.push({ person: entry.person.trim(), status: entry.status, rule: entry.rule?.trim() || null, fact: entry.fact?.trim() || null, belief: entry.belief?.trim() || null, entry: entry.entry?.trim() || null });
-  }
-  // Which entanglements (ids the page sent) the chapter showed. Optional.
-  const shown = checked.shown ?? [];
-  if (!isTextList(shown)) return bad("The shown entanglements are not a list of ids.");
-  const events = {
-    happened: e.happened.trim(), changed: e.changed?.trim() || null, planted: e.planted?.trim() || null,
-    goal_change: e.goal_change, goal_now: e.goal_now.trim(),
-  };
-  for (const key of lists) events[key] = e[key] ?? [];
-  return { ok: true, chapter_text: checked.chapter_text, events, shifts, changes: checked.changes.map((c) => ({ section: c.section, item: c.item, field: c.field, value: c.value })), new_knowledge: newKnowledge, shown };
-}
-
-export function readEndStoryReply(reply) {
-  const checked = readReply(reply);
-  if (!checked.ok) return checked;
-  if (!Array.isArray(checked.characters) || !checked.characters.every((c) => isObject(c) && isText(c.id))) {
-    return bad("The updated characters must each carry the id they were sent with.");
-  }
-  if (!isObject(checked.world)) return bad("The updated world is missing.");
-  return { ok: true, characters: checked.characters, world: checked.world };
+  return { ok: true, chapter_text: checked.chapter_text, events: { happened: e.happened.trim(), changed: e.changed?.trim() || null }, shifts };
 }
 
 // ---- The code checks -------------------------------------------------------
@@ -1137,7 +1139,7 @@ CHECKS.holding_pairs_allowed = ({ card, rule, values, project }) => {
 };
 
 // A list is too short or too long. Items with nothing typed do not count, and neither does an item that holds every value of
-// params.skip ({field: value}: a resolved pressure is not an active one).
+// params.skip ({field: value}).
 CHECKS.item_count = ({ card, rule, values }) => {
   const { min, max, skip } = rule.params;
   const skipped = (item) => Boolean(skip) && Object.entries(skip).every(([k, v]) => item?.[k] === v);
@@ -1183,25 +1185,6 @@ CHECKS.person_has_tie = ({ rule, values, project }) => {
   const ties = project.entanglements?.ties ?? [];
   return ties.some((t) => t.tie_from === who || t.tie_to === who) ? [] : [{ field: key }];
 };
-
-// Pacing, from the earlier beats only: at most two Harder in a row, and never two Easier in a row. A beat with no
-// shift chosen breaks a run, and so does a missing chapter number. legalShifts is also what the page uses to grey out choices.
-export const MAX_HARDER_IN_A_ROW = 2;
-export const MAX_EASIER_IN_A_ROW = 1;
-
-function shiftRun(beats, chapter, value) {
-  const byChapter = new Map(beats.map((b) => [Number(b.chapter), b.shift]));
-  let run = 0;
-  for (let n = Number(chapter) - 1; n >= 1 && byChapter.get(n) === value; n--) run++;
-  return run;
-}
-
-export function legalShifts(beats, beat) {
-  if (!isFilled(beat.chapter)) return ["harder", "easier"];
-  const others = beats.filter((b) => b !== beat);
-  return ["harder", "easier"].filter((value) =>
-    shiftRun(others, beat.chapter, value) < (value === "harder" ? MAX_HARDER_IN_A_ROW : MAX_EASIER_IN_A_ROW));
-}
 
 // Names of the characters and of the world's places, things and groups, to spot a card that names them when it should not.
 function knownNames(project, sources, skipId) {

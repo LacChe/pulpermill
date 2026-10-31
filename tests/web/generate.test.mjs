@@ -1,264 +1,248 @@
 import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { schema, readyProject } from "./helpers.mjs";
-import { createMock } from "../../web/mock.js";
-import { createClient, planChapter, generateChapter } from "../../web/client.js";
-import { lockStaticCards } from "../../web/gate.js";
-import { placeBeat, chapterInfo, suggestedCast, openPlants, planRequest } from "../../web/plan.js";
-import { generateGate, generateRequest, applyGenerated, commitChapter, previousEnding, inputsKey } from "../../web/generate.js";
+import { story, opening, schema } from "./fixture.mjs";
+import {
+  generateGate, generateRequest, previousEnding, inputsKey, landShifts, applyGenerated, commitChapter,
+  projectBefore, regenerateGate, regenerateKey, applyRegenerated, commitRegenerated,
+} from "../../web/generate.js";
 import { readGenerateReply } from "../../web/logic.js";
+import { effectiveProject } from "../../web/effective.js";
 
-const quick = () => { const mock = createMock(schema, { delay: 0 }); return { mock, client: createClient({ setting: { ok: true, kind: "mock" }, mock, pollEvery: 5 }) }; };
+const copy = (x) => JSON.parse(JSON.stringify(x));
+const read = (extra = {}) => readGenerateReply({ ok: true, chapter_text: "Chapter two text.", events: { happened: "Suvi hid the ledger.", changed: "Marit knows." }, shifts: [], ...extra });
+const beat2 = (p) => p.outline.beats[1];
 
-// A started story with chapter 1 planned by the mock.
-async function planned() {
-  const project = await readyProject();
-  lockStaticCards(project);
-  const { mock, client } = quick();
-  const cast = suggestedCast(project, 1);
-  const plan = await planChapter(client, schema, project, cast).done;
-  assert.equal(plan.ok, true);
-  placeBeat(project, plan.beat);
-  return { project, mock, client, beat: plan.beat };
+test("a chapter can be written once the story has started, with a beat, a sound cast and no blocking problems", () => {
+  const p = story();
+  const gate = generateGate(schema, p);
+  assert.deepEqual([gate.ok, gate.chapter, gate.beat.id, gate.stale], [true, 2, "b0000002", false]);
+  assert.equal(generateGate(schema, { ...p, locks: [] }).reason, "not_started");
+  assert.equal(generateGate(schema, { ...p, setup: { ...p.setup, chapter_count: 1 } }).reason, "done");
+  const none = story(); none.outline.beats.pop();
+  assert.equal(generateGate(schema, none).reason, "no_beat");
+  const noLead = story(); beat2(noLead).cast = ["c0000002"];
+  assert.equal(generateGate(schema, noLead).reason, "cast_no_protagonist");
+  const blocked = story(); beat2(blocked).aim = "";
+  const result = generateGate(schema, blocked);
+  assert.equal(result.reason, "beat_blocked");
+  assert.ok(result.problems.length > 0);
+});
+
+test("a plan whose inputs changed since it was made warns and does not block", () => {
+  const p = story();
+  p.outline.beats[1].planned_from = "00000000";
+  const gate = generateGate(schema, p);
+  assert.equal(gate.ok, true);
+  assert.equal(gate.stale, true);
+});
+
+test("the end of the last chapter is cut to a clean start, and chapter 1 has none", () => {
+  const p = story();
+  p.chapters[0].text = "First paragraph that is long.\n\nSecond paragraph, which closes the chapter.";
+  assert.equal(previousEnding(p, 1000), p.chapters[0].text);
+  const cut = previousEnding(p, 50);
+  assert.ok(cut.length <= 50 && p.chapters[0].text.endsWith(cut));
+  assert.equal(previousEnding(opening()), null);
+  assert.equal(previousEnding(p, 1000, 2), p.chapters[0].text, "the chapter before the one asked for");
+  assert.equal(previousEnding(p, 1000, 1), null);
+});
+
+test("the generate request opens the story only in chapter 1, and reads the cards going into the chapter", () => {
+  const p = story();
+  p.shifts.entries.push({ id: "s1", beat: "b0000001", card: "characters", target: "c0000001", patch: { fear: "Fire" } });
+  const request = generateRequest(schema, p, beat2(p));
+  assert.deepEqual(request.setup, { chapter_count: 8 });
+  assert.equal(request.protagonist, "c0000001");
+  assert.equal(request.cast[0].fear, "Fire");
+  assert.deepEqual(request.beat, { where: "The Archive", when_time: "Dusk, the second day", aim: beat2(p).aim, plan: beat2(p).plan });
+  const first = generateRequest(schema, opening(), opening().outline.beats[0]);
+  assert.deepEqual(Object.keys(first.setup).sort(), ["chapter_count", "disruption", "normal", "protagonist"]);
+  assert.equal(first.previous_ending, null);
+});
+
+test("the inputs key changes with the plan, the picks and what has been written", () => {
+  const p = story();
+  const key = inputsKey(schema, p, beat2(p));
+  assert.equal(inputsKey(schema, copy(p), beat2(copy(p))), key);
+  const edited = copy(p); edited.characters[0].sketch = "Changed";
+  assert.notEqual(inputsKey(schema, edited, beat2(edited)), key);
+  const written = copy(p); written.chapters.push({ id: "k2", beat: "b0000002", text: "x" });
+  assert.notEqual(inputsKey(schema, written, beat2(written)), key);
+});
+
+const shift = (card, patch, target = null) => ({ card, target, patch });
+
+test("shifts become entries: ids are given, the words become ids, and each entry says its beat", () => {
+  const p = story();
+  const proposed = [
+    shift("entanglements", { holdings: [{ op: "add", values: { holdee: "The ledger", held_by: "Suvi" } }, { op: "remove", id: "h1000001" }], ties: [{ op: "replace", id: "t1000001", values: { edge: "to take her home at once" } }] }),
+    shift("characters", { fear: "Her mother" }, "c0000001"),
+    shift("world", { places: [{ op: "add", values: { name: "The Mill", description: "Old.", effect: "Echoes." } }] }),
+  ];
+  const landed = landShifts(schema, p, beat2(p), proposed);
+  assert.deepEqual(landed.entries.map((e) => e.card), ["characters", "world", "entanglements"], "characters, then world, then entanglements");
+  assert.ok(landed.entries.every((e) => e.beat === "b0000002" && e.id));
+  const holdings = landed.entries[2].patch.holdings;
+  assert.deepEqual([holdings[0].op, holdings[0].values, holdings[1]], ["add", { holdee: "o0000001", held_by: "c0000001" }, { op: "remove", id: "h1000001" }]);
+  assert.match(holdings[0].id, /./);
+  const added = landed.entries[1].patch.places[0];
+  assert.ok(added.id && !p.world.places.some((x) => x.id === added.id));
+  assert.deepEqual(landed.warnings, []);
+  assert.deepEqual(landed.changes.find((c) => c.label.includes("Fear")), { label: "Suvi: " + landed.changes.find((c) => c.label.includes("Fear")).label.slice(6), before: "Being found out", after: "Her mother" });
+});
+
+test("a place added in this chapter can be named by a holding of the same chapter", () => {
+  const p = story();
+  const landed = landShifts(schema, p, beat2(p), [
+    shift("entanglements", { holdings: [{ op: "add", values: { holdee: "The Mill", held_by: "The Board" } }] }),
+    shift("world", { places: [{ op: "add", values: { name: "The Mill", description: "Old.", effect: "Echoes." } }] }),
+  ]);
+  assert.deepEqual(landed.warnings, []);
+  const mill = landed.entries.find((e) => e.card === "world").patch.places[0].id;
+  assert.equal(landed.entries.find((e) => e.card === "entanglements").patch.holdings[0].values.holdee, mill);
+});
+
+test("a shift that cannot be used is left out with a warning, and the rest are kept", () => {
+  const p = story();
+  p.characters.push({ id: "c0000003", name: "Joss" });
+  const landed = landShifts(schema, p, beat2(p), [
+    shift("characters", { fear: "x" }, "c0000003"),                                       // not in the cast
+    shift("characters", { fear: "y" }, "c0000099"),                                       // no such character
+    shift("characters", { name: "Renamed" }, "c0000001"),                                 // a fixed field
+    shift("characters", { fear: "Real change" }, "c0000001"),
+    shift("characters", { flaw: "Second entry for the same character" }, "c0000001"),
+    shift("entanglements", { holdings: [{ op: "add", values: { holdee: "The Moon", held_by: "Suvi" } }] }),   // matches nothing
+    shift("entanglements", { holdings: [{ op: "remove", id: "h9999999" }] }),             // no such item
+    shift("world", { places: [{ op: "add", values: { name: "Half" } }] }),                // a value is missing
+  ]);
+  assert.deepEqual(landed.entries.map((e) => [e.card, e.target]), [["characters", "c0000001"]]);
+  assert.equal(landed.warnings.length, 7);
+  assert.ok(landed.warnings.every((w) => w.kind === "shift" && w.text));
+});
+
+test("part of a shift can be left out while the rest stands", () => {
+  const p = story();
+  const landed = landShifts(schema, p, beat2(p), [shift("entanglements", { holdings: [{ op: "add", values: { holdee: "The Moon", held_by: "Suvi" } }], ties: [{ op: "replace", id: "t1000001", values: { edge: "new aim" } }] })]);
+  assert.deepEqual(Object.keys(landed.entries[0].patch), ["ties"]);
+  assert.equal(landed.warnings.length, 1);
+});
+
+test("no more entries than the schema allows in one chapter", () => {
+  const p = story();
+  p.characters = Array.from({ length: 9 }, (_, i) => ({ id: `cx${i}`, name: `N${i}`, fear: "f" }));
+  p.setup.protagonist = "cx0";
+  beat2(p).cast = p.characters.slice(0, 5).map((c) => c.id);
+  const cast = [...beat2(p).cast];
+  const many = [...cast.map((id) => shift("characters", { fear: `new ${id}` }, id)), shift("world", { history: "h" }), shift("entanglements", { ties: [{ op: "replace", id: "t1000001", values: { edge: "e" } }] }), shift("world", { everyday_life: "second" })];
+  const landed = landShifts({ ...schema, max_shifts_per_chapter: 7 }, p, beat2(p), many);
+  assert.equal(landed.entries.length <= 7, true);
+  const small = landShifts({ ...schema, max_shifts_per_chapter: 2 }, p, beat2(p), many);
+  assert.equal(small.entries.length, 2);
+  assert.ok(small.warnings.some((w) => /2/.test(w.text)));
+});
+
+test("applying a reply makes the chapter, its events and its shifts, and changes nothing", () => {
+  const p = story();
+  const was = JSON.stringify(p);
+  const out = applyGenerated(schema, p, beat2(p), read({ shifts: [shift("characters", { fear: "Her mother" }, "c0000001")] }));
+  assert.equal(JSON.stringify(p), was);
+  assert.deepEqual([out.chapter.beat, out.chapter.text, out.events.beat, out.events.happened, out.events.changed], ["b0000002", "Chapter two text.", "b0000002", "Suvi hid the ledger.", "Marit knows."]);
+  assert.notEqual(out.chapter.id, out.events.id);
+  assert.equal(out.shifts.length, 1);
+  assert.ok(out.changes.length >= 1);
+});
+
+test("committing adds the chapter, its events and its shifts together, and one undo takes them out", () => {
+  const p = story();
+  const out = applyGenerated(schema, p, beat2(p), read({ shifts: [shift("characters", { fear: "Her mother" }, "c0000001")] }));
+  const { undo } = commitChapter(p, out);
+  assert.deepEqual([p.chapters.length, p.summary_events.entries.length, p.shifts.entries.length], [2, 2, 1]);
+  assert.equal(effectiveProject(p, 3).characters[0].fear, "Her mother");
+  assert.equal(undo(), true);
+  assert.deepEqual([p.chapters.length, p.summary_events.entries.length, p.shifts.entries.length], [1, 1, 0]);
+});
+
+test("an undo refuses when the chapter's records were changed since", () => {
+  const p = story();
+  const { undo } = commitChapter(p, applyGenerated(schema, p, beat2(p), read()));
+  p.chapters[1].text = "Edited by hand.";
+  assert.equal(undo(), false);
+  assert.equal(p.chapters.length, 2);
+});
+
+test("the first chapter works from a project with no shifts or events records yet", () => {
+  const o = opening();
+  delete o.shifts; delete o.summary_events;
+  const { project } = commitChapter(o, applyGenerated(schema, o, o.outline.beats[0], read()));
+  assert.equal(project.chapters.length, 1);
+  assert.equal(project.summary_events.entries.length, 1);
+  assert.deepEqual(project.shifts.entries, []);
+});
+
+// ---- Writing a chapter again -------------------------------------------------------------------
+
+function threeChapters() {
+  const p = story();
+  const second = applyGenerated(schema, p, beat2(p), read({ shifts: [shift("characters", { fear: "Her mother" }, "c0000001")] }));
+  commitChapter(p, second);
+  p.outline.beats.push({ id: "b0000003", chapter: 3, where: "p0000002", when_time: "Night", cast: ["c0000001", "c0000002"], spotlight: "t1000001", aim: "Suvi wants to leave town.", plan: "She packs." });
+  const third = applyGenerated(schema, p, p.outline.beats[2], read({ shifts: [shift("characters", { flaw: "Pride" }, "c0000001")] }));
+  commitChapter(p, third);
+  return p;
 }
 
-const goalEnds = { goal_change: "redefined", goal_now: "Find the ledger in the cellar before Friday's count." };
-
-const reply = (over = {}) => readGenerateReply({
-  ok: true, chapter_text: "She went.\n\nHe stayed.",
-  events: { happened: "Suvi left.", changed: "", planted: null, paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: [], ...goalEnds },
-  shifts: [], changes: [], ...over,
-  ...(over.events ? { events: { ...goalEnds, ...over.events } } : {}),
+test("the state before chapter N holds only the records of the chapters before it", () => {
+  const p = threeChapters();
+  const trial = projectBefore(p, 2);
+  assert.deepEqual([trial.chapters.length, trial.summary_events.entries.length, trial.shifts.entries.length], [1, 1, 0]);
+  assert.equal(p.chapters.length, 3, "the project is not changed");
+  assert.equal(effectiveProject(trial, 2).characters[0].fear, "Being found out");
 });
 
-test("the gate says why a chapter cannot be written", async () => {
-  const project = await readyProject();
-  assert.equal(generateGate(schema, project).reason, "not_started");
-  lockStaticCards(project);
-  assert.equal(generateGate(schema, project).reason, "no_beat");
-  const { beat } = await planned();
-  const p2 = (await planned()).project;
-  const gate = generateGate(schema, p2);
-  assert.equal(gate.ok, true);
-  assert.equal(gate.chapter, 1);
-  assert.equal(gate.stale, false);
-  p2.outline.beats[0].cast = [];
-  assert.equal(generateGate(schema, p2).reason, "cast_empty");
-  assert.ok(beat);
+test("writing a chapter again needs a started story, an open outline and a written chapter", () => {
+  const p = threeChapters();
+  const gate = regenerateGate(schema, p, 2);
+  assert.deepEqual([gate.ok, gate.number, gate.beat.id, gate.later], [true, 2, "b0000002", 1]);
+  assert.equal(regenerateGate(schema, { ...p, locks: [] }, 2).reason, "not_started");
+  assert.equal(regenerateGate(schema, { ...p, locks: [...p.locks, { id: "lx", card: "outline" }] }, 2).reason, "outline_locked");
+  assert.equal(regenerateGate(schema, p, 4).reason, "no_chapter");
 });
 
-test("the request carries the cast and what is in play, with links as names", async () => {
-  const { project, beat } = await planned();
-  const request = generateRequest(schema, project, beat);
-  assert.equal(request.call, "generate");
-  assert.equal(request.chapter, 1);
-  assert.equal(request.previous_ending, null);
-  assert.ok(request.setup.normal !== undefined, "chapter 1 carries normal and disruption");
-  assert.equal(request.setup.protagonist, "Suvi");
-  assert.deepEqual(request.cast.map((c) => c.name).sort(), ["Ola", "Suvi"]);
-  assert.equal(request.beat.where, project.world.places.find((p) => p.id === beat.where).name);
-  assert.ok(!JSON.stringify(request.beat).includes(beat.spotlight), "the spotlight is the pressure in words, not its id");
+test("the request to write chapter N again reads the state going into N", () => {
+  const p = threeChapters();
+  const gate = regenerateGate(schema, p, 2);
+  const request = generateRequest(schema, gate.trial, gate.beat);
+  assert.equal(request.cast[0].fear, "Being found out");
+  assert.equal(request.previous_ending, p.chapters[0].text);
+  assert.deepEqual(request.earlier_events.map((e) => e.chapter), [1]);
 });
 
-test("the mock's chapter is written, applied and committed as one unit", async () => {
-  const { project, client } = await planned();
-  const result = await generateChapter(client, schema, project).done;
-  assert.equal(result.ok, true);
-  const before = JSON.stringify(project);
-  assert.equal(JSON.stringify(project), before, "nothing changed until the commit");
-  commitChapter(project, result.outcome);
-  assert.equal(project.chapters.length, 1);
-  assert.equal(project.chapters[0].beat, result.beat.id);
-  assert.equal(project.summary_events.entries[0].beat, result.beat.id);
-  assert.equal(project.entanglements_history.states.length, 1);
-  assert.equal(chapterInfo(project).next, 2);
-  const ids = [project.chapters[0].id, project.summary_events.entries[0].id, project.entanglements_history.states[0].id, ...project.summary_shifts.shifts.map((s) => s.id)];
-  assert.equal(new Set(ids).size, ids.length, "every record has its own id");
+test("a regenerated chapter keeps its ids, and committing it replaces its records, drops its shifts and the later ones, and marks later beats stale", () => {
+  const p = threeChapters();
+  const gate = regenerateGate(schema, p, 2);
+  const key = regenerateKey(schema, p, 2);
+  const out = applyRegenerated(schema, p, gate, readGenerateReply({ ok: true, chapter_text: "A new second chapter.", events: { happened: "New events." }, shifts: [shift("characters", { fear: "Water" }, "c0000001")] }));
+  assert.deepEqual([out.chapter.id, out.events.id], [p.chapters[1].id, p.summary_events.entries[1].id]);
+  assert.equal(out.before, "Chapter two text.");
+  assert.ok(out.warnings.some((w) => w.kind === "later"));
+  assert.equal(regenerateKey(schema, p, 2), key, "building the outcome changes nothing");
+  const { undo } = commitRegenerated(p, out);
+  assert.equal(p.chapters[1].text, "A new second chapter.");
+  assert.equal(p.chapters.length, 3);
+  assert.equal(p.chapters[2].text, "Chapter two text.", "the later chapter is untouched");
+  assert.deepEqual(p.shifts.entries.map((s) => [s.beat, s.patch.fear ?? s.patch.flaw]), [["b0000002", "Water"]], "chapter 3's shift is gone, chapter 2's is the new one");
+  assert.deepEqual(p.outline.beats.map((b) => b.stale ?? false), [false, false, true]);
+  assert.equal(effectiveProject(p, 3).characters[0].fear, "Water");
+  assert.equal(undo(), true);
+  assert.equal(p.chapters[1].text, "Chapter two text.");
+  assert.equal(p.shifts.entries.length, 2);
+  assert.deepEqual(p.outline.beats.map((b) => b.stale ?? false), [false, false, false]);
 });
 
-test("the history keeps the Entanglements as the chapter saw them, and the changes land in the live card", async () => {
-  const { project, beat } = await planned();
-  const pressure = project.entanglements.pressures[0];
-  const out = applyGenerated(schema, project, beat, reply({ changes: [{ section: "pressures", item: pressure.id, field: "next_move", value: "Closes the gate." }] }));
-  assert.equal(out.changes.applied.length, 1);
-  assert.equal(out.entanglements.pressures[0].next_move, "Closes the gate.");
-  assert.notEqual(out.history.state.pressures[0].next_move, "Closes the gate.");
-  assert.equal(project.entanglements.pressures[0].next_move, pressure.next_move, "the project is not touched");
-});
-
-test("a change that cannot be made is dropped and says why", async () => {
-  const { project, beat } = await planned();
-  const p = project.entanglements.pressures[0];
-  const out = applyGenerated(schema, project, beat, reply({ changes: [
-    { section: "pressures", item: "nope", field: "what", value: "x" },
-    { section: "pressures", item: p.id, field: "source_agent", value: "Suvi" },
-    { section: "pressures", item: p.id, field: "bears_on", value: ["Nobody At All"] },
-    { section: "knowledge", item: project.entanglements.knowledge[0]?.id ?? "x", field: "status", value: "dreams" },
-  ] }));
-  assert.equal(out.changes.applied.length, 0);
-  assert.equal(out.changes.dropped.length, 4);
-  assert.ok(out.warnings.some((w) => w.kind === "dropped"));
-});
-
-test("a change to a locked value asks first; declining leaves it, confirming unlocks it", async () => {
-  const { project, beat } = await planned();
-  const p = project.entanglements.pressures[0];
-  project.locks.push({ id: "lock0001", card: "entanglements", field: "pressures", item: p.id, part: "next_move" });
-  const change = { section: "pressures", item: p.id, field: "next_move", value: "Closes the gate." };
-  const asked = applyGenerated(schema, project, beat, reply({ changes: [change] }));
-  assert.equal(asked.changes.locked.length, 1);
-  assert.deepEqual(asked.unlock, ["lock0001"]);
-  const declined = applyGenerated(schema, project, beat, reply({ changes: [change] }), { overwriteLocked: false });
-  assert.equal(declined.changes.applied.length, 0);
-  assert.deepEqual(declined.unlock, []);
-  commitChapter(project, declined);
-  assert.ok(project.locks.some((l) => l.id === "lock0001"), "a declined change keeps its lock");
-  assert.equal(project.entanglements.pressures[0].next_move, p.next_move);
-  const { project: p2, beat: b2 } = await planned();
-  p2.locks.push({ id: "lock0002", card: "entanglements" });
-  const out = applyGenerated(schema, p2, b2, reply({ changes: [{ section: "ties", item: p2.entanglements.ties[0].id, field: "bond", value: "Estranged." }] }));
-  assert.equal(out.changes.locked.length, 1, "a whole-card lock covers every change");
-  commitChapter(p2, out);
-  assert.ok(!p2.locks.some((l) => l.id === "lock0002"));
-  assert.equal(p2.entanglements.ties[0].bond, "Estranged.");
-});
-
-test("shifts map to people in the chapter, once each", async () => {
-  const { project, beat } = await planned();
-  const out = applyGenerated(schema, project, beat, reply({ shifts: [
-    { character: "Suvi", decided: "Leave." }, { character: "Suvi", fears: "Again." }, { character: "Stranger", wants: "x" },
-  ] }));
-  assert.equal(out.shifts.length, 1);
-  assert.equal(out.shifts[0].character, project.setup.protagonist);
-  assert.equal(out.shifts[0].beat, beat.id);
-  assert.equal(out.warnings.filter((w) => w.kind === "unmatched").length, 2);
-});
-
-test("a plant is not counted when two are already open; a reveal with no knowledge change warns", async () => {
-  const { project, beat } = await planned();
-  const beat0 = project.outline.beats[0].id;
-  project.summary_events = { entries: [
-    { id: "e0000001", beat: "gone", happened: "a", planted: "First thing.", paid_off: [] },
-    { id: "e0000002", beat: "gone2", happened: "b", planted: "Second thing.", paid_off: [] },
-  ] };
-  assert.equal(openPlants(project).length, 2);
-  beat.plant = "Third thing.";      // only the plant the beat planned can land
-  const out = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "Third thing.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: []} }));
-  assert.equal(out.events.planted, "");
-  assert.ok(out.warnings.some((w) => w.kind === "plant"));
-  assert.ok(beat0);
-  const paid = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "Third thing.", paid_off: ["First thing."], reveals_landed: [], behaviors_seen: [], things_seen: []} }));
-  assert.deepEqual(paid.events.paid_off, ["e0000001"]);
-  assert.equal(paid.events.planted, "Third thing.");
-});
-
-test("the previous chapter's end is carried into the next request", async () => {
-  const { project, client } = await planned();
-  const result = await generateChapter(client, schema, project).done;
-  commitChapter(project, result.outcome);
-  assert.match(previousEnding(project), /Mock chapter 1/);
-  assert.equal(previousEnding({ chapters: [{ text: "x ".repeat(3000) }] }).length <= 1500, true);
-});
-
-test("editing the Entanglements while the model writes throws the chapter away", async () => {
-  const { project, client, mock } = await planned();
-  const call = generateChapter(client, schema, project);
-  project.entanglements.ties[0].bond = "Changed meanwhile.";
-  const result = await call.done;
-  assert.deepEqual([result.ok, result.reason], [false, "changed"]);
-  assert.equal(project.chapters ?? undefined, undefined);
-  assert.ok(mock);
-});
-
-test("a failed or stopped call changes nothing", async () => {
-  const { project, client, mock } = await planned();
-  const before = JSON.stringify(project);
-  mock.queue("bad_output");
-  const bad = await generateChapter(client, schema, project).done;
-  assert.deepEqual([bad.ok, bad.error.kind], [false, "bad_output"]);
-  mock.queue("too_long");
-  assert.equal((await generateChapter(client, schema, project).done).error.kind, "too_long");
-  const slow = createMock(schema, { delay: 50 });
-  const c2 = createClient({ setting: { ok: true, kind: "mock" }, mock: slow, pollEvery: 5 });
-  const call = generateChapter(c2, schema, project);
-  call.stop();
-  assert.equal((await call.done).error.kind, "stopped");
-  assert.equal(JSON.stringify(project), before);
-});
-
-test("the status names the stage while the chapter is written", async () => {
-  const { project } = await planned();
-  const slow = createMock(schema, { delay: 90 });
-  const client = createClient({ setting: { ok: true, kind: "mock" }, mock: slow, pollEvery: 10 });
-  const seen = new Set();
-  client.onChange(() => seen.add(client.state.stage));
-  await generateChapter(client, schema, project).done;
-  for (const stage of ["write", "events", "shifts"]) assert.ok(seen.has(stage), `saw ${stage}`);
-});
-
-test("the inputs key changes when the beat changes", async () => {
-  const { project, beat } = await planned();
-  const a = inputsKey(schema, project, beat);
-  assert.notEqual(a, inputsKey(schema, project, { ...beat, turn: "Different." }));
-});
-
-test("an extractor that echoes an open plant plants nothing, and a beat plant that duplicates one is not counted", async () => {
-  const { project, beat } = await planned();
-  project.summary_events = { entries: [{ id: "e0000001", beat: "gone", happened: "a", planted: "The pond is warm.", paid_off: [] }] };
-  beat.plant = "";
-  const echo = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "The pond is warm.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: []} }));
-  assert.equal(echo.events.planted, "", "the beat planned nothing");
-  beat.plant = "The pond is warm.";
-  const again = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: "The pond is warm.", paid_off: [], reveals_landed: [], behaviors_seen: [], things_seen: []} }));
-  assert.equal(again.events.planted, "", "the same words are already open");
-});
-
-test("two plants with the same words get different labels, so a payoff names one of them", async () => {
-  const { project, beat } = await planned();
-  project.outline.beats[0].chapter = 1;
-  project.summary_events = { entries: [
-    { id: "e0000001", beat: project.outline.beats[0].id, happened: "a", planted: "The pond is warm.", paid_off: [] },
-    { id: "e0000002", beat: "later", happened: "b", planted: "The pond is warm.", paid_off: [] },
-  ] };
-  const texts = openPlants(project).map((p) => p.text);
-  assert.equal(new Set(texts).size, 2);
-  const out = applyGenerated(schema, project, beat, reply({ events: { happened: "x", planted: null, paid_off: [openPlants(project).find((p) => p.id === "e0000002").text], reveals_landed: [], behaviors_seen: [], things_seen: []} }));
-  assert.deepEqual(out.events.paid_off, ["e0000002"]);
-});
-
-test("a change value written as old -> new keeps only the new words", async () => {
-  const { project, beat } = await planned();
-  const tie = project.entanglements.ties[0];
-  const out = applyGenerated(schema, project, beat, reply({ changes: [{ section: "ties", item: tie.id, field: "bond", value: `${tie.bond} -> grown close` }] }));
-  assert.equal(out.entanglements.ties.find((x) => x.id === tie.id).bond, "grown close");
-});
-
-test("the goal and the spotlighted pressure carry from one chapter into the next plan, with nothing planned about either", async () => {
-  const { project, client } = await planned();
-  project.entanglements.pressures.push({ ...JSON.parse(JSON.stringify(project.entanglements.pressures[0])), id: "pr000002", what: "Winter is coming and the coal is unpaid." });
-  const [first] = project.entanglements.pressures;
-  const beatOne = project.outline.beats[0];
-  assert.equal(beatOne.spotlight, first.id);
-  for (const gone of ["goal_change", "goal_now", "turn", "choice_a", "choice_b", "collision_block"]) assert.equal(gone in beatOne, false, gone);
-  const before = generateRequest(schema, project, beatOne);
-  assert.equal(before.goal, project.setup.goal);
-  assert.deepEqual(before.earlier_goals, []);
-  const written = await generateChapter(client, schema, project).done;
-  assert.equal(written.ok, true, JSON.stringify(written));
-  commitChapter(project, written.outcome);
-  const [entry] = project.summary_events.entries;
-  assert.ok(["achieved", "redefined", "abandoned"].includes(entry.goal_change) && entry.goal_now, "every chapter records how it left the goal");
-  // The next plan starts from the goal the chapter left, and the other pressure takes the spotlight.
-  const next = await planChapter(client, schema, project, suggestedCast(project, 2)).done;
-  assert.equal(next.ok, true);
-  assert.equal(next.beat.spotlight, "pr000002", "the pressure spotlit longest ago is not the one that was just used");
-  const request = planRequest(schema, project, suggestedCast(project, 2));
-  assert.equal(request.goal, entry.goal_now);
-  assert.equal(request.story_goal, project.setup.goal);
-  assert.deepEqual(request.goal_plan.earlier_goals, [project.setup.goal]);
-  placeBeat(project, next.beat);
-  const after = generateRequest(schema, project, next.beat);
-  assert.equal(after.goal, entry.goal_now);
-  assert.deepEqual(after.earlier_goals, [project.setup.goal]);
+test("regenerating the latest chapter warns about nothing later", () => {
+  const p = threeChapters();
+  const gate = regenerateGate(schema, p, 3);
+  const out = applyRegenerated(schema, p, gate, read());
+  assert.equal(out.warnings.some((w) => w.kind === "later"), false);
 });

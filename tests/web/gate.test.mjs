@@ -10,8 +10,8 @@ import {
 const characters = schema.cards.characters;
 
 test("the static cards and the cards the gate checks", () => {
-  assert.deepEqual(STATIC_CARDS, ["style", "characters", "world", "setup"]);
-  assert.deepEqual(GATE_CARDS, ["style", "characters", "world", "entanglements", "setup"]);
+  assert.deepEqual(STATIC_CARDS, ["style", "characters", "world", "entanglements", "setup"], "five cards are locked once the story starts (P0, A12)");
+  assert.deepEqual(GATE_CARDS, STATIC_CARDS);
   for (const id of GATE_CARDS) assert.ok(schema.cards[id], id);
 });
 
@@ -23,18 +23,18 @@ test("a card is locked by a lock that names the whole card and nothing narrower"
   assert.equal(cardLocked({}, "style"), false);
 });
 
-test("starting the story locks the four static cards, once, and leaves the rest alone", () => {
+test("starting the story locks the five static cards, once, and leaves the rest alone", () => {
   const p = { locks: [{ id: "l1", card: "world", field: "places" }] };
   assert.equal(storyStarted(p), false);
   lockStaticCards(p);
   assert.equal(storyStarted(p), true);
-  assert.equal(p.locks.length, 1 + 4, "the narrow lock stays, one whole-card lock per static card");
+  assert.equal(p.locks.length, 1 + 5, "the narrow lock stays, one whole-card lock per static card");
   lockStaticCards(p);
-  assert.equal(p.locks.length, 5, "pressing it twice adds nothing");
-  assert.equal(new Set(p.locks.map((l) => l.id)).size, 5, "every lock has its own id");
-  for (const id of ["entanglements", "outline"]) assert.equal(cardLocked(p, id), false, id);
+  assert.equal(p.locks.length, 6, "pressing it twice adds nothing");
+  assert.equal(new Set(p.locks.map((l) => l.id)).size, 6, "every lock has its own id");
+  assert.equal(cardLocked(p, "outline"), false, "the Outline stays editable");
   const none = lockStaticCards({});
-  assert.equal(none.locks.length, 4);
+  assert.equal(none.locks.length, 5);
 });
 
 test("unlocking takes off the whole-card locks and keeps the narrow ones", () => {
@@ -106,4 +106,13 @@ test("the locks survive saving and opening the project", async () => {
   const read = readProject(projectText(schema, p), schema);
   assert.equal(read.ok, true);
   assert.equal(storyStarted(read.project), true);
+});
+
+test("starting the story gives the project an id once, and keeps one it has", () => {
+  const p = lockStaticCards({});
+  assert.match(p.id, /^[0-9a-f]{8}$/);
+  const id = p.id;
+  lockStaticCards(p);
+  assert.equal(p.id, id);
+  assert.equal(lockStaticCards({ id: "mine" }).id, "mine");
 });

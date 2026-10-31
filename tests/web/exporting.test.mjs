@@ -1,12 +1,11 @@
 import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { schema, readyProject } from "./helpers.mjs";
+import { schema, readyProject, writeNext } from "./helpers.mjs";
 import { createMock } from "../../web/mock.js";
-import { createClient, planChapter, generateChapter, endStory } from "../../web/client.js";
+import { createClient } from "../../web/client.js";
+import { makeAfterStory } from "../../web/endstory.js";
 import { lockStaticCards } from "../../web/gate.js";
-import { placeBeat, suggestedCast } from "../../web/plan.js";
-import { commitChapter } from "../../web/generate.js";
 import { storyMarkdown, storyFileName, cardFiles, readCardFile, CARD_FILE_KEY } from "../../web/exporting.js";
 
 async function story(chapters, withEnd = false) {
@@ -17,11 +16,9 @@ async function story(chapters, withEnd = false) {
   const mock = createMock(schema, { delay: 0 });
   const client = createClient({ setting: { ok: true, kind: "mock" }, mock, pollEvery: 5 });
   for (let n = 1; n <= chapters; n++) {
-    const plan = await planChapter(client, schema, project, suggestedCast(project, n)).done;
-    placeBeat(project, plan.beat);
-    commitChapter(project, (await generateChapter(client, schema, project).done).outcome);
+    await writeNext(client, project);
   }
-  if (withEnd) project.after_story = (await endStory(client, schema, project).done).after;
+  if (withEnd) project.after_story = makeAfterStory(project).after;
   return project;
 }
 
@@ -50,8 +47,8 @@ test("the after-story copy goes out as its own set of files", async () => {
   const files = cardFiles(schema, project);
   assert.equal(files.length, 8);
   assert.ok(files.slice(4).every((f) => f.name.includes("after-story") && f.label.startsWith("After the story")));
-  const sketch = JSON.parse(files.find((f) => f.name.includes("after-story-character-1")).text).values.sketch;
-  assert.match(sketch, /changed by the story/);
+  const fear = JSON.parse(files.find((f) => f.name.includes("after-story-character-1")).text).values.fear;
+  assert.match(fear, /Mock fear after chapter 1/, "the shifts are folded into the copy");
 });
 
 test("a card file reads back as the same card", async () => {

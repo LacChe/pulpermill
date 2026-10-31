@@ -6,7 +6,7 @@ import { readProject, projectSnapshot } from "../../web/logic.js";
 import {
   STATIC_CARDS, cardLocked, lockedByStory, lockedByWriter, setWriterLock, storyStarted, lockStaticCards, unlockStaticCards,
 } from "../../web/gate.js";
-import { planGate } from "../../web/plan.js";
+import { planGate, ensureBeat } from "../../web/plan.js";
 import { regenerateGate } from "../../web/generate.js";
 
 const ALL = ["style", "characters", "world", "entanglements", "setup", "outline"];
@@ -63,10 +63,10 @@ test("a writer's lock survives saving and opening the project", async () => {
 
 test("a locked Outline card stops planning and writing a chapter again, but not writing the next one", async () => {
   const p = lockStaticCards(await readyProject());
-  const [suvi] = p.characters;
+  const beat = ensureBeat(schema, p);
   setWriterLock(p, "outline", true);
-  assert.equal(planGate(p, [suvi.id]).reason, "outline_locked");
+  assert.equal(planGate(p, beat).reason, "outline_locked");
   assert.equal(regenerateGate(schema, p, 1).reason, "outline_locked");
   setWriterLock(p, "outline", false);
-  assert.equal(planGate(p, [suvi.id]).ok, true);
+  assert.equal(planGate(p, beat).ok, true);
 });

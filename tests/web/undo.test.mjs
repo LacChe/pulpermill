@@ -1,12 +1,11 @@
 import "./text-setup.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { schema, readyProject } from "./helpers.mjs";
+import { schema, readyProject, writeNext } from "./helpers.mjs";
 import { createMock } from "../../web/mock.js";
-import { createClient, planChapter, generateChapter, regenerateChapter } from "../../web/client.js";
+import { createClient, regenerateChapter } from "../../web/client.js";
 import { lockStaticCards } from "../../web/gate.js";
-import { placeBeat, suggestedCast } from "../../web/plan.js";
-import { commitChapter, commitRegenerated } from "../../web/generate.js";
+import { commitRegenerated } from "../../web/generate.js";
 import { cardFiles, readCardFile, planImport, applyImport } from "../../web/exporting.js";
 import { settledProject } from "../../web/logic.js";
 import { watch, untouched, sameValue } from "../../web/undo.js";
@@ -39,11 +38,7 @@ async function started() {
   lockStaticCards(project);
   const mock = createMock(schema, { delay: 0 });
   const client = createClient({ setting: { ok: true, kind: "mock" }, mock, pollEvery: 5 });
-  const write = async (n) => {
-    const plan = await planChapter(client, schema, project, suggestedCast(project, n)).done;
-    placeBeat(project, plan.beat);
-    return commitChapter(project, (await generateChapter(client, schema, project).done).outcome);
-  };
+  const write = () => writeNext(client, project);
   return { project, client, write };
 }
 
@@ -56,14 +51,14 @@ test("Generate can be undone: the chapter and its records go and the story is as
   assert.equal(undo(), true);
   assert.equal(project.chapters?.length ?? 0, 0);
   assert.equal(project.summary_events?.entries?.length ?? 0, 0);
-  assert.equal(project.entanglements_history?.states?.length ?? 0, 0);
+  assert.equal(project.shifts?.entries?.length ?? 0, 0);
   assert.deepEqual(project.entanglements, withPlan.entanglements);
 });
 
-test("Generate's undo declines when the Entanglements were edited since", async () => {
+test("Generate's undo declines when a record of the chapter was edited since", async () => {
   const { project, write } = await started();
   const { undo } = await write(1);
-  project.entanglements.ties[0].bond = "Changed by hand.";
+  project.summary_events.entries[0].happened = "Changed by hand.";
   const kept = JSON.stringify(project);
   assert.equal(undo(), false);
   assert.equal(JSON.stringify(project), kept, "nothing was changed");
