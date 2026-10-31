@@ -598,6 +598,13 @@ function show() {
   const chapter = chapterState();
   if (chapter && view.chapter <= chapter.written) {
     chapterPanel?.draw(planningColumn, view.chapter);
+    // Once every chapter is written no tab is left to plan, so the steps that come after the last chapter (writing one again, ending
+    // the story, exporting) are drawn under the chapter itself.
+    if (chapter.written >= chapter.count) {
+      generatePanel?.draw(planningColumn);
+      endPanel?.draw(planningColumn);
+      exportPanel?.draw(planningColumn);
+    }
   } else {
     planPanel?.draw(planningColumn);
     generatePanel?.draw(planningColumn);

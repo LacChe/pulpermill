@@ -1,11 +1,13 @@
 // The generate panel: shown on the Outline card under the plan panel. One button asks the model to write the planned
 // chapter; the page then applies the result and commits it as one unit. The panel also lists the written chapters and, for
-// the chapter just made, what changed in the Entanglements and what the page noticed. Nothing here calls the model except
-// that one button. Stopping is the Stop button the page already has: a stopped or failed chapter leaves nothing behind.
+// each, the shifts that were applied (who or what, which field, before and after) and what the page left out and noticed. The
+// list is read-only: shifts are edited by writing the chapter again. Nothing here calls the model except that one button.
+// Stopping is the Stop button the page already has: a stopped or failed chapter leaves nothing behind.
 import { generateChapter, regenerateChapter } from "./client.js";
 import { generateGate, applyGenerated, commitChapter, regenerateGate, applyRegenerated, commitRegenerated } from "./generate.js";
 import { chapterInfo } from "./plan.js";
 import { chapterNoteFor, setChapterNote, copyNote, putNote } from "./modelnotes.js";
+import { stageText } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
@@ -20,6 +22,20 @@ function node(tag, props = {}, ...children) {
   return made;
 }
 
+// What a chapter's note says, read-only: the shifts that were applied (who or what, which field, before and after), and what was left
+// out or noticed, each with its reason. Drawn under the chapter in the generate panel and in the chapter's own view.
+export function reviewNodes(review) {
+  const parts = [node("h5", { textContent: STRINGS.changes })];
+  parts.push(review.changes.length
+    ? node("ul", { className: "chapter-changes" }, ...review.changes.map((a) => node("li", { textContent: fill(STRINGS.change, { field: a.label, from: a.before || "–", to: a.after || "–" }) })))
+    : node("p", { className: "help", textContent: STRINGS.noChanges }));
+  if (review.warnings.length) {
+    parts.push(node("h5", { textContent: STRINGS.noticed }));
+    parts.push(node("ul", { className: "chapter-warnings" }, ...review.warnings.map((w) => node("li", { textContent: w.text }))));
+  }
+  return parts;
+}
+
 // hooks: {schema, client, getProject, backendWhere, changed(), redraw(), notice(text, kind), errorText(error)}
 export function createGeneratePanel(hooks) {
   let button = null;
@@ -32,7 +48,7 @@ export function createGeneratePanel(hooks) {
     const { working, stage } = hooks.client.state;
     for (const b of againButtons) b.disabled = working;
     if (button) button.disabled = working || button.dataset.blocked === "true";
-    if (stageLine) stageLine.textContent = working && mine ? STRINGS.stages[stage] ?? STRINGS.working : "";
+    if (stageLine) stageLine.textContent = working && mine ? stageText(stage) || STRINGS.working : "";
     tag?.update();
   }
 
@@ -48,19 +64,11 @@ export function createGeneratePanel(hooks) {
     if (result.reason) { hooks.notice(STRINGS.reasons[result.reason] ?? result.reason, "notice-bad"); hooks.redraw(); return; }
     if (!result.ok) { hooks.notice(hooks.errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); refresh(); return; }
 
-    let outcome = result.outcome;
-    let leftLocked = false;
-    if (outcome.changes.locked.length) {
-      const list = outcome.changes.locked.map((a) => fill(STRINGS.lockedItem, { field: a.label, from: a.from, to: a.to })).join("\n");
-      if (!(await ask(fill(STRINGS.locked, { list })))) {
-        outcome = applyGenerated(hooks.schema, project, result.beat, result.read, { overwriteLocked: false });
-        leftLocked = true;
-      }
-    }
+    const outcome = result.outcome;
     const n = Number(result.beat.chapter);
     const { undo } = commitChapter(project, outcome);
-    setChapterNote(project, outcome.chapter.id, { applied: outcome.changes.applied, warnings: outcome.warnings });
-    hooks.notice(fill(leftLocked ? STRINGS.droppedLocked : STRINGS.done, { n }), "", {
+    setChapterNote(project, outcome.chapter.id, { changes: outcome.changes, warnings: outcome.warnings });
+    hooks.notice(fill(STRINGS.done, { n }), "", {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
@@ -89,14 +97,10 @@ export function createGeneratePanel(hooks) {
       return;
     }
     if (!result.ok) { hooks.notice(hooks.errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); refresh(); return; }
-    let outcome = result.outcome;
-    if (outcome.changes.locked.length) {
-      const list = outcome.changes.locked.map((a) => fill(STRINGS.lockedItem, { field: a.label, from: a.from, to: a.to })).join("\n");
-      if (!(await ask(fill(STRINGS.locked, { list })))) outcome = applyRegenerated(hooks.schema, project, result.ctx, result.read, { overwriteLocked: false });
-    }
+    const outcome = result.outcome;
     const { undo } = commitRegenerated(project, outcome);
     const earlier = copyNote(project, "chapter", outcome.chapter.id);
-    setChapterNote(project, outcome.chapter.id, { applied: outcome.changes.applied, warnings: outcome.warnings, before: outcome.before });
+    setChapterNote(project, outcome.chapter.id, { changes: outcome.changes, warnings: outcome.warnings, before: outcome.before });
     hooks.notice(fill(STRINGS.againDone, { n: number }), "", {
       label: STRINGS.undo,
       run: () => {
@@ -129,16 +133,7 @@ export function createGeneratePanel(hooks) {
       } else {
         parts.push(...paragraphs(c.text));
       }
-      if (review) {
-        parts.push(node("h5", { textContent: STRINGS.changes }));
-        parts.push(review.applied.length
-          ? node("ul", { className: "chapter-changes" }, ...review.applied.map((a) => node("li", { textContent: fill(STRINGS.change, { field: a.label, from: a.from || "–", to: a.to || "–" }) })))
-          : node("p", { className: "help", textContent: STRINGS.noChanges }));
-        if (review.warnings.length) {
-          parts.push(node("h5", { textContent: STRINGS.noticed }));
-          parts.push(node("ul", { className: "chapter-warnings" }, ...review.warnings.map((w) => node("li", { textContent: w.text }))));
-        }
-      }
+      if (review) parts.push(...reviewNodes(review));
       const gate = regenerateGate(hooks.schema, project, numberOf(c));
       if (gate.ok) {
         const redo = node("button", { type: "button", className: "validate again", textContent: fill(STRINGS.again, { n: numberOf(c) }) });

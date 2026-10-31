@@ -7,12 +7,12 @@
 // the protagonist and the two characters of that tie (a group is never cast). The beat remembers a hash of what its plan was
 // made from, so a later change to those inputs marks the plan stale (it is never replanned by itself).
 
-import { envelope, blankItem, wordsToId, validate, isFilled, settledProject, findInstance } from "./logic.js";
+import { envelope, blankItem, wordsToId, validate, isFilled, settledProject, findInstance, lookupLabel } from "./logic.js";
 import { effectiveProject } from "./effective.js";
 import { pickMany, rng, projectSeed, PICK_MAX } from "./pick.js";
 import { storyStarted, cardLocked } from "./gate.js";
 import { watch } from "./undo.js";
-import { joinList } from "./text.js";
+import { joinList, msg } from "./text.js";
 
 export const CAST_MAX = 5;               // the beat's cast, protagonist included (the schema's max_selected)
 
@@ -141,6 +141,28 @@ export function castProblem(project, castIds, spotlightId = null) {
   if (ids.some((id) => !findInstance(project, { id: "characters", many_per_project: true }, id))) return "unknown";
   if (spotlightId && requiredCast({ ...project, setup: { ...project.setup, protagonist: null } }, spotlightId).some((id) => !ids.includes(id))) return "spotlight_pair";
   return null;
+}
+
+// The spotlight changed to another tie: the beat's new spotlight and cast. The cast keeps everyone the writer added, drops the two
+// characters the old tie required (unless the new tie needs them too) and gains the characters the new tie requires. The protagonist
+// stays. The required members come first, and the cast never goes over CAST_MAX (it is the extras that are cut). Used by the plan
+// panel's picker; `project` is any project, the effective cards are worked out here.
+export function withSpotlight(project, beat, spotlightId) {
+  const eff = effectiveProject(project, Number(beat.chapter));
+  const before = requiredCast(eff, beat.spotlight);
+  const extras = asList(beat.cast).filter((id) => !before.includes(id));
+  const required = requiredCast(eff, spotlightId);
+  const cast = [...required, ...extras.filter((id) => !required.includes(id))].slice(0, Math.max(CAST_MAX, required.length));
+  return { spotlight: spotlightId, cast };
+}
+
+// A tie in words, for the plan panel: "Suvi and Ola, mother (edge: to care for him)". Ends are named by their cards, a group by its
+// name. Returns {from, to, bond, edge, text}. `project` should be the effective project, so a tie a shift made reads right.
+export function tieInWords(schema, project, tie) {
+  const defs = schema.cards.entanglements.fields.find((f) => f.key === "ties").item_fields;
+  const end = (key) => lookupLabel(project, defs.find((d) => d.key === key), tie[key]);
+  const out = { from: end("tie_from"), to: end("tie_to"), bond: tie.bond ?? "", edge: tie.edge ?? "" };
+  return { ...out, text: msg(out.edge ? "plan.tieWords" : "plan.tieWordsNoEdge", out) };
 }
 
 // ---- What the model is sent ------------------------------------------------------------

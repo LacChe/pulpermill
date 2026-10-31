@@ -326,14 +326,19 @@ main.locked input:disabled, main.locked select:disabled, main.locked textarea:di
 .plan-cast { display: grid; gap: var(--sp-1); margin-top: var(--sp-2); }
 .plan-person { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); align-items: baseline; }
 .plan-name { font-weight: 600; }
-.plan-used { color: var(--muted); font-size: var(--fs-small); }
 .plan-facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--sp-1) var(--sp-4); margin: 0; font-size: var(--fs-small); }
 .plan-facts dt { color: var(--muted); }
 .plan-facts dd { margin: 0; }
 .plan-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); align-items: center; }
 .plan-actions .validate:disabled { opacity: 0.6; cursor: default; }
-.plan-thought > summary { cursor: pointer; font-weight: 600; }
-.plan-thinking { white-space: pre-wrap; margin-top: var(--sp-2); }
+.plan-spotlight-box { border: 1px solid var(--line); border-radius: var(--radius-m); padding: var(--sp-2) var(--sp-3) var(--sp-3); display: grid; gap: var(--sp-2); }
+.plan-spotlight-box legend { font-weight: 600; padding: 0 var(--sp-2); }
+.plan-tie { font-weight: 600; }
+.plan-pick { color: var(--muted); font-size: var(--fs-small); }
+.plan-ties { margin: 0; padding-left: var(--sp-5); font-size: var(--fs-small); }
+.story-cards { flex-basis: 100%; list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: var(--sp-1); }
+.story-card { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); align-items: baseline; }
+.story-card.is-open .story-card-name { font-weight: 600; }
 
 /* The generate panel and the written chapters */
 .generate-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-l); padding: var(--sp-4) var(--sp-4); margin-bottom: var(--sp-4); display: grid; gap: var(--sp-3); }
@@ -440,7 +445,7 @@ dialog.ask::backdrop { background: rgba(0, 0, 0, 0.6); }
 .elapsed { color: var(--muted); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-small); }
 
 /* Depth: each nesting level is one step lighter. Add new components to the list for their level. */
-.option, .item, .plan-cast-box, .import-choice, .after-edit-item { background: var(--surface-2); }
+.option, .item, .plan-cast-box, .plan-spotlight-box, .import-choice, .after-edit-item { background: var(--surface-2); }
 .item .item, .item .option, .item .plan-cast-box, .after-edit-item .group,
 .after-edit-item .item, .after-edit-item .option { background: var(--surface-3); }
 .item-compact { background: none; }
