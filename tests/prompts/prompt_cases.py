@@ -1,12 +1,12 @@
-"""The prompt cases the harness measures (phase 5): every call, built for the Salt Coast sample story and for a very large one.
-Used by tools/render_prompts.py, tools/budget_report.py and the tests."""
+"""The cases the budget tests measure: the Salt Coast sample story (the new request shape, see fixtures/) and bigger and bigger versions of it.
+`render_story` is a generic prompt made with the card renderers alone; it is what the budget tests fit. The parked story prompts (a
+writer's, a planner's ...) are built by `parked_prompts` and its relatives, for the parked tests and tools/ only."""
 import copy
 import json
 from pathlib import Path
 
-from pulpermill.prompts import budget
+from pulpermill.prompts import budget, render, textfiles as tx
 from pulpermill.schema.common import MAX_ITEMS
-from pulpermill.prompts import prompts as P
 from test_render import generate_request, plan_request
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -43,10 +43,9 @@ def chapter_text(words: int) -> str:
 PAGE_BOUND = {"appearance": 300, "previous_ending": 1500}
 # The free-text fields the renderers cap. Choices (style options, sexes, statuses) are left as they are.
 FREE_TEXT = {"sketch", "fear", "flaw", "competence", "vulnerability", "speech", "history", "text", "state", "tendency",
-             "description", "effect", "significance", "nature", "hold", "felt", "statement", "cost", "when_broken", "truth",
-             "meaning", "bond", "edge", "what", "next_move", "fact", "happened", "changed", "normal", "disruption", "goal",
-             "stakes", "believes", "fears", "wants", "refuses", "decided", "planted", "did", "reach", "note", "appearance",
-             "previous_ending", "turn", "problem"}
+             "description", "effect", "significance", "nature", "hold", "felt", "statement", "cost", "when_broken",
+             "meaning", "bond", "edge", "happened", "changed", "normal", "disruption", "note", "appearance",
+             "previous_ending", "aim", "plan", "problem"}
 
 
 def _stuff(node, counter, chars=2400, skip=("id", "language", "call", "status", "schema_version")):
@@ -94,13 +93,12 @@ def inflate(req: dict, cast: int = 8, each: int = MAX_ITEMS, ties: int = 12, cha
             for key in ("wants", "values", "behaviors"):
                 if person.get(key):
                     person[key] = _clone(person[key], each)
-    for card in ("world", "entanglements"):
-        for key, value in (req.get(card) or {}).items():
-            if isinstance(value, list) and value and isinstance(value[0], dict):
-                req[card][key] = _clone(value, ties if key == "ties" else each)
-    for key in ("standing", "open_plants", "available_reveals"):
+    for key, value in (req.get("world") or {}).items():
+        if isinstance(value, list) and value and isinstance(value[0], dict):
+            req["world"][key] = _clone(value, each)
+    for key in ("ties", "holdings"):
         if isinstance(req.get(key), list) and req[key]:
-            req[key] = _clone(req[key], each)
+            req[key] = _clone(req[key], ties if key == "ties" else each)
     events = req.get("earlier_events")
     if isinstance(events, list) and events:
         base = _clone(events, chapters)
@@ -115,13 +113,38 @@ def inflate(req: dict, cast: int = 8, each: int = MAX_ITEMS, ties: int = 12, cha
 TIERS = {
     # name: (inflate arguments, chapter words). "sample" is the Salt Coast story as it is.
     "medium": (dict(cast=5, each=3, ties=6, chapters=8, chars=200), 3000),
-    "huge": (dict(cast=16, each=MAX_ITEMS, ties=24, chapters=12, chars=2400), None),     # does not fit at any squeeze: the too_long case
+    "huge": (dict(cast=40, each=MAX_ITEMS, ties=60, chapters=12, chars=2400), None),     # does not fit at any squeeze: the too_long case
     "large": (dict(cast=8, each=MAX_ITEMS, ties=12, chapters=12, chars=2400), None),
 }
 
 
-def prompts(gen: dict, plan: dict, chapter_words: int = 3000, vectors: dict | None = None, big: dict | None = None) -> dict:
-    """Every prompt for one story. With `big` (inflate arguments), the vector requests (fill, judge, ...) are inflated too."""
+def tier_request(name: str) -> dict:
+    """The sample story, or a bigger one: "sample", "medium", "large" or "huge"."""
+    if name == "sample":
+        return generate_request()
+    args, _ = TIERS[name]
+    return inflate(generate_request(), **args)
+
+
+def render_story(req: dict, factor: float = 1.0) -> budget.Sized:
+    """A prompt made of what the card renderers make of a story request: the style, the cast, the world, and the ties and holdings by
+    name. No story prompt, no wording of a particular call: a stand-in whose size follows the cards, to fit against the budget."""
+    names = {c["id"]: c.get("name") for c in req["cast"]}
+    for key in ("places", "objects", "powers"):
+        names.update({i["id"]: i.get("name") for i in req["world"].get(key, [])})
+    ties = [{**x, "tie_from": names.get(x["tie_from"], ""), "tie_to": names.get(x["tie_to"], "")} for x in req["ties"]]
+    holdings = [{**x, "holdee": names.get(x["holdee"], ""), "held_by": names.get(x["held_by"], "")} for x in req["holdings"]]
+    with tx.squeeze(factor):
+        text = "\n\n".join(x for x in (render.render_style(req["style"]), render.render_cast(req["cast"]), render.render_world(req["world"]),
+                                        render.render_entanglements({"ties": ties, "holdings": holdings}, list(names.values()))) if x)
+    return budget.Sized("render_story", text, 1000)
+
+
+# ---- The parked story prompts (prompt design decides what to reuse) --------------------------------------------------
+
+def parked_prompts(gen: dict, plan: dict, chapter_words: int = 3000, vectors: dict | None = None, big: dict | None = None) -> dict:
+    """Every old story prompt for one story. They read the old request shapes: only the parked tests use this."""
+    from pulpermill.prompts import prompts as P
     vec = vectors or VECTORS
     if big:
         vec = {k: inflate(v, **big) for k, v in vec.items()}
@@ -138,40 +161,9 @@ def prompts(gen: dict, plan: dict, chapter_words: int = 3000, vectors: dict | No
         "fill-character": P.fill_prompt(vec["the page's fill_character request"]),
         "judge-world": P.judge_prompts(vec["the page's judge_world request"])[0],
         "style-fit": P.style_fit_prompt(vec["the page's style_fit request"]),
-        "offstage": P.offstage_prompt(vec["an offstage request"]),
-        "end-story-character": P.end_story_prompts(vec["an end-of-story request"])[0],
     }
 
 
-def tier(name: str) -> dict:
-    """The prompts for one size of story: sample, medium or large."""
-    if name == "sample":
-        return prompts(generate_request(), plan_request())
-    args, words = TIERS[name]
-    words = words or budget.budgets()["chapter_words_worst_case"]
-    return prompts(inflate(generate_request(), **args), inflate(plan_request(), **args), words, big=args)
-
-
-def golden() -> dict:
-    """The sample prompts with placeholders for the text other calls would have made: what docs/prompts/samples/prompts holds."""
-    gen, plan = generate_request(), plan_request()
-    roles = P.writer_plan()
-    earlier = " ".join(["[the first section would be here]"] * 3)
-    return {
-        "writer-1-open": P.writer_prompt(gen, roles, 0),
-        "writer-2-close": P.writer_prompt(gen, roles, 1, earlier),
-        "planner-1-think": P.planner_think_prompt(plan),
-        "planner-2-beat": P.planner_beat_prompt(plan, "[the planner's thinking would be here]"),
-        "events": P.events_prompt(gen, "[the chapter would be here]"),
-        "shifts": P.shifts_prompt(gen, "[the chapter would be here]", {"happened": "[what the Events pass found]"}),
-        "fill-character": P.fill_prompt(VECTORS["the page's fill_character request"]),
-        "judge-world": P.judge_prompts(VECTORS["the page's judge_world request"])[0],
-        "style-fit": P.style_fit_prompt(VECTORS["the page's style_fit request"]),
-        "offstage": P.offstage_prompt(VECTORS["an offstage request"]),
-        "end-story-character": P.end_story_prompts(VECTORS["an end-of-story request"])[0],
-    }
-
-
-def golden_file(prompt) -> str:
-    schema = json.dumps(prompt.schema, indent=1) if prompt.schema else "(free text)"
-    return f"[{prompt.name} {prompt.version}, stage: {prompt.stage}]\n\n{prompt.text}\n\n---- reply shape ----\n{schema}\n"
+def parked_golden() -> dict:
+    """The old sample prompts with placeholders: what docs/prompts/samples/prompts holds (parked)."""
+    return parked_prompts(generate_request(), plan_request())

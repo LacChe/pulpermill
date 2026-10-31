@@ -1,6 +1,10 @@
 """Tests for the prompts (phase 4). No model, no GPU. Run from the repository root: python -m pytest tests/prompts"""
 import json
 import re
+import pytest
+
+pytestmark = pytest.mark.skip(reason="PARKED(prompt-design): these are the old story prompts (writer, planner, extractors, end of story, offstage) and their schemas, parked by P4 and rewritten in prompt design")
+
 from pathlib import Path
 
 import yaml

@@ -31,8 +31,8 @@ Sex = Literal["female", "male", "other"]
 
 
 class Behavior(Item):
-    state: str = spec("text", None, "note")      # "When ..." an inner or broad social state
-    tendency: str = spec("text", None, "note")   # "they ..." a tendency, not a specific act
+    state: str = spec("text", None, "note", cap=220)      # "When ..." an inner or broad social state
+    tendency: str = spec("text", None, "note", cap=280)   # "they ..." a tendency, not a specific act
 
 
 # Everything is required for now. Comments note what the source doc marked optional.
@@ -42,24 +42,24 @@ class Characters(Item):
     age: int = spec("number", "identity", "free", fixed=True)
     sex: Sex = spec("select", "identity", "axis", fixed=True)
     appearance: str = spec("textarea", "identity", "free", fixed=True)
-    sketch: str = spec("textarea", "identity", "note")
+    sketch: str = spec("textarea", "identity", "note", cap=700)
 
     # Drive
-    wants: list[TextItem] = spec(None, "drive", "items", repeat=True)
-    fear: str = spec("textarea", "drive", "free")                       # source doc: optional
+    wants: list[TextItem] = spec(None, "drive", "items", repeat=True, cap=220)
+    fear: str = spec("textarea", "drive", "free", cap=450)                       # source doc: optional
 
     # Inner conflict
-    flaw: str = spec("textarea", "inner_conflict", "free")
-    values: list[TextItem] = spec(None, "inner_conflict", "items", repeat=True)   # source doc: optional
+    flaw: str = spec("textarea", "inner_conflict", "free", cap=450)
+    values: list[TextItem] = spec(None, "inner_conflict", "items", repeat=True, cap=220)   # source doc: optional
     behaviors: list[Behavior] = spec(None, "inner_conflict", "pairs", repeat=True)  # source doc: optional
 
     # Texture
-    competence: str = spec("textarea", "texture", "free")               # source doc: optional
-    vulnerability: str = spec("textarea", "texture", "free")            # source doc: optional
-    speech: str = spec("textarea", "texture", "free")                   # source doc: optional
+    competence: str = spec("textarea", "texture", "free", cap=450)               # source doc: optional
+    vulnerability: str = spec("textarea", "texture", "free", cap=450)            # source doc: optional
+    speech: str = spec("textarea", "texture", "free", cap=550)                   # source doc: optional
 
     # Past
-    history: str = spec("textarea", "past", "free")                     # source doc: optional
+    history: str = spec("textarea", "past", "free", cap=700)                     # source doc: optional
 
 
 PORTABLE_TEXT = ["appearance", "sketch", "wants", "fear", "flaw", "values", "behaviors",

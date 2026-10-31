@@ -54,7 +54,8 @@ def test_a_real_pipeline_records_its_passes_and_a_retry(tmp_path):
     call = lines(path)[1]
     assert call["retries"] == 1
     [one] = call["passes"]
-    assert one["prompt"] and one["version"] and one["prompt_tokens"] > 0
+    assert one["step"] == "fill" and one["prompt_tokens"] > 0
+    assert call["prompter"] == {"name": "stub", "version": "stub-0.1"}
     assert [a["constrained"] for a in one["attempts"]] == [True, True] and one["attempts"][0]["failed"] and "problem" not in one["attempts"][0]
 
 
@@ -142,17 +143,20 @@ def test_an_unwritable_log_never_fails_a_call(tmp_path):
 def test_stages_are_timed_and_the_inner_set_stage_still_hears_each_one():
     heard = []
     stages = runlog.Stages(heard.append)
-    stages("write")
+    stages({"name": "write", "index": 1, "of": 2})
     time.sleep(0.02)
-    stages("events")
+    stages({"name": "write", "index": 1, "of": 2})            # the same step again (its retry) is one stage
+    stages({"name": "events", "index": 2, "of": 2})
     stages.close()
-    assert heard == ["write", "events"]
-    assert [s["stage"] for s in stages.done] == ["write", "events"] and stages.done[0]["seconds"] >= 0.02
+    assert [h["name"] for h in heard] == ["write", "write", "events"]
+    assert [(s["stage"], s["index"]) for s in stages.done] == [("write", 1), ("events", 2)] and stages.done[0]["seconds"] >= 0.02
 
 
-def test_flags_are_kept_by_id_only():
-    record = runlog.build("generate", 0, 1.234, "ok", [], {"flags": ["repetition: 'the same sentence the same'", "length: 2500 words"], "squeeze": 0.9, "words": 3000})
-    assert record["flags"] == ["repetition", "length"] and record["squeeze"] == 0.9 and record["seconds"] == 1.23
+def test_a_flows_notes_are_kept_only_when_they_are_numbers_or_short_plain_words():
+    record = runlog.build("generate", 0, 1.234, "ok", [], {"squeeze": 0.9, "prompter": {"name": "x", "version": "1"},
+                                                          "flow": {"words": 3000, "mode": "plain", "quote": "She said: it was over.", "ok": True}})
+    assert record["notes"] == {"words": 3000, "mode": "plain", "ok": True}
+    assert record["squeeze"] == 0.9 and record["seconds"] == 1.23 and record["prompter"] == {"name": "x", "version": "1"}
 
 
 def test_the_launcher_names_a_log_path_for_the_notebook():

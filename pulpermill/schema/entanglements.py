@@ -34,8 +34,8 @@ PEOPLE = ["characters", "world.powers"]
 class Tie(Item):
     tie_from: str = spec("select", None, "note", ref=PEOPLE, identity=True)
     tie_to: str = spec("select", None, "note", ref=PEOPLE, identity=True)
-    bond: str = spec("text", None, "note")      # what the tie is ("mother")
-    edge: str = spec("text", None, "note")      # what the tie means for the 'from' person: their driver ("to care for him")
+    bond: str = spec("text", None, "note", cap=300)      # what the tie is ("mother")
+    edge: str = spec("text", None, "note", cap=300)      # what the tie means for the 'from' person: their driver ("to care for him")
 
 
 class Holding(Item):

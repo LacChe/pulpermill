@@ -26,8 +26,8 @@ RENDER_ORDER = [
 class Setup(BaseModel):
     # Opening
     protagonist: str = spec("select", "opening", "free", ref=["characters"])
-    normal: str = spec("textarea", "opening", "free")                # source doc: optional
-    disruption: str = spec("textarea", "opening", "free")
+    normal: str = spec("textarea", "opening", "free", cap=700)                # source doc: optional
+    disruption: str = spec("textarea", "opening", "free", cap=700)
 
     # Push
     chapter_count: int = spec("number", "push", "free")              # a budget; forced in code

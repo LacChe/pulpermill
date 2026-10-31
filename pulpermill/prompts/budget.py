@@ -1,8 +1,10 @@
-"""Token budgets for the prompts (phase 5). `measure` says how many tokens a prompt takes, what it may take, and what is left.
-The backend uses `check` to answer `too_long` (413) before it spends any time on a prompt that cannot fit."""
+"""Token budgets, generic: `measure` says how many tokens a prompt takes, what it may take, and what is left; `fit` finds the fullest
+squeeze at which every prompt of a call fits. Nothing here knows what a prompt is for: the caller says how much room its reply needs
+(a step's `max_output`). The backend answers `too_long` (413) before it spends any time on a call that cannot fit."""
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from typing import Callable, NamedTuple
 
 import yaml
 
@@ -14,6 +16,13 @@ HERE = Path(__file__).resolve().parent
 @lru_cache(maxsize=None)
 def budgets() -> dict:
     return yaml.safe_load((HERE / "budgets.yaml").read_text(encoding="utf-8"))
+
+
+class Sized(NamedTuple):
+    """A prompt to be measured: a name for messages, the text of its one user turn, and the room its reply needs."""
+    name: str
+    text: str
+    max_output: int
 
 
 @dataclass(frozen=True)
@@ -32,26 +41,13 @@ class Measure:
         return self.headroom >= 0
 
 
-def key(name: str) -> str:
-    """end_story_character and end_story_world share one budget."""
-    return "end_story" if name.startswith("end_story") else name
-
-
-def input_limit(name: str) -> int:
+def input_limit(max_output: int) -> int:
     b = budgets()
-    return b["n_ctx"] - b["max_output"][key(name)] - b["margin"]
+    return b["n_ctx"] - max_output - b["margin"]
 
 
-def measure(prompt) -> Measure:
-    """`prompt` is a Prompt; its name picks the reply's room."""
-    return Measure(prompt.name, tokens.chat_tokens(prompt.text), input_limit(prompt.name), budgets()["max_output"][key(prompt.name)])
-
-
-def check(prompt) -> Measure:
-    m = measure(prompt)
-    if not m.ok:
-        raise PromptTooLong(m)
-    return m
+def measure(item: Sized) -> Measure:
+    return Measure(item.name, tokens.chat_tokens(item.text), input_limit(item.max_output), item.max_output)
 
 
 class PromptTooLong(Exception):
@@ -62,21 +58,25 @@ class PromptTooLong(Exception):
         self.measure = m
 
 
-# How far the length caps are squeezed, in order, when a story's prompt does not fit. 1.0 is limits.yaml as written.
+def check(item: Sized, measurer: Callable[[Sized], Measure] = measure) -> Measure:
+    m = measurer(item)
+    if not m.ok:
+        raise PromptTooLong(m)
+    return m
+
+
+# How far the length caps are squeezed, in order, when a prompt does not fit. 1.0 is as written.
 SQUEEZES = (1.0, 0.85, 0.7, 0.55, 0.4, 0.3)
 
 
-def fit(build, squeezes=SQUEEZES):
-    """`build()` makes one Prompt (or a list of them). Returns (result, factor, measures) for the first squeeze at which every
-    prompt fits, so the backend sends the fullest prompt that fits. If none fits it raises PromptTooLong for the last try, which the
-    backend answers with `too_long` (413)."""
-    from . import textfiles as tx
+def fit(build: Callable[[float], "Sized | list[Sized]"], squeezes=SQUEEZES, measurer: Callable[[Sized], Measure] = measure):
+    """`build(factor)` makes one Sized (or a list). Returns (made, factor, measures) for the first squeeze at which every prompt fits, so
+    the fullest prompt that fits is sent. If none fits it raises PromptTooLong for the last try."""
     last = None
     for factor in squeezes:
-        with tx.squeeze(factor):
-            made = build()
-        prompts = made if isinstance(made, list) else [made]
-        measures = [measure(p) for p in prompts]
+        made = build(factor)
+        items = made if isinstance(made, list) else [made]
+        measures = [measurer(p) for p in items]
         bad = [m for m in measures if not m.ok]
         if not bad:
             return made, factor, measures
