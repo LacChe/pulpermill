@@ -1,21 +1,24 @@
-// The plan panel: shown at the top of the Outline card. The writer picks who is in the chapter, sees what the plan starts
-// from (worked out in plan.js), and presses a button; the model thinks and fills the beat, and the beat lands in the
-// outline below, where it can be edited like any other. Nothing here calls the model except that one button.
+// The plan panel: shown at the top of the Outline card. The chapter is about one tie (the spotlight): code picks it at random, and
+// the writer may pick another. The cast always holds the protagonist and the characters at the two ends of that tie, and the writer
+// may add others up to CAST_MAX. The panel shows what will be sent (the spotlight and the ties among the cast), and one button asks
+// the model to plan the chapter; the beat lands in the Outline below, where it can be edited like any other. Nothing here calls the
+// model except that one button. The rules and the picks are worked out in plan.js; this file only draws them.
 import { storyStarted, cardLocked } from "./gate.js";
 import { planChapter } from "./client.js";
-import { planNoteFor, setPlanNote, copyNote, putNote, removeNote } from "./modelnotes.js";
 import {
-  CAST_MAX, castKey, chapterInfo, beatForChapter, castChoices, duePressure, suggestedCast, castProblem, pickSpotlight, shiftsForChapter, goalArc,
-  openPlants, availableReveals, offstageDue, planIsStale, placeBeat,
+  CAST_MAX, castKey, chapterInfo, beatForChapter, newBeat, requiredCast, tiesInPlay, tieInWords, withSpotlight, castProblem,
+  planIsStale, commitPlan,
 } from "./plan.js";
+import { effectiveProject } from "./effective.js";
+import { stageText, instanceName } from "./logic.js";
 import { section, fill, msg, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
-import { remember } from "./folds.js";
-import { sameValue } from "./undo.js";
 
 export const STRINGS = section("plan");
-const copy = (value) => JSON.parse(JSON.stringify(value));
+
+// The Outline rule whose wording explains each way a cast can be wrong (P1 wrote them; the panel does not word them again).
+const CAST_RULES = { no_protagonist: "cast_has_protagonist", spotlight_pair: "spotlight_pair_in_cast" };
 
 function node(tag, props = {}, ...children) {
   const made = Object.assign(document.createElement(tag), props);
@@ -25,59 +28,57 @@ function node(tag, props = {}, ...children) {
 
 // hooks: {schema, client, getProject, backendWhere, changed(), redraw(), notice(text, kind, action), errorText(error)}
 export function createPlanPanel(hooks) {
-  let selection = null;                 // {project, chapter, ids}: who is ticked, per project and chapter
+  let draft = null;                     // {project, chapter, beat}: the beat for the next chapter until it is planned (nothing is added to the Outline before)
   let button = null;
+  let stageLine = null;
   let mine = false;                     // this panel pressed the button and is waiting
   let tag = null;                       // the seconds beside the button
   let shownIn = null;                   // the card the panel was last drawn into, so it can be drawn again alone
+  let shownKey = null;                  // what the panel was drawn from, so a change made in the Outline form is noticed
 
-  // The ticks follow the plan's own Cast field: while the field is as it was, the writer's ticks stand; when it changes (by hand,
-  // by an undo, by a new plan) the ticks are taken from it again.
-  function chosen(project, chapter, existing) {
-    const synced = castKey(existing?.cast);
-    if (selection && selection.project === project && selection.chapter === chapter && selection.synced === synced) return selection;
-    selection = { project, chapter, synced, ids: new Set(existing?.cast?.length ? existing.cast : suggestedCast(project, chapter)) };
-    return selection;
+  // The beat the panel works on: the planned one in the Outline, or a draft made when there is none yet.
+  function working(project, chapter) {
+    const existing = beatForChapter(project, chapter);
+    if (existing) return { beat: existing, existing };
+    if (!draft || draft.project !== project || draft.chapter !== chapter) draft = { project, chapter, beat: newBeat(hooks.schema, project, chapter) };
+    return { beat: draft.beat, existing: null };
   }
 
-  // Run when the writer leaves a field: if the plan's Cast was changed, draws the panel again (the panel only, so the form keeps its place).
+  const keyOf = (beat, stale) => `${beat.spotlight}|${castKey(beat.cast)}|${stale}`;
+
+  // Run when the writer leaves a field: if the beat's Spotlight or Cast was changed in the Outline form, draws the panel again
+  // (the panel only, so the form keeps its place).
   function sync() {
     const project = hooks.getProject();
     const panel = shownIn?.querySelector(".plan-panel");
-    if (!project || !panel || !selection || selection.project !== project) return;
-    const existing = beatForChapter(project, selection.chapter);
-    if (castKey(existing?.cast) === selection.synced) return;
+    if (!project || !panel || shownKey === null) return;
+    const info = chapterInfo(project);
+    const existing = beatForChapter(project, info.next);
+    if (!existing || keyOf(existing, planIsStale(project, existing)) === shownKey) return;
     panel.remove();
     draw(shownIn);
   }
 
-  const usedText = (c) => (c.uses === 0 ? STRINGS.usedNone : fill(c.uses === 1 ? STRINGS.usedOne : STRINGS.usedMany, { n: c.uses, last: c.last ?? "?" }));
-
   function refresh() {
-    if (!button) return;
-    const working = hooks.client.state.working;
-    button.disabled = working || button.dataset.blocked === "true";
+    const { working: busy, stage } = hooks.client.state;
+    if (button) button.disabled = busy || button.dataset.blocked === "true";
+    if (stageLine) stageLine.textContent = busy && mine ? stageText(stage) || STRINGS.working : "";
     tag?.update();
   }
 
-  function facts(project, ids, chapter) {
-    const spotlight = pickSpotlight(project, ids, chapter);
-    const arc = goalArc(project);
-    const rows = [
-      [STRINGS.spotlight, spotlight?.what ? (spotlight.what.length > 140 ? fill(STRINGS.truncated, { text: spotlight.what.slice(0, 140) }) : spotlight.what) : STRINGS.spotlightNone],
-      [STRINGS.shifts, joinList(shiftsForChapter(project, chapter).map((s) => STRINGS.shiftWords[s]))],
-      [STRINGS.goal, arc.goal ?? STRINGS.goalNone],
-      [STRINGS.plants, String(openPlants(project).length || STRINGS.plantsNone)],
-      [STRINGS.reveals, String(availableReveals(project).length)],
-      [STRINGS.offstage, offstageDue(chapter) ? STRINGS.offstageYes : STRINGS.offstageNo],
-    ];
-    return node("dl", { className: "plan-facts" }, ...rows.flatMap(([term, value]) => [node("dt", { textContent: term }), node("dd", { textContent: value })]));
+  // Changes the beat's spotlight and cast: in the Outline when the beat is planned (the form below then shows it), else in the draft.
+  function setBeat(project, chapter, change) {
+    const { beat, existing } = working(project, chapter);
+    Object.assign(beat, change);
+    if (existing) hooks.changed();
+    hooks.redraw();
   }
 
-  async function press(project, existing, ids) {
-    if (existing && !(await ask(STRINGS.confirmReplan))) return;
+  async function press(project, chapter) {
+    const { beat, existing } = working(project, chapter);
+    if (existing?.plan && !(await ask(STRINGS.confirmReplan))) return;
     hooks.notice(STRINGS.working);
-    const call = planChapter(hooks.client, hooks.schema, project, [...ids]);
+    const call = planChapter(hooks.client, hooks.schema, project, beat);
     mine = true;
     refresh();
     const result = await call.done;
@@ -91,10 +92,8 @@ export function createPlanPanel(hooks) {
     }
     if (!result.ok) { hooks.notice(hooks.errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); return; }
 
-    const previous = result.replaces ? copy(result.replaces) : null;
-    const previousThought = previous ? copyNote(project, "plan", previous.id) : null;
-    placeBeat(project, result.beat);
-    setPlanNote(project, result.beat.id, { thinking: result.thinking, retried: result.retried });
+    const placed = commitPlan(project, result.beat);
+    draft = null;
     const parts = [fill(STRINGS.planned, { n: result.beat.chapter })];
     if (result.retried) parts.push(STRINGS.retried);
     if (result.blockers.length) parts.push(fill(STRINGS.stillBlocks, { n: result.blockers.length }));
@@ -102,20 +101,11 @@ export function createPlanPanel(hooks) {
     if (words.length) parts.push(fill(STRINGS.unmatched, { names: joinList(words.map((w) => msg("common.quoted", { text: w }))) }));
     if (result.dropped.length) parts.push(fill(STRINGS.dropped, { fields: joinList(result.dropped) }));
     for (const warning of result.warnings ?? []) parts.push(warning);
-    const wrote = copy(project.outline.beats.find((b) => b.id === result.beat.id));
     hooks.notice(joinList(parts, "sentence"), result.blockers.length ? "notice-bad" : "", {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
-        const now = project.outline?.beats?.find((b) => b.id === result.beat.id);
-        if (!sameValue(now, wrote)) { hooks.notice(STRINGS.undoBlocked, "notice-bad"); return; }   // the plan was changed since
-        if (previous) {
-          placeBeat(project, previous);
-          putNote(project, "plan", previous.id, previousThought);
-        } else {
-          project.outline.beats = project.outline.beats.filter((b) => b.id !== result.beat.id);
-          removeNote(project, "plan", result.beat.id);
-        }
+        if (!placed.undo()) { hooks.notice(STRINGS.undoBlocked, "notice-bad"); return; }   // the plan was changed since
         hooks.changed();
         hooks.redraw();
         hooks.notice(STRINGS.undone);
@@ -129,7 +119,10 @@ export function createPlanPanel(hooks) {
   function draw(container) {
     const project = hooks.getProject();
     button = null;
+    stageLine = null;
+    tag = null;
     shownIn = container;
+    shownKey = null;
     if (!project) return;
     const panel = node("section", { className: "plan-panel" }, node("h3", { textContent: STRINGS.title }));
     container.append(panel);
@@ -137,66 +130,69 @@ export function createPlanPanel(hooks) {
     const info = chapterInfo(project);
     if (info.done) { panel.append(node("p", { className: "help", textContent: STRINGS.allDone })); return; }
     if (cardLocked(project, "outline")) { panel.append(node("p", { className: "help", textContent: STRINGS.reasons.outline_locked })); return; }
-    if (!(project.entanglements?.pressures ?? []).length) { panel.append(node("p", { className: "help", textContent: STRINGS.noPressure })); return; }
+    const chapter = info.next;
+    const eff = effectiveProject(project, chapter);
+    const allTies = eff.entanglements?.ties ?? [];
+    if (!allTies.length) { panel.append(node("p", { className: "help", textContent: STRINGS.noTies })); return; }
 
-    const existing = beatForChapter(project, info.next);
-    const pick = chosen(project, info.next, existing);
-    panel.append(node("p", { className: "plan-chapter", textContent: fill(info.count ? STRINGS.chapterOf : STRINGS.chapterOnly, { n: info.next, total: info.count }) }));
-    if (existing && planIsStale(hooks.schema, project, existing)) panel.append(node("p", { className: "plan-stale", textContent: STRINGS.stale }));
+    const { beat, existing } = working(project, chapter);
+    const stale = Boolean(existing && planIsStale(project, existing));
+    shownKey = keyOf(beat, stale);
+    panel.append(node("p", { className: "plan-chapter", textContent: fill(info.count ? STRINGS.chapterOf : STRINGS.chapterOnly, { n: chapter, total: info.count }) }));
+    if (stale) panel.append(node("p", { className: "plan-stale", textContent: STRINGS.stale }));
 
-    const factsBox = node("div", { className: "plan-facts-box" });
-    const status = node("p", { className: "problem-count has-block", hidden: true });
-    const startable = () => {
-      const why = castProblem(project, [...pick.ids]);
-      status.hidden = !why;
-      status.textContent = why ? fill(STRINGS.reasons[`cast_${why}`], { max: CAST_MAX }) : "";
-      if (button) { button.dataset.blocked = String(Boolean(why)); refresh(); }
-    };
-    const drawFacts = () => factsBox.replaceChildren(node("h4", { textContent: STRINGS.startsFrom }), facts(project, [...pick.ids], info.next));
+    // The spotlight: the tie in words, and a list of every tie to pick another from.
+    const picker = node("select", { className: "text-control", id: "plan-spotlight" },
+      ...(allTies.some((t) => t.id === beat.spotlight) ? [] : [node("option", { value: "", textContent: STRINGS.spotlightPick, selected: true })]),
+      ...allTies.map((t) => node("option", { value: t.id, textContent: tieInWords(hooks.schema, eff, t).text, selected: t.id === beat.spotlight })));
+    picker.addEventListener("change", () => setBeat(project, chapter, withSpotlight(project, beat, picker.value)));
+    const spot = allTies.find((t) => t.id === beat.spotlight);
+    panel.append(node("fieldset", { className: "plan-spotlight-box" }, node("legend", { textContent: STRINGS.spotlight }),
+      node("p", { className: "help", textContent: STRINGS.spotlightHelp }),
+      node("p", { className: "plan-tie", textContent: spot ? tieInWords(hooks.schema, eff, spot).text : STRINGS.spotlightNone }),
+      node("label", { className: "plan-pick", htmlFor: "plan-spotlight", textContent: STRINGS.spotlightChange }), picker));
 
-    const choices = castChoices(project, info.next);
-    const due = duePressure(project, info.next);
-    const hinted = Boolean(due?.what) && choices.some((c) => c.suggested && c.inPressure && !c.protagonist);
+    // The cast: the required members are in and marked; the writer adds others up to CAST_MAX.
+    const required = requiredCast(eff, beat.spotlight);
+    const protagonist = eff.setup?.protagonist;
+    const chosen = new Set([...required, ...(beat.cast ?? [])]);
     const list = node("div", { className: "plan-cast" });
     const boxes = [];
-    for (const c of choices) {
-      const box = node("input", { type: "checkbox", checked: pick.ids.has(c.id) || c.protagonist, disabled: c.protagonist });
-      if (c.protagonist) pick.ids.add(c.id);
-      box.addEventListener("change", () => {
-        if (box.checked) pick.ids.add(c.id); else pick.ids.delete(c.id);
-        for (const [other, id] of boxes) other.disabled = id !== project.setup?.protagonist && !pick.ids.has(id) && pick.ids.size >= CAST_MAX;
-        drawFacts();
-        startable();
-      });
+    const setCast = () => setBeat(project, chapter, { cast: [...required, ...[...chosen].filter((id) => !required.includes(id))] });
+    for (const c of eff.characters ?? []) {
+      const must = required.includes(c.id);
+      const box = node("input", { type: "checkbox", checked: chosen.has(c.id), disabled: must });
+      box.addEventListener("change", () => { if (box.checked) chosen.add(c.id); else chosen.delete(c.id); setCast(); });
       boxes.push([box, c.id]);
-      const tags = [c.protagonist ? STRINGS.protagonist : null,
-        c.suggested && !c.protagonist ? (c.inPressure ? STRINGS.suggestedPressure : STRINGS.suggested) : null].filter(Boolean);
-      list.append(node("label", { className: "plan-person" }, box, node("span", { className: "plan-name", textContent: c.name || STRINGS.unnamed }),
-        node("span", { className: "plan-used", textContent: usedText(c) }),
-        ...tags.map((t) => node("span", { className: "tag", textContent: t }))));
+      const why = !must ? null : c.id === protagonist ? STRINGS.protagonist : STRINGS.inSpotlight;
+      list.append(node("label", { className: "plan-person" }, box, node("span", { className: "plan-name", textContent: instanceName(c) || STRINGS.unnamed }),
+        ...(why ? [node("span", { className: "tag", textContent: why })] : [])));
+    }
+    for (const [box, id] of boxes) if (!chosen.has(id) && chosen.size >= CAST_MAX) box.disabled = true;
+    const problem = castProblem(eff, beat.cast, beat.spotlight);
+    const status = node("p", { className: "problem-count has-block", hidden: !problem });
+    if (problem) {
+      const rule = hooks.schema.cards.outline.rules.find((r) => r.id === CAST_RULES[problem]);
+      status.textContent = rule ? joinList([rule.message, rule.fix], "sentence") : fill(STRINGS.reasons[`cast_${problem}`], { max: CAST_MAX });
     }
     panel.append(node("fieldset", { className: "plan-cast-box" }, node("legend", { textContent: STRINGS.castTitle }),
-      node("p", { className: "help", textContent: fill(STRINGS.castHelp, { max: CAST_MAX }) }),
-      ...(hinted ? [node("p", { className: "help plan-due", textContent: fill(STRINGS.castDue, { what: due.what.length > 100 ? fill(STRINGS.truncated, { text: due.what.slice(0, 100) }) : due.what }) })] : []),
-      list), status, factsBox);
-    drawFacts();
+      node("p", { className: "help", textContent: fill(STRINGS.castHelp, { max: CAST_MAX }) }), list), status);
 
-    button = node("button", { type: "button", className: "validate", textContent: fill(existing ? STRINGS.again : STRINGS.button, { n: info.next }) });
-    button.addEventListener("click", () => press(project, existing, pick.ids));
+    // What will be sent: the ties among the cast and between the cast and a group.
+    const sent = tiesInPlay(eff, beat.cast);
+    panel.append(node("div", { className: "plan-facts-box" }, node("h4", { textContent: STRINGS.tiesSent }),
+      sent.length ? node("ul", { className: "plan-ties" }, ...sent.map((t) => node("li", { textContent: tieInWords(hooks.schema, eff, t).text })))
+        : node("p", { className: "help", textContent: STRINGS.tiesNone })));
+
+    button = node("button", { type: "button", className: "validate", textContent: fill(existing?.plan ? STRINGS.again : STRINGS.button, { n: chapter }) });
+    button.dataset.blocked = String(Boolean(problem));
+    button.addEventListener("click", () => press(project, chapter));
     tag = elapsedTag(hooks.client, () => mine);
-    panel.append(node("div", { className: "plan-actions" }, button, tag.node,
-      node("span", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) })));
-    startable();
-
-    const thought = existing ? planNoteFor(project, existing.id) : null;
-    if (thought) {
-      const lines = [node("p", { className: "plan-thinking", textContent: thought.thinking }), node("p", { className: "help", textContent: STRINGS.thoughtKept })];
-      if (thought.retried) lines.unshift(node("p", { className: "help", textContent: STRINGS.retried }));
-      const made = node("details", { className: "plan-thought" }, node("summary", { textContent: STRINGS.thought }), ...lines);
-      remember(made, `thought:${existing.id}`, true);
-      panel.append(made);
-    }
+    stageLine = node("span", { className: "note", textContent: "" });
+    panel.append(node("div", { className: "plan-actions" }, button, tag.node, stageLine),
+      node("p", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) }));
+    refresh();
   }
 
-  return { draw, refresh, sync, reset() { selection = null; button = null; tag = null; mine = false; shownIn = null; } };
+  return { draw, refresh, sync, reset() { draft = null; button = null; stageLine = null; tag = null; mine = false; shownIn = null; shownKey = null; } };
 }

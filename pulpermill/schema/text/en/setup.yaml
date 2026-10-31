@@ -2,7 +2,7 @@
 # The protagonist is shown by name, never by id.
 card:
   label: "Setup"
-  summary: "The springboard: who we follow, what just broke their normal, and how long the story runs. It holds no goal, no plan and no ending, and it never changes during the story."
+  summary: "The springboard: who we follow, what just broke their normal, and how long the story runs. It holds no plan and no ending, and it never changes during the story."
 groups:
   opening: {label: "Opening", help: "Who we follow and what just broke."}
   push: {label: "Length", help: "How long the story runs."}

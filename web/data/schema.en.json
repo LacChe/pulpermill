@@ -627,7 +627,7 @@
    "between_chapters": "static",
    "many_per_project": true,
    "label": "Character",
-   "summary": "One individual: who they are, what they want, how they contradict themselves and behave under pressure. It names no other people, places or objects, so it can move between projects.",
+   "summary": "One individual: who they are, what they want, how they contradict themselves and behave when things go wrong. It names no other people, places or objects, so it can move between projects.",
    "groups": [
     {
      "id": "identity",
@@ -742,12 +742,12 @@
      "kind": "note",
      "group": "identity",
      "required": true,
-     "placeholder": "e.g. A soft-spoken forger who talks to her plants when she thinks she is alone.",
+     "placeholder": "e.g. A soft-spoken forger who talks to her cat when she thinks she is alone.",
      "why": "The quickest way to give the model a person instead of a type.",
      "examples": {
       "good": [
        "A brutal enforcer who keeps bees",
-       "A soft-spoken forger who talks to her plants when she thinks she is alone"
+       "A soft-spoken forger who talks to her cat when she thinks she is alone"
       ],
       "avoid": [
        "a thief",
@@ -1922,7 +1922,7 @@
    "portable": false,
    "between_chapters": "static",
    "label": "Setup",
-   "summary": "The springboard: who we follow, what just broke their normal, and how long the story runs. It holds no goal, no plan and no ending, and it never changes during the story.",
+   "summary": "The springboard: who we follow, what just broke their normal, and how long the story runs. It holds no plan and no ending, and it never changes during the story.",
    "groups": [
     {
      "id": "opening",

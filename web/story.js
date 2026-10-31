@@ -1,10 +1,13 @@
-// The story bar: where the writer starts the story, and sees that the static cards are locked.
+// The story bar: where the writer starts the story, and sees which cards are locked.
 // Starting is a button press. It runs the code gate first (no model), then asks the model whether the protagonist suits
-// the voice (the style-fit check, an opinion the writer may overrule), then locks Style, Characters, World and Setup.
+// the voice (the style-fit check, an opinion the writer may overrule), then locks the five static cards: Style, Characters, World,
+// Entanglements and Setup (P0, A12). Once started the bar lists all five as locked and the Outline as open.
 import { startGate, lockStaticCards, unlockStaticCards, storyStarted, canUnlock, STATIC_CARDS } from "./gate.js";
 import { checkStyleFit } from "./client.js";
 import { errorText } from "./render.js";
 import { section, fill } from "./text.js";
+
+const LABELS = section("labels");
 import { ask } from "./dialog.js";
 
 export const STRINGS = section("story");
@@ -63,12 +66,22 @@ export function createStoryBar(root, hooks) {
     }));
   }
 
+  // The five static cards, each marked locked, and the Outline, marked open.
+  function stateList() {
+    const { schema } = hooks;
+    const row = (id, locked) => node("li", { className: locked ? "story-card is-locked" : "story-card is-open" },
+      node("span", { className: "story-mark", textContent: locked ? LABELS.lockMark : LABELS.unlockMark, ariaHidden: "true" }),
+      node("span", { className: "story-card-name", textContent: LABELS.tabNames[id] ?? schema.cards[id].label }),
+      node("span", { className: "tag", textContent: locked ? STRINGS.lockedTag : STRINGS.openTag }));
+    return node("ul", { className: "story-cards" }, ...STATIC_CARDS.map((id) => row(id, true)), row("outline", false));
+  }
+
   function draw(checking = false) {
     const project = hooks.getProject();
     if (!project) return;
     if (storyStarted(project)) {
       const free = canUnlock(project);
-      const parts = [node("p", { textContent: free ? STRINGS.started : STRINGS.startedKept })];
+      const parts = [node("p", { textContent: free ? STRINGS.started : STRINGS.startedKept }), stateList()];
       if (free) {
         const undo = node("button", { type: "button", textContent: STRINGS.unlock });
         undo.addEventListener("click", unlock);

@@ -39,7 +39,7 @@ function sampleValue(field, related, nth, taken = new Set()) {
     const names = linkNames(related, field.ref);
     if (!names.length) return undefined;
     if (field.input === "select-multiple") {
-      // Several lists of the same people in one item (Knowledge's knows, suspects, misled) must not share a name.
+      // Several lists of the same people in one item must not share a name.
       const free = names.filter((n) => !taken.has(n)).slice(0, 2);
       free.forEach((n) => taken.add(n));
       return free.length ? free : undefined;

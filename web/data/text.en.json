@@ -170,7 +170,9 @@
     "unlockCard": "Unlock this card",
     "lockCardHelp": "Lock this card so nothing in it can be changed or erased by accident. You can unlock it at any time.",
     "unlockCardHelp": "You locked this card. Unlock it to change it again.",
-    "writerLockedBanner": "You locked this card, so it can't be changed by accident. Unlock it to edit."
+    "writerLockedBanner": "You locked this card, so it can't be changed by accident. Unlock it to edit.",
+    "chapterShifts": "Shifts: what changed in this chapter",
+    "chapterNoShifts": "No record of what changed in this chapter."
   },
   "card": {
     "optional": "Optional",
@@ -235,7 +237,7 @@
     "expand": "Open this beat"
   },
   "story": {
-    "intro": "When your cards are ready, start the story. That locks Style, Characters, World and Setup, so they stay as you wrote them while chapters are written. Entanglements and each chapter’s plan stay editable.",
+    "intro": "When your cards are ready, start the story. That locks Style, Characters, World, Entanglements and Setup, so they stay as you wrote them while chapters are written. Only the Outline stays editable: each chapter’s plan is made there.",
     "start": "Start the story",
     "checking": "The model is checking that the protagonist suits the voice…",
     "fixFirst": "Fix these first. The story can’t start while a card has problems that stop generation.",
@@ -245,12 +247,14 @@
     "noProtagonist": "Setup needs a protagonist before the model can check the voice.",
     "misfit": "The model thinks the protagonist may not suit the voice you chose:\n\n{message}\n\nStart the story anyway?",
     "misfitBare": "The model thinks the protagonist may not suit the voice you chose. Start the story anyway?",
-    "started": "The story has started. Style, Characters, World and Setup are locked: you can read them, but not change them.",
-    "startedKept": "The story has started. Style, Characters, World and Setup stay locked for the rest of the story, because chapters are written from them.",
+    "started": "The story has started. Style, Characters, World, Entanglements and Setup are locked: you can read them, but not change them. The Outline is open.",
+    "startedKept": "The story has started. Style, Characters, World, Entanglements and Setup stay locked for the rest of the story, because chapters are written from them. The Outline is open.",
     "unlock": "Unlock the cards",
-    "confirmUnlock": "Unlock Style, Characters, World and Setup so you can edit them? You will need to start the story again.",
+    "confirmUnlock": "Unlock Style, Characters, World, Entanglements and Setup so you can edit them? You will need to start the story again.",
     "unlocked": "The cards are unlocked. Start the story again when you are ready.",
-    "begun": "The story has started. Style, Characters, World and Setup are now locked."
+    "begun": "The story has started. Style, Characters, World, Entanglements and Setup are now locked, and the Outline is open.",
+    "lockedTag": "locked",
+    "openTag": "open"
   },
   "plan": {
     "title": "Plan the next chapter",
@@ -258,34 +262,15 @@
     "chapterOnly": "Chapter {n}",
     "notStarted": "Start the story first (the bar above). The plan is made from the cards as they will be locked.",
     "allDone": "Every chapter is written. Use the end-of-story step when you are ready.",
-    "noPressure": "Entanglements has no pressure yet, so there is nothing to spotlight. Add one first.",
     "castTitle": "Who is in this chapter",
-    "castHelp": "The protagonist is always in, and up to {max} people can be. People in the next pressure are suggested first, then the people used least so far, so everyone gets time.",
+    "castHelp": "The protagonist and the two characters at the ends of the spotlight tie are always in. You can add others, up to {max} people in all.",
     "protagonist": "Protagonist, always in",
-    "suggested": "Suggested",
-    "usedNone": "not in a chapter yet",
-    "usedOne": "in 1 chapter, last in chapter {last}",
-    "usedMany": "in {n} chapters, last in chapter {last}",
-    "startsFrom": "What the plan starts from",
     "spotlight": "Spotlight",
-    "spotlightNone": "no pressure",
-    "shifts": "Shift allowed",
-    "shiftWords": {
-      "harder": "harder",
-      "easier": "easier"
-    },
-    "goal": "Current goal",
-    "goalNone": "none",
-    "plants": "Open plants",
-    "plantsNone": "none",
-    "reveals": "Reveals still available",
-    "offstage": "Offstage change",
-    "offstageYes": "due: the model first decides what the background groups and places do",
-    "offstageNo": "not this chapter",
+    "spotlightNone": "no tie picked",
     "button": "Plan chapter {n} with the model",
     "again": "Plan chapter {n} again",
     "working": "The model is planning…",
-    "sends": "Pressing the button sends the cast, the cards in play and the summaries of earlier chapters to {where}.",
+    "sends": "Pressing the button sends the spotlight, the cast, the ties among them, the cards in play and the summaries of earlier chapters to {where}.",
     "planned": "Chapter {n} is planned. The beat is below: edit anything you like.",
     "retried": "The first try broke a rule, so the model tried again.",
     "stillBlocks": "It still has {n} problem(s) that stop generation. They are marked on the beat.",
@@ -294,24 +279,29 @@
     "undo": "Undo",
     "undone": "Put the plan back as it was.",
     "confirmReplan": "Plan this chapter again? The beat you have now will be replaced. You can undo it afterwards.",
-    "stale": "The Entanglements have changed since this was planned. Plan it again to use the new state, or write the beat on as it is.",
-    "thought": "How the model thought about this chapter",
-    "thoughtKept": "This is kept with your project, and replaced when you plan the chapter again.",
+    "stale": "The cards have changed since this was planned. Plan it again to use the new state, or write the beat on as it is.",
     "reasons": {
       "not_started": "Start the story first.",
       "done": "Every chapter is written.",
-      "no_pressure": "Entanglements has no pressure yet.",
       "cast_empty": "Pick who is in the chapter.",
       "cast_too_many": "A chapter has at most {max} people.",
       "cast_no_protagonist": "The protagonist has to be in the chapter.",
       "cast_unknown": "Someone in the cast is not there any more.",
-      "outline_locked": "The Outline card is locked. Unlock it first, since planning writes into it."
+      "outline_locked": "The Outline card is locked. Unlock it first, since planning writes into it.",
+      "no_tie": "Entanglements has no tie to spotlight, or the spotlight tie is gone. Pick one.",
+      "cast_spotlight_pair": "Both characters of the spotlight tie have to be in the chapter."
     },
-    "truncated": "{text}…",
     "unnamed": "Unnamed",
     "undoBlocked": "Undo would throw away what you changed in this plan since, so nothing was put back.",
-    "suggestedPressure": "Suggested: in the next pressure",
-    "castDue": "The pressure that has had the least attention so far is “{what}”, so the people in it are suggested first. This is only a suggestion: tick who you like."
+    "noTies": "Entanglements has no ties yet, so there is nothing to spotlight. Add one first.",
+    "inSpotlight": "In the spotlight tie, always in",
+    "spotlightHelp": "The chapter is about this tie: its two characters and what they are to each other. It was picked at random. Pick another if you want a different chapter.",
+    "spotlightPick": "Pick a tie…",
+    "spotlightChange": "Pick a different tie",
+    "tiesSent": "Ties that will be sent",
+    "tiesNone": "None: nobody in the cast has a tie to anyone else in it, or to a group.",
+    "tieWords": "{from} and {to}: {bond} (edge: {edge})",
+    "tieWordsNoEdge": "{from} and {to}: {bond}"
   },
   "generate": {
     "title": "Write the chapter",
@@ -319,12 +309,7 @@
     "chapterOnly": "Chapter {n}",
     "button": "Write chapter {n} with the model",
     "working": "The model is working…",
-    "stages": {
-      "write": "The model is writing the chapter…",
-      "events": "The model is noting what happened…",
-      "shifts": "The model is noting how people changed…"
-    },
-    "sends": "Pressing the button sends the cast, the cards in play, the beat and the summaries of earlier chapters to {where}. Nothing is saved unless the whole chapter comes back.",
+    "sends": "Pressing the button sends the cast, the cards in play (as the shifts so far have left them), the beat and the summaries of earlier chapters to {where}. Nothing is saved unless the whole chapter comes back.",
     "reasons": {
       "not_started": "Start the story first (the bar above).",
       "done": "Every chapter is written. Use the end-of-story step when you are ready.",
@@ -334,23 +319,21 @@
       "cast_no_protagonist": "The protagonist has to be in the beat's cast.",
       "cast_unknown": "Someone in the beat's cast is not there any more.",
       "beat_blocked": "The beat has problems that stop generation. Fix them first:",
-      "entanglements_blocked": "Entanglements has problems that stop generation. Fix them first:",
-      "changed": "The Entanglements or the beat were edited while the model was writing, so the chapter was thrown away. Press the button again."
+      "changed": "The cards or the beat were edited while the model was writing, so the chapter was thrown away. Press the button again.",
+      "cast_spotlight_pair": "Both characters of the spotlight tie have to be in the beat's cast."
     },
-    "stale": "This plan was made from older Entanglements. Write the chapter anyway? (Cancel, then plan it again, to use the new state.)",
-    "locked": "The model wants to change values that are locked:\n{list}\n\nOK unlocks them and overwrites them. Cancel keeps them as they are, and the chapter is saved without those changes.",
+    "stale": "This plan was made from older cards. Write the chapter anyway? (Cancel, then plan it again, to use the new state.)",
     "done": "Chapter {n} is written and saved.",
-    "droppedLocked": "Chapter {n} is written and saved. The locked values were left as they were.",
     "chapters": "Written chapters",
     "noChapters": "No chapter yet.",
     "chapterTitle": "Chapter {n}",
-    "changes": "What changed in Entanglements",
-    "noChanges": "Nothing in Entanglements changed.",
+    "changes": "Shifts applied",
+    "noChanges": "No shifts were applied.",
     "change": "{field}: {from} → {to}",
-    "noticed": "What the page noticed",
+    "noticed": "Left out, and what the page noticed",
     "again": "Write chapter {n} again",
-    "againConfirm": "Write chapter {n} again?\n\nThe Entanglements go back to what this chapter was first written from, and what the model makes now replaces the Entanglements as they are. This chapter's text, events and shifts are replaced. {later}You can undo it afterwards.",
-    "againLater": "The {k} later chapter(s) stay as they are, and their beats are marked stale. ",
+    "againConfirm": "Write chapter {n} again?\n\nThe cards go back to how they stood going into this chapter. This chapter's text, events and shifts are replaced, and so are the shifts of every later chapter. {later}You can undo it afterwards.",
+    "againLater": "The {k} later chapter(s) keep their text, and their beats are marked as possibly out of date. ",
     "againDone": "Chapter {n} is written again.",
     "undo": "Undo",
     "undone": "Put chapter {n} back as it was.",
@@ -358,45 +341,40 @@
     "after": "After",
     "reasonsAgain": {
       "no_chapter": "There is no such chapter.",
-      "no_snapshot": "The Entanglements it was written from were not kept.",
       "outline_locked": "The Outline card is locked. Unlock it first, since writing a chapter again marks the later beats stale."
     },
-    "lockedItem": "• {field}: {from} → {to}",
-    "undoBlocked": "Undo can't put chapter {n} back as it was: the chapters, records or Entanglements have changed since. Nothing was changed.",
+    "undoBlocked": "Undo can't put chapter {n} back as it was: the chapters, records or shifts have changed since. Nothing was changed.",
     "undoneGenerate": "Took chapter {n} out again and put the story back as it was."
   },
   "end": {
     "title": "End of the story",
     "notDone": "Available once every chapter is written.",
-    "help": "The model reads what happened and how people changed, and updates the characters and the world to match. The result is kept as a separate after-story copy. Your cards stay as they are.",
-    "button": "Update the characters and world with the model",
-    "buttonAgain": "Update them again",
-    "working": "The model is updating the characters and the world…",
-    "sends": "Pressing the button sends the characters, the world and the summaries of every chapter to {where}.",
-    "confirmAgain": "Update them again? The after-story copy you have now will be replaced, along with any edits you made to it. You can undo it afterwards.",
+    "help": "Finishing the story needs no model. The page folds every shift into the cards and keeps the result as a separate after-story copy of Style, Characters, World and Entanglements. Your own cards stay as they are.",
+    "button": "Finish the story",
+    "buttonAgain": "Finish it again",
+    "confirmAgain": "Finish the story again? The after-story copy you have now will be replaced, along with any edits you made to it. You can undo it afterwards.",
     "editTitle": "Edit the after-story copy",
-    "editHelp": "The copy is yours to correct. Change anything you like; nothing here goes to the model. Your cards above are not touched, and pressing the button again replaces the copy, edits and all.",
+    "editHelp": "The copy is yours to correct. Change anything you like; nothing here goes to a model. Your cards above are not touched, and finishing the story again replaces the copy, edits and all.",
     "editStyle": "Style",
     "editWorld": "World",
     "editPerson": "Character: {name}",
     "unnamed": "Unnamed",
-    "done": "The after-story copy is saved.",
+    "done": "The story is finished. The after-story copy is saved.",
     "undo": "Undo",
     "undone": "Put the after-story copy back as it was.",
-    "kept": "The model changed {what}. Those fixed fields were put back as they were.",
-    "dropped": "The model gave something that did not fit ({fields}), so those fields kept their old value.",
     "problems": "The copy has {n} problem(s) that its card would stop generation on. It is a record of the story's end, so they are only noted.",
     "changes": "What the story changed",
-    "noChanges": "The model changed nothing.",
+    "noChanges": "No shift changed anything.",
     "added": "{who}: {label}: new, {after}",
     "changed": "{who}: {label}: {before} → {after}",
     "worldWho": "World",
-    "stale": "A chapter was written again after this copy was made, so it may be out of date. Update it again to refresh it, or keep it and edit it by hand. Your own edits are replaced if you update it.",
+    "stale": "A chapter was written again after this copy was made, so it may be out of date. Finish the story again to refresh it, or keep it and edit it by hand. Your own edits are replaced if you finish it again.",
     "reasons": {
       "not_done": "Every chapter has to be written first."
     },
-    "forcedOf": "{fields} of {character}",
-    "undoBlocked": "Undo would throw away edits you made to the after-story copy since, so nothing was put back."
+    "undoBlocked": "Undo would throw away edits you made to the after-story copy since, so nothing was put back.",
+    "editEntanglements": "Entanglements",
+    "removed": "{who}: {label}: removed, {before}"
   },
   "import": {
     "title": "Bring in a card",
@@ -450,15 +428,15 @@
       },
       "start": {
         "title": "Start the story",
-        "detail": "When the cards have nothing that stops the story, press Start the story. That locks Style, Characters, World and Setup, so every chapter is written from the same foundations."
+        "detail": "When the cards have nothing that stops the story, press Start the story. That locks Style, Characters, World, Entanglements and Setup, so every chapter is written from the same foundations. Only the Outline stays open."
       },
       "chapters": {
         "title": "Plan and write each chapter",
-        "detail": "On the Outline card the model plans a chapter, you change the plan as you like, and then the model writes it. Plans and rewrites can be undone."
+        "detail": "On the Outline card the model plans a chapter around one tie between two people, you change the plan as you like, and then the model writes it. After each chapter you can read its shifts: what changed in the people, the world and their ties. Plans and rewrites can be undone."
       },
       "end": {
-        "title": "End the story (optional)",
-        "detail": "The model updates the characters and the world to show how the story changed them. The result is a separate copy you can edit. Your cards stay as they are."
+        "title": "Finish the story (optional)",
+        "detail": "Finish the story and the page folds what changed into a separate copy of the characters, the world and their ties, with no model call. You can edit the copy. Your cards stay as they are."
       },
       "download": {
         "title": "Download your work",

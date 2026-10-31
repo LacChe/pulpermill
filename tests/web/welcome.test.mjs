@@ -6,7 +6,7 @@ import { newProject } from "../../web/logic.js";
 import { createMock } from "../../web/mock.js";
 import { createClient, planChapter, generateChapter } from "../../web/client.js";
 import { lockStaticCards } from "../../web/gate.js";
-import { placeBeat, suggestedCast } from "../../web/plan.js";
+import { ensureBeat, placeBeat } from "../../web/plan.js";
 import { commitChapter } from "../../web/generate.js";
 import { welcomeSteps, STEP_IDS } from "../../web/welcome.js";
 
@@ -34,7 +34,7 @@ test("once chapters are written, downloading opens, and once all are written so 
   const mock = createMock(schema, { delay: 0 });
   const client = createClient({ setting: { ok: true, kind: "mock" }, mock, pollEvery: 5 });
   const write = async (n) => {
-    const plan = await planChapter(client, schema, project, suggestedCast(project, n)).done;
+    const plan = await planChapter(client, schema, project, ensureBeat(schema, project)).done;
     placeBeat(project, plan.beat);
     commitChapter(project, (await generateChapter(client, schema, project).done).outcome);
   };
@@ -43,7 +43,7 @@ test("once chapters are written, downloading opens, and once all are written so 
   assert.equal(welcomeSteps(schema, project).find((s) => s.id === "chapters").written, 1);
   await write(2);
   assert.deepEqual(states(project), { cards: "done", start: "done", chapters: "done", end: "next", download: "next" });
-  project.after_story = { style: {}, characters: [], world: {} };
+  project.after_story = { style: {}, characters: [], world: {}, entanglements: {} };
   assert.deepEqual(states(project), { cards: "done", start: "done", chapters: "done", end: "done", download: "next" });
 });
 
