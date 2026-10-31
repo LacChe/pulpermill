@@ -57,22 +57,27 @@ class Config:
                                             # request that has no response headers after 300 s, and a chapter can take longer than that.
     heartbeat: float = 15.0
     jobs_kept: int = 30                     # finished calls that carried a job_id stay fetchable (memory only; a restart forgets them)
+    prompter: str = "stub"                  # which prompter answers the calls: the folder name under pulpermill/prompter/. An unknown name stops the server at startup.
     prompt_version_note: str = ""           # free text recorded in the run log's first line
     log_path: str | None = None            # one JSON line per call (runlog.py); None = keep in memory only. The launcher sets it.
     max_body_bytes: int = 4_000_000         # a request larger than this is bad_request; the biggest real project is far below it
     model: ModelSettings = field(default_factory=ModelSettings)
-    prose: Sampling = field(default_factory=Sampling)          # the writer pass
-    thinking: Sampling = field(default_factory=Sampling)       # the planner's first pass
+    prose: Sampling = field(default_factory=Sampling)          # free prose (the step names it "prose")
+    thinking: Sampling = field(default_factory=Sampling)       # free thinking (the step names it "thinking")
     constrain: str = "always"               # "always": every JSON call is grammar-constrained. "repair": the first attempt is
                                             # free (about twice as fast, measured on the old setup) and only the retry is constrained.
     # Chinese writes a name or a term as one or two single-character tokens, so a repeat penalty works against the words a story
     # has to repeat, and a hot sampler picks look-alike characters (the old setup produced 张期 for 张强). The previous version's
-    # values for the writer pass; a starting point, tune by looking at a chapter. Used for `language == "zh"` only.
+    # values for prose; a starting point, tune by looking at a chapter. Used for `language == "zh"` only.
     prose_zh: Sampling = field(default_factory=lambda: Sampling(temperature=0.8, top_p=0.9, top_k=40, repeat_penalty=1.0, frequency_penalty=0.0))
     structured: Sampling = field(default_factory=lambda: Sampling(temperature=0.2, repeat_penalty=1.0, frequency_penalty=0.0))   # constrained JSON
 
+    def sampling(self, name: str, language: str | None = None) -> Sampling:
+        """The sampling set a step names ("prose", "thinking" or "structured"). "prose" is the story language's own set."""
+        return {"prose": self.prose_for(language), "thinking": self.thinking, "structured": self.structured}[name]
+
     def prose_for(self, language: str | None) -> Sampling:
-        """The writer pass's sampling for the story's language: Chinese has its own set, every other language uses `prose`."""
+        """The prose sampling for the story's language: Chinese has its own set, every other language uses `prose`."""
         return self.prose_zh if language == "zh" else self.prose
 
     @classmethod

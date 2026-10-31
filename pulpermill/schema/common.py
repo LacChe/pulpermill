@@ -39,6 +39,8 @@ def spec(input: InputType | None, group: str | None, kind: Kind, required: bool 
       filled_by="planner"|"code"  who fills it first (beats only so far); everything stays human editable
       max_selected=N  a multi-select that may pick at most N
       limited_by="code"  choices the code may disable (legal options)
+      cap=N        the most characters of this field's text that are sent to a model (a list field: of each item's text); longer text is
+                   cut at a sentence end. The page never limits what is typed. Fixed fields have no cap.
       uncapped=True a repeating list exempt from the MAX_ITEMS cap (deliberate, one at a time)
     Fields inside an item model have group=None.
     """

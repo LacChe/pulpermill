@@ -20,24 +20,31 @@ def generate_request():
 
 
 def plan_request():
-    """The planner's request, made from the same story: the page sends the same cards plus its own numbers."""
+    """The planner's request, made from the same story: the page sends the same cards plus the spotlight tie and the earlier beats."""
     req = generate_request()
     req["call"] = "plan"
-    for key in ("standing", "previous_ending", "beat"):
+    for key in ("previous_ending", "beat"):
         req.pop(key, None)
-    req["entanglements"]["pressures"] = req["entanglements"]["pressures"] + [
-        {"id": "P3", "what": "Aino is feeding the board names.", "source_agent": "Aino", "source_circumstance": None,
-         "bears_on": ["Suvi"], "next_move": "Report who visited the shop on Friday."}]
-    req["spotlight"] = {"id": "P1", "what": req["entanglements"]["pressures"][0]["what"], "next_move": req["entanglements"]["pressures"][0]["next_move"]}
-    req["legal_shifts"] = ["harder", "easier"]
-    req["use_counts"] = {"characters": [{"name": "Suvi", "uses": 4, "last": 4}, {"name": "Aino", "uses": 2, "last": 4},
-                                        {"name": "Pekka", "uses": 0, "last": None}]}
-    req["earlier_beats"] = [{"chapter": 4, "where": "The Shop", "when_time": "Friday night", "shift": "harder"},
-                            {"chapter": 3, "where": "The Docks", "when_time": "Monday noon", "shift": "easier"}]
-    req["latest_shifts"] = [{"character": "Suvi", "believes": "Pekka sold the ledger's location to the board"}]
-    req["offstage"] = {"did": "The board closed the east market gate.", "reach": "Suvi has to take the long way round."}
+    req["spotlight"] = req["ties"][0]["id"]
+    req["earlier_beats"] = [{"chapter": 4, "where": "The Shop", "when": "Friday night", "aim": "Learn who the board's clerk reports to", "plan": "A late visit."},
+                            {"chapter": 3, "where": "The Docks", "when": "Monday noon", "aim": "Keep the key out of sight", "plan": "A quiet errand."}]
     req["retry"] = None
     return req
+
+
+def parked(reason):
+    """A test of renderer code for a story idea the redesign removed (P0): kept for prompt design, which decides what to reuse."""
+    import pytest
+    return pytest.mark.skip(reason=f"PARKED(prompt-design): {reason}")
+
+
+def named(req):
+    """The ties and holdings of a request with each id replaced by the name it stands for, as the renderer reads them."""
+    names = {c["id"]: c["name"] for c in req["cast"]}
+    for key in ("places", "objects", "powers"):
+        names.update({i["id"]: i["name"] for i in req["world"].get(key, [])})
+    return {"ties": [{**x, "tie_from": names[x["tie_from"]], "tie_to": names[x["tie_to"]]} for x in req["ties"]],
+            "holdings": [{**x, "holdee": names[x["holdee"]], "held_by": names[x["held_by"]]} for x in req["holdings"]]}
 
 
 def all_ids(node, found=None):
@@ -140,45 +147,44 @@ def test_a_long_field_is_clipped_but_the_fixed_appearance_never_is():
 
 # ---- World ----------------------------------------------------------------------------------------------------------
 
-def test_writer_world_has_the_beats_place_in_full_and_hidden_truths():
+def test_writer_world_has_the_beats_place_in_full_and_the_other_places_by_name():
     req = generate_request()
-    text = render_world(req["world"], scope="writer", place="The Docks", in_play=groups_in_play(req["entanglements"]))
-    assert "Wet planks, coal dust" in text and "warm" not in text.split("The Shop")[0] and "A narrow harbour shop" not in text
+    text = render_world(req["world"], scope="writer", place="The Docks", in_play=groups_in_play(named(req)))
+    assert "Wet planks, coal dust" in text and "A narrow harbour shop" not in text
     assert "Other places in The Salt Coast: The Shop and The Board House." in text
-    assert "widely believed but false; the truth is: the cellar was sealed" in text
-    assert "known only to a few" in text and "Held by Pekka." in text
-    assert text.index("Rent is due") < text.index("dock repairs were paid") < text.index("floods on the spring tide")   # common, hidden, myth
+    assert "Rent is due on the first of the week" in text and "Cost: A missed week" in text
+    assert text.index("Rent is due") < text.index("dock repairs were paid") < text.index("floods on the spring tide")      # in the order sent
     assert "first-day visit" in text                   # the writer sees terms
-    assert "Used in" not in text and "Not used" not in text
+    assert "Used in" not in text and "Not used" not in text and "known only to a few" not in text
 
 
 def test_a_group_out_of_play_shows_only_how_it_is_felt():
     req = generate_request()
-    text = render_world(req["world"], scope="writer", place="The Docks", in_play=groups_in_play(req["entanglements"]))
+    text = render_world(req["world"], scope="writer", place="The Docks", in_play=groups_in_play(named(req)))
     assert "It holds power by Licensing every boat" in text
     assert "The Dockhands' Brotherhood: Ordinary people feel it as a hush" in text
     assert "Slowing the work down" not in text
 
 
-def test_planner_world_has_every_place_with_use_counts_and_no_terms():
+def test_planner_world_has_every_place_and_no_terms():
     text = render_world(plan_request()["world"], scope="planner")
-    for must in ("Wet planks", "A narrow harbour shop", "A grey stone building", "Used in 3 earlier chapters.", "Used in 1 earlier chapter.", "Not used in any chapter yet."):
+    for must in ("Wet planks", "A narrow harbour shop", "A grey stone building"):
         assert must in text
-    assert "first-day visit" not in text and "sealed to hide" in text
+    assert "first-day visit" not in text and "Used in" not in text and "Not used" not in text
 
 
 # ---- Entanglements --------------------------------------------------------------------------------------------------
 
 def test_writer_entanglements_mark_whoever_is_offstage():
     req = generate_request()
-    text = render_entanglements(req["entanglements"], ["Suvi", "Aino", "Pekka"], scope="writer")
-    assert "Aino toward The Harbour Board [offstage]" in text
-    assert "from The Harbour Board [offstage]" in text
-    assert "marked [offstage]" in text
+    text = render_entanglements(named(req), ["Suvi", "Aino", "Pekka"], scope="writer")
+    assert "Aino toward The Harbour Board [offstage]" in text and "marked [offstage]" in text
     assert "Suvi toward Aino" in text and "Aino [offstage]" not in text
-    assert text.index("Ties") < text.index("Who holds") < text.index("What each person") < text.index("Pressures")
+    assert "Pekka holds or controls The ledger." in text
+    assert text.index("Ties") < text.index("Who holds")
 
 
+@parked("knowledge was removed from Entanglements (P0)")
 def test_one_knowledge_item_lists_everyone_who_stands_towards_it():
     text = render_entanglements(generate_request()["entanglements"], ["Suvi", "Aino", "Pekka"], scope="writer")
     assert "The cellar under the shop floods on the spring tide. Misled about it: Suvi." in text
@@ -188,13 +194,14 @@ def test_one_knowledge_item_lists_everyone_who_stands_towards_it():
     assert line.endswith("They believe instead: The board paid for the dock repairs."), line
 
 
+@parked("pressures were removed from Entanglements (P0)")
 def test_a_pressure_with_no_next_move_has_no_empty_label():
     text = render_entanglements(generate_request()["entanglements"], ["Suvi"], scope="writer")
     assert "from the season" in text and not re.search(r"Next move:\s*(\n|$)", text)
 
 
 def test_planner_entanglements_have_no_offstage_marks():
-    assert "[offstage]" not in render_entanglements(plan_request()["entanglements"], ["Suvi"], scope="planner")
+    assert "[offstage]" not in render_entanglements(named(plan_request()), ["Suvi"], scope="planner")
 
 
 def test_pronouns_agree_with_the_person_in_the_portrait():
@@ -212,34 +219,34 @@ def test_a_value_that_starts_with_a_function_word_continues_the_sentence_and_a_n
     from pulpermill.prompts.render import soften
     assert soften("She wants to know") == "she wants to know" and soften("The board closed it") == "the board closed it"
     assert soften("Ines learns the name") == "Ines learns the name" and soften("I know") == "I know"
-    text = render_entanglements(generate_request()["entanglements"], ["Suvi", "Aino", "Pekka"], scope="writer")
+    text = render_entanglements(named(generate_request()), ["Suvi", "Aino", "Pekka"], scope="writer")
     assert "Right now, she wants to know whom he reports to." in text
 
 
-def test_punctuation_is_tidy_around_statements_and_truths():
+def test_punctuation_is_tidy_around_the_lines_the_renderers_make():
     req = generate_request()
-    text = render_world(req["world"], scope="writer")
-    assert "Rent is due on the first of the week (common knowledge). Cost:" in text
-    assert "never flooded)." in text and ".)." not in text
-    ent = render_entanglements(req["entanglements"], ["Suvi"], scope="writer")
-    assert "close the shop to get it (from" in ent
+    world = render_world(req["world"], scope="writer")
+    ent = render_entanglements(named(req), ["Suvi"], scope="writer")
+    for text in (world, ent):
+        assert ".)." not in text and "  " not in text and " ." not in text and ",," not in text
 
 
 # ---- Setup, standing, the story so far ------------------------------------------------------------------------------
 
 def test_chapter_one_carries_the_normal_and_the_break_and_later_chapters_do_not():
     setup = dict(generate_request()["setup"], normal="The shop opened at six.", disruption="Someone broke in.")
-    one = render_setup(setup, "Find the ledger.", 1, 8)
-    five = render_setup({k: v for k, v in setup.items() if k not in ("normal", "disruption")}, "Find the ledger.", 5, 8)
+    one = render_setup(setup, None, 1, 8)
+    five = render_setup({k: v for k, v in setup.items() if k not in ("normal", "disruption")}, None, 5, 8)
     assert "The shop opened at six." in one and "Someone broke in." in one and "chapter 1 of 8" in one
     assert "shop opened" not in five and "chapter 5 of 8" in five
 
 
-def test_the_last_chapter_is_said_to_be_the_last_and_the_goal_the_story_stands_on_is_shown():
-    text = render_setup(generate_request()["setup"], "Find the ledger in the cellar.", 8, 8)
-    assert "last chapter" in text and "Find the ledger in the cellar." in text
+def test_the_last_chapter_is_said_to_be_the_last():
+    text = render_setup(generate_request()["setup"], None, 8, 8)
+    assert "last chapter" in text
 
 
+@parked("the standing record was replaced by shifts (P0 A1)")
 def test_standing_is_marked_as_newer_than_the_cards():
     text = render_standing(generate_request()["standing"])
     assert "newer than their portrait" in text and "follow this" in text
@@ -263,6 +270,7 @@ def scene(**over):
     return render_scene(beat, protagonist="Suvi", sex="female", open_plants=req["open_plants"], available_reveals=req["available_reveals"])
 
 
+@parked("the old beat (collision goal, shift, ends_on) was reshaped (P0)")
 def test_the_scene_reads_as_a_situation_with_the_writers_own_words():
     text = scene()
     assert "The chapter opens at The Docks, Tuesday, just after the shop opens." in text
@@ -276,6 +284,7 @@ def test_the_scene_reads_as_a_situation_with_the_writers_own_words():
     assert text.rstrip().endswith("yours to invent.")
 
 
+@parked("reveals, plants and the offstage move were removed (P0)")
 def test_the_scene_carries_what_the_beat_names():
     text = scene()
     assert "The belief: The cellar under the shop floods on the spring tide." in text and "The truth: The cellar was sealed" in text
@@ -288,6 +297,7 @@ def test_the_scene_carries_what_the_beat_names():
     assert "carries into the next chapter" in text
 
 
+@parked("the old beat was reshaped (P0)")
 def test_the_scene_leaves_out_what_the_beat_does_not_name():
     text = scene(reveal_rule="", reveal_learners=[], plant="", payoff=[], offstage_did="", offstage_reach="",
                  spotlight="", when_gap="")
@@ -298,6 +308,7 @@ def test_the_scene_leaves_out_what_the_beat_does_not_name():
 
 # ---- Whole prompts' material ----------------------------------------------------------------------------------------
 
+@parked("blocks.py is parked story prompt code")
 def test_writer_blocks_come_in_a_fixed_order_and_leak_nothing():
     req = generate_request()
     blocks = writer_blocks(req)
@@ -311,6 +322,7 @@ def test_writer_blocks_come_in_a_fixed_order_and_leak_nothing():
     assert text.index("Where they stand now.") < text.index("Where the story stands")
 
 
+@parked("blocks.py is parked story prompt code")
 def test_planner_blocks_come_in_a_fixed_order_and_leak_nothing():
     req = plan_request()
     blocks = planner_blocks(req)
@@ -325,6 +337,7 @@ def test_planner_blocks_come_in_a_fixed_order_and_leak_nothing():
     assert "People believe: The cellar under the shop floods on the spring tide. The truth: The cellar was sealed" in text
 
 
+@parked("code numbers (plants, reveals, legal shifts) were removed (P0)")
 def test_code_numbers_say_what_is_allowed():
     req = plan_request()
     assert "Either kind of chapter is allowed." in render_code_numbers(req)
@@ -366,6 +379,7 @@ def test_style_directives_and_writer_frames_use_positive_phrasing():
             assert not NEGATIVE.search(value), f"{key}: {value}"
 
 
+@parked("reveals and rule status were removed (P0)")
 def test_a_hidden_rule_is_a_thing_that_comes_to_light_and_a_myth_is_a_truth_behind_a_belief():
     hidden = scene(reveal_rule="The dock repairs were paid for by the shopkeepers, not the board.", reveal_learners=["Suvi"])
     assert "something hidden comes to light: The dock repairs were paid for by the shopkeepers, not the board." in hidden
@@ -398,6 +412,7 @@ def vector(name):
     return next(r["data"] for r in json.loads(VECTORS.read_text(encoding="utf-8"))["requests"] if r["name"] == name)
 
 
+@parked("uses blocks.py, which is parked story prompt code")
 def test_the_pages_nearly_empty_requests_render_without_junk():
     for name, make in (("the page's generate request", writer_blocks), ("the page's plan request", planner_blocks)):
         text = assemble(make(vector(name)))

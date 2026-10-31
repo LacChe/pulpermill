@@ -20,13 +20,16 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
+CANNED = object()
+
+
 @contextlib.contextmanager
-def running(config: Config | None = None, engine: FakeEngine | None = None, run=None):
-    """Yields (base_url, engine). The server is stopped on exit. `run` defaults to the canned pipelines (the fake engine's words are not JSON)."""
+def running(config: Config | None = None, engine: FakeEngine | None = None, run=CANNED):
+    """Yields (base_url, engine). The server is stopped on exit. `run` defaults to the canned pipelines (the fake engine's words are not JSON); `run=None` is the real server code: the runner and the configured prompter."""
     config = config or Config()
     engine = engine or FakeEngine()
     port = free_port()
-    server = uvicorn.Server(uvicorn.Config(create_app(config, engine, run or run_canned), host="127.0.0.1", port=port, log_level="error"))
+    server = uvicorn.Server(uvicorn.Config(create_app(config, engine, run_canned if run is CANNED else run), host="127.0.0.1", port=port, log_level="error"))
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
     for _ in range(500):

@@ -2,6 +2,10 @@
 import glob
 import yaml
 
+import pytest
+
+pytestmark = pytest.mark.skip(reason="PARKED(prompt-design): the old judge prompt text, parked by P4; prompt design rewrites it")
+
 from pulpermill.prompts.prompts import judge_question
 
 # Rules whose question is asked the other way round: "yes" means the item breaks the rule.

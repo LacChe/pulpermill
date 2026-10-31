@@ -38,14 +38,56 @@ def _base_limits() -> dict:
     return _load(HERE / "limits.yaml")
 
 
-# Counts and switches, not lengths: a squeeze (phase 5) leaves these as they are.
+# The renderers read caps as limits()[section][key]. The cap itself lives on the schema field (spec(..., cap=N)); this table says
+# which field each (section, key) comes from: "field" or "list.item_field", and for a list whose items are one box, "list".
+_FIELD_CAPS = {
+    "characters": {"sketch": "sketch", "fear": "fear", "flaw": "flaw", "competence": "competence", "vulnerability": "vulnerability",
+                   "speech": "speech", "history": "history", "want_item": "wants", "value_item": "values",
+                   "behavior_state": "behaviors.state", "behavior_tendency": "behaviors.tendency"},
+    "world": {"name": "name", "era_and_technology": "era_and_technology", "everyday_life": "everyday_life", "history": "history",
+              "place_description": "places.description", "place_effect": "places.effect", "object_description": "objects.description",
+              "object_significance": "objects.significance", "power_nature": "powers.nature", "power_hold": "powers.hold",
+              "power_felt": "powers.felt", "rule_statement": "rules.statement", "rule_cost": "rules.cost",
+              "rule_when_broken": "rules.when_broken", "term_meaning": "terms.meaning"},
+    "entanglements": {"bond": "ties.bond", "edge": "ties.edge"},
+    "setup": {"normal": "normal", "disruption": "disruption"},
+    "events": {"happened": "entries.happened", "changed": "entries.changed"},
+}
+_CARD_OF = {"events": "summary_events"}
+
+
+def _schema_cap(card: str, path: str) -> int | None:
+    from ..schema import CARDS
+    from typing import get_args
+    model = CARDS[card][0]
+    first, _, inner = path.partition(".")
+    f = model.model_fields[first]
+    if inner:
+        f = get_args(f.annotation)[0].model_fields[inner]
+    return (f.json_schema_extra or {}).get("cap")
+
+
+@lru_cache(maxsize=None)
+def _built_limits() -> dict:
+    out = copy.deepcopy(_base_limits())
+    for section, keys in _FIELD_CAPS.items():
+        for key, path in keys.items():
+            cap = _schema_cap(_CARD_OF.get(section, section), path)
+            if cap is None:
+                raise KeyError(f"the schema field for limits {section}.{key} ({path}) has no cap")
+            out.setdefault(section, {})[key] = cap
+    return out
+
+
+# Counts and switches, not lengths: a squeeze leaves these as they are.
 _NOT_LENGTHS = {("characters", "max_behaviors"), ("events", "full_chapters_writer"), ("events", "full_chapters_planner")}
 _scale = 1.0
 
 
 def limits() -> dict:
-    """The length caps. Inside `squeeze(f)` every length is multiplied by f, so a very large story can be made to fit."""
-    base = _base_limits()
+    """The length caps, read from the schema fields plus limits.yaml. Inside `squeeze(f)` every length is multiplied by f, so a very
+    large story can be made to fit."""
+    base = _built_limits()
     if _scale == 1.0:
         return base
     out = copy.deepcopy(base)
