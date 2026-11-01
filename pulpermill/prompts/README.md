@@ -4,7 +4,7 @@ Generic code that turns cards into prose and counts what that prose costs. It ho
 
 | What | Files |
 | --- | --- |
-| Card renderers: style, cast, world, entanglements, setup, the story so far (the Events record), earlier beats | `render.py`, with the wording frames in `text/en/frames.yaml` and `text/en/style_directives.yaml` |
+| Card renderers: style, cast, world, entanglements, setup, the story so far (the Events record), earlier beats; and for the story calls the scene (a beat), the spotlight tie, the history of changes (`render_scene`, `render_spotlight`, `render_history`) plus `render_shift`, a standalone helper with no caller yet | `render.py`, with the wording frames in `text/en/frames.yaml` and `text/en/style_directives.yaml` |
 | Token budget: measure, fit, squeeze | `budget.py`, `budgets.yaml` |
 | Tokenizer and the Gemma chat template | `tokens.py`, `tokenizer/` |
 | Wording-file loader and length limits (the caps come from the schema fields, plus `limits.yaml`) | `textfiles.py`, `limits.yaml` |

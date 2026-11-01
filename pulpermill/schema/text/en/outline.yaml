@@ -13,9 +13,8 @@ fields:
     add: "Add a beat"
     delete_confirm: "Delete this beat?"
     item_title: "Chapter {chapter}"
-    # TODO prompt design: placeholder lead-in and item template.
-    lead_in: "Chapter beats:\n{items}"
-    item_template: "Chapter {chapter}. We open at {where}, {when_time}. Present: {cast}. Spotlight: {spotlight}. The protagonist is after {aim}. Plan: {plan}"
+    lead_in: "The plans for the chapters:\n{items}"
+    item_template: "The chapter opens at {where}. The time is {when_time}. The people on stage are {cast}. The tie in the spotlight is {spotlight} The protagonist is after this: {aim} The plan for the chapter: {plan}"
     item_join: "\n"
     item_fields:
       chapter: {label: "Chapter", help: "Which chapter this beat is for. Set by the system.", placeholder: "Set by the system"}

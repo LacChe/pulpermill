@@ -32,6 +32,28 @@ chapter_last: "This is the last chapter. Bring the story to its close and settle
 chapter_one_normal: "Open the story where ordinary life was: {value}"
 chapter_one_break: "What just broke it: {value}"
 
+# ---- History (what happened and what changed) ----
+history_lead_writer: "The story so far:"
+history_lead_planner: "What has happened so far, and what each chapter changed:"
+
+# ---- The spotlight tie ----
+spotlight_tie: "This chapter puts one tie in the spotlight: {tie_from} toward {tie_to}: {bond}"
+spotlight_tie_bare: "This chapter puts one tie in the spotlight: {tie_from} toward {tie_to}."
+spotlight_drive: "What drives {tie_from} in this tie: {edge}"
+spotlight_brief_lead: "The two people at its ends, in brief:"
+
+# ---- The scene (a beat in prose) ----
+scene_spotlight_line: "{tie_from} toward {tie_to}: {bond}"
+scene_minor_roles: "Anyone else the scene needs appears by role only (a clerk, a neighbour), unnamed and in the background."
+scene_writer_note: "Begin with the scene already in motion, and tell the plan as a living scene that is free to find better moments than the plan lists."
+
+# ---- A change recorded for a card (one shift entry in prose) ----
+shift_set: "{field} is now {value}"
+shift_add: "{field} gains: {values}"
+shift_replace: "{field}: {old} becomes {values}"
+shift_remove: "{field} no longer includes {old}"
+shift_unknown_item: "an earlier entry"
+
 # ---- Earlier beats ----
 planner_beats_lead: "Earlier chapters' plans, as a timeline:"
 planner_beat_item: "Chapter {chapter}: at {where}, {when}."

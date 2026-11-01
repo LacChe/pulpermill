@@ -10,7 +10,7 @@ fields:
     label: "Entries"
     help: "One entry per card that changed in a chapter. Fixed fields (name, age, sex, appearance) never appear."
     lead_in: "How the cards have changed so far (a changed value wins over the card where they disagree):\n{items}"
-    item_template: "Chapter {beat}, {card} {target}: {patch}"
+    item_template: "In chapter {beat}, {card} {target} changed: {patch}"
     item_join: "\n"
     item_fields:
       beat: {label: "Chapter", help: "Which chapter, shown as its number. Set by the system."}
@@ -18,7 +18,7 @@ fields:
         label: "Card"
         help: "Which card changed."
         options:
-          characters: {label: "Character", expand: "a character"}
+          characters: {label: "Character", expand: "the character"}
           world: {label: "World", expand: "the world"}
           entanglements: {label: "Entanglements", expand: "the ties and holdings"}
       target: {label: "Character", help: "Who changed. Only for a character; empty for the world and the entanglements."}

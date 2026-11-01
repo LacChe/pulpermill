@@ -3,9 +3,12 @@
 # What remains here is counts and caps the schema does not carry. The backend does not read this file.
 characters:
   max_behaviors: 5
-setup:
-  goal: 400
-  stakes: 500
+scene:
+  # A beat's planner fields carry no schema cap, so the caps for rendering them live here.
+  where: 120
+  when_time: 120
+  aim: 300
+  plan: 1200
 events:
   # How many of the latest chapters are told in full. Older chapters shrink to their "changed" line.
   full_chapters_writer: 3
