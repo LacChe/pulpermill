@@ -250,7 +250,7 @@ def test_why_lines_are_not_repeated_or_copies_of_help(cid, lang):
 @pytest.mark.parametrize("cid,lang", CASES, ids=CASE_IDS)
 def test_finished_cards_describe_every_option_and_typed_field(cid, lang):
     if cid not in UI_DONE:
-        pytest.skip("UI wording not written yet")
+        pytest.skip("PENDING(ui-wording): UI wording not written yet")
     text = load_text(cid, lang)
     for n, f, t in _targets(card(cid)[0], text):
         meta = f.json_schema_extra
@@ -313,7 +313,7 @@ def test_visible_if_points_at_sibling_fields_and_real_options(cid, lang):
 def test_a_field_shown_only_sometimes_matches_the_block_rule_that_requires_it(cid, lang):
     """If code requires a field only when another has some value, the form must show it in exactly that case."""
     if cid not in UI_DONE:
-        pytest.skip("UI wording not written yet")
+        pytest.skip("PENDING(ui-wording): UI wording not written yet")
     model, _, _, rules, _ = card(cid)
     text = load_text(cid, lang)
     for r in rules:
@@ -329,7 +329,7 @@ def test_a_field_shown_only_sometimes_matches_the_block_rule_that_requires_it(ci
 def test_either_or_and_present_only_fields_match_their_block_rules(cid, lang):
     """exactly_one rules need a toggle in the form; required_if with when_present needs the field shown only then."""
     if cid not in UI_DONE:
-        pytest.skip("UI wording not written yet")
+        pytest.skip("PENDING(ui-wording): UI wording not written yet")
     model, _, _, rules, _ = card(cid)
     text = load_text(cid, lang)
     for r in rules:

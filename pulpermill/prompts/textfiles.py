@@ -1,4 +1,4 @@
-"""Loads the wording and the limits. Cached, read-only."""
+"""Loads the wording files and the length limits. Cached, read-only."""
 import copy
 from contextlib import contextmanager
 from functools import lru_cache
@@ -25,12 +25,6 @@ def schema_text(card: str, lang: str = "en") -> dict:
 def prompt_text(name: str, lang: str = "en") -> dict:
     """One of this package's own wording files (style_directives, frames)."""
     return _load(PROMPT_TEXT / lang / f"{name}.yaml")
-
-
-@lru_cache(maxsize=None)
-def template(name: str, lang: str = "en") -> dict:
-    """One prompt template file (templates/en/<name>.yaml). Its `version` is recorded with every evaluation result."""
-    return _load(HERE / "templates" / lang / f"{name}.yaml")
 
 
 @lru_cache(maxsize=None)
@@ -92,8 +86,6 @@ def limits() -> dict:
         return base
     out = copy.deepcopy(base)
     for section, values in out.items():
-        if section == "chapter":
-            continue
         for key, value in values.items():
             if isinstance(value, int) and (section, key) not in _NOT_LENGTHS:
                 values[key] = max(40, int(value * _scale))

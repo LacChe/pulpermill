@@ -1,16 +1,10 @@
 """The cases the budget tests measure: the Salt Coast sample story (the new request shape, see fixtures/) and bigger and bigger versions of it.
-`render_story` is a generic prompt made with the card renderers alone; it is what the budget tests fit. The parked story prompts (a
-writer's, a planner's ...) are built by `parked_prompts` and its relatives, for the parked tests and tools/ only."""
+`render_story` is a generic prompt made with the card renderers alone; it is what the budget tests fit."""
 import copy
-import json
-from pathlib import Path
 
 from pulpermill.prompts import budget, render, textfiles as tx
 from pulpermill.schema.common import MAX_ITEMS
-from test_render import generate_request, plan_request
-
-ROOT = Path(__file__).resolve().parents[2]
-VECTORS = {r["name"]: r["data"] for r in json.loads((ROOT / "tests/shared/contract-vectors.json").read_text(encoding="utf-8"))["requests"]}
+from test_render import generate_request
 
 PROSE = [
     "The harbour board had changed the dock rules again, and nobody on the quay would say who had asked for it.",
@@ -138,32 +132,3 @@ def render_story(req: dict, factor: float = 1.0) -> budget.Sized:
         text = "\n\n".join(x for x in (render.render_style(req["style"]), render.render_cast(req["cast"]), render.render_world(req["world"]),
                                         render.render_entanglements({"ties": ties, "holdings": holdings}, list(names.values()))) if x)
     return budget.Sized("render_story", text, 1000)
-
-
-# ---- The parked story prompts (prompt design decides what to reuse) --------------------------------------------------
-
-def parked_prompts(gen: dict, plan: dict, chapter_words: int = 3000, vectors: dict | None = None, big: dict | None = None) -> dict:
-    """Every old story prompt for one story. They read the old request shapes: only the parked tests use this."""
-    from pulpermill.prompts import prompts as P
-    vec = vectors or VECTORS
-    if big:
-        vec = {k: inflate(v, **big) for k, v in vec.items()}
-    chapter = chapter_text(chapter_words)
-    roles = P.writer_plan()
-    earlier = prose(6500, 3)          # a whole first section at its ceiling (about 1,500 words)
-    return {
-        "writer-1-open": P.writer_prompt(gen, roles, 0),
-        "writer-2-close": P.writer_prompt(gen, roles, 1, earlier),
-        "planner-1-think": P.planner_think_prompt(plan),
-        "planner-2-beat": P.planner_beat_prompt(plan, prose(5000, 1)),
-        "events": P.events_prompt(gen, chapter),
-        "shifts": P.shifts_prompt(gen, chapter, {"happened": prose(1100, 2)}),
-        "fill-character": P.fill_prompt(vec["the page's fill_character request"]),
-        "judge-world": P.judge_prompts(vec["the page's judge_world request"])[0],
-        "style-fit": P.style_fit_prompt(vec["the page's style_fit request"]),
-    }
-
-
-def parked_golden() -> dict:
-    """The old sample prompts with placeholders: what docs/prompts/samples/prompts holds (parked)."""
-    return parked_prompts(generate_request(), plan_request())

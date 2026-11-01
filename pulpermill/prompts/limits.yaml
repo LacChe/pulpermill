@@ -1,15 +1,8 @@
-# What is left of the length limits after P4. The per-field character caps now live on the schema fields (`cap` in spec(...), see
+# What is left of the length limits. The per-field character caps live on the schema fields (`cap` in spec(...), see
 # pulpermill/schema/common.py), and textfiles.limits() builds the dictionary the renderers read from the schema plus this file.
-# What remains here is not about a current field: counts and switches, text a model wrote (standing, offstage, plants), and caps of
-# fields the redesign removed that the parked story renderers still read. The backend and the stub prompter do not read this file.
+# What remains here is counts and caps the schema does not carry. The backend does not read this file.
 characters:
   max_behaviors: 5
-entanglements:
-  pressure_what: 450
-  next_move: 300
-  fact: 300
-world:
-  rule_truth: 350
 setup:
   goal: 400
   stakes: 500
@@ -17,15 +10,3 @@ events:
   # How many of the latest chapters are told in full. Older chapters shrink to their "changed" line.
   full_chapters_writer: 3
   full_chapters_planner: 4
-beat:
-  field: 500
-code:
-  plant: 250
-offstage:
-  field: 350
-standing:
-  field: 300
-chapter:
-  # The two-section writer (parked). target_words is a ceiling for the whole chapter, shared by the sections.
-  target_words: 3000
-  sections: 2
