@@ -4,7 +4,8 @@
 
 Probes: one graded row per fixture and run, with `result` one of right, wrong-flagged, wrong-silent, control-damaged.
 Prints, per probe, per tier and in total, how many results are right, wrong but flagged and wrong and silent. A control-damaged
-result counts as wrong (plan), but the protocol does not say which bucket, so it is shown in its own column and in none of the three.
+result counts as wrong-silent (a damaged control is still a valid card, so no rule covers it); the `control-damaged` column shows how
+many of the wrong-silent results were that, so it is part of wrong-silent and not added again.
 Rows with no result yet are counted as `ungraded`. Given a second sheet, prints the difference (second minus first) for every count.
 
 Cases: one row per case and run, with the boundary errors found: `boundary_wrong_silent` and `boundary_wrong_flagged` are summed per case and
@@ -41,9 +42,14 @@ def summarize_probes(path):
     for row in _rows(path):
         key, tier = row["probe"], f"Tier {row['tier']}"
         which = _count(row)
+        damaged = which == "control-damaged"
+        which = "wrong-silent" if damaged else which
         for table, k in ((probes, key), (tiers, tier)):
-            table.setdefault(k, _blank())[which] += 1
+            counts = table.setdefault(k, _blank())
+            counts[which] += 1
+            counts["control-damaged"] += damaged
         total[which] += 1
+        total["control-damaged"] += damaged
     return {"probes": probes, "tiers": OrderedDict(sorted(tiers.items())), "total": total}
 
 

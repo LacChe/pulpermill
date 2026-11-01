@@ -26,7 +26,7 @@ Use the `right_looks_like` column. Record exactly one result:
 | right | The target is correct. |
 | wrong-flagged | The target is wrong, and a rule or warning that covers that problem fired on the same field or item. |
 | wrong-silent | The target is wrong and nothing covering it fired. This is the failure to drive to zero. |
-| control-damaged | (Controls only.) The clean input came back changed for the worse: valid content was removed, or a problem was added. |
+| control-damaged | (Controls only.) The clean input came back changed for the worse: valid content was removed, or a problem was added. Counted as wrong-silent in the totals, because a damaged control is still a valid card and no rule covers it. |
 
 Rules for deciding:
 - **A flag counts only if it covers the problem.** A warning on an unrelated field, or about a different issue on the same field, does not make a wrong result "flagged." Write the rule ids that fired in `flags_that_fired`, and compare them to `expected_flag`.

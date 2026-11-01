@@ -45,16 +45,16 @@ def write(path, rows, header=PROBE_HEADER):
 def test_counts_per_probe_per_tier_and_in_total(tmp_path):
     got = s.summarize_probes(write(tmp_path / "a.csv", FIRST))
     e1 = got["probes"]["E1"]
-    assert (e1["right"], e1["wrong-flagged"], e1["wrong-silent"], e1["control-damaged"], e1["ungraded"]) == (2, 0, 2, 1, 1)
+    assert (e1["right"], e1["wrong-flagged"], e1["wrong-silent"], e1["control-damaged"], e1["ungraded"]) == (2, 0, 3, 1, 1)
     w1 = got["probes"]["W1"]
     assert (w1["right"], w1["wrong-flagged"], w1["wrong-silent"]) == (2, 1, 0)
     assert list(got["probes"]) == ["E1", "W1", "U3"]
     t1, t2 = got["tiers"]["Tier 1"], got["tiers"]["Tier 2"]
-    assert (t1["right"], t1["wrong-flagged"], t1["wrong-silent"], t1["control-damaged"], t1["ungraded"]) == (2, 0, 3, 1, 1)
+    assert (t1["right"], t1["wrong-flagged"], t1["wrong-silent"], t1["control-damaged"], t1["ungraded"]) == (2, 0, 4, 1, 1)
     assert (t2["right"], t2["wrong-flagged"], t2["wrong-silent"]) == (2, 1, 0)
     total = got["total"]
-    assert (total["right"], total["wrong-flagged"], total["wrong-silent"], total["control-damaged"], total["ungraded"]) == (4, 1, 3, 1, 1)
-    assert sum(total.values()) == len(FIRST)
+    assert (total["right"], total["wrong-flagged"], total["wrong-silent"], total["control-damaged"], total["ungraded"]) == (4, 1, 4, 1, 1)
+    assert sum(total[c] for c in s.BUCKETS + ["ungraded"]) == len(FIRST)
 
 
 def test_a_blank_template_is_all_ungraded():
@@ -67,8 +67,8 @@ def test_the_difference_between_two_sheets(tmp_path):
     a = s.summarize_probes(write(tmp_path / "a.csv", FIRST))
     b = s.summarize_probes(write(tmp_path / "b.csv", SECOND))
     d = s.difference(a, b)
-    assert (d["probes"]["E1"]["right"], d["probes"]["E1"]["wrong-silent"]) == (0, -1)      # right 2 -> 2, wrong-silent 2 -> 1
-    assert d["total"]["wrong-silent"] == -2 and d["total"]["wrong-flagged"] == -1
+    assert (d["probes"]["E1"]["right"], d["probes"]["E1"]["wrong-silent"]) == (0, -2)      # right 2 -> 2, wrong-silent 3 (one a damaged control) -> 1
+    assert d["total"]["wrong-silent"] == -3 and d["total"]["wrong-flagged"] == -1
     assert d["probes"]["W1"]["right"] == 1 and d["probes"]["W1"]["wrong-flagged"] == -1
     assert d["probes"]["U3"]["wrong-silent"] == -1 and d["probes"]["U3"]["right"] == 1
 
