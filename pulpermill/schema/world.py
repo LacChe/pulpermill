@@ -82,7 +82,7 @@ class World(Item):
 
 ALL_TEXT = ["era_and_technology", "everyday_life", "history", "places", "objects", "powers", "rules", "terms"]
 
-# Rules that guard fields meant to cause trouble for people (friction, cost, pressure) are marked [drives story].
+# Rules that guard fields meant to cause trouble for people (friction, cost, strain) are marked [drives story].
 RULES = [
     Rule(id="world_names_people", severity="warn", fields=ALL_TEXT,
          when="text names a character that exists in this project (a world must work with any cast)",

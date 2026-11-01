@@ -31,16 +31,16 @@ test("isVisible: no visible_if means always shown", () => {
 });
 
 test("isVisible: filled, exact value and list of values", () => {
-  const filled = { visible_if: { reveal_rule: "filled" } };
-  assert.equal(isVisible(filled, { reveal_rule: "r1" }), true);
-  assert.equal(isVisible(filled, { reveal_rule: "" }), false);
+  const filled = { visible_if: { sibling: "filled" } };
+  assert.equal(isVisible(filled, { sibling: "r1" }), true);
+  assert.equal(isVisible(filled, { sibling: "" }), false);
   assert.equal(isVisible(filled, {}), false);
-  const exact = { visible_if: { goal_change: "redefined" } };
-  assert.equal(isVisible(exact, { goal_change: "redefined" }), true);
-  assert.equal(isVisible(exact, { goal_change: "achieved" }), false);
-  const many = { visible_if: { goal_change: ["achieved", "abandoned"] } };
-  assert.equal(isVisible(many, { goal_change: "abandoned" }), true);
-  assert.equal(isVisible(many, { goal_change: "redefined" }), false);
+  const exact = { visible_if: { mode: "redefined" } };
+  assert.equal(isVisible(exact, { mode: "redefined" }), true);
+  assert.equal(isVisible(exact, { mode: "achieved" }), false);
+  const many = { visible_if: { mode: ["achieved", "abandoned"] } };
+  assert.equal(isVisible(many, { mode: "abandoned" }), true);
+  assert.equal(isVisible(many, { mode: "redefined" }), false);
 });
 
 test("isVisible: every entry must hold", () => {
@@ -196,12 +196,9 @@ test("ensureCard fills blanks inside saved instances and list items without over
   assert.equal(c.behaviors[0].tendency, "");
 });
 
-test("World: a rule's truth shows only for a false belief", () => {
+test("World: a rule is how the world works: a statement, its cost and what happens when it is broken, with no status or truth", () => {
   const rules = world.fields.find((f) => f.key === "rules");
-  const truth = rules.item_fields.find((f) => f.key === "truth");
-  assert.equal(isVisible(truth, { status: "false_belief" }), true);
-  assert.equal(isVisible(truth, { status: "common" }), false);
-  assert.equal(isVisible(truth, { status: "" }), false);
+  assert.deepEqual(rules.item_fields.map((f) => f.key), ["statement", "cost", "when_broken"]);
 });
 
 test("World: a new item of each list has an empty box for every item field", () => {
@@ -263,7 +260,7 @@ test("a tie's two ends block each other's choice", () => {
 
 test("lookupLabel: option label, linked name, or the stored value", () => {
   const project = sample();
-  assert.equal(lookupLabel(project, entItem("knowledge", "misled"), "p1"), "The Guild");
+  assert.equal(lookupLabel(project, entItem("ties", "tie_to"), "p1"), "The Guild");
   assert.equal(lookupLabel(project, entItem("ties", "tie_from"), "p1"), "The Guild");
   assert.equal(lookupLabel(project, entItem("ties", "bond"), "rivals"), "rivals");
 });
@@ -273,46 +270,48 @@ test("item titles show names, not ids", () => {
   const lookup = (f, v) => lookupLabel(project, f, v);
   assert.equal(itemTitle(entList("ties"), { tie_from: "c1", tie_to: "p1" }, lookup), "Ines → The Guild");
   assert.equal(itemTitle(entList("holdings"), { holdee: "o1", held_by: "c1" }, lookup), "Ines holds The ledger");
-  assert.equal(itemTitle(entList("knowledge"), { rule: "r1", fact: "", knows: ["c1"], suspects: [], misled: [] }, lookup),
-    "Ink never dries in the east wing");
 });
+
+// The schema no longer has an either-or pair, but the page still honours one_of when a card declares it, so these use a list of their own.
+const eitherOr = {
+  key: "things", one_of: [{ fields: ["by_person", "by_chance"], label: "Source", options: {} }],
+  item_fields: [{ key: "by_person", required: false }, { key: "by_chance", required: false }, { key: "plain", required: false }, { key: "later", required: false, visible_if: { by_person: "filled" } }],
+};
+const eoField = (key) => eitherOr.item_fields.find((f) => f.key === key);
 
 test("either-or: the filled field is the choice; switching clears the other", () => {
-  const owner = entList("pressures");
-  const group = owner.one_of[0];
-  const values = { source_agent: "", source_circumstance: "" };
+  const group = eitherOr.one_of[0];
+  const values = { by_person: "", by_chance: "" };
   const memory = {};
   assert.equal(oneOfChoice(group, 0, values, memory), null);
-  chooseOneOf(group, 0, values, memory, "source_agent");
-  assert.equal(oneOfChoice(group, 0, values, memory), "source_agent");
-  values.source_agent = "c1";
-  chooseOneOf(group, 0, values, memory, "source_circumstance");
-  assert.equal(values.source_agent, "");
-  assert.equal(oneOfChoice(group, 0, values, memory), "source_circumstance");
+  chooseOneOf(group, 0, values, memory, "by_person");
+  assert.equal(oneOfChoice(group, 0, values, memory), "by_person");
+  values.by_person = "c1";
+  chooseOneOf(group, 0, values, memory, "by_chance");
+  assert.equal(values.by_person, "");
+  assert.equal(oneOfChoice(group, 0, values, memory), "by_chance");
 });
 
-test("either-or: only the chosen field is shown, and next move needs an agent", () => {
-  const owner = entList("pressures");
-  const agent = entItem("pressures", "source_agent");
-  const circumstance = entItem("pressures", "source_circumstance");
-  const nextMove = entItem("pressures", "next_move");
-  const values = { source_agent: "", source_circumstance: "" };
+test("either-or: only the chosen field is shown, and a conditional field needs its sibling", () => {
+  const values = { by_person: "", by_chance: "" };
   const memory = {};
-  assert.equal(fieldShown(owner, agent, values, memory), false);
-  assert.equal(fieldShown(owner, circumstance, values, memory), false);
-  memory[0] = "source_agent";
-  assert.equal(fieldShown(owner, agent, values, memory), true);
-  assert.equal(fieldShown(owner, circumstance, values, memory), false);
-  assert.equal(fieldShown(owner, nextMove, values, memory), false);
-  values.source_agent = "c1";
-  assert.equal(fieldShown(owner, nextMove, values, memory), true);
+  assert.equal(fieldShown(eitherOr, eoField("by_person"), values, memory), false);
+  assert.equal(fieldShown(eitherOr, eoField("by_chance"), values, memory), false);
+  memory[0] = "by_person";
+  assert.equal(fieldShown(eitherOr, eoField("by_person"), values, memory), true);
+  assert.equal(fieldShown(eitherOr, eoField("by_chance"), values, memory), false);
+  assert.equal(fieldShown(eitherOr, eoField("later"), values, memory), false);
+  values.by_person = "c1";
+  assert.equal(fieldShown(eitherOr, eoField("later"), values, memory), true);
+  assert.equal(fieldShown(eitherOr, eoField("plain"), values, memory), true);
 });
 
 test("the Optional tag is not shown for either-or or conditional fields", () => {
-  const owner = entList("pressures");
-  assert.equal(inOneOf(owner, entItem("pressures", "source_agent")), true);
-  assert.equal(showsOptionalTag(owner, entItem("pressures", "source_agent")), false);
-  assert.equal(showsOptionalTag(owner, entItem("pressures", "next_move")), false);
+  assert.equal(inOneOf(eitherOr, eoField("by_person")), true);
+  assert.equal(inOneOf(eitherOr, eoField("plain")), false);
+  assert.equal(showsOptionalTag(eitherOr, eoField("by_person")), false);
+  assert.equal(showsOptionalTag(eitherOr, eoField("later")), false);
+  assert.equal(showsOptionalTag(eitherOr, eoField("plain")), true);
   assert.equal(showsOptionalTag(null, { required: false }), true);
   assert.equal(showsOptionalTag(null, { required: true }), false);
 });
@@ -328,9 +327,9 @@ test("every link field on Entanglements has a placeholder and an empty message",
 });
 
 test("a title for an either-or pair shows whichever half is used", () => {
-  const lookup = (f, v) => lookupLabel(sample(), f, v);
-  assert.equal(itemTitle(entList("knowledge"), { rule: "", fact: "the key is in the well", knows: [], suspects: ["c1"], misled: [] }, lookup),
-    "the key is in the well");
+  const field = { item_title: "{by_person}{by_chance}", item_fields: eitherOr.item_fields, one_of: eitherOr.one_of };
+  assert.equal(itemTitle(field, { by_person: "", by_chance: "a storm" }), "a storm");
+  assert.equal(itemTitle(field, { by_person: "Ines", by_chance: "" }), "Ines");
 });
 
 test("Setup: every field is supported, starts blank, and the protagonist picker has its empty message", () => {
@@ -385,7 +384,8 @@ test("rules split into code rules (a named check) and model rules (needs_model),
     }
   }
   assert.ok(modelRules(schema.cards.outline).every((r) => r.needs_model));
-  assert.ok(modelRules(schema.cards.outline).length > 0);
+  assert.equal(modelRules(schema.cards.outline).length, 0);   // every outline rule is checked by code now
+  assert.ok(modelRules(schema.cards.world).length > 0);
 });
 
 test("every check named in the schema has a function or is listed as pending, and nothing is listed twice", () => {
@@ -397,11 +397,11 @@ test("every check named in the schema has a function or is listed as pending, an
 test("an empty required field is reported as missing, at the field", () => {
   const setup = schema.cards.setup;
   const { problems } = validate(setup, blankCard(setup), {}, schema.common);
-  assert.deepEqual(problems.map((p) => p.field).sort(), ["chapter_count", "disruption", "goal", "normal", "protagonist", "stakes"]);
+  assert.deepEqual(problems.map((p) => p.field).sort(), ["chapter_count", "disruption", "normal", "protagonist"]);
   assert.equal(problems[0].rule, "missing");
-  assert.match(problems.find((p) => p.field === "goal").message, /^Goal is empty\./);
-  const filled = { ...blankCard(setup), protagonist: "c1", normal: "a", disruption: "b", goal: "c", stakes: "d", chapter_count: 12 };
-  assert.deepEqual(validate(setup, filled, { characters: [{ id: "c1", name: "Ines" }] }, schema.common).problems, []);
+  assert.match(problems.find((p) => p.field === "normal").message, /^Normal is empty\./);
+  const filled = { ...blankCard(setup), protagonist: "c1", normal: "a", disruption: "b", chapter_count: 12 };
+  assert.deepEqual(validate(setup, filled, { characters: [{ id: "c1", name: "Ines" }] }, schema.common).problems.filter((p) => p.rule === "missing" || p.rule === "protagonist_link_broken"), []);
 });
 
 test("problems inside a list item name the list, the item and the field", () => {
@@ -409,21 +409,22 @@ test("problems inside a list item name the list, the item and the field", () => 
   const beat = addItem(beatsField, list);
   const values = { beats: list };
   const { problems } = validate(outline, values, {}, schema.common);
-  const goal = problemsFor(problems, "beats", beat.id, "collision_goal");
-  assert.equal(goal.length, 1);
-  assert.equal(goal[0].rule, "missing");
-  assert.equal(problemsFor(problems, "beats", beat.id, "reveal_rule").length, 0);   // optional
-  assert.equal(problemsFor(problems, "beats", beat.id, "goal_now").length, 0);       // not required by itself: a rule asks for it
+  const aim = problemsFor(problems, "beats", beat.id, "aim");
+  assert.equal(aim.length, 1);
+  assert.equal(aim[0].rule, "missing");
+  assert.equal(problemsFor(problems, "beats", beat.id, "plan").length, 1);
+  assert.equal(problemsFor(problems, "beats", beat.id, "planned_from").length, 0);   // optional
+  assert.equal(problemsFor(problems, "beats", beat.id, "stale").length, 0);          // optional
 });
 
 test("a value that is not one of the options, and too many chosen, are reported", () => {
-  const list = [];
-  const beat = addItem(beatsField, list);
-  beat.shift = "sideways";
-  beat.cast = ["a", "b", "c", "d", "e", "f"];
-  const { problems } = validate(outline, { beats: list }, {}, schema.common);
-  assert.equal(problemsFor(problems, "beats", beat.id, "shift")[0].rule, "not_allowed");
-  assert.equal(problemsFor(problems, "beats", beat.id, "cast").find((p) => p.rule === "too_many").message, "Cast can hold at most 5 items.");
+  // The beat has no option list of its own any more, so a choice field and a capped list are tried on small cards.
+  const choice = { id: "t", fields: [{ key: "mood", label: "Mood", required: true, input: "select", options: [{ value: "calm", label: "Calm" }] }], rules: [] };
+  const bad = validate(choice, { mood: "sideways" }, {}, schema.common).problems;
+  assert.equal(problemsFor(bad, "mood", null, null)[0].rule, "not_allowed");
+  const capped = { id: "t", fields: [{ key: "cast", label: "Cast", required: true, input: "select-multiple", max_selected: 5, ref: ["characters"] }], rules: [] };
+  const many = validate(capped, { cast: ["a", "b", "c", "d", "e", "f"] }, {}, schema.common).problems;
+  assert.equal(many.find((p) => p.rule === "too_many").message, "Cast can hold at most 5 items.");
 });
 
 test("every code rule on every card can be run by the page", () => {
@@ -443,14 +444,8 @@ const run = (cardId, ruleId, values, project = {}) => {
 };
 const beat = (extra) => ({ ...blankItem(beatsField), id: "b1", chapter: 1, ...extra });
 
-test("either-or and all-or-none", () => {
-  const pressures = (item) => ({ pressures: [{ id: "p1", what: "x", ...item }] });
-  assert.deepEqual(run("entanglements", "pressure_one_source", pressures({ source_agent: "c1" })), []);
-  assert.deepEqual(run("entanglements", "pressure_one_source", pressures({})), [["pressures", "p1", "source_agent"]]);
-  assert.deepEqual(run("entanglements", "pressure_one_source", pressures({ source_agent: "c1", source_circumstance: "a storm" })), [["pressures", "p1", "source_agent"]]);
-  assert.deepEqual(run("outline", "offstage_both_or_neither", { beats: [beat({ offstage_did: "x" })] }), [["beats", "b1", "offstage_reach"]]);
-  assert.deepEqual(run("outline", "offstage_both_or_neither", { beats: [beat({})] }), []);
-  assert.deepEqual(run("outline", "offstage_both_or_neither", { beats: [beat({ offstage_did: "x", offstage_reach: "y" })] }), []);
+test("a beat with an aim and a plan has no missing-field problem", () => {
+  assert.deepEqual(validate(outline, { beats: [beat({ where: "pl1", when_time: "Dawn", cast: ["c1"], spotlight: "t1", aim: "Find the ledger", plan: "She searches." })] }, {}, schema.common).problems.filter((p) => p.rule === "missing"), []);
 });
 
 test("a tie may not go from a person to themselves", () => {
@@ -458,11 +453,10 @@ test("a tie may not go from a person to themselves", () => {
   assert.deepEqual(run("entanglements", "tie_not_self", { ties: [{ id: "t1", tie_from: "c1", tie_to: "c2" }, { id: "t2", tie_from: "", tie_to: "" }] }), []);
 });
 
-test("required_if: when, when_present and unless", () => {
-  assert.deepEqual(run("world", "rule_false_needs_truth", { rules: [{ id: "r1", status: "false_belief", truth: "" }, { id: "r2", status: "common", truth: "" }] }), [["rules", "r1", "truth"]]);
-  assert.deepEqual(run("entanglements", "next_move_for_agents", { pressures: [{ id: "p1", source_agent: "c1", next_move: "" }, { id: "p2", source_circumstance: "storm", next_move: "" }] }), [["pressures", "p1", "next_move"]]);
-  assert.deepEqual(run("outline", "when_gap_after_first", { beats: [beat({ id: "b1", chapter: 1 }), beat({ id: "b2", chapter: 2 })] }), [["beats", "b2", "when_gap"]]);
-  assert.deepEqual(run("outline", "when_gap_after_first", { beats: [beat({ id: "b1", chapter: 1 })] }), []);
+test("no rule asks for a field to be required only under a condition any more", () => {
+  const checks = Object.values(schema.cards).flatMap((c) => c.rules.map((r) => r.check));
+  assert.ok(!checks.includes("required_if"));
+  assert.ok(!("required_if" in CHECKS));
 });
 
 test("links that no longer exist are reported, in a card and in its lists", () => {
@@ -486,31 +480,20 @@ test("item counts ignore empty items", () => {
   assert.deepEqual(run("characters", "wants_count", { wants: [] }), [["wants", null, null]]);
   assert.deepEqual(run("characters", "wants_count", { wants: [{ id: "a", text: "one" }, { id: "b", text: "" }] }).length, 1);
   assert.deepEqual(run("characters", "wants_count", { wants: [{ id: "a", text: "one" }, { id: "b", text: "two" }] }).length, 0);
-  const four = ["a", "b", "c", "d"].map((id) => ({ id, what: id }));
-  assert.deepEqual(run("entanglements", "pressures_active_count", { pressures: four }), [["pressures", null, null]]);
 });
 
-test("the cast must include the protagonist, and the spotlight must touch the cast", () => {
-  const project = { setup: { protagonist: "c1" }, entanglements: { pressures: [{ id: "x1", what: "audit", source_agent: "g1", bears_on: ["c2"] }] } };
+test("the cast must include the protagonist, and the spotlight pair must be on stage", () => {
+  const project = { setup: { protagonist: "c1" }, characters: [{ id: "c1" }, { id: "c2" }, { id: "c3" }], entanglements: { ties: [{ id: "t1", tie_from: "c2", tie_to: "c3" }] } };
   assert.deepEqual(run("outline", "cast_has_protagonist", { beats: [beat({ cast: ["c2"] })] }, project), [["beats", "b1", "cast"]]);
   assert.deepEqual(run("outline", "cast_has_protagonist", { beats: [beat({ cast: ["c1"] })] }, project), []);
   assert.deepEqual(run("outline", "cast_has_protagonist", { beats: [beat({ cast: ["c2"] })] }, {}), []);
-  assert.deepEqual(run("outline", "spotlight_in_cast", { beats: [beat({ cast: ["c1"], spotlight: "x1" })] }, project), [["beats", "b1", "spotlight"]]);
-  assert.deepEqual(run("outline", "spotlight_in_cast", { beats: [beat({ cast: ["c1", "c2"], spotlight: "x1" })] }, project), []);
+  assert.deepEqual(run("outline", "spotlight_pair_in_cast", { beats: [beat({ cast: ["c1", "c2"], spotlight: "t1" })] }, project), [["beats", "b1", "spotlight"]]);
+  assert.deepEqual(run("outline", "spotlight_pair_in_cast", { beats: [beat({ cast: ["c1", "c2", "c3"], spotlight: "t1" })] }, project), []);
 });
 
-test("pacing: at most 2 harder in a row, at most 1 easier in a row", () => {
-  const seq = (...shifts) => shifts.map((shift, i) => beat({ id: `b${i + 1}`, chapter: i + 1, shift }));
-  assert.deepEqual(legalShifts(seq("", ""), seq("", "")[1]), ["harder", "easier"]);
-  const beats = seq("harder", "harder", "");
-  assert.deepEqual(legalShifts(beats, beats[2]), ["easier"]);
-  const after = seq("harder", "easier", "");
-  assert.deepEqual(legalShifts(after, after[2]), ["harder"]);
-  const mixed = seq("harder", "easier", "harder", "harder", "");
-  assert.deepEqual(legalShifts(mixed, mixed[4]), ["easier"]);
-  assert.deepEqual(run("outline", "shift_legal", { beats: seq("harder", "harder", "harder") }), [["beats", "b3", "shift"]]);
-  assert.deepEqual(run("outline", "shift_legal", { beats: seq("easier", "easier") }), [["beats", "b2", "shift"]]);
-  assert.deepEqual(run("outline", "shift_legal", { beats: seq("harder", "easier", "harder", "harder", "easier") }), []);
+test("the outline has no beat shift and no pacing rule any more", () => {
+  assert.ok(!beatsField.item_fields.some((f) => f.key === "shift"));
+  assert.ok(!outline.rules.some((r) => /shift|pacing/.test(r.id)));
 });
 
 test("names: a world may not name characters; a character may not name others or the world", () => {
@@ -528,22 +511,10 @@ test("names: a world may not name characters; a character may not name others or
   assert.deepEqual(run("world", "world_names_people", { ...world, everyday_life: "Inesa is a word, Ines.x" }, project).length, 2);
 });
 
-test("a reveal may not repeat, and a payoff must be an earlier, still-open plant", () => {
-  const project = { summary_events: { entries: [
-    { id: "e1", beat: "b1", planted: "A locked room", reveals_landed: ["r1"] },
-    { id: "e2", beat: "b2", planted: "A letter", paid_off: [] },
-    { id: "e3", beat: "b3", paid_off: ["e1"] },
-  ] } };
-  const beats = [beat({ id: "b1", chapter: 1 }), beat({ id: "b2", chapter: 2 }), beat({ id: "b3", chapter: 3 }), beat({ id: "b4", chapter: 4 })];
-  const withBeat = (id, extra) => ({ beats: beats.map((b) => (b.id === id ? { ...b, ...extra } : b)) });
-  assert.deepEqual(run("outline", "reveal_not_repeated", withBeat("b4", { reveal_rule: "r1" }), project), [["beats", "b4", "reveal_rule"]]);
-  assert.deepEqual(run("outline", "reveal_not_repeated", withBeat("b1", { reveal_rule: "r1" }), project), []);   // its own chapter
-  assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b4", { payoff: ["e2"] }), project), []);
-  assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b4", { payoff: ["e1"] }), project), [["beats", "b4", "payoff"]]);   // already paid off
-  assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b2", { payoff: ["e2"] }), project), [["beats", "b2", "payoff"]]);   // not earlier
-  assert.deepEqual(run("outline", "payoff_is_open_plant", withBeat("b4", { payoff: ["e3"] }), project), [["beats", "b4", "payoff"]]);   // planted nothing
-  // The written chapter that paid a plant closes it. Its own beat must not then be told the plant "no longer exists".
-  assert.deepEqual(run("outline", "outline_link_broken", withBeat("b3", { payoff: ["e1"] }), project), []);
+test("the outline has no reveal, plant or payoff fields or rules any more", () => {
+  const keys = beatsField.item_fields.map((f) => f.key);
+  for (const gone of ["sibling", "payoff", "planted", "ends_on", "goal_now", "collision_goal", "when_gap", "offstage_did", "offstage_reach"]) assert.ok(!keys.includes(gone), gone);
+  assert.ok(!outline.rules.some((r) => /reveal|payoff|plant|offstage|when_gap/.test(r.id)));
 });
 
 test("an aim too close to an earlier aim or changed line is flagged", () => {
@@ -551,10 +522,10 @@ test("an aim too close to an earlier aim or changed line is flagged", () => {
   assert.equal(similarity("Ines learns the customer's name", "The guild burns the east market") < SIMILARITY_LIMIT, true);
   assert.equal(similarity("", "anything at all here"), 0);
   const project = { summary_events: { entries: [{ id: "e1", beat: "b1", changed: "The landlord now knows Ines is asking questions" }] } };
-  const beats = [beat({ id: "b2", chapter: 2, collision_goal: "The landlord knows that Ines is asking questions" })];
-  assert.deepEqual(run("outline", "aim_not_repeated", { beats }, project), [["beats", "b2", "collision_goal"]]);
-  const two = [beat({ id: "b1", chapter: 1, collision_goal: "A stranger arrives with a sealed letter" }), beat({ id: "b2", chapter: 2, collision_goal: "A stranger arrives with the sealed letter" })];
-  assert.deepEqual(run("outline", "aim_not_repeated", { beats: two }), [["beats", "b2", "collision_goal"]]);
+  const beats = [beat({ id: "b2", chapter: 2, aim: "The landlord knows that Ines is asking questions" })];
+  assert.deepEqual(run("outline", "aim_not_repeated", { beats }, project), [["beats", "b2", "aim"]]);
+  const two = [beat({ id: "b1", chapter: 1, aim: "A stranger arrives with a sealed letter" }), beat({ id: "b2", chapter: 2, aim: "A stranger arrives with the sealed letter" })];
+  assert.deepEqual(run("outline", "aim_not_repeated", { beats: two }), [["beats", "b2", "aim"]]);
 });
 
 // ---- Showing problems: when the page lets a problem appear ----
@@ -571,31 +542,32 @@ test("a blank, untouched card shows no problems, even though required fields are
 
 test("a problem appears once its field has been left, and not before", () => {
   const values = blankCard(setupCard);
-  assert.deepEqual(shownFields(setupCard, values, {}, review(["goal"])), ["goal"]);
-  assert.deepEqual(shownFields(setupCard, values, {}, review(["goal", "normal"])), ["goal", "normal"]);
+  assert.deepEqual(shownFields(setupCard, values, {}, review(["normal"])), ["normal"]);
+  assert.deepEqual(shownFields(setupCard, values, {}, review(["normal", "disruption"])), ["disruption", "normal"]);
 });
 
 test("Validate shows every code problem, including fields never visited", () => {
   const values = blankCard(setupCard);
   assert.deepEqual(shownFields(setupCard, values, {}, review([], true)),
-    ["chapter_count", "disruption", "goal", "normal", "protagonist", "stakes"]);
+    ["chapter_count", "disruption", "normal", "protagonist"]);
 });
 
 test("a saved project shows its problems at once: filled fields count as already visited", () => {
-  const values = { ...blankCard(setupCard), protagonist: "gone", goal: "Find the ledger" };
+  const values = { ...blankCard(setupCard), protagonist: "gone", normal: "A quiet harbour", disruption: "A storm", chapter_count: 6 };
   const touched = [...filledPaths(setupCard, values)];
-  assert.deepEqual(shownFields(setupCard, values, { characters: [] }, review(touched)), ["protagonist"]);
+  // the missing person is reported by the link rule and by the advice that the protagonist should have a tie
+  assert.deepEqual(shownFields(setupCard, values, { characters: [] }, review(touched)), ["protagonist", "protagonist"]);
 });
 
 test("a rule that compares two fields is shown when the writer leaves either one", () => {
-  const values = { ...blankCard(ent), pressures: [{ id: "p1", what: "Rent is due", source_agent: "c1", source_circumstance: "", next_move: "", bears_on: [] }] };
+  const values = { ...blankCard(ent), ties: [{ id: "t1", tie_from: "c1", tie_to: "c1", bond: "self", edge: "" }] };
   const project = { characters: [{ id: "c1", name: "Ines" }] };
   const problems = validate(ent, values, project, schema.common).problems;
-  const next = problems.find((p) => p.rule === "next_move_for_agents");
-  assert.equal(problemPath(next), "pressures.p1.next_move");
-  assert.ok(problemTriggers(ent, next).includes("pressures.p1.source_agent"));
-  assert.equal(shownProblems(ent, [next], review(["pressures.p1.source_agent"])).length, 1);
-  assert.equal(shownProblems(ent, [next], review(["pressures.p1.what"])).length, 0);
+  const same = problems.find((p) => p.rule === "tie_not_self");
+  assert.equal(problemPath(same), "ties.t1.tie_to");
+  assert.ok(problemTriggers(ent, same).includes("ties.t1.tie_from"));
+  assert.equal(shownProblems(ent, [same], review(["ties.t1.tie_from"])).length, 1);
+  assert.equal(shownProblems(ent, [same], review(["ties.t1.bond"])).length, 0);
 });
 
 test("problemPath names a plain field, a list, an item and a field inside an item", () => {
@@ -608,11 +580,11 @@ test("problemPath names a plain field, a list, an item and a field inside an ite
 test("filledPaths lists fields, lists, items and the fields inside them, and skips empty and unticked ones", () => {
   const values = {
     ...blankCard(outline),
-    beats: [{ ...blankItem(beatsField), id: "b1", chapter: 1, ends_on: "A letter arrives" }, { ...blankItem(beatsField), id: "b2" }],
+    beats: [{ ...blankItem(beatsField), id: "b1", chapter: 1, aim: "Find the ledger" }, { ...blankItem(beatsField), id: "b2" }],
   };
   const paths = filledPaths(outline, values);
-  for (const path of ["beats", "beats.b1", "beats.b1.ends_on", "beats.b1.chapter"]) assert.ok(paths.has(path), path);
-  for (const path of ["beats.b2", "beats.b2.ends_on", "beats.b1.cast"]) assert.ok(!paths.has(path), path);
+  for (const path of ["beats", "beats.b1", "beats.b1.aim", "beats.b1.chapter"]) assert.ok(paths.has(path), path);
+  for (const path of ["beats.b2", "beats.b2.aim", "beats.b1.cast"]) assert.ok(!paths.has(path), path);
   assert.equal(filledPaths(setupCard, blankCard(setupCard)).size, 0);
 });
 
@@ -701,15 +673,12 @@ test("a fill reply keeps the card's own fields and names the rest", () => {
   assert.equal(readFillReply(worldCard, { ok: false, error: { kind: "stopped" } }).error.kind, "stopped");
 });
 
-test("an either-or pair that arrives with both halves keeps the first and drops the other", () => {
+test("a fill reply keeps a list's items", () => {
   const card = schema.cards.entanglements;
-  const both = { ok: true, values: {
-    knowledge: [{ rule: "Only apple wood burns", fact: "Pear wood works as well", knows: ["Ines"] }, { fact: "A fact alone", knows: ["Ines"] }],
-    pressures: [{ what: "w", source_agent: "Ines", source_circumstance: "the flood" }],
-  } };
-  const read = readFillReply(card, both);
-  assert.deepEqual(read.values.knowledge, [{ rule: "Only apple wood burns", knows: ["Ines"] }, { fact: "A fact alone", knows: ["Ines"] }]);
-  assert.deepEqual(read.values.pressures, [{ what: "w", source_agent: "Ines" }]);
+  const reply = { ok: true, values: { ties: [{ tie_from: "Ines", tie_to: "Tomas", bond: "sisters" }] } };
+  const read = readFillReply(card, reply);
+  assert.equal(read.ok, true);
+  assert.deepEqual(read.values.ties, [{ tie_from: "Ines", tie_to: "Tomas", bond: "sisters" }]);
 });
 
 test("the judge request lists the card's model rules, or only the ones asked for", () => {
@@ -998,7 +967,7 @@ const { flagsUsed } = await import("../../web/logic.js");
 test("a card says which of the fixed and live flags it uses", () => {
   assert.deepEqual(flagsUsed(style), { fixed: false, changes: false });
   assert.deepEqual(flagsUsed(characters), { fixed: true, changes: false });
-  assert.deepEqual(flagsUsed(ent), { fixed: false, changes: true });
+  assert.deepEqual(flagsUsed(ent), { fixed: false, changes: false });   // no live fields now: ties change through shifts
   assert.deepEqual(flagsUsed(world), { fixed: false, changes: false });
   assert.deepEqual(flagsUsed({ fields: [] }), { fixed: false, changes: false });
 });
@@ -1072,22 +1041,20 @@ test("words become ids: names match without caring about case or spacing, ids pa
 });
 
 test("a fill's links become ids, inside list items too; unmatched words are left empty and reported", () => {
-  const { project, suvi, ola, guild } = peopleProject();
+  const { project, suvi, ola } = peopleProject();
   const reply = { ties: [
     { tie_from: "Suvi", tie_to: "Ola", bond: "sisters" },
     { tie_from: "Suvi", tie_to: "The Harbour Board", bond: "owes them" },
-  ], pressures: [{ what: "Rent due", bears_on: ["Ola", "The Salt Guild", "Nobody"] }] };
+  ] };
   const { values, unresolved } = resolveFillLinks(landEnt, reply, project);
   assert.deepEqual([values.ties[0].tie_from, values.ties[0].tie_to, values.ties[0].bond], [suvi.id, ola.id, "sisters"]);
   assert.equal(values.ties[1].tie_to, "");
-  assert.deepEqual(values.pressures[0].bears_on, [ola.id, guild.id]);
   assert.deepEqual(unresolved, [
     { field: "ties", index: 1, key: "tie_to", words: "The Harbour Board", why: "none" },
-    { field: "pressures", index: 0, key: "bears_on", words: "Nobody", why: "none" },
   ]);
   assert.equal(reply.ties[0].tie_from, "Suvi", "the reply itself is not changed");
-  const one = resolveFillLinks(landSetup, { protagonist: "Ola", goal: "Find it" }, project);
-  assert.deepEqual([one.values.protagonist, one.values.goal, one.unresolved], [ola.id, "Find it", []]);
+  const one = resolveFillLinks(landSetup, { protagonist: "Ola", normal: "A quiet harbour" }, project);
+  assert.deepEqual([one.values.protagonist, one.values.normal, one.unresolved], [ola.id, "A quiet harbour", []]);
 });
 
 test("a fill reply of the wrong kind is a bad output", () => {
@@ -1095,37 +1062,36 @@ test("a fill reply of the wrong kind is a bad output", () => {
   assert.equal(read(landEnt, { ties: "none" }).error.kind, "bad_output");
   assert.equal(read(landEnt, { ties: [{ bond: ["a"] }] }).error.kind, "bad_output");
   assert.equal(read(landEnt, { ties: ["Suvi"] }).error.kind, "bad_output");
-  assert.equal(read(landEnt, { pressures: [{ bears_on: "Ola" }] }).error.kind, "bad_output");
-  assert.equal(read(landSetup, { goal: ["x"] }).error.kind, "bad_output");
-  assert.equal(read(landSetup, { goal: { a: 1 } }).error.kind, "bad_output");
-  assert.equal(read(landSetup, { chapter_count: 8, goal: "x" }).ok, true);
-  assert.equal(read(landEnt, { pressures: [{ what: "x", bears_on: ["Ola"], surprise: [1] }] }).ok, true);
+  assert.equal(read(landSetup, { normal: ["x"] }).error.kind, "bad_output");
+  assert.equal(read(landSetup, { normal: { a: 1 } }).error.kind, "bad_output");
+  assert.equal(read(landSetup, { chapter_count: 8, normal: "x" }).ok, true);
+  assert.equal(read(landEnt, { ties: [{ bond: "x", surprise: [1] }] }).ok, true);
 });
 
 test("planning a fill: empty fields fill, written ones are named as replaced, same words stay put", () => {
   const { project, suvi } = peopleProject();
   const current = project.setup;
-  current.goal = "My own goal";
-  current.stakes = "Same stakes";
-  const reply = { values: { protagonist: "Suvi", goal: "The model's goal", stakes: "Same stakes", normal: "A quiet harbour", surprise: 1 }, ignored: ["surprise"] };
+  current.normal = "My own normal";
+  current.disruption = "Same disruption";
+  const reply = { values: { protagonist: "Suvi", normal: "The model's normal", disruption: "Same disruption", chapter_count: 8, surprise: 1 }, ignored: ["surprise"] };
   const plan = planFill(landSetup, current, reply, project);
-  assert.deepEqual([plan.filled.sort(), plan.replaced, plan.unchanged], [["normal", "protagonist"], ["goal"], ["stakes"]]);
-  assert.deepEqual([plan.next.protagonist, plan.next.goal, plan.next.normal], [suvi.id, "The model's goal", "A quiet harbour"]);
+  assert.deepEqual([plan.filled.sort(), plan.replaced, plan.unchanged], [["chapter_count", "protagonist"], ["normal"], ["disruption"]]);
+  assert.deepEqual([plan.next.protagonist, plan.next.normal, plan.next.chapter_count], [suvi.id, "The model's normal", 8]);
   assert.deepEqual(plan.ignored, ["surprise"]);
-  assert.equal(current.goal, "My own goal", "planning changes nothing");
-  assert.equal(plan.before.goal, "My own goal");
-  assert.deepEqual(filledFieldKeys(landSetup, current), ["goal", "stakes"]);
+  assert.equal(current.normal, "My own normal", "planning changes nothing");
+  assert.equal(plan.before.normal, "My own normal");
+  assert.deepEqual(filledFieldKeys(landSetup, current), ["normal", "disruption"]);
 });
 
 test("an empty answer never wipes what the writer wrote, and fields the model skipped stay as they were", () => {
   const { project } = peopleProject();
   const current = project.setup;
-  current.goal = "Keep me";
-  current.normal = "And me";
-  const plan = planFill(landSetup, current, { values: { goal: "", normal: null, stakes: "New" } }, project);
-  assert.deepEqual([plan.filled, plan.replaced, plan.unchanged], [["stakes"], [], []]);
-  assert.equal(plan.next.goal, "Keep me");
-  assert.equal(plan.next.normal, "And me");
+  current.normal = "Keep me";
+  current.disruption = "And me";
+  const plan = planFill(landSetup, current, { values: { normal: "", disruption: null, chapter_count: 9 } }, project);
+  assert.deepEqual([plan.filled, plan.replaced, plan.unchanged], [["chapter_count"], [], []]);
+  assert.equal(plan.next.normal, "Keep me");
+  assert.equal(plan.next.disruption, "And me");
 });
 
 test("filled lists get fresh ids; the same list again changes nothing and keeps its ids", () => {

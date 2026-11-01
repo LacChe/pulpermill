@@ -35,7 +35,6 @@ def spec(input: InputType | None, group: str | None, kind: Kind, required: bool 
       fixed=True   a fact the story must never change (always sent in full)
       identity=True  (list item fields) says which item this is: set when the item is added and never changed by a shift
       repeat=True  a repeating list; 'input' is None and the item model declares the inputs
-      counted=True list items carry use counts in project state (so each item needs an id)
       filled_by="planner"|"code"  who fills it first (beats only so far); everything stays human editable
       max_selected=N  a multi-select that may pick at most N
       limited_by="code"  choices the code may disable (legal options)

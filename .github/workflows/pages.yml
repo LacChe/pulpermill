@@ -26,7 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: pip install pytest pyyaml pydantic
+      # What the tests import: pydantic and pyyaml (schema, prompter), starlette and uvicorn (the backend's server), requests (the server tests'
+      # client). The model engine (llama-cpp) is not installed: its tests skip. The end-to-end test in tests/e2e runs the page's client under node.
+      - run: pip install pytest pyyaml pydantic starlette uvicorn requests
       - run: python -m pytest tests
       - run: node --test "tests/web/*.test.mjs"
 

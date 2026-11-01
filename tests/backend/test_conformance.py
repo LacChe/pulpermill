@@ -103,10 +103,13 @@ def test_cancel_stops_the_call_and_the_page_fetches_the_stop():
     with running(engine=engine, run=None) as (base, _):
         import threading
         threading.Thread(target=lambda: post(base, request, timeout=30), daemon=True).start()
-        for _ in range(200):
-            if post(base, {"call": "status"}).json()["state"] == "busy":
+        # Wait until inference is really running: the runner fits the call before the first token, and a stop that
+        # lands in that time is correct too, but it never reaches the engine, so there would be no call to count.
+        for _ in range(500):
+            if engine.active:
                 break
             time.sleep(0.02)
+        assert engine.active, "the engine call never started"
         assert post(base, {"call": "cancel", "job_id": "job-cancel-1"}).json()["state"] == "cancelled"
         assert wait_idle(base)
         fetched = post(base, {"call": "job", "job_id": "job-cancel-1"})

@@ -41,7 +41,7 @@ FIELD_UI_KEYS = ["placeholder", "why", "examples", "no_options", "filtered_note"
 OPTION_UI_KEYS = ["description"]
 
 # Structure flags copied from the field's declaration when set.
-FLAGS = ["ref", "ref_filter_by", "ref_where", "changes", "fixed", "identity", "counted", "filled_by", "limited_by",
+FLAGS = ["ref", "ref_filter_by", "ref_where", "changes", "fixed", "identity", "filled_by", "limited_by",
          "max_selected", "max_items", "uncapped", "repeat"]
 
 
