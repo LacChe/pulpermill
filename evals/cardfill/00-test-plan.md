@@ -67,7 +67,7 @@ Label each check as code (C), schema judge (J) or human (H). Run each fill throu
 ### 1. Structure (code)
 
 - Required fields present and not blank or stand-ins like "N/A" (C).
-- Valid enum values, lists at most 5 items except Ties and Holdings (and World's places and objects), `chapter_count` a whole number (C).
+- Valid enum values, lists at most 5 items except Ties and Holdings (and World's places and objects), `chapter_count` a whole number (C). The 5 to 10 chapter range is a prompt-level rule for the planner, not a schema check (see `pulpermill/prompter/DECISIONS.md`).
 - Every reference resolves; no self-ties; allowed holder types; exactly one protagonist who is an existing character (C).
 - A card is filled only when a chapter or a note exists for it (C).
 - No ids in prose, no schema help text, no verbatim copies of the schema's example phrases (C).

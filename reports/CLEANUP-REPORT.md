@@ -12,7 +12,7 @@ One-off report, branch `p7.5-cleanup` (off `main` at P7, `da4fc36`). Nothing in 
 | `node --test "tests/web/*.test.mjs"` | 434 passed | 434 passed, 0 skipped |
 | `python -m pytest tests/e2e` three times | | 22 passed each time |
 
-The 6 skips are the `PENDING(ui-wording)` lint tests. No tokenizer or engine skip occurred. No test carries `PARKED(prompt-design)` (the only file in the repo that still contains the string is `PHASES-REPORT.md`, P7's report, and `docs/`). `python -m pulpermill.backend --fake` starts; the backend imports only `budget` and `tokens` from `pulpermill/prompts/`. `.github/workflows/pages.yml` needed no change.
+The 6 skips are the `PENDING(ui-wording)` lint tests. No tokenizer or engine skip occurred. No test carries `PARKED(prompt-design)` (the only file in the repo that still contains the string is `reports/PHASES-REPORT.md`, P7's report, and `docs/`). `python -m pulpermill.backend --fake` starts; the backend imports only `budget` and `tokens` from `pulpermill/prompts/`. `.github/workflows/pages.yml` needed no change.
 
 ## Files deleted
 - Story prompt code: `pulpermill/prompts/prompts.py`, `blocks.py`, `schemas.py`, `chapter_checks.py`
@@ -81,4 +81,4 @@ Outside `docs/` and `evals/`, words: P7's list plus `offstage_did`, `offstage_re
 ## For prompt design
 - `render.py` is now only what the current cards support. New renderers (a scene, a spotlight tie, shifts history) have to be written; the old ones are under the tag.
 - `textfiles.limits()` still builds caps from the schema plus `limits.yaml`. A prompter that wants its own wording files should keep them under `pulpermill/prompter/<name>/`.
-- The pre-existing `PHASES-REPORT.md` points at `PARKED.md`, which is gone.
+- The pre-existing `reports/PHASES-REPORT.md` points at `PARKED.md`, which is gone.
