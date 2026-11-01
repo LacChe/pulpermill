@@ -1,3 +1,5 @@
+The chapter-trial harness described below (`tools/run_trials.py` and `tests/prompts/trial_set.py`) was removed in P7.5. It exists at the git tag `pre-prompt-design`. The trials are redone in prompt design.
+
 # The trials
 
 Four chapters of the Salt Coast story, each a different kind of chapter in a different voice. They are defined in `tests/prompts/trial_set.py` and read with `docs/prompts/06-reading-rubric.md`.

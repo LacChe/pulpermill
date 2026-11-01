@@ -1,14 +1,14 @@
 {
-  "id": "e6-tempting",
-  "title": "E6 tempting",
+  "id": "e9-control",
+  "title": "E9 control",
   "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
-      "id": "e6-tempting-n0",
+      "id": "e9-control-n0",
       "card": "entanglements",
       "character": null,
-      "text": "Ines knows the dues go to the Customs House. Walt believes the Mutual's fund pays for burials."
+      "text": "Walt and Ines are old friends."
     }
   ],
   "characters": [
@@ -170,15 +170,15 @@
     ]
   },
   "outline": {
-    "id": "e6-tempting-outline",
+    "id": "e9-control-outline",
     "beats": []
   },
   "summary_events": {
-    "id": "e6-tempting-events",
+    "id": "e9-control-events",
     "entries": []
   },
   "shifts": {
-    "id": "e6-tempting-shifts",
+    "id": "e9-control-shifts",
     "entries": []
   },
   "chapters": []

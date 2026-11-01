@@ -1,14 +1,14 @@
 {
-  "id": "u4-tempting",
-  "title": "U4 tempting",
+  "id": "u6-tempting",
+  "title": "U6 tempting",
   "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
-      "id": "u4-tempting-n0",
+      "id": "u6-tempting-n0",
       "card": "setup",
       "character": null,
-      "text": "Imre is the lead. Stakes: it's very important."
+      "text": "Imre is the lead. Open on who he is: stubborn, secretly afraid, wanting to be taken seriously."
     }
   ],
   "characters": [
@@ -249,15 +249,15 @@
     ]
   },
   "outline": {
-    "id": "u4-tempting-outline",
+    "id": "u6-tempting-outline",
     "beats": []
   },
   "summary_events": {
-    "id": "u4-tempting-events",
+    "id": "u6-tempting-events",
     "entries": []
   },
   "shifts": {
-    "id": "u4-tempting-shifts",
+    "id": "u6-tempting-shifts",
     "entries": []
   },
   "chapters": []

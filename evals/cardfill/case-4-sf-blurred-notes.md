@@ -14,7 +14,7 @@ Imre Dace, 29, male. Salvage diver on Tern Station. Wiry, shaved head, a scar th
 
 ### Characters: Teodora
 
-Teodora Vance, 46, woman, station auditor, used to be Kasimir's boss. Heavy-set, always in a grey coat, reading glasses on a chain. Wants to keep her job and protect Imre. She owns the Lattice, an old salvage drone, and keeps it in Dock 9. Values accuracy. She's the one who erased Kasimir's last log (she doesn't want Imre to know). Dry and patient; when cornered she goes very formal.
+Teodora Vance, 46, woman, station auditor, used to be Kasimir's boss. Heavy-set, always in a grey coat, reading glasses on a chain. Wants to keep her job and protect Imre. She owns the Lattice, an old salvage drone, and keeps it in Dock 9. Values accuracy. She's the one who erased Kasimir's last log. Dry and patient; when cornered she goes very formal.
 
 ### Characters: Kasimir
 
@@ -30,12 +30,12 @@ Things: the Lattice, a salvage drone owned by Teodora Vance, kept in Dock 9; Kas
 
 The Salvage Authority runs everything. It's planning to close Dock 9 next month and sell off the wrecks.
 
-Rule: no diving past the Line, the old debris boundary. Everyone thinks it's for safety, but the real reason is that the Authority dumps its own waste there.
+Rule: no diving past the Line, the old debris boundary. Divers caught crossing it lose their licences.
 
 ### Entanglements
 
-Imre looks up to Teodora and trusts her; she's been covering for him. Teodora lets Imre borrow the Lattice. Kasimir's log is stored inside the Lattice's memory. Teodora knows that, Imre doesn't. The Authority owns Dock 9 and wants it closed by the end of next month. Air tax collection is getting harder and the Authority is leaning on the divers.
+Imre looks up to Teodora and trusts her; she's been covering for him. Teodora lets Imre borrow the Lattice. Kasimir's log is stored inside the Lattice's memory. The Authority owns Dock 9 and wants it closed by the end of next month. The Authority is leaning on Imre over the air tax.
 
 ### Setup
 
-Imre is the lead. His normal is diving every shift and drinking in the Spindle after. The disruption: things are getting tense between the divers and the Authority. His goal is to find peace about his brother. Stakes: if he doesn't, he'll never forgive himself. Seven chapters.
+Imre is the lead. His normal is diving every shift and drinking in the Spindle after. The disruption: things are getting tense between the divers and the Authority. Seven chapters.

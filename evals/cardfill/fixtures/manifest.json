@@ -352,90 +352,6 @@
     "upstream_cards": []
   },
   {
-    "id": "w3-variant-a",
-    "kind": "probe",
-    "probe": "W3",
-    "target": "rule status",
-    "role": "variant-a",
-    "fill": [
-      "world"
-    ],
-    "upstream_set": null,
-    "upstream_cards": []
-  },
-  {
-    "id": "w3-variant-b",
-    "kind": "probe",
-    "probe": "W3",
-    "target": "rule status",
-    "role": "variant-b",
-    "fill": [
-      "world"
-    ],
-    "upstream_set": null,
-    "upstream_cards": []
-  },
-  {
-    "id": "w3-variant-c",
-    "kind": "probe",
-    "probe": "W3",
-    "target": "rule status",
-    "role": "variant-c",
-    "fill": [
-      "world"
-    ],
-    "upstream_set": null,
-    "upstream_cards": []
-  },
-  {
-    "id": "w3-variant-d",
-    "kind": "probe",
-    "probe": "W3",
-    "target": "rule status",
-    "role": "variant-d",
-    "fill": [
-      "world"
-    ],
-    "upstream_set": null,
-    "upstream_cards": []
-  },
-  {
-    "id": "w4-tempting-a",
-    "kind": "probe",
-    "probe": "W4",
-    "target": "truth",
-    "role": "tempting-a",
-    "fill": [
-      "world"
-    ],
-    "upstream_set": null,
-    "upstream_cards": []
-  },
-  {
-    "id": "w4-tempting-b",
-    "kind": "probe",
-    "probe": "W4",
-    "target": "truth",
-    "role": "tempting-b",
-    "fill": [
-      "world"
-    ],
-    "upstream_set": null,
-    "upstream_cards": []
-  },
-  {
-    "id": "w4-control",
-    "kind": "probe",
-    "probe": "W4",
-    "target": "truth",
-    "role": "control",
-    "fill": [
-      "world"
-    ],
-    "upstream_set": null,
-    "upstream_cards": []
-  },
-  {
     "id": "w5-tempting",
     "kind": "probe",
     "probe": "W5",
@@ -493,7 +409,7 @@
     "id": "e2-tempting",
     "kind": "probe",
     "probe": "E2",
-    "target": "invented entity",
+    "target": "tie to a group World does not hold",
     "role": "tempting",
     "fill": [
       "entanglements"
@@ -508,7 +424,7 @@
     "id": "e2-control",
     "kind": "probe",
     "probe": "E2",
-    "target": "invented entity",
+    "target": "tie to a group World does not hold",
     "role": "control",
     "fill": [
       "entanglements"
@@ -523,7 +439,7 @@
     "id": "e3-tempting",
     "kind": "probe",
     "probe": "E3",
-    "target": "edge",
+    "target": "edge as a live driver",
     "role": "tempting",
     "fill": [
       "entanglements"
@@ -538,7 +454,7 @@
     "id": "e3-control",
     "kind": "probe",
     "probe": "E3",
-    "target": "edge",
+    "target": "edge as a live driver",
     "role": "control",
     "fill": [
       "entanglements"
@@ -553,7 +469,7 @@
     "id": "e4-tempting",
     "kind": "probe",
     "probe": "E4",
-    "target": "bond and edge",
+    "target": "bond and edge apart",
     "role": "tempting",
     "fill": [
       "entanglements"
@@ -568,7 +484,7 @@
     "id": "e4-control",
     "kind": "probe",
     "probe": "E4",
-    "target": "bond and edge",
+    "target": "bond and edge apart",
     "role": "control",
     "fill": [
       "entanglements"
@@ -580,10 +496,10 @@
     ]
   },
   {
-    "id": "e5-tempting",
+    "id": "e8-tempting",
     "kind": "probe",
-    "probe": "E5",
-    "target": "pressures",
+    "probe": "E8",
+    "target": "which way the tie points",
     "role": "tempting",
     "fill": [
       "entanglements"
@@ -595,10 +511,10 @@
     ]
   },
   {
-    "id": "e5-control",
+    "id": "e8-control",
     "kind": "probe",
-    "probe": "E5",
-    "target": "pressures",
+    "probe": "E8",
+    "target": "which way the tie points",
     "role": "control",
     "fill": [
       "entanglements"
@@ -610,10 +526,10 @@
     ]
   },
   {
-    "id": "e6-tempting",
+    "id": "e9-tempting",
     "kind": "probe",
-    "probe": "E6",
-    "target": "knowledge status",
+    "probe": "E9",
+    "target": "a holding written as a tie",
     "role": "tempting",
     "fill": [
       "entanglements"
@@ -625,10 +541,10 @@
     ]
   },
   {
-    "id": "e6-control",
+    "id": "e9-control",
     "kind": "probe",
-    "probe": "E6",
-    "target": "knowledge status",
+    "probe": "E9",
+    "target": "a holding written as a tie",
     "role": "control",
     "fill": [
       "entanglements"
@@ -637,68 +553,6 @@
     "upstream_cards": [
       "characters",
       "world"
-    ]
-  },
-  {
-    "id": "e7-tempting",
-    "kind": "probe",
-    "probe": "E7",
-    "target": "rule vs fact",
-    "role": "tempting",
-    "fill": [
-      "entanglements"
-    ],
-    "upstream_set": "C",
-    "upstream_cards": [
-      "characters",
-      "world"
-    ]
-  },
-  {
-    "id": "e7-control",
-    "kind": "probe",
-    "probe": "E7",
-    "target": "rule vs fact",
-    "role": "control",
-    "fill": [
-      "entanglements"
-    ],
-    "upstream_set": "C",
-    "upstream_cards": [
-      "characters",
-      "world"
-    ]
-  },
-  {
-    "id": "u1-tempting",
-    "kind": "probe",
-    "probe": "U1",
-    "target": "goal",
-    "role": "tempting",
-    "fill": [
-      "setup"
-    ],
-    "upstream_set": "A",
-    "upstream_cards": [
-      "characters",
-      "world",
-      "entanglements"
-    ]
-  },
-  {
-    "id": "u1-control",
-    "kind": "probe",
-    "probe": "U1",
-    "target": "goal",
-    "role": "control",
-    "fill": [
-      "setup"
-    ],
-    "upstream_set": "A",
-    "upstream_cards": [
-      "characters",
-      "world",
-      "entanglements"
     ]
   },
   {
@@ -737,7 +591,7 @@
     "id": "u3-tempting",
     "kind": "probe",
     "probe": "U3",
-    "target": "outcome kept out",
+    "target": "ending kept out of the disruption",
     "role": "tempting",
     "fill": [
       "setup"
@@ -753,39 +607,7 @@
     "id": "u3-control",
     "kind": "probe",
     "probe": "U3",
-    "target": "outcome kept out",
-    "role": "control",
-    "fill": [
-      "setup"
-    ],
-    "upstream_set": "A",
-    "upstream_cards": [
-      "characters",
-      "world",
-      "entanglements"
-    ]
-  },
-  {
-    "id": "u4-tempting",
-    "kind": "probe",
-    "probe": "U4",
-    "target": "stakes",
-    "role": "tempting",
-    "fill": [
-      "setup"
-    ],
-    "upstream_set": "A",
-    "upstream_cards": [
-      "characters",
-      "world",
-      "entanglements"
-    ]
-  },
-  {
-    "id": "u4-control",
-    "kind": "probe",
-    "probe": "U4",
-    "target": "stakes",
+    "target": "ending kept out of the disruption",
     "role": "control",
     "fill": [
       "setup"
@@ -818,6 +640,70 @@
     "kind": "probe",
     "probe": "U5",
     "target": "protagonist",
+    "role": "control",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u6-tempting",
+    "kind": "probe",
+    "probe": "U6",
+    "target": "a Setup that restates the character card",
+    "role": "tempting",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u6-control",
+    "kind": "probe",
+    "probe": "U6",
+    "target": "a Setup that restates the character card",
+    "role": "control",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u7-tempting",
+    "kind": "probe",
+    "probe": "U7",
+    "target": "a stated chapter count",
+    "role": "tempting",
+    "fill": [
+      "setup"
+    ],
+    "upstream_set": "A",
+    "upstream_cards": [
+      "characters",
+      "world",
+      "entanglements"
+    ]
+  },
+  {
+    "id": "u7-control",
+    "kind": "probe",
+    "probe": "U7",
+    "target": "a stated chapter count",
     "role": "control",
     "fill": [
       "setup"

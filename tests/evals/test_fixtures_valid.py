@@ -1,4 +1,4 @@
-"""P6a: the card-fill eval kit's sample data is valid under the current schema.
+"""P6a, extended in P6b: the card-fill eval kit's sample data is valid under the current schema.
 
 Covers the generated fixtures (evals/cardfill/fixtures/projects/*.json), the manifest that describes them, and the
 hand-written upstream sets they are built from (evals/cardfill/upstream/*.json).
@@ -75,6 +75,41 @@ def test_there_are_fixtures():
 def test_manifest_and_project_files_match_one_to_one():
     assert {p.stem for p in FIXTURE_FILES} == set(BY_ID)
     assert len(BY_ID) == len(MANIFEST), "a manifest id appears twice"
+
+
+NEW_FIXTURES = ["e8-tempting", "e8-control", "e9-tempting", "e9-control", "u6-tempting", "u6-control", "u7-tempting", "u7-control"]
+
+
+def test_every_fixture_is_covered_by_the_parametrized_checks_below():
+    """The checks below run once per file on disk, so a fixture the generator forgot would simply not be tested: pin the count and the new ones."""
+    assert len(FIXTURE_FILES) == 65 == sum(1 for _ in BY_ID)
+    assert sum(e["kind"] == "probe" for e in MANIFEST) == 53 and sum(e["kind"] == "case" for e in MANIFEST) == 12
+    assert set(NEW_FIXTURES) <= set(BY_ID)
+
+
+def test_every_fixture_has_something_to_fill_from():
+    for path in FIXTURE_FILES:
+        data = load(path)
+        sources = [data.get("example_chapter")] + [n["text"] for n in data["card_notes"]]
+        assert any(s and s.strip() for s in sources), path.stem
+        assert all(n["text"].strip() for n in data["card_notes"]), path.stem
+
+
+def test_a_card_note_exists_only_for_a_card_the_fill_produces():
+    for e in MANIFEST:
+        notes = {n["card"] for n in load(PROJECTS / f"{e['id']}.json")["card_notes"]}
+        assert notes <= set(e["fill"]), f"{e['id']}: a note for a card the fill does not produce: {sorted(notes - set(e['fill']))}"
+
+
+def test_entanglements_and_setup_probes_start_from_upstream_cards():
+    for e in MANIFEST:
+        if e["kind"] == "probe" and e["probe"][0] in "EU":
+            need = {"characters", "world"} | ({"entanglements"} if e["probe"][0] == "U" else set())
+            assert need <= set(e["upstream_cards"]), e["id"]
+            data = load(PROJECTS / f"{e['id']}.json")
+            if e["probe"][0] == "U":    # the protagonist probes pick from characters that have ties
+                people = {c["id"] for c in data["characters"]}
+                assert people & {t["tie_from"] for t in data["entanglements"]["ties"]}, e["id"]
 
 
 def test_generator_writes_the_current_schema_version():

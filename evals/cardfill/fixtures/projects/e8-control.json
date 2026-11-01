@@ -1,14 +1,14 @@
 {
-  "id": "e5-tempting",
-  "title": "E5 tempting",
+  "id": "e8-control",
+  "title": "E8 control",
   "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
-      "id": "e5-tempting-n0",
+      "id": "e8-control-n0",
       "card": "entanglements",
       "character": null,
-      "text": "The Mutual is a threat to Walt."
+      "text": "Walt hired Ines to find out where the dues go, and he is desperate for an answer."
     }
   ],
   "characters": [
@@ -170,15 +170,15 @@
     ]
   },
   "outline": {
-    "id": "e5-tempting-outline",
+    "id": "e8-control-outline",
     "beats": []
   },
   "summary_events": {
-    "id": "e5-tempting-events",
+    "id": "e8-control-events",
     "entries": []
   },
   "shifts": {
-    "id": "e5-tempting-shifts",
+    "id": "e8-control-shifts",
     "entries": []
   },
   "chapters": []

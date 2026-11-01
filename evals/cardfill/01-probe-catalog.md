@@ -2,15 +2,15 @@
 
 A probe is a very small input aimed at one field or boundary on one card. The fill may invent anything else the card needs; only the target is scored. Most probes come as a **tempting** input and a clean **control**. The control catches a prompt change that "fixes" the problem by deleting valid content.
 
-Scoring uses the three buckets from the plan: right, wrong but flagged, wrong and silent.
+Scoring uses the three buckets from the plan: right, wrong but flagged, wrong and silent. The cards are Style, Characters, World, Entanglements and Setup, as the schema has them now (schema version 3).
 
 ## How to read the table
 
-- **Tier 1:** no rule or warning would flag a wrong fill, so a wrong result can only be silent. These are the probes where the tests are the safety net.
+- **Tier 1:** no rule or warning would flag a wrong fill, so a wrong result can only be silent. These are the probes where the tests are the safety net. A probe is Tier 1 when every wrong result it invites passes every rule; if a rule would catch some wrong results but not the likely one, it is still Tier 1 and the row says so.
 - **Tier 2:** a rule or warning is expected to flag a wrong fill. Score whether the fill got it right, and whether the flag fired when it didn't.
-- **★** marks the failures you named: an owner inside an object, a theme written as a goal, a wrong Hidden/Myth choice.
-- **Needs:** probes marked "upstream" run from the fixed hand-written upstream cards (step 4), so a failure on this card is not blamed on an earlier one. Entanglements and Setup probes always need them.
-- The World status labels in the UI are Common, Hidden and Myth. They are stored as `common`, `uncommon` and `false_belief`.
+- **★** marks the failure you named: an owner written into an object (W1, E1).
+- **Needs:** probes marked "upstream" run from the fixed hand-written upstream cards, so a failure on this card is not blamed on an earlier one. Entanglements and Setup probes always need them.
+- Probe ids are never reused. Retired and new probes are listed in `CHANGES.md`.
 
 ## Style
 
@@ -40,8 +40,6 @@ Scoring uses the three buckets from the plan: right, wrong but flagged, wrong an
 | --- | --- | --- | --- | --- | --- | --- |
 | W1 ★ | objects | "the Lattice, a drone owned by Teodora, kept in Dock 9" | "the Lattice, a salvage drone" | Description and significance name no owner and no location. The owner is left for Entanglements. | `object_unowned` (judge), `world_names_people` (code, if Teodora exists) | 2 |
 | W2 | groups | "the Authority is planning to close Dock 9 next month" | "the Authority meters the air and taxes it" | What the group is and how daily life feels it. No present plan. | `power_no_current_goals` (judge) | 2 |
-| W3 ★ | rule status | Four single-rule notes, each a control for the others: (a) "the gates close at dusk, everyone knows"; (b) "only the harbor clerks know the tide gate can't be opened from outside"; (c) "people say the river is cursed, but the mill is really poisoning it"; (d) a widely repeated claim that is secretly false (the dawn bell is really a clockwork) | Each of the others | (a) Common. (b) Hidden. (c) and (d) Myth, each with its truth. | None for a wrong status. Only a Myth with no truth is blocked (`rule_false_needs_truth`). | 1 |
-| W4 | truth | (a) A Hidden rule. (b) A Myth whose note gives a vague truth ("it isn't actually true") | A Myth with a clear truth | Truth appears only on Myth rules, and says what is actually true, in terms that differ from the statement. | Partial. Only a missing truth on a Myth is blocked. | 1 |
 | W5 | history, era | "King Aldric's betrayal split the realm; a dark, oppressive age of decay" | "a civil war split the realm; steam engines at the docks, no electricity" | History is events and forces, no named individuals. Era is facts, not mood. | `history_no_people`, `era_is_fact_not_mood` (judge) | 2 |
 
 ## Entanglements (all run from the fixed upstream cards)
@@ -49,26 +47,26 @@ Scoring uses the three buckets from the plan: right, wrong but flagged, wrong an
 | ID | Target | Tempting input | Control | Right looks like | Expected flag | Tier |
 | --- | --- | --- | --- | --- | --- | --- |
 | E1 ★ | holdings (the second half of W1) | Note: "Teodora owns the Lattice", with the Lattice present and unowned in World | A note with no ownership | A holding links the Lattice to Teodora. No owner text is added to the World object. | None for a missing holding. `holding_pair_allowed` blocks only invalid pairs. | 1 |
-| E2 | invented entity | "the harbor guild is squeezing Walt" when World has no guild | The same note naming a group that does exist in World | Tempting: no new group, place or object appears anywhere, including free text. Control: the group becomes a pressure's agent. | None. `link_broken` only fires on a dangling link. | 1 |
-| E3 | ties: edge | "Pim admires Orla; they're mentor and student" | "Pim wants Orla to teach her the loafcast; Orla keeps finding reasons to say not yet" | Edge is what one side wants from or hides from the other right now. | `tie_edge_is_live` (judge) | 2 |
-| E4 | ties: bond vs edge | A note giving only a live aim ("Walt wants Ines to find where the dues go") | A note giving both | A bond (standing relationship) and an edge (live aim), both present and different. | None for the bond | 1 |
-| E5 | pressures | "the Mutual is a threat" | "the Mutual takes the bar on Friday if Walt can't pay" | What the pressure is, what happens if it is ignored, a situational next move for an agent, at most 3 active. | `pressure_has_consequence`, `pressure_next_move_in_situation` (judge), `pressures_active_count` (code) | 2 |
-| E6 | knowledge status | "Ines knows the dues go upstairs; the dockhands believe the fund buries widows" (World has a Hidden and a Myth rule for these) | "nobody knows" | Ines knows (Hidden rule). Dockhands misled (Myth rule). Unaware people are left out. | None for a wrong status | 1 |
-| E7 | knowledge: rule vs fact | "Pim suspects pearwood works", where World has the Myth "only applewood works" | "Pim knows Corbin is leaving" (not a world rule) | Rule-based: links to the existing rule with status suspects. Non-rule: a free fact. Nothing new is invented through the fact text. | `knowledge_one_fact` blocks both-or-neither only | 1 |
+| E2 | tie to a group World does not hold | "the Dockhands' Brotherhood is squeezing Walt" when World has no such group | The same note naming a group that does exist in World | Tempting: no tie ends at a group that is not in World, and no new group, place or object appears anywhere, including free text. Control: a tie from the Harbor Mutual to Walt. | None. `link_broken` only fires on a link that dangles, and the fill can only link to what the request listed. | 1 |
+| E3 | ties: edge | "Pim admires Orla; they're mentor and student" | "Pim wants Orla to teach her the loafcast; Orla keeps finding reasons to say not yet" | The edge is what the "from" person wants the tie to give or do right now, not how they feel. The bond is the standing label. | `tie_edge_is_live` (judge) | 2 |
+| E4 | ties: bond and edge apart | A note giving only a live aim ("Walt wants Ines to find where the dues go") | A note giving both | A bond (what the tie is) and an edge (Walt's driver in it), both present and saying different things. The bond is not the edge reworded, and the edge is not a second bond. | None. A bond that repeats or swallows the edge passes every rule. | 1 |
+| E8 | tie direction | "Ines was hired by Walt to find out where the dues go, and he is desperate for an answer" | "Walt hired Ines to find out where the dues go, and he is desperate for an answer" | One tie from Walt to Ines: the bond says what it is (employer, hired investigator), the edge is Walt's driver. The edge belongs to the person at the "from" end. | None. A tie written the wrong way round is a valid tie with a plausible edge. | 1 |
+| E9 | holding written as a tie | "Walt owns the Lantern Bar" | "Walt and Ines are old friends" | A holding of the Lantern Bar by Walt. No tie carries ownership as its bond (a bar is not an end of a tie). | None. A tie from Walt to a place cannot be stored, but a tie from Walt to a person or group with an "owner" bond passes every rule, and a missing holding is not flagged. | 1 |
 
 ## Setup (all run from the fixed upstream cards)
 
 | ID | Target | Tempting input | Control | Right looks like | Expected flag | Tier |
 | --- | --- | --- | --- | --- | --- | --- |
-| U1 ★ | goal | "find peace about his brother" | "reach the dock before it closes" | An action checkable in scenes, narrowing one of the protagonist's wants. No theme or feeling. | `goal_is_action`, `goal_checkable`, `goal_touches_cards` (judge) | 2 |
-| U2 | normal, disruption | "life was dull and lonely; things are getting tense" | "he dives each dawn and drinks at the Spindle; the Authority posts a closing notice" | Normal is concrete routines, people and places. Disruption is an event. | `normal_is_concrete`, `disruption_is_event` (judge) | 2 |
-| U3 | outcome kept out | A note whose goal includes the ending ("in the end Teodora is arrested and Imre is freed") | The same note without the ending | Setup holds no ending and no plan. | None | 1 |
-| U4 | stakes | "it's very important" | "if he fails, he loses his brother's claim and his last tie to him" | A cost or gain tied to an existing want, value or pressure. | `stakes_has_cost`, `stakes_tie_to_cards` (judge) | 2 |
+| U2 | normal, disruption | "life was dull and lonely; things are getting tense" | "he dives each dawn and drinks at the Spindle; the Authority posts a closing notice" | Normal is a concrete ordinary day (routines, people, places) and says what it gave Imre. Disruption is an event. | `normal_is_concrete`, `disruption_is_event` (judge) | 2 |
+| U3 | ending kept out of the disruption | A note whose disruption carries the ending ("... and in the end Teodora is arrested and Imre is freed") | The same note without the ending | Setup holds no ending and no plan. The disruption is the event that has already happened. | None. A disruption that includes the ending is still an event, so `disruption_is_event` passes. | 1 |
 | U5 | protagonist | A note naming someone who is not a character as the lead | A note naming an existing character | The protagonist is an existing character. No new character is invented. | `protagonist_link_broken` (block) | 2 |
+| U6 | Setup restating the character card | "Open on who he is: stubborn, secretly afraid, wanting to be taken seriously" | "Open on his usual day, then the disruption: the Authority posts a closing notice" | Normal is a day in Imre's life drawn from World and his ties, not his fear, flaw and wants again. Disruption is an event. | None for a restatement that names a place or a routine. `normal_is_concrete` may catch only the vaguest versions. | 1 |
+| U7 | stated chapter count | "Make it nine chapters" | "Make it six chapters" | `chapter_count` equals the number stated. | None. Any whole number is valid. | 1 |
 
 ## What the catalog shows
 
-- Thirteen probes are Tier 1: S3, S4, C1, C4, C8, W3, W4, E1, E2, E4, E6, E7 and U3. For these a wrong fill reaches the user with no warning, so the tests are the only safety net. Start tuning there.
-- Wrong Hidden/Myth/Common status (W3), a wrong knowledge status (E6) and an invented entity in Entanglements (E2) are all Tier 1, and each is a plausible-looking error.
+- Thirteen probes are Tier 1: S3, S4, C1, C4, C8, E1, E2, E4, E8, E9, U3, U6 and U7. For these a wrong fill reaches the user with no warning, so the tests are the only safety net. Start tuning there.
+- An owner written into a World object (W1) is caught by `object_unowned`, but a missing holding is not (E1), so the two halves of the same mistake sit in different tiers.
+- The four ties probes (E3, E4, E8, E9) each aim at a different way a tie can look fine and be wrong: an edge that is a feeling (flagged), a bond that swallows the edge, a tie that points the wrong way, and ownership written as a tie.
 - A wrong concrete want (C1b) is the clearest rule gap: no warning covers a concrete aim that names no one. If the tests show the fill gets it wrong, a new warning rule is a possible fix, and that decision is yours.
-- The schema only requires a truth on Myth rules. A truth on a Hidden or Common rule, and a vague truth, are not flagged, so W4 is a code and human check.
+- Rules in the schema never require a fill to keep a stated chapter count (U7), a protagonist's tie to appear (`protagonist_has_tie` is advice only), or a Setup to differ from the character card (U6).

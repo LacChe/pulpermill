@@ -20,7 +20,7 @@
       "id": "case-4-n2",
       "card": "characters",
       "character": null,
-      "text": "Teodora Vance, 46, woman, station auditor, used to be Kasimir's boss. Heavy-set, always in a grey coat, reading glasses on a chain. Wants to keep her job and protect Imre. She owns the Lattice, an old salvage drone, and keeps it in Dock 9. Values accuracy. She's the one who erased Kasimir's last log (she doesn't want Imre to know). Dry and patient; when cornered she goes very formal."
+      "text": "Teodora Vance, 46, woman, station auditor, used to be Kasimir's boss. Heavy-set, always in a grey coat, reading glasses on a chain. Wants to keep her job and protect Imre. She owns the Lattice, an old salvage drone, and keeps it in Dock 9. Values accuracy. She's the one who erased Kasimir's last log. Dry and patient; when cornered she goes very formal."
     },
     {
       "id": "case-4-n3",
@@ -32,19 +32,19 @@
       "id": "case-4-n4",
       "card": "world",
       "character": null,
-      "text": "Tern Station is a salvage habitat orbiting a dead gas giant. About three thousand people living in scrapped ships bolted together. Air is metered and everyone pays an air tax.\n\nPlaces: Dock 9, the oldest dock, always cold, people whisper there; the Spindle, the market ring; the Authority tower.\n\nThings: the Lattice, a salvage drone owned by Teodora Vance, kept in Dock 9; Kasimir's dive log.\n\nThe Salvage Authority runs everything. It's planning to close Dock 9 next month and sell off the wrecks.\n\nRule: no diving past the Line, the old debris boundary. Everyone thinks it's for safety, but the real reason is that the Authority dumps its own waste there."
+      "text": "Tern Station is a salvage habitat orbiting a dead gas giant. About three thousand people living in scrapped ships bolted together. Air is metered and everyone pays an air tax.\n\nPlaces: Dock 9, the oldest dock, always cold, people whisper there; the Spindle, the market ring; the Authority tower.\n\nThings: the Lattice, a salvage drone owned by Teodora Vance, kept in Dock 9; Kasimir's dive log.\n\nThe Salvage Authority runs everything. It's planning to close Dock 9 next month and sell off the wrecks.\n\nRule: no diving past the Line, the old debris boundary. Divers caught crossing it lose their licences."
     },
     {
       "id": "case-4-n5",
       "card": "entanglements",
       "character": null,
-      "text": "Imre looks up to Teodora and trusts her; she's been covering for him. Teodora lets Imre borrow the Lattice. Kasimir's log is stored inside the Lattice's memory. Teodora knows that, Imre doesn't. The Authority owns Dock 9 and wants it closed by the end of next month. Air tax collection is getting harder and the Authority is leaning on the divers."
+      "text": "Imre looks up to Teodora and trusts her; she's been covering for him. Teodora lets Imre borrow the Lattice. Kasimir's log is stored inside the Lattice's memory. The Authority owns Dock 9 and wants it closed by the end of next month. The Authority is leaning on Imre over the air tax."
     },
     {
       "id": "case-4-n6",
       "card": "setup",
       "character": null,
-      "text": "Imre is the lead. His normal is diving every shift and drinking in the Spindle after. The disruption: things are getting tense between the divers and the Authority. His goal is to find peace about his brother. Stakes: if he doesn't, he'll never forgive himself. Seven chapters."
+      "text": "Imre is the lead. His normal is diving every shift and drinking in the Spindle after. The disruption: things are getting tense between the divers and the Authority. Seven chapters."
     }
   ],
   "outline": {

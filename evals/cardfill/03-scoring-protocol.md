@@ -4,16 +4,16 @@ How to run the fixtures and record what happened. Results go in `scoring/probe-s
 
 ## What to record on every row
 
-- `prompt_version` and `model_and_settings`: free text, filled the same way on every row of a run, so results from different prompt versions can be compared.
+- `prompt_version` and `model_and_settings`: free text, filled the same way on every row of a run, so results from different prompt versions can be compared. `prompt_version` is the prompter's `name` and `version` as the runner recorded them (`meta.json`, or the prompter columns of `summary.csv`).
 - `calls_failed_or_retried`: how many calls failed, hit a shape retry, or were retried for language drift. A card that only comes out on the second attempt is a finding, even when the final card is good.
 - `graded_by`: your initials, or "auto" for results from code checks.
 - `notes`: anything surprising.
 
 ## The loop for one fixture
 
-1. Load the fixture and run the fill for the cards the manifest lists (`fill`). Cases run the chain in order, each card reading the pipeline's own earlier cards. Probes fill one card, from the upstream cards in the fixture.
+1. Run the fixture with `node tools/run_cardfill.mjs` (it fills the cards the manifest lists under `fill`; cases run the chain in order, each card reading the pipeline's own earlier cards; probes fill one card, from the upstream cards in the fixture). Results are in `results/<label>/<fixture>-run<n>.json`.
 2. Run the structure checks from the plan on the output (code).
-3. Run the schema's block rules and warn rules on the output, and write down which fired and on what field or item.
+3. Take the schema's block and warn rules that fired from `summary.csv` (`rules_fired`, the code rules; `judge_fired`, the model-judged ones when the run used `--judge`) and write down which fired and on what field or item. A rule in `judge_missing` was not answered, which is not the same as passed.
 4. **Grade first, then look at the flags.** Read the target in the output and decide whether it is right before you look at which rules fired. This keeps the flags from shaping your reading.
 5. Record the result.
 
@@ -33,7 +33,7 @@ Rules for deciding:
 - **A block rule that would have rejected the output counts as flagged.** Record the retry in `calls_failed_or_retried`.
 - **Deleted is not translated.** If the fill removes the tempting content and leaves a required field blank, that is a structure failure. If it replaces it with correct material (for example turns "pass Mr. Hale's exam" into an abstract want), that is right.
 - **Only the target is graded.** Anything else the fill invented is ignored, except that the same mistake showing up somewhere else on the card goes in `also_seen_elsewhere`.
-- **Variants (W3 a to d, S4 excerpts, C8) are graded against their own expected value**, since they are controls for each other. W3: (a) Common, (b) Hidden, (c) Myth with a truth, (d) Myth with a truth.
+- **Variants (C1 a and b, S4 excerpts, C8) are graded against their own expected value**, since each has its own control or is the other's control. S4: excerpt 1 is first person past, excerpt 2 is third person present.
 
 ## Grading a case
 
@@ -61,8 +61,8 @@ Fill one row per run:
 ## Reporting and tuning
 
 After each batch:
-1. Count results per bucket per card.
-2. List the silent failures by probe id, most important first (Tier 1, then the ones you named: owner in an object, theme as goal, Hidden/Myth).
-3. Make one prompt change at a time, bump `prompt_version`, and rerun only the probes for that card plus the cases that overlap them (see `probes_to_look_for`).
+1. Count results per bucket per card (`python evals/cardfill/tools/summarize_scoring.py scoring/probe-scoring.csv scoring/case-scoring.csv`; give a second filled pair to see the difference).
+2. List the silent failures by probe id, most important first (Tier 1, then the one you named: an owner in an object).
+3. Make one prompt change at a time, bump the prompter's `version`, and rerun only the probes for that card plus the cases that overlap them (see `probes_to_look_for`).
 4. Check that the change did not turn any solid probe into an unstable or damaged one.
-5. Do not tune a prompt only to trigger or avoid a flag. The goal is fewer silent errors.
+5. Do not tune a prompt only to trigger or avoid a flag. The aim is fewer silent errors.

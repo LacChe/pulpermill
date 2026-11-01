@@ -1,14 +1,14 @@
 {
-  "id": "u4-control",
-  "title": "U4 control",
+  "id": "u7-control",
+  "title": "U7 control",
   "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
-      "id": "u4-control-n0",
+      "id": "u7-control-n0",
       "card": "setup",
       "character": null,
-      "text": "Imre is the lead. Stakes: if he fails, he loses his brother's claim and his last tie to him."
+      "text": "Imre is the lead. The Authority posts a notice closing Dock 9. Make it six chapters."
     }
   ],
   "characters": [
@@ -249,15 +249,15 @@
     ]
   },
   "outline": {
-    "id": "u4-control-outline",
+    "id": "u7-control-outline",
     "beats": []
   },
   "summary_events": {
-    "id": "u4-control-events",
+    "id": "u7-control-events",
     "entries": []
   },
   "shifts": {
-    "id": "u4-control-shifts",
+    "id": "u7-control-shifts",
     "entries": []
   },
   "chapters": []

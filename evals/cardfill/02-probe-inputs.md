@@ -4,7 +4,8 @@ Pasteable inputs for the probes in `01-probe-catalog.md`. The text in each box i
 
 - **Tempting** is the input that invites the failure. **Control** is the clean version.
 - Unless a probe says otherwise it is a single note for the named card, run on its own with nothing upstream.
-- Probes that need upstream cards name one of three fixed sets (A, B or C), built in step 4. Their contents are listed at the end.
+- Probes that need upstream cards name one of three fixed sets (A, B or C). Their contents are listed at the end.
+- Probe ids are never reused. Gaps in the numbering are probes that were retired (see `CHANGES.md`).
 
 ---
 
@@ -161,38 +162,6 @@ Control
 Tern Station is a salvage habitat orbiting a dead gas giant. The Salvage Authority runs it, meters the air and taxes everyone for it.
 ```
 
-### W3 · rule status (each is a control for the others)
-(a) expected Common
-```
-Karrow Gate is a walled river town. Rule: the gates close at dusk, and everyone knows it.
-```
-(b) expected Hidden
-```
-Karrow Gate is a walled river town. Rule: the tide gate can't be opened from outside, and only the harbor clerks know it.
-```
-(c) expected Myth
-```
-Karrow Gate is a walled river town. Rule: people say the river is cursed, but the truth is that the mill is poisoning it.
-```
-(d) expected Myth, phrased as a secret
-```
-Karrow Gate is a walled river town. Rule: the dawn bell has been rung by the priests for a hundred years, everyone says. In fact it is a clockwork the bellwright winds in secret.
-```
-
-### W4 · truth
-Tempting a (a Hidden rule: expected to have no truth)
-```
-Karrow Gate is a walled river town. Rule: the customs house cellar floods every spring, and only the porters know.
-```
-Tempting b (a Myth with a vague truth)
-```
-Karrow Gate is a walled river town. Rule: everyone says the old well is haunted. It isn't actually true.
-```
-Control
-```
-Karrow Gate is a walled river town. Rule: everyone says the old well is haunted. In fact the groundwater there gives off a gas that makes people see things.
-```
-
 ### W5 · history and era
 Tempting
 ```
@@ -217,7 +186,7 @@ Control
 Teodora and Imre don't get along.
 ```
 
-### E2 · invented entity (Upstream B)
+### E2 · tie to a group World does not hold (Upstream B)
 Tempting
 ```
 The Dockhands' Brotherhood is squeezing Walt, and he's running out of time.
@@ -227,7 +196,7 @@ Control
 The Harbor Mutual is squeezing Walt, and he's running out of time.
 ```
 
-### E3 · edge (Upstream C)
+### E3 · edge as a live driver (Upstream C)
 Tempting
 ```
 Pim admires Orla. They are mentor and student.
@@ -237,7 +206,7 @@ Control
 Pim wants Orla to teach her the loafcast, and Orla keeps finding reasons to say not yet.
 ```
 
-### E4 · bond and edge (Upstream B)
+### E4 · bond and edge apart (Upstream B)
 Tempting
 ```
 Walt wants Ines to find out where the dues go.
@@ -247,49 +216,29 @@ Control
 Walt is Ines's oldest friend on Quay Street, and he wants her to find out where the dues go.
 ```
 
-### E5 · pressures (Upstream B)
+### E8 · which way the tie points (Upstream B)
 Tempting
 ```
-The Mutual is a threat to Walt.
+Ines was hired by Walt to find out where the dues go, and he is desperate for an answer.
 ```
 Control
 ```
-The Mutual will take over Walt's lease on Friday if he can't pay, and its collector is coming in person to count what's left.
+Walt hired Ines to find out where the dues go, and he is desperate for an answer.
 ```
 
-### E6 · knowledge status (Upstream B)
+### E9 · a holding written as a tie (Upstream B)
 Tempting
 ```
-Ines knows the dues go to the Customs House. Walt believes the Mutual's fund pays for burials.
+Walt owns the Lantern Bar.
 ```
 Control
 ```
-Nobody knows where the dues go.
-```
-
-### E7 · rule vs fact (Upstream C)
-Tempting
-```
-Pim suspects pearwood works too.
-```
-Control
-```
-Pim knows Corbin is leaving at the end of the week.
+Walt and Ines are old friends.
 ```
 
 ---
 
 ## Setup (all from fixed upstream A)
-
-### U1 · goal
-Tempting
-```
-Imre is the lead. His goal is to find peace about his brother.
-```
-Control
-```
-Imre is the lead. His goal is to reach Dock 9 before the Authority closes it.
-```
 
 ### U2 · normal and disruption
 Tempting
@@ -301,42 +250,54 @@ Control
 Imre is the lead. He dives each dawn and drinks at the Spindle after. The disruption is that the Authority posts a notice closing Dock 9.
 ```
 
-### U3 · outcome kept out
+### U3 · ending kept out of the disruption
 Tempting
 ```
-Imre is the lead. His goal is to expose the Authority's dumping. In the end Teodora is arrested and Imre is freed.
+Imre is the lead. The disruption is that the Authority posts a notice closing Dock 9, and in the end Teodora is arrested and Imre is freed.
 ```
 Control
 ```
-Imre is the lead. His goal is to expose the Authority's dumping.
-```
-
-### U4 · stakes
-Tempting
-```
-Imre is the lead. Stakes: it's very important.
-```
-Control
-```
-Imre is the lead. Stakes: if he fails, he loses his brother's claim and his last tie to him.
+Imre is the lead. The disruption is that the Authority posts a notice closing Dock 9.
 ```
 
 ### U5 · protagonist
 Tempting
 ```
-Maren Holt is the lead. Her goal is to get a berth on the next ship out.
+Maren Holt is the lead. She is looking for a berth on the next ship out.
 ```
 Control
 ```
-Imre is the lead. His goal is to get a berth on the next ship out.
+Imre is the lead. He is looking for a berth on the next ship out.
+```
+
+### U6 · a Setup that restates the character card
+Tempting
+```
+Imre is the lead. Open on who he is: stubborn, secretly afraid, wanting to be taken seriously.
+```
+Control
+```
+Imre is the lead. Open on his usual day, then the disruption: the Authority posts a notice closing Dock 9.
+```
+
+### U7 · a stated chapter count
+Tempting
+```
+Imre is the lead. The Authority posts a notice closing Dock 9. Make it nine chapters.
+```
+Control
+```
+Imre is the lead. The Authority posts a notice closing Dock 9. Make it six chapters.
 ```
 
 ---
 
-## Fixed upstream sets (to be written in step 4)
+## Fixed upstream sets
 
-| Set | Used by | Must contain |
+The cards themselves are in `upstream/` (see its README). In short:
+
+| Set | Used by | Holds |
 | --- | --- | --- |
-| A (Tern Station) | E1, U1 to U5 | Characters: Imre Dace (protagonist), Teodora Vance, Kasimir Dace. World: Tern Station; places Dock 9 and the Spindle; the Lattice as an unowned object; the Salvage Authority as a group; the rule about the Line. Entanglements for U probes: a tie between Imre and Teodora, a pressure for the Authority |
-| B (Quay Street) | E2, E4, E5, E6 | Characters: Ines Calder, Walt Orsolo. World: the Lantern Bar; the Harbor Mutual as a group; a Hidden rule that the dues are passed to an official at the Customs House; a Myth rule that the Mutual's fund pays for burials, with its truth. No Dockhands' Brotherhood, so E2's tempting version names a group that does not exist |
-| C (Thimble Hollow) | E3, E7 | Characters: Pim Tallowby, Orla Fennick, Corbin Reeds. World: the Weather Oven; a Myth rule that only applewood works, with the truth that pearwood works too |
+| A (Tern Station) | W1 (Characters only), E1 (Characters and World), U2, U3, U5, U6, U7 (plus Entanglements) | Characters: Imre Dace (the lead in the Setup probes), Teodora Vance, Kasimir Dace. World: Tern Station; places Dock 9 and the Spindle; the Lattice as an unowned object; the Salvage Authority as a group; two rules. Entanglements (for Setup): ties among the three, and the Authority holding Dock 9. Maren Holt does not exist |
+| B (Quay Street) | E2, E4, E8, E9 | Characters: Ines Calder, Walt Orsolo. World: the Lantern Bar and Quay Street; the Harbor Mutual as a group; the burial fund ledger; two rules. No Dockhands' Brotherhood, so E2's tempting input names a group that does not exist |
+| C (Thimble Hollow) | E3 | Characters: Pim Tallowby, Orla Fennick, Corbin Reeds. World: the bakery and the Millpond; the Weather Oven and Mother's Starter; the Parish Council; one rule |

@@ -1,14 +1,14 @@
 {
-  "id": "e5-control",
-  "title": "E5 control",
+  "id": "e9-tempting",
+  "title": "E9 tempting",
   "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
-      "id": "e5-control-n0",
+      "id": "e9-tempting-n0",
       "card": "entanglements",
       "character": null,
-      "text": "The Mutual will take over Walt's lease on Friday if he can't pay, and its collector is coming in person to count what's left."
+      "text": "Walt owns the Lantern Bar."
     }
   ],
   "characters": [
@@ -170,15 +170,15 @@
     ]
   },
   "outline": {
-    "id": "e5-control-outline",
+    "id": "e9-tempting-outline",
     "beats": []
   },
   "summary_events": {
-    "id": "e5-control-events",
+    "id": "e9-tempting-events",
     "entries": []
   },
   "shifts": {
-    "id": "e5-control-shifts",
+    "id": "e9-tempting-shifts",
     "entries": []
   },
   "chapters": []

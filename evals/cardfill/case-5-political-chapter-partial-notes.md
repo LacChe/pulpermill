@@ -66,4 +66,4 @@ Ilse Brandt, 44, woman. Councillor for the river districts. Heavyset, steel-grey
 
 ### Setup
 
-Ilse is the lead. Normal: she's been a backbencher for years, the one who reads every bill and nobody listens to. Disruption: a late defection leaves the tariff vote tied, and suddenly she matters. Goal: get the tariff amended before the vote, rather than just voting yes or no. Stakes: the river districts, and her word. Six or seven chapters.
+Ilse is the lead. Normal: she's been a backbencher for years, the one who reads every bill and nobody listens to. Disruption: a late defection leaves the tariff vote tied, and suddenly she matters. Six or seven chapters.

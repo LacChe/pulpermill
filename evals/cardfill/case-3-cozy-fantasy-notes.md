@@ -22,7 +22,7 @@ Corbin Reeds, 34, man, travelling mapmaker. Lanky, ink-stained thumbs, sunburnt 
 
 ### World
 
-Thimble Hollow is a small valley village, no cars, no telephones, lamps and carts, about 300 people. Bread is the village's whole economy and the Weather Oven in the bakery decides the next three days of weather, nobody knows exactly how. Everyone believes the oven only works when fired with applewood. Everyday life: the orchard is sick, applewood is rationed, folks argue over it at every market.
+Thimble Hollow is a small valley village, no cars, no telephones, lamps and carts, about 300 people. Bread is the village's whole economy and the Weather Oven in the bakery decides the next three days of weather, nobody knows exactly how. The oven only works when fired with applewood. Everyday life: the orchard is sick, applewood is rationed, folks argue over it at every market.
 
 Places: the bakery, always warm, people linger and tell secrets there; the Millpond, where nobody ever raises their voice; Harrow Hill, windy, you can hear the whole valley chatter from the top.
 
@@ -30,14 +30,14 @@ Things: the Weather Oven, a huge black brick oven in the bakery; Mother's Starte
 
 Group: the Parish Council of Hollow, five older folks who set the dates of festivals; most people only meet them as notices nailed to the well.
 
-Rules: only applewood fire works for the Weather Oven (everyone believes this, but it isn't true: pearwood works just as well, a baker long ago kept that quiet).
+Rules: only applewood fire works for the Weather Oven. Fire it with anything else and the loaf comes out flat and the weather goes wrong.
 
 Terms: "loafcast" means a weather forecast baked into bread; "proofing" means waiting patiently.
 
 ### Entanglements
 
-Orla is Pim's master and basically her family. Pim idolizes her and wants to learn the weather loaf; Orla won't teach it because she thinks Pim isn't ready. Corbin and Pim are friendly: he wants a look inside the oven for his map, she wants him to stay for the harvest fair. Orla keeps the oven key on a chain around her neck. Mother's Starter lives in the bakery cellar. Pim suspects the applewood story isn't true. The Parish Council is leaning on Orla to guarantee clear skies for the harvest fair in three weeks, or they'll find a new baker.
+Orla is Pim's master and basically her family. Pim idolizes her and wants to learn the weather loaf; Orla won't teach it because she thinks Pim isn't ready. Corbin and Pim are friendly: he wants a look inside the oven for his map, she wants him to stay for the harvest fair. Orla keeps the oven key on a chain around her neck. Mother's Starter lives in the bakery cellar. The Parish Council is leaning on Orla to guarantee clear skies for the harvest fair in three weeks, or they'll find a new baker.
 
 ### Setup
 
-Pim is the main character. Normal: she gets up at four to light the small ovens and deliver bread, and Orla is always quiet and busy. Disruption: one night the Weather Oven goes cold though nobody put it out, and three days of thick grey fog roll in. Goal: relight the Weather Oven properly and learn to bake the weather loaf before the harvest fair. Stakes: Orla's place as baker, and the fair. About six chapters.
+Pim is the main character. Normal: she gets up at four to light the small ovens and deliver bread, and Orla is always quiet and busy. Disruption: one night the Weather Oven goes cold though nobody put it out, and three days of thick grey fog roll in. About six chapters.

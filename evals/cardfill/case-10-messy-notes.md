@@ -26,12 +26,12 @@ thing: engine no. 9 "Marigold", old + temperamental
 
 group: the Water Board, owns the wells, sets prices, everyone hates it
 
-rule: no trains after dark (too many washouts), everybody knows. secret: board waters down the supply, only the well-keepers no
+rule: no trains after dark (too many washouts). rule: the board waters down the supply, the well-keepers do the pouring
 
 ### Entanglements
 
-dell n osric - old crew, she'd trust him w/ her life. board squeezing the line - wants 2 buy it out cheap. osric keeps marigold's boiler key. the well-keepers nervous, if it comes out they lose their jobs
+dell n osric - old crew, she'd trust him w/ her life. board squeezing the line - wants 2 buy it out cheap. osric keeps marigold's boiler key. the well-keepers answer to the board and hate it
 
 ### Setup
 
-dell = lead. normal: 3 runs a wk, same faces, same cups of water. disruption: board announces water price doubling on the line. goal: keep the railway running thru the summer. stakes: jobs, the towns. 6 chaps
+dell = lead. normal: 3 runs a wk, same faces, same cups of water. disruption: board announces water price doubling on the line. 6 chaps

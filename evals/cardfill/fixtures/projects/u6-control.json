@@ -1,14 +1,14 @@
 {
-  "id": "u1-control",
-  "title": "U1 control",
+  "id": "u6-control",
+  "title": "U6 control",
   "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
-      "id": "u1-control-n0",
+      "id": "u6-control-n0",
       "card": "setup",
       "character": null,
-      "text": "Imre is the lead. His goal is to reach Dock 9 before the Authority closes it."
+      "text": "Imre is the lead. Open on his usual day, then the disruption: the Authority posts a notice closing Dock 9."
     }
   ],
   "characters": [
@@ -249,15 +249,15 @@
     ]
   },
   "outline": {
-    "id": "u1-control-outline",
+    "id": "u6-control-outline",
     "beats": []
   },
   "summary_events": {
-    "id": "u1-control-events",
+    "id": "u6-control-events",
     "entries": []
   },
   "shifts": {
-    "id": "u1-control-shifts",
+    "id": "u6-control-shifts",
     "entries": []
   },
   "chapters": []

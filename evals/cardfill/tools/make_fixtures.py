@@ -16,9 +16,9 @@ UPSTREAM = {   # probe -> (set, cards held)
     "W1": ("A", ["characters"]),
     "E1": ("A", ["characters", "world"]),
     "E2": ("B", ["characters", "world"]), "E4": ("B", ["characters", "world"]),
-    "E5": ("B", ["characters", "world"]), "E6": ("B", ["characters", "world"]),
-    "E3": ("C", ["characters", "world"]), "E7": ("C", ["characters", "world"]),
-    **{f"U{i}": ("A", ["characters", "world", "entanglements"]) for i in range(1, 6)},
+    "E8": ("B", ["characters", "world"]), "E9": ("B", ["characters", "world"]),
+    "E3": ("C", ["characters", "world"]),
+    **{f"U{i}": ("A", ["characters", "world", "entanglements"]) for i in (2, 3, 5, 6, 7)},
 }
 
 

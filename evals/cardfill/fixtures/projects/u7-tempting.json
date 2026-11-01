@@ -1,14 +1,14 @@
 {
-  "id": "u1-tempting",
-  "title": "U1 tempting",
+  "id": "u7-tempting",
+  "title": "U7 tempting",
   "schema_version": 3,
   "output_language": "en",
   "card_notes": [
     {
-      "id": "u1-tempting-n0",
+      "id": "u7-tempting-n0",
       "card": "setup",
       "character": null,
-      "text": "Imre is the lead. His goal is to find peace about his brother."
+      "text": "Imre is the lead. The Authority posts a notice closing Dock 9. Make it nine chapters."
     }
   ],
   "characters": [
@@ -249,15 +249,15 @@
     ]
   },
   "outline": {
-    "id": "u1-tempting-outline",
+    "id": "u7-tempting-outline",
     "beats": []
   },
   "summary_events": {
-    "id": "u1-tempting-events",
+    "id": "u7-tempting-events",
     "entries": []
   },
   "shifts": {
-    "id": "u1-tempting-shifts",
+    "id": "u7-tempting-shifts",
     "entries": []
   },
   "chapters": []

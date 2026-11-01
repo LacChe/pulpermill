@@ -46,20 +46,16 @@ Things: the Veil Crown, a thin iron crown said to bind the dead to the living; S
 
 Groups: the Regency Council, who rule in the name of the missing heir (people mostly meet them as levy collectors); the Order of Saint Verrin, who run hospitals and grain doles; the Free Captains, smugglers who control the river ports; the Hollow Men, rumoured to be a cult.
 
-Secrets: (1) Karth was burned on the Regency's orders, not by the general, though everyone believes the general did it; (2) the Veil Crown can't crown a living ruler, it only calls the dead; (3) the war levy was meant to end five years ago and the Regency keeps collecting it; (4) real magic only works at night; (5) the Cistern floods on purpose to protect the archive; (6) the heir's name was struck from the rolls by the Order itself.
+Rules and truths of the world: (1) Karth was burned on the Regency's orders, not by the general; (2) the Veil Crown can't crown a living ruler, it only calls the dead; (3) the war levy was meant to end five years ago and the Regency keeps collecting it; (4) real magic only works at night; (5) the Cistern floods on purpose to protect the archive; (6) the heir's name was struck from the rolls by the Order itself.
 
 Terms: "levy-sworn" for someone who pays without complaint; "greyfall" for ashfall from Karth; "night-mending" for night magic.
 
 ### Entanglements
 
-Vessa trusts Brannoch like a grandfather; Brannoch thinks she's reckless but would die for her. Ilyra is secretly reporting to the Regency Council, and nobody knows. Dunstan owes Kestrel his life and hates owing anyone. Hollis is hiding a book from Vessa (the Burning Ledger) and she would be furious. Brother Alaric raised Vessa at the abbey and loves her like a daughter. Kestrel has a contract on Vessa, due by the end of the month, and is falling behind on it. Brannoch and Dunstan have hated each other since the siege of Harrowgate. Ilyra and Alaric are old friends.
+Vessa trusts Brannoch like a grandfather; Brannoch thinks she's reckless but would die for her. Ilyra reports to the Regency Council. Dunstan owes Kestrel his life and hates owing anyone. Hollis is hiding a book from Vessa (the Burning Ledger) and she would be furious. Brother Alaric raised Vessa at the abbey and loves her like a daughter. Kestrel has a contract on Vessa, due by the end of the month, and is falling behind on it. Brannoch and Dunstan have hated each other since the siege of Harrowgate. Ilyra and Alaric are old friends.
 
 Holdings: the Regency Council holds the Veil Crown; Brannoch carries Sorrow; Hollis keeps the Burning Ledger in the Cistern.
 
-Knowledge: Brannoch knows the truth about Karth, and Vessa believes he did it; Hollis suspects the Regency burned it; Ilyra knows the Veil Crown only calls the dead.
-
-Pressures: the Regency's riders are closing in; winter is coming and the passes close at midwinter; Kestrel's contract runs out at the new moon; a plague is spreading in Harrowgate; the Free Captains want an answer from Vessa by the next full moon.
-
 ### Setup
 
-Vessa is the lead. Normal: life at the abbey, bells at dawn, copying hymns, tending bees, believing nobody is looking for her. Disruption: Regency riders burn the abbey's east cloister at night, looking for her. Goal: reach the Ashen Throne Hall before midwinter and claim her seat on the Regency Council. Stakes: if she fails, the war levy never ends and everyone she loves pays for it. Eight chapters.
+Vessa is the lead. Normal: life at the abbey, bells at dawn, copying hymns, tending bees, believing nobody is looking for her. Disruption: Regency riders burn the abbey's east cloister at night, looking for her. Eight chapters.
