@@ -6,11 +6,6 @@ portraits_note: "These are the people on stage. Use their wants, fears, flaws an
 sketch: "Who {name} is: {value}"
 offstage_marker: "[offstage]"
 offstage_note: "People and groups marked [offstage] are somewhere else. They may be mentioned or thought of; only the people on stage appear in the scene."
-knowledge_note: "Some of what is true here is hidden from the people in it. What each person knows, suspects or wrongly believes is listed below. Write each person from their own knowledge. The narration says only what the point-of-view character could know. A hidden truth enters the story in the moment the scene gives it."
-knowledge_knows: "Knows it: {names}."
-knowledge_suspects: "Suspects it: {names}."
-knowledge_misled: "Misled about it: {names}."
-knowledge_belief: "They believe instead: {belief}"
 # Three lines of the Characters wording rewritten so that they agree with the person's sex (she, he or they). The schema's
 # own lead-ins say "themselves" and "they" for everyone, which reads wrongly beside a named woman or man.
 portrait_fear: "{name} avoids and protects {themselves} from: {value}"
@@ -22,17 +17,7 @@ places_other: "Other places in {name}: {items}."
 object_held: "Held by {held_by}."
 uses_none: "Not used in any chapter yet."
 uses_some: "Used in {n} earlier chapter{s}."
-rules_grouped_note: "What is common knowledge, what only a few know, and what people wrongly believe is marked on each line."
 power_felt_only: "{name}: Ordinary people feel it as {felt}"
-
-# ---- Standing ----
-standing_lead: "Where they stand now. This is where each person stands at the start of the chapter. It is newer than their portrait; where the two differ, follow this."
-standing_parts:
-  believes: "now believes {value}"
-  fears: "now fears {value}"
-  wants: "now wants {value}"
-  refuses: "refuses to {value}"
-  decided: "has decided {value}"
 
 # ---- The story so far ----
 story_lead: "The story so far:"
@@ -47,65 +32,6 @@ chapter_last: "This is the last chapter. Bring the story to its close and settle
 chapter_one_normal: "Open the story where ordinary life was: {value}"
 chapter_one_break: "What just broke it: {value}"
 
-# ---- The scene (the beat as a situation, not a list) ----
-scene_open: "The chapter opens at {where}, {when}."
-scene_gap: "Time has passed since the last chapter: {gap}."
-scene_present: "{names} {be} there."
-scene_goal: "What {name} is after: {value}"
-scene_change: "By the end of the chapter something is different, and the scene's own events are what make it so."
-scene_shift:
-  harder: "This chapter is harder than what came before: let the pressure rise."
-  easier: "This chapter is a breath: let things ease a little, though something must still change."
-scene_end: "The chapter stops on this moment: {value}"
-scene_end_hold: "Stop there, with the question hanging."
-scene_reveal_hidden: "In this chapter something hidden comes to light: {statement} Let it arrive through something that happens in the scene, in one clear moment, so that no narrator has to explain it."
-scene_reveal_myth: "In this chapter the truth comes out behind something people believe. The belief: {statement} The truth: {truth} Let it arrive through something that happens in the scene, in one clear moment, so that no narrator has to explain it."
-scene_reveal_learners: "Who learns it: {learners}."
-scene_plant: "Set this up for later, in passing and with a light touch: {value}"
-scene_payoff: "Pay off what was set up earlier: {value}. Let it land as a consequence of what the characters do here."
-scene_payoff_item: "{text}, set up in chapter {chapter}"
-scene_offstage: "While the cast were elsewhere, {did} It reaches {name} like this: {reach} Work it into the scene as something they run into."
-scene_spotlight: "The pressure in focus is: {value} Let it meet what {name} is after, and let the scene decide how that goes: {name} may get through, be stopped, or be turned toward something else, and the pressure may act, ease or take a new shape. How it plays out is what the story carries into the next chapter."
-scene_shape: "This is the shape of the scene. Find your own way through it: the people, the dialogue and the small events that carry the chapter from its opening to its last moment are yours to invent."
-
-# ---- What the planner is told the code has set ----
-code_spotlight: "The pressure the chapter turns on: {value}"
-code_spotlight_move: "What its agent means to do next: {value}"
-code_shifts: "This chapter may be: {value}."
-code_no_shifts: "Either kind of chapter is allowed."
-code_plants: "Plants still open (a payoff resolves one of these):"
-code_plant_item: "{text} (set up in chapter {chapter})"
-code_no_plants: "No plants are open."
-code_reveals: "Hidden truths that may still come to light:"
-code_reveal_item: "{statement}"
-code_reveal_item_myth: "People believe: {statement} The truth: {truth}"
-code_no_reveals: "No hidden truth is waiting to come to light."
-code_story_goal: "The story's own goal, which each goal steps toward or answers: {value}"
-code_goal_age: "The current goal has stood for {age} chapters, since chapter {since}."
-code_goal_due:
-  return: "The story is close to its end and the goal has drifted from the story's goal. Turn it back toward the story's goal."
-  settle: "This is the last chapter. The story's goal ends here, achieved or given up."
-code_goals_so_far: "Goals the story has had before this one: {items}."
-code_cast_seen: "How recently each person on stage has appeared: {items}."
-code_cast_item_never: "{name} has not appeared yet"
-code_cast_item_last: "{name} last in chapter {last}"
+# ---- Earlier beats ----
 planner_beats_lead: "Earlier chapters' plans, as a timeline:"
-planner_beat_item: "Chapter {chapter}: at {where}, {when}. ({shift})"
-planner_last_end: "Chapter {chapter} closed on this moment, an open question for this chapter to answer, turn aside on purpose, or promise to pay off within two chapters: {end}"
-planner_offstage: "While the cast were elsewhere, {did} It reaches the protagonist like this: {reach} Plan around it."
-planner_tone_lead: "Plan scenes that suit this story."
-
-# ---- Headings and the last chapter's ending ----
-previous_ending_lead: "How the last chapter ended. Open this chapter at its own place and time, with fresh images."
-titles:
-  style: "How to tell it"
-  world: "The world"
-  people: "The people on stage"
-  entanglements: "How they are tied together"
-  standing: ""
-  story: "Where the story stands"
-  last_ending: ""
-  scene: "This chapter"
-  tone: "The tone"
-  code: "What is set for this chapter"
-  offstage: "Elsewhere"
+planner_beat_item: "Chapter {chapter}: at {where}, {when}."

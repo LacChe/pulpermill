@@ -1,6 +1,7 @@
 """P7: the whole story, end to end. The real server code (the runner and the stub prompter) runs on a scripted fake engine, and the page's own
 client (tools/smoke_page.mjs) plays the story against it: create, start, chapters 1 to 3, chapter 2 again, chapter 4, finish.
 Every check the story makes is one assertion here."""
+import json
 import shutil
 import subprocess
 import sys
@@ -61,3 +62,38 @@ def test_the_stop_reached_the_engine(story):
     _, engine = story
     assert engine.cancelled_calls >= 1
     assert not engine.active
+
+
+# ---- fill and judge: the page's own client reads the stub's real replies --------------------------------------------------
+
+def _fill_and_judge(base: str) -> list[tuple[bool, str]]:
+    done = subprocess.run(["node", str(ROOT / "tests" / "e2e" / "fill_judge_page.mjs"), base], cwd=ROOT, capture_output=True, text=True, timeout=300)
+    checks = [json.loads(l) for l in done.stdout.splitlines() if l.startswith("{")]
+    if done.returncode != 0 or not checks:
+        pytest.fail(f"the fill and judge script did not run (exit {done.returncode})\n{done.stdout}\n{done.stderr}")
+    return [(c["ok"], f"{c['what']} {c['extra']}".strip()) for c in checks]
+
+
+@pytest.fixture(scope="module")
+def fill_and_judge():
+    with running(engine=StubEngine(), run=None) as (base, _):
+        yield _fill_and_judge(base)
+
+
+def test_every_fill_and_judge_check_passes(fill_and_judge):
+    failed = [text for ok, text in fill_and_judge if not ok]
+    assert not failed, "\n".join(failed)
+
+
+@pytest.mark.parametrize("fact", [
+    "fill world: the page reads the stub's reply",
+    "fill characters: the page reads the stub's reply",
+    "fill world: the reply gives the page something to land",
+    "fill characters: nothing the reply named is left unresolved",
+    "judge world: the page reads the stub's reply",
+    "judge world: every model rule asked is answered",
+    "judge characters: every model rule asked is answered",
+    "judge characters: each problem names a rule that was asked",
+])
+def test_the_fill_and_judge_script_checked(fill_and_judge, fact):
+    assert any(fact in text and ok for ok, text in fill_and_judge), f"never saw a passing check: {fact}"

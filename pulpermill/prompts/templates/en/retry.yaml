@@ -1,8 +1,0 @@
-name: retry
-version: "retry-0.1"
-
-# Added by the backend work (M3), appended to the end of the user turn of a second attempt, after the reminder.
-# {problem} is one short message saying what was wrong with the first reply; the first reply itself is not shown.
-note: |
-  Your previous reply could not be used: {problem}
-  Reply again from the start, in exactly the format asked for above.
