@@ -1,4 +1,4 @@
-"""`complete(text) -> str` on the in-process engine, for tools/run_trials.py::run_chapter (and any other tool that wants to run
+"""`complete(text) -> str` on the in-process engine, for a trial or eval tool (the old tools/run_trials.py is at the tag pre-prompt-design; any other tool that wants to run
 one prompt and read the text back). The prompt goes in as one user turn in Gemma's chat format, as in the server."""
 from typing import Any, Callable
 

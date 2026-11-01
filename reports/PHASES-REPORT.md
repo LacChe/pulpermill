@@ -28,7 +28,7 @@ Removed or reworded in live code:
 - the stale names used as stand-in field names in `tests/web/logic.test.mjs`.
 
 Explained, not removed:
-- `pulpermill/prompts/` (`render.py`, `prompts.py`, `schemas.py`, `blocks.py`, `chapter_checks.py`, the yaml and templates, `parked/`): parked story prompt code, per P4's `PARKED.md`. Prompt design rewrites it. `render.py` still has renderers for removed fields; the generic card renderer in it is what stays.
+- `pulpermill/prompts/` (`render.py`, `prompts.py`, `schemas.py`, `blocks.py`, `chapter_checks.py`, the yaml and templates, `parked/`): parked story prompt code, per P4's `PARKED.md` (deleted in P7.5; at the tag `pre-prompt-design`). Prompt design rewrites it. `render.py` still has renderers for removed fields; the generic card renderer in it is what stays.
 - `pulpermill/schema/CONVENTIONS.md`: a repo doc, deferred with the other repo docs.
 - Tests that assert the removal (`tests/schema/*`, `tests/backend/test_seam.py` checking that an `offstage` flow is refused, the new "is gone" tests in `logic.test.mjs`).
 - `tools/run_trials.py` (the `T1-pressure` trial) and `evals/trials`: the old trial harness, parked with the story prompts.

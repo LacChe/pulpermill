@@ -11,7 +11,7 @@ The case files contain only pasteable input, with no labels. Everything marked "
   1. **Right.** The fill did the correct thing.
   2. **Wrong but flagged.** The fill erred, and a block rule or warning fired on it (so the user is told).
   3. **Wrong and silent.** The fill erred and nothing fired. This is the only real failure; drive it to zero.
-- A control input (the clean version of a probe) that comes back damaged counts as wrong. This catches prompt changes that "fix" a problem by deleting valid content.
+- A control input (the clean version of a probe) that comes back damaged counts as wrong and silent. This catches prompt changes that "fix" a problem by deleting valid content.
 - A fill may create freely inside its own card and may only link to what earlier cards already contain.
 
 ## Out of scope

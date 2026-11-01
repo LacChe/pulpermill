@@ -2,9 +2,10 @@ The chapter-trial harness described below (`tools/run_trials.py` and `tests/prom
 
 # The trials
 
-Four chapters of the Salt Coast story, each a different kind of chapter in a different voice. They are defined in `tests/prompts/trial_set.py` and read with `docs/prompts/06-reading-rubric.md`.
+Four chapters of the Salt Coast story, each a different kind of chapter in a different voice. They were defined in `tests/prompts/trial_set.py` (see the tag) and read with `docs/prompts/06-reading-rubric.md`.
 
 ```
+# at the tag pre-prompt-design only:
 python tools/run_trials.py --dry                          # write the first prompt of each trial, no model
 python tools/run_trials.py --url http://localhost:8080    # run all four, three times each, against a llama.cpp server
 ```
