@@ -1,0 +1,109 @@
+# T7. Melancholic island drama, first person past, three people, a short run of five chapters that must reach a close.
+id: t7-last-light
+title: The Last Light on Kestrel Rock
+language: en
+tests:
+  - "Short run of five chapters that has to reach a close (last chapter)"
+  - "First person past, melancholic and lush, with a protagonist who has one tie"
+  - "Three people on an island: little room for minor characters"
+read: [1, 3, 5]
+style:
+  person: first
+  tense: past
+  distance: deep
+  humor: none
+  pacing: lingering
+  rhythm: flowing
+  diction: ornate
+  formality: formal
+  imagery: lush
+  attitude: wondering
+  directness: subtext
+  explicitness: implied
+  amount: abundant
+  lens: "He notices the weather first, then what the weather does to the people who cannot leave it."
+  genre: "Island drama"
+characters:
+  - name: Ewan
+    age: 58
+    sex: male
+    appearance: "Gaunt and wind-chapped, in an oilskin coat gone green at the seams and a woollen cap pulled low."
+    sketch: "The last keeper of a lighthouse that the authority wants to automate."
+    wants: ["Keep the light burning by hand", "Be told his work mattered"]
+    fear: "That the light never needed him."
+    flaw: "Cannot ask for help without making it sound like a favour he is granting."
+    values: ["Duty", "A job done in the open"]
+    behaviors:
+      - {state: "he is alone and the sea is calm", tendency: "polish the lens for the third time"}
+      - {state: "he is questioned about his future", tendency: "talk about the weather"}
+    competence: "Reads the sea and the sky and knows which storms will hold."
+    vulnerability: "His daughter's silence."
+    speech: "Slow, spare, rarely finishing a sentence he does not need."
+    history: "Followed his father onto the rock and has not left it for more than a week at a time."
+  - name: Nell
+    age: 26
+    sex: female
+    appearance: "Pale and brisk, with a salt-stained rucksack, a clipboard and a coat too thin for the island."
+    sketch: "A young surveyor sent to assess the lighthouse for automation, who finds she does not want to leave."
+    wants: ["File a fair report", "Be somewhere that needs her"]
+    fear: "That she will always be the person who arrives to take things away."
+    flaw: "Avoids deciding by gathering more information."
+    values: ["Accuracy", "Kindness that is not a performance"]
+    behaviors:
+      - {state: "she is working", tendency: "measure everything twice"}
+      - {state: "she is moved", tendency: "retreat to her clipboard"}
+    competence: "Notices the structural fault everyone else has stopped seeing."
+    vulnerability: "Being told she is good at her job."
+    speech: "Careful, exact, with a nervous habit of asking permission."
+    history: "Grew up moving between towns while her parents followed contracts."
+  - name: Dara
+    age: 33
+    sex: female
+    appearance: "Sturdy and sunburned, with rolled sleeves, a ferryman's cap and a laugh that carries across the water."
+    sketch: "The supply boat pilot who brings the post and the gossip and takes away whatever the island cannot keep."
+    wants: ["Keep the island on her route", "Get her father to leave the rock"]
+    fear: "That the island will take the last thing she loves."
+    flaw: "Speaks lightly about what hurts the most."
+    values: ["Family", "The open water"]
+    behaviors:
+      - {state: "she is happy", tendency: "sing off-key at the helm"}
+      - {state: "she is worried", tendency: "make a joke and hand over the post"}
+    competence: "Brings the boat through any swell and knows every rock by name."
+    vulnerability: "The sound of the foghorn."
+    speech: "Quick, funny, and kind in a way she would deny."
+    history: "Left the rock at sixteen and has been coming back every week since."
+world:
+  name: Kestrel Rock
+  era_and_technology: "A small island with a coal-fired lighthouse, a wind-up foghorn and a radio that works when the weather allows."
+  everyday_life: "The day is set by the tide and the supply boat, the radio crackles at noon and every meal is eaten at a table built for six."
+  history: "The light has burned since before the island had a name, and the keepers who tended it are buried on the leeward slope."
+  places:
+    - {name: "The Lighthouse", description: "A white stone tower with a spiral stair of one hundred and twelve steps and a great lens at the top.", effect: "Makes every conversation feel like a vigil."}
+    - {name: "The Keeper's Cottage", description: "A squat stone cottage with a coal stove, a narrow bed and a window facing the mainland.", effect: "Makes silence feel like company."}
+    - {name: "The Landing", description: "A short concrete jetty slick with weed, with a winch and a bell to call the boat.", effect: "Makes everyone feel on the edge of leaving."}
+    - {name: "The Graveyard", description: "A scatter of grey stones on the leeward slope, each marked only with initials.", effect: "Makes visitors speak quietly and remember."}
+  objects:
+    - {name: "The logbook", description: "A thick leather logbook with entries in four different hands.", significance: "It records every night the light has burned."}
+    - {name: "The brass lamp", description: "A hand-polished brass lamp with a cracked glass chimney.", significance: "It is the spare light, kept for the night the great lens fails."}
+  powers:
+    - {name: "The Lighthouse Authority", nature: "The distant board that manages every light on the coast.", hold: "Funding the island and deciding whether the light is manned.", felt: "A letter each quarter that begins with thanks and ends with a number."}
+  rules:
+    - {statement: "The great lens must burn from dusk to dawn every night", cost: "A dark night is reported to the authority and counted against the station.", when_broken: "The authority sends an inspector and proposes automation."}
+  terms:
+    - {term: "the long watch", meaning: "A night when the keeper cannot sleep because of the weather."}
+    - {term: "the lee", meaning: "The sheltered side of the island, where the graveyard lies."}
+ties:
+  - {from: Ewan, to: Dara, bond: "A father and the daughter who brings his supplies each week.", edge: "He wants her to stop asking him to leave."}
+  - {from: Dara, to: Ewan, bond: "A daughter who cannot decide whether to stay or take him away.", edge: "She wants him to say he is tired."}
+  - {from: Nell, to: Ewan, bond: "A surveyor assigned to assess the keeper's lighthouse.", edge: "She wants him to give her one honest reason to recommend it stay."}
+  - {from: Ewan, to: The Lighthouse Authority, bond: "A keeper who answers to a board he has never met.", edge: "He wants them to see the light is more than a cost."}
+holdings:
+  - {holdee: The logbook, held_by: Ewan}
+  - {holdee: The brass lamp, held_by: Ewan}
+  - {holdee: The Landing, held_by: Dara}
+  - {holdee: The Lighthouse, held_by: The Lighthouse Authority}
+setup:
+  protagonist: Nell
+  normal: "Nell measures the structures she is sent to assess, files the figures in a tidy report and leaves before anyone can ask her to stay. The routine keeps her moving and keeps her from belonging anywhere."
+  disruption: "The supply boat sets her on Kestrel Rock with an order to survey the lighthouse for automation, and a storm closes the sea behind it."
+  chapter_count: 5

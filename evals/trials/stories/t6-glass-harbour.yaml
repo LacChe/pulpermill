@@ -1,0 +1,130 @@
+# T6. Political thriller, third person past, four people and two groups. Most ties run to a group, so the spotlight is often a
+# person against an institution. Terse, clinical, subtext. Nine chapters.
+id: t6-glass-harbour
+title: The Glass Harbour Audit
+language: en
+tests:
+  - "Political thriller with two groups; most ties run to a group, so spotlights are often a person against an institution"
+  - "Terse, clinical, subtext; named minor officials are likely and are flagged"
+  - "Nine chapters"
+read: [1, 5, 9]
+style:
+  person: third
+  tense: past
+  distance: external
+  humor: none
+  pacing: brisk
+  rhythm: terse
+  diction: plain
+  formality: formal
+  imagery: literal
+  edge: coarse
+  attitude: clinical
+  directness: subtext
+  explicitness: implied
+  polish: naturalistic
+  lens: "The narrator reports what is done, who is in the room and who leaves first, and lets the reader decide what it means."
+  genre: "Political thriller"
+characters:
+  - name: Iris Vane
+    age: 43
+    sex: female
+    appearance: "Straight-backed and austere, with cropped dark hair, rimless glasses and a charcoal suit worn like armour."
+    sketch: "A forensic auditor sent to examine the port authority's books, who has never lost a case and never won a friend."
+    wants: ["Finish the audit with the evidence intact", "Prove her last case was not a mistake"]
+    fear: "That her one failure was a sign she can be fooled."
+    flaw: "Treats every kindness as a bribe."
+    values: ["The record", "Her own independence"]
+    behaviors:
+      - {state: "she is working", tendency: "ask the same question three ways"}
+      - {state: "she is threatened", tendency: "write down the threat and the time"}
+    competence: "Finds the single entry that does not match every other entry."
+    vulnerability: "Being offered help she did not ask for."
+    speech: "Level and precise. She never raises her voice and never finishes a pleasantry."
+    history: "Built a career on one case that ended a minister and cost her a marriage."
+  - name: Tomas Rell
+    age: 52
+    sex: male
+    appearance: "Heavy and genial, with a silver moustache, a tailored waistcoat and a smile that arrives a moment late."
+    sketch: "The port director, who has run the harbour for twenty years and calls everyone by their first name."
+    wants: ["Keep the audit narrow", "Hand the port to his successor clean"]
+    fear: "That someone will read the whole record, not just his part."
+    flaw: "Believes a favour done in the open cannot be corrupt."
+    values: ["Continuity", "Loyalty to old friends"]
+    behaviors:
+      - {state: "he is at ease", tendency: "pour a drink and change the topic"}
+      - {state: "he is cornered", tendency: "become very helpful"}
+    competence: "Can make any room feel like his."
+    vulnerability: "Being called by his full title."
+    speech: "Warm, unhurried, full of anecdotes that end just short of a point."
+    history: "Rose from a customs clerk by remembering every favour he was owed."
+  - name: Kade Oyelaran
+    age: 31
+    sex: male
+    appearance: "Wiry and watchful, in a rumpled shirt with the sleeves rolled and a lanyard he keeps tucked away."
+    sketch: "A junior accountant at the port who has noticed what the audit is looking for."
+    wants: ["Keep his job", "Be the one who tells the truth first"]
+    fear: "That he is already implicated."
+    flaw: "Waits for permission to do what he already knows is right."
+    values: ["Fairness", "Not being the one who got someone fired"]
+    behaviors:
+      - {state: "he is nervous", tendency: "straighten the papers on his desk"}
+      - {state: "he is asked directly", tendency: "answer with a question about procedure"}
+    competence: "Remembers every figure he has ever entered."
+    vulnerability: "Anyone who thanks him for his honesty."
+    speech: "Hesitant and exact, with a habit of correcting himself."
+    history: "First in his family to hold an office job, and anxious to keep it."
+  - name: Marguerite Sol
+    age: 58
+    sex: female
+    appearance: "Slight and silver-haired, in a navy dress with a single pearl brooch and the stillness of someone used to being listened to."
+    sketch: "A board member of the shipping consortium who attends every meeting and speaks in the last five minutes."
+    wants: ["Protect the consortium's name", "Be seen as the voice of reason"]
+    fear: "That the consortium's reputation will outlive her usefulness."
+    flaw: "Assumes people who disagree with her are ill-informed."
+    values: ["Stability", "Discretion"]
+    behaviors:
+      - {state: "she is in control", tendency: "speak last and make the room agree"}
+      - {state: "she is challenged", tendency: "offer a sympathetic correction"}
+    competence: "Frames any outcome as the one she wanted all along."
+    vulnerability: "A question she did not expect."
+    speech: "Soft and courteous, with a surgeon's economy."
+    history: "Sat on seven boards and resigned from none."
+world:
+  name: Glass Harbour
+  era_and_technology: "A modern port city of container cranes, encrypted ledgers and glass office towers over the water."
+  everyday_life: "Every cargo has a manifest, every manifest has a signature, and nobody leaves a meeting without agreeing on what was said."
+  history: "The port was privatised twelve years ago in a deal that was reviewed once and never reopened."
+  places:
+    - {name: "The Port Authority", description: "A glass tower on the quayside with a marble lobby and a records floor behind a keycard door.", effect: "Makes every conversation feel recorded."}
+    - {name: "The Customs Hall", description: "A long, echoing hall of stamped forms and brown folders under fluorescent lights.", effect: "Makes honesty feel like an inconvenience."}
+    - {name: "The Consortium Club", description: "A members-only dining room over the harbour with a view of the cranes and no menus.", effect: "Makes people say yes before they have heard the question."}
+    - {name: "The Container Yard", description: "Stacks of rusted containers in a maze of corridors, lit by sodium lamps at night.", effect: "Makes anyone walking alone feel followed."}
+  objects:
+    - {name: "The audit file", description: "A numbered grey folder holding the working papers of the audit.", significance: "Its sealed pages are the only copy of the harbour's real accounts."}
+    - {name: "The manifest drive", description: "A small drive of shipping manifests with several days overwritten.", significance: "The overwritten days are the ones the audit most needs."}
+  powers:
+    - {name: "The Port Authority Board", nature: "The governing body that oversees the harbour and its budgets.", hold: "Approving every contract and signing every cargo licence.", felt: "A polite delay on any request that threatens the status quo."}
+    - {name: "The Shipping Consortium", nature: "A group of carriers and insurers that uses the port.", hold: "Deciding which ships dock and which ships wait.", felt: "A quiet understanding that some questions are not asked."}
+  rules:
+    - {statement: "An audit may not leave the harbour until it is signed off by the board", cost: "An unsigned audit is treated as a rumour.", when_broken: "The board declares the audit void and removes the auditor."}
+  terms:
+    - {term: "the yellow folder", meaning: "Any document the board would rather nobody read."}
+    - {term: "clean sign-off", meaning: "An audit conclusion that names no one."}
+ties:
+  - {from: Iris Vane, to: Tomas Rell, bond: "Auditor and the director she must examine.", edge: "She wants him to hand over the unedited records."}
+  - {from: Tomas Rell, to: Marguerite Sol, bond: "A director who has needed the consortium's backing for years.", edge: "He wants her to say the audit is routine."}
+  - {from: Kade Oyelaran, to: Iris Vane, bond: "A junior accountant and the auditor who has asked for his help.", edge: "He wants her to promise his name stays out of it."}
+  - {from: Marguerite Sol, to: The Shipping Consortium, bond: "A board member who speaks for the group.", edge: "She wants the consortium's name to stay clean of the audit."}
+  - {from: Tomas Rell, to: The Port Authority Board, bond: "A director appointed and reviewed by the board.", edge: "He wants the board to close ranks around him."}
+  - {from: Iris Vane, to: The Port Authority Board, bond: "An auditor commissioned by the board that she is examining.", edge: "She wants the board to stop controlling the timetable of her audit."}
+holdings:
+  - {holdee: The audit file, held_by: Iris Vane}
+  - {holdee: The manifest drive, held_by: Kade Oyelaran}
+  - {holdee: The Consortium Club, held_by: The Shipping Consortium}
+  - {holdee: The Customs Hall, held_by: The Port Authority Board}
+setup:
+  protagonist: Iris Vane
+  normal: "Iris opens each audit with the same ritual: lay out the working papers, list every record she is owed, and write the date in the margin. The routine keeps her methodical and keeps her from thinking about her last case."
+  disruption: "On her second day at the port, two days of shipping manifests she asked for turn up overwritten."
+  chapter_count: 9
