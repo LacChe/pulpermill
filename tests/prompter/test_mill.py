@@ -39,8 +39,11 @@ def test_mill_loads_by_name_with_a_version_and_the_default_is_still_the_stub():
         load_prompter("Mill")
 
 
-def test_the_version_is_the_base_while_every_call_is_the_scaffold():
-    assert load_prompter("mill").version == "mill-0.1"
+def test_the_version_is_the_base_plus_one_piece_per_call_with_its_own_wording():
+    # B1 and B2 give calls their own wording, so the version is no longer the bare base.
+    version = load_prompter("mill").version
+    assert version.startswith("mill-0.1")
+    assert all(piece.split(":")[0] in set(CALLS) for piece in version.split("+")[1:] if piece)
 
 
 @pytest.mark.parametrize("vector", VALID, ids=lambda v: v["name"])
@@ -79,7 +82,15 @@ def _fake_module(monkeypatch, call, **attrs):
     return module
 
 
+def _scaffold_except(monkeypatch, *keep):
+    """Pins every call but `keep` to the scaffold (no module of its own), so these tests keep their meaning as calls gain wording."""
+    for call in CALLS:
+        if call not in keep:
+            monkeypatch.setitem(sys.modules, f"{PKG}.{call}", None)
+
+
 def test_a_calls_own_module_is_picked_by_name_and_the_others_still_run_the_stub(monkeypatch):
+    _scaffold_except(monkeypatch, "plan")
     seen = []
     plan_req = request("plan")
     sentinel = object()
@@ -93,7 +104,7 @@ def test_a_calls_own_module_is_picked_by_name_and_the_others_still_run_the_stub(
     assert mill.flow("plan", plan_req, Kit(plan_req)) is sentinel and seen == [plan_req]
     fill_req = request("fill")
     assert mill.flow("fill", fill_req, Kit(fill_req)).next([]).name == "fill"      # untouched calls stay on the stub's flow
-    assert mill.version == "mill-0.1+plan:plan-9"
+    assert mill.version.startswith("mill-0.1+plan:plan-9")
 
 
 def test_a_module_that_is_missing_falls_back_and_one_without_build_flow_is_an_error(monkeypatch):
@@ -114,6 +125,7 @@ def test_the_modules_own_script_is_used_when_it_has_one(monkeypatch):
 
 
 def test_a_wording_edit_changes_the_version_by_itself(monkeypatch, tmp_path):
+    _scaffold_except(monkeypatch, "generate")
     _fake_module(monkeypatch, "generate", build_flow=lambda r, k: None, VERSION="g-1")
     mill = load_prompter("mill")
     monkeypatch.setattr(common, "TEXT", tmp_path)
@@ -127,9 +139,10 @@ def test_a_wording_edit_changes_the_version_by_itself(monkeypatch, tmp_path):
     assert first != mill.version and first.startswith("mill-0.1+generate:g-1:") and len(first.split(":")[-1]) == 6
 
 
-def test_the_wording_files_exist_for_every_call_and_start_empty():
+def test_the_wording_files_exist_for_every_call():
     for call in CALLS:
-        assert common.load_text(call) == {} and common.text_digest(call) == ""
+        assert isinstance(common.load_text(call), dict)
+        assert (common.text_digest(call) == "") == (common.load_text(call) == {})
 
 
 def test_clip_cuts_at_a_sentence_end_or_a_word_and_never_below_the_floor():

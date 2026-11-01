@@ -1,1 +1,80 @@
-# Wording for the generate call (mill). Empty until its module is written; keys are free-form, read through common.load_text("generate").
+# Wording for the generate call (mill): three steps, write (prose), events (JSON) and shifts (JSON). Read through common.load_text("generate").
+# English always; the story's language is named inside the prompts. Wording is positive. R3 to R7 mark the design rule a block serves.
+#
+# WHY THE WRITER PROMPT IS BUILT THIS WAY (Gemma 3 27B, instruction-tuned, 16k context, abliterated):
+#  * One role and one task, stated first and said again in one closing line. A 27B model weighs the opening and the last lines most, so
+#    the task sits at both ends and the cards sit between them.
+#  * The plan is the spine and comes right after the task, before the cards: the model reads everything else as material for the plan.
+#  * Cards arrive as prose paragraphs (the renderers), never as key: value lists, and the craft guidance is prose in the second person
+#    ("you"). Checklist-shaped input gives a checklist-shaped story, and the model otherwise ticks items off one by one.
+#  * Craft guidance asks for qualities (stakes, specific detail, costly choices, subtext, a turn that is earned, a changed ending) and
+#    gives no list of items to cover, no word list and no bans.
+#  * The plan's Act labels are planning scaffolding: the writer is told to move through the four points without printing them.
+#  * Context blocks are headed with short plain titles, so the model can find the plan, the voice and the ending again at a glance.
+#  * Sampling is the Config's `prose` set (temperature 1.0): invention comes from the sampler and the craft paragraph, not from extra rules.
+
+languages: {en: English, zh: Simplified Chinese, ja: Japanese, ko: Korean, fr: French, de: German, es: Spanish}
+
+headings:
+  voice: "The voice of the story"
+  setup: "Where the story stands"
+  plan: "The plan for this chapter"
+  cast: "The people on stage"
+  spotlight: "The tie in the spotlight"
+  world: "The world"
+  entanglements: "Ties and holdings"
+  history: "The story so far"
+  ending: "How the last chapter ended"
+  craft: "How to write it"
+
+# One role, one task.
+role: "You are a novelist writing chapter {chapter} of {total} of a story. Write the whole chapter as finished prose in {language}. Everything below is what you know about the story and this chapter; the chapter itself is yours to bring to life."
+role_unknown_total: "You are a novelist writing chapter {chapter} of a story. Write the whole chapter as finished prose in {language}. Everything below is what you know about the story and this chapter; the chapter itself is yours to bring to life."
+
+# R3/R7. The plan as the spine; the four points are followed without labels.
+plan_note: "This plan is the spine of the chapter. It is organised in four points, Act 1 to Act 4. The labels belong to the planning: write one continuous chapter that moves through the four points in order, with no labels, no headings and no list of events."
+
+# R3. Voice: the Style paragraph comes from the renderer; person and tense in it are rules.
+voice_rule: "Person and tense are rules: keep every sentence in the voice above, in the narration, in thoughts and in the tags around dialogue, from the first sentence to the last."
+
+# Continuity. {previous} is the number of the chapter before.
+ending_lead: "Chapter {previous} ended with the passage below. Begin where it left things, with no recap, and keep everything it established true."
+
+# R3. Craft guidance in second person prose; four paragraphs, no checklist.
+craft_interest: "Make this a chapter someone wants to keep reading. Build scenes where something is at stake and a person could lose something before the scene ends. Prefer the specific detail and the surprising one to the generic one: the object nobody thought to put on the table, the thing a person says instead of the thing they mean. Give the people wants of their own, let them make choices that cost them, and let their flaws and fears get in their way."
+craft_dialogue: "Write dialogue with subtext. People in a tense scene rarely say exactly what they mean: they change the subject, answer a different question, or say the safe thing while the real one sits underneath. Keep the amount and manner of dialogue to the measure the voice above sets."
+craft_turn: "Prepare a turn the reader did not see coming but accepts once it lands, because it grows from what these people want and from what the chapter has already shown. Let the climax land in something a person does or decides, rather than in a thought."
+# R5. Minor characters.
+craft_people: "Only the people on stage act in this chapter. Anyone else the scene needs, such as a guard or a clerk, appears by role (the guard, a clerk) with no name, stays in the background, and never makes the decisions that carry the story."
+# R6. The change on the page.
+craft_change: "By the end of the chapter the tie in the spotlight and the protagonist's aim must stand differently from the way they stood at the start. Show that change on the page, through what people do and say, and end on a moment that leaves the situation changed and makes the next chapter matter."
+craft_change_last: "By the end of the chapter the tie in the spotlight and the protagonist's aim must stand differently from the way they stood at the start. Show that change on the page, through what people do and say, and end the story on a moment that settles what it set in motion."
+
+closing: "Write only the text of the chapter, in {language}, from its first sentence to its last: no title, no notes and no summary after the end. A full chapter runs about 1,800 words."
+
+# ---- events step ----
+events_task: "Below is chapter {chapter} of a story. Record what actually happened in it, from the text itself, in {language}."
+events_aim: "The chapter was meant to follow this: the protagonist was after {aim} {tie}"
+events_tie: "The tie in the spotlight was {tie_from} toward {tie_to}, and at the start its edge was: {edge}"
+events_format: "Reply with a JSON object with two keys. happened: plain sentences covering what occurred, in order: who did what, where, and how it turned out. Use the characters' names, and refer to anyone unnamed by their role. changed: one short sentence naming what is different now, with where the protagonist's aim and the tie in the spotlight stand at the end of the chapter compared with where they began."
+events_chapter_lead: "The chapter:"
+events_problems:
+  empty_happened: "Say in plain sentences what happened in the chapter."
+  empty_changed: "Add one short sentence naming what is different at the end of the chapter."
+  long_changed: "Keep changed to one short sentence."
+
+# ---- shifts step ----
+shifts_task: "Below is chapter {chapter} of a story and the cards it was written from. Record only what changed in this chapter: what is different at its end compared with its start."
+shifts_chapter_lead: "The chapter:"
+shifts_cards_lead: "The cards as they stood before the chapter, with the handles you can point at:"
+shifts_rules: "Write at most seven entries: one for each person on stage whose wants, fears, beliefs or ways of acting changed, one for the world if something in it changed, and one for the ties and holdings if any changed. A card that did not change gets no entry. Each entry names its card (characters, world or entanglements), names the person when the card is a character, and holds a patch with only the values that changed. In a patch a single-value field takes its new value, and a list field takes a list of operations: add with the new item's values, replace with the handle of the item and only the values that changed, or remove with the handle of the item. Point at items only by the handles shown."
+shifts_fields: "The fields that may change are, for a character: {character}; for the world: {world}; for the ties and holdings: {entanglements}."
+shifts_example: "An entanglements entry that replaces the edge of a tie looks like this: {\"card\": \"entanglements\", \"patch\": {\"ties\": [{\"op\": \"replace\", \"id\": \"ties.1\", \"values\": {\"edge\": \"to <what now drives the person at the from end>\"}}]}}"
+# R6. The spotlight tie's edge must be replaced.
+shifts_edge: "The tie in the spotlight is {tie_from} toward {tie_to} ({handle}); its edge was: {edge}. Replace that edge in the entanglements entry with its new state, written the way the old one is written: what now drives {tie_from} in this tie, as the chapter left it. The new edge must differ from the old one."
+shifts_edge_any: "The tie in the spotlight is one of these: {ties}. Replace the edge of the one the chapter was about in the entanglements entry with its new state, written the way the old edges are written: what now drives the person at the from end in this tie, as the chapter left it. The new edge must differ from the old one."
+shifts_edge_item: "{handle}, {tie_from} toward {tie_to}, edge: {edge}"
+shifts_format: "Reply with a JSON object with one key, shifts, holding the list of entries."
+shifts_problems:
+  edge_not_moved: "Add an entanglements entry whose ties list replaces the edge of {handle} ({tie_from} toward {tie_to}) with its new state, different from {edge}."
+  edge_not_moved_any: "Add an entanglements entry whose ties list replaces the edge of the tie the chapter was about with its new state, different from its old edge."

@@ -1,1 +1,70 @@
-# Wording for the plan call (mill). Empty until its module is written; keys are free-form, read through common.load_text("plan").
+# Wording for the plan call (mill). Read through common.load_text("plan"). English always: the story's language is named inside the prompt.
+# Wording is positive (what to do), one role and one task, prose sentences. Each block says which design rule it serves (R3 to R7).
+# Nothing here carries an id or a raw option key: the renderers turn cards into prose, and names are used throughout.
+
+# Display names for the language codes the page sends. A code not listed here is used as it is.
+languages: {en: English, zh: Simplified Chinese, ja: Japanese, ko: Korean, fr: French, de: German, es: Spanish}
+
+headings:
+  tone: "The tone of the story"
+  setup: "Who the story follows"
+  cast: "The people"
+  world: "The world"
+  entanglements: "Ties and holdings"
+  spotlight: "The tie in the spotlight"
+  history: "The story so far"
+  task: "Your task"
+
+# One role and one task, stated first. The planner designs; it does not write the chapter.
+role: "You are the planner of a story that is written one chapter at a time. Your job is to design the plan for chapter {chapter} of {total}: a plan that moves the story forward and gives the writer an engine to run on. You do not write the chapter; you decide what happens in it."
+role_unknown_total: "You are the planner of a story that is written one chapter at a time. Your job is to design the plan for chapter {chapter}: a plan that moves the story forward and gives the writer an engine to run on. You do not write the chapter; you decide what happens in it."
+
+# R4. The collision: the aim meets the spotlight tie.
+method: "The engine of a chapter is a collision. The protagonist goes after one concrete thing, and the tie in the spotlight meets them on the way: it blocks them, pulls them somewhere else, or names a price for what they want. Choose the protagonist's aim for this chapter so that it runs straight into the spotlight tie, and let the meeting between the two be where the conflict of the chapter lives. How the meeting goes is for the plan to decide, and the plan should decide it in a way that surprises a little and still follows from who these people are."
+
+# R4/R6. The aim: concrete, doable inside one chapter, different from earlier aims, built on what earlier chapters changed.
+# {good} and {avoid} are the Outline card's own examples (schema/text/en/outline.yaml, field aim).
+aim_rules: "The aim is one thing the protagonist can try to get or do inside this single chapter, something a reader could watch happen. It differs from the aims of the earlier chapters and builds on what those chapters changed. Good aims sound like this: {good}. A state of mind such as {avoid} is not yet an aim; turn it into something to get, reach or do, with a person, an object or a deadline in it."
+
+# R7. Four points per chapter, whatever the chapter count. The labels stay in English so a check can find them.
+four_points: "Write the plan as four points, in this order, each starting with its label exactly as written here (keep the labels in English whatever language the story is in). Act 1 is the starting point: who is there, where and when. Act 2 is where the central conflict emerges, as the aim meets the spotlight tie. Act 3 is the climax or turning point: the moment where something gives and a choice costs something. Act 4 is the end point: where the chapter leaves the people and the situation. Each point says what people do and choose, in concrete actions."
+spotlight_names: "Name both ends of the spotlight tie, {tie_from} and {tie_to}, in the plan, so that the writer knows whose tie the chapter is about."
+
+# R6. Both must move, distinctly.
+movement: "The end point must stand clearly apart from the starting point. By the end of the chapter, the edge of the spotlight tie (what drives {tie_from} in it) and the protagonist's aim must each have moved to a distinctly new state: the aim reached, lost or turned into a new one, the edge changed into something different from what it was. Say in Act 4 what each of the two has become."
+
+# R5. Minor characters by role only, and never the carriers of the plot.
+people_rule: "Only the people on stage act. Anyone else the chapter needs, such as a guard or a clerk, appears by role (the guard, a clerk) with no name, stays in the background, and never carries the plot: every decision that drives the chapter belongs to someone on stage."
+
+# R7. Where the chapter sits.
+first_chapter: "This is the first chapter. Act 1 opens from the ordinary life and the disruption described under the heading about who the story follows, and the conflict of Act 2 grows out of that disruption."
+middle_chapter: "Build on what the earlier chapters changed: begin from where they left the people and the situation, and choose a setting and a turn that the earlier plans have not used."
+late_chapter: "The story is moving toward its close, so let this chapter tighten the pressure and narrow the protagonist's choices."
+last_chapter: "This is the last chapter. Act 3 is the climax of the whole story, and Act 4 closes it: settle what the story set in motion, bring the protagonist's aim and the spotlight tie to their final state, and leave nothing hanging."
+
+# What the planner is shown of the past, besides the story so far.
+aims_lead: "What the protagonist was after in the earlier chapters:"
+aims_item: "Chapter {chapter}: {aim}"
+
+# What to answer. The keys are the grammar's own (kit.grammar.plan_beat()).
+output: "Reply with a JSON object with four keys. where: the place where the chapter opens, one of the places in the world. when_time: the day and time of day at which the chapter opens, in a few words; the scene is already in motion at that moment. aim: what the protagonist is after in this chapter, in one sentence. plan: the four points, Act 1 to Act 4, in about 150 words. Write when_time, aim and plan in {language}, and keep every name exactly as it is written above."
+
+# A first attempt the page's rules refused (request.retry). The second attempt must fix every problem.
+retry_lead: "A first attempt at this plan was refused. Its aim was: {aim} Its plan was: {plan} These problems need fixing:"
+retry_close: "Plan the chapter again and make sure the new plan fixes every one of these problems."
+
+# The check's lines. They are shown to the model on the second attempt, so each says what to do.
+problems:
+  missing_where: "Choose the place where the chapter opens, from the places in the world."
+  missing_aim: "Give the protagonist's aim as one concrete thing to get or do inside this chapter."
+  abstract_aim: "Make the aim something the protagonist can try to get or do and a reader can watch, such as getting a clerk to sign a permit before an auditor arrives, instead of a state of mind."
+  repeated_aim: "Aim at a different step than chapter {chapter}'s aim ({aim}), one that builds on what that chapter changed."
+  same_as_retry: "Choose an aim that differs from the aim of the refused attempt ({aim})."
+  missing_points: "Write the plan as four points labelled Act 1, Act 2, Act 3 and Act 4, in that order, each saying what happens; the plan is missing {missing}."
+  missing_names: "Name {names} in the plan, since the chapter is about the tie between them."
+
+# Data for the aim check, not shown to the model. An aim whose first verb (after "wants to", "needs to" and the like) names a state of
+# mind is abstract; so is one that starts with an exact phrase below. The check is a net, not a proof; D tunes it against real plans.
+abstract_verbs: [feel, understand, realize, realise, accept, heal, grow, process, reflect, reconcile, cope, reckon, ponder, contemplate, wonder, forgive]
+abstract_starts: ["make peace", "come to terms", "find peace", "find closure", "find herself", "find himself", "find themselves", "find meaning", "figure out her life", "figure out his life", "figure out their life", "figure out who", "learn to let go", "learn to trust", "learn to love", "be happy", "be at peace"]
+aim_lead_phrases: ["is trying to", "is determined to", "is after", "sets out to", "wants to", "needs to", "tries to", "hopes to", "aims to", "resolves to", "decides to", "plans to", "intends to", "seeks to", "must", "wants", "needs"]
