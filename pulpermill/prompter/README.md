@@ -71,3 +71,10 @@ and checks every patch with `validate_patch`.
 `stub/` is the model: trivial prompts, the correct grammar for every step, and `script(call, request, kit)` giving the texts a
 `FakeEngine` must return, one per step, for a valid reply (`engine.script(*script(...))`). `tests/backend/test_conformance.py` runs every
 request in `tests/shared/contract-vectors.json` through the real server, the runner and the stub that way.
+
+## mill
+
+`mill/` is the prompter that will hold the product's own wording, one module per call, with a tiny contract (`build_flow(request, kit)`, an
+optional `script`, an optional `VERSION`). A call without its own module runs the stub's flow. Choose it with `Config.prompter = "mill"`
+(the default stays `stub`). Its version is `mill-0.1` plus a piece per call that has wording, with a digest of that call's text file.
+See `mill/README.md`.
