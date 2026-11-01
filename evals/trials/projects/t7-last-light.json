@@ -1,0 +1,318 @@
+{
+  "id": "t7-last-light",
+  "title": "The Last Light on Kestrel Rock",
+  "schema_version": 3,
+  "output_language": "en",
+  "example_chapter": null,
+  "card_notes": [],
+  "style": {
+    "person": "first",
+    "tense": "past",
+    "distance": "deep",
+    "humor": "none",
+    "pacing": "lingering",
+    "rhythm": "flowing",
+    "diction": "ornate",
+    "formality": "formal",
+    "imagery": "lush",
+    "edge": "clean",
+    "explicitness": "implied",
+    "attitude": "wondering",
+    "amount": "abundant",
+    "directness": "subtext",
+    "polish": "naturalistic",
+    "voice_difference": "distinct",
+    "lens": "He notices the weather first, then what the weather does to the people who cannot leave it.",
+    "genre": "Island drama"
+  },
+  "characters": [
+    {
+      "id": "03306d1b",
+      "name": "Ewan",
+      "age": 58,
+      "sex": "male",
+      "appearance": "Gaunt and wind-chapped, in an oilskin coat gone green at the seams and a woollen cap pulled low.",
+      "sketch": "The last keeper of a lighthouse that the authority wants to automate.",
+      "wants": [
+        {
+          "id": "a8aedaf8",
+          "text": "Keep the light burning by hand"
+        },
+        {
+          "id": "115a4bc4",
+          "text": "Be told his work mattered"
+        }
+      ],
+      "fear": "That the light never needed him.",
+      "flaw": "Cannot ask for help without making it sound like a favour he is granting.",
+      "values": [
+        {
+          "id": "700dbdb0",
+          "text": "Duty"
+        },
+        {
+          "id": "21f25d37",
+          "text": "A job done in the open"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "3deda865",
+          "state": "he is alone and the sea is calm",
+          "tendency": "polish the lens for the third time"
+        },
+        {
+          "id": "fc11afc8",
+          "state": "he is questioned about his future",
+          "tendency": "talk about the weather"
+        }
+      ],
+      "competence": "Reads the sea and the sky and knows which storms will hold.",
+      "vulnerability": "His daughter's silence.",
+      "speech": "Slow, spare, rarely finishing a sentence he does not need.",
+      "history": "Followed his father onto the rock and has not left it for more than a week at a time."
+    },
+    {
+      "id": "36af0259",
+      "name": "Nell",
+      "age": 26,
+      "sex": "female",
+      "appearance": "Pale and brisk, with a salt-stained rucksack, a clipboard and a coat too thin for the island.",
+      "sketch": "A young surveyor sent to assess the lighthouse for automation, who finds she does not want to leave.",
+      "wants": [
+        {
+          "id": "1fd9d0f6",
+          "text": "File a fair report"
+        },
+        {
+          "id": "948b98c4",
+          "text": "Be somewhere that needs her"
+        }
+      ],
+      "fear": "That she will always be the person who arrives to take things away.",
+      "flaw": "Avoids deciding by gathering more information.",
+      "values": [
+        {
+          "id": "7044a188",
+          "text": "Accuracy"
+        },
+        {
+          "id": "8d700a96",
+          "text": "Kindness that is not a performance"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "7f84440f",
+          "state": "she is working",
+          "tendency": "measure everything twice"
+        },
+        {
+          "id": "97f7da67",
+          "state": "she is moved",
+          "tendency": "retreat to her clipboard"
+        }
+      ],
+      "competence": "Notices the structural fault everyone else has stopped seeing.",
+      "vulnerability": "Being told she is good at her job.",
+      "speech": "Careful, exact, with a nervous habit of asking permission.",
+      "history": "Grew up moving between towns while her parents followed contracts."
+    },
+    {
+      "id": "c7fd0043",
+      "name": "Dara",
+      "age": 33,
+      "sex": "female",
+      "appearance": "Sturdy and sunburned, with rolled sleeves, a ferryman's cap and a laugh that carries across the water.",
+      "sketch": "The supply boat pilot who brings the post and the gossip and takes away whatever the island cannot keep.",
+      "wants": [
+        {
+          "id": "274d8a6f",
+          "text": "Keep the island on her route"
+        },
+        {
+          "id": "403dd28d",
+          "text": "Get her father to leave the rock"
+        }
+      ],
+      "fear": "That the island will take the last thing she loves.",
+      "flaw": "Speaks lightly about what hurts the most.",
+      "values": [
+        {
+          "id": "686857f8",
+          "text": "Family"
+        },
+        {
+          "id": "e5c24818",
+          "text": "The open water"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "ee7fd385",
+          "state": "she is happy",
+          "tendency": "sing off-key at the helm"
+        },
+        {
+          "id": "8deed586",
+          "state": "she is worried",
+          "tendency": "make a joke and hand over the post"
+        }
+      ],
+      "competence": "Brings the boat through any swell and knows every rock by name.",
+      "vulnerability": "The sound of the foghorn.",
+      "speech": "Quick, funny, and kind in a way she would deny.",
+      "history": "Left the rock at sixteen and has been coming back every week since."
+    }
+  ],
+  "world": {
+    "name": "Kestrel Rock",
+    "era_and_technology": "A small island with a coal-fired lighthouse, a wind-up foghorn and a radio that works when the weather allows.",
+    "everyday_life": "The day is set by the tide and the supply boat, the radio crackles at noon and every meal is eaten at a table built for six.",
+    "history": "The light has burned since before the island had a name, and the keepers who tended it are buried on the leeward slope.",
+    "places": [
+      {
+        "id": "48b933ad",
+        "name": "The Lighthouse",
+        "description": "A white stone tower with a spiral stair of one hundred and twelve steps and a great lens at the top.",
+        "effect": "Makes every conversation feel like a vigil."
+      },
+      {
+        "id": "2d26486a",
+        "name": "The Keeper's Cottage",
+        "description": "A squat stone cottage with a coal stove, a narrow bed and a window facing the mainland.",
+        "effect": "Makes silence feel like company."
+      },
+      {
+        "id": "6b49fa64",
+        "name": "The Landing",
+        "description": "A short concrete jetty slick with weed, with a winch and a bell to call the boat.",
+        "effect": "Makes everyone feel on the edge of leaving."
+      },
+      {
+        "id": "d58957ec",
+        "name": "The Graveyard",
+        "description": "A scatter of grey stones on the leeward slope, each marked only with initials.",
+        "effect": "Makes visitors speak quietly and remember."
+      }
+    ],
+    "objects": [
+      {
+        "id": "6cef0fd0",
+        "name": "The logbook",
+        "description": "A thick leather logbook with entries in four different hands.",
+        "significance": "It records every night the light has burned."
+      },
+      {
+        "id": "90c1000e",
+        "name": "The brass lamp",
+        "description": "A hand-polished brass lamp with a cracked glass chimney.",
+        "significance": "It is the spare light, kept for the night the great lens fails."
+      }
+    ],
+    "powers": [
+      {
+        "id": "5a3096fd",
+        "name": "The Lighthouse Authority",
+        "nature": "The distant board that manages every light on the coast.",
+        "hold": "Funding the island and deciding whether the light is manned.",
+        "felt": "A letter each quarter that begins with thanks and ends with a number."
+      }
+    ],
+    "rules": [
+      {
+        "id": "1d5dea7a",
+        "statement": "The great lens must burn from dusk to dawn every night",
+        "cost": "A dark night is reported to the authority and counted against the station.",
+        "when_broken": "The authority sends an inspector and proposes automation."
+      }
+    ],
+    "terms": [
+      {
+        "id": "43d15f7d",
+        "term": "the long watch",
+        "meaning": "A night when the keeper cannot sleep because of the weather."
+      },
+      {
+        "id": "e8457846",
+        "term": "the lee",
+        "meaning": "The sheltered side of the island, where the graveyard lies."
+      }
+    ]
+  },
+  "entanglements": {
+    "id": "18154596",
+    "ties": [
+      {
+        "id": "b57a4b10",
+        "tie_from": "03306d1b",
+        "tie_to": "c7fd0043",
+        "bond": "A father and the daughter who brings his supplies each week.",
+        "edge": "He wants her to stop asking him to leave."
+      },
+      {
+        "id": "eb0dbbe7",
+        "tie_from": "c7fd0043",
+        "tie_to": "03306d1b",
+        "bond": "A daughter who cannot decide whether to stay or take him away.",
+        "edge": "She wants him to say he is tired."
+      },
+      {
+        "id": "4739fe6c",
+        "tie_from": "36af0259",
+        "tie_to": "03306d1b",
+        "bond": "A surveyor assigned to assess the keeper's lighthouse.",
+        "edge": "She wants him to give her one honest reason to recommend it stay."
+      },
+      {
+        "id": "7571bde1",
+        "tie_from": "03306d1b",
+        "tie_to": "5a3096fd",
+        "bond": "A keeper who answers to a board he has never met.",
+        "edge": "He wants them to see the light is more than a cost."
+      }
+    ],
+    "holdings": [
+      {
+        "id": "98a18b50",
+        "holdee": "6cef0fd0",
+        "held_by": "03306d1b"
+      },
+      {
+        "id": "090c3ce4",
+        "holdee": "90c1000e",
+        "held_by": "03306d1b"
+      },
+      {
+        "id": "9df76c49",
+        "holdee": "6b49fa64",
+        "held_by": "c7fd0043"
+      },
+      {
+        "id": "207123b1",
+        "holdee": "48b933ad",
+        "held_by": "5a3096fd"
+      }
+    ]
+  },
+  "setup": {
+    "protagonist": "36af0259",
+    "normal": "Nell measures the structures she is sent to assess, files the figures in a tidy report and leaves before anyone can ask her to stay. The routine keeps her moving and keeps her from belonging anywhere.",
+    "disruption": "The supply boat sets her on Kestrel Rock with an order to survey the lighthouse for automation, and a storm closes the sea behind it.",
+    "chapter_count": 5
+  },
+  "outline": {
+    "id": "8c2debf6",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "88cc46b2",
+    "entries": []
+  },
+  "shifts": {
+    "id": "616b9261",
+    "entries": []
+  },
+  "chapters": [],
+  "locks": []
+}

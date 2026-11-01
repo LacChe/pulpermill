@@ -1,0 +1,424 @@
+{
+  "id": "t3-star-ferry",
+  "title": "The Ferry That Was Always Late",
+  "schema_version": 3,
+  "output_language": "en",
+  "example_chapter": null,
+  "card_notes": [],
+  "style": {
+    "person": "third",
+    "tense": "present",
+    "distance": "external",
+    "humor": "absurd",
+    "pacing": "brisk",
+    "rhythm": "varied",
+    "diction": "plain",
+    "formality": "casual",
+    "imagery": "occasional",
+    "edge": "clean",
+    "explicitness": "shown",
+    "attitude": "sardonic",
+    "amount": "sparse",
+    "directness": "direct",
+    "polish": "stylised",
+    "voice_difference": "distinct",
+    "lens": "A narrator who reports the ridiculous with a straight face and a list of what everyone is pretending not to notice.",
+    "genre": "Workplace space comedy"
+  },
+  "characters": [
+    {
+      "id": "97cd1ddd",
+      "name": "Dessa",
+      "age": 38,
+      "sex": "female",
+      "appearance": "Compact and tired-eyed, in a captain's jacket two sizes old with the cuffs rolled and a lanyard of keys that open nothing.",
+      "sketch": "The captain of a ferry that has never once run on time, and who has stopped apologising.",
+      "wants": [
+        {
+          "id": "71c3e387",
+          "text": "Make one clean, punctual crossing"
+        },
+        {
+          "id": "eff5504c",
+          "text": "Keep her crew from quitting"
+        }
+      ],
+      "fear": "That the ferry is late because of her.",
+      "flaw": "Promises a schedule she knows she cannot keep.",
+      "values": [
+        {
+          "id": "4ee55d11",
+          "text": "Her crew first"
+        },
+        {
+          "id": "5aab8777",
+          "text": "A clear log"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "7a2cba70",
+          "state": "she is in control",
+          "tendency": "give orders as if they were suggestions"
+        },
+        {
+          "id": "162dd171",
+          "state": "she is blamed",
+          "tendency": "reply with a very precise apology"
+        }
+      ],
+      "competence": "Can fly the ferry blind through a debris field by the sound of the engines.",
+      "vulnerability": "Anyone who calls her ferry a joke.",
+      "speech": "Dry and clipped, with an unflappable politeness.",
+      "history": "Inherited the ferry from a captain who vanished mid-crossing and left a note about biscuits."
+    },
+    {
+      "id": "17ab24ab",
+      "name": "Bram",
+      "age": 29,
+      "sex": "male",
+      "appearance": "Round, cheerful and permanently smudged with engine oil, in a boiler suit with his name embroidered backwards.",
+      "sketch": "The engineer, who believes every problem is the engine's fault and every engine is alive.",
+      "wants": [
+        {
+          "id": "ae151cf6",
+          "text": "Keep the engines happy"
+        },
+        {
+          "id": "4aeb70e6",
+          "text": "Be taken seriously as a theorist"
+        }
+      ],
+      "fear": "That the engines are not speaking to him.",
+      "flaw": "Explains everything at length, and always at the wrong moment.",
+      "values": [
+        {
+          "id": "ede0f35b",
+          "text": "Loyalty to machines"
+        },
+        {
+          "id": "5d636b1b",
+          "text": "A good lunch"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "290b7166",
+          "state": "he is delighted",
+          "tendency": "narrate the engine's feelings"
+        },
+        {
+          "id": "c24aaa0e",
+          "state": "he is anxious",
+          "tendency": "take something apart"
+        }
+      ],
+      "competence": "Fixes anything with a spanner, a song and half a biscuit.",
+      "vulnerability": "A compliment about his hair.",
+      "speech": "Warm, rambling, full of tangents and tiny sound effects.",
+      "history": "Grew up in a scrapyard where every machine had a name."
+    },
+    {
+      "id": "e48d5185",
+      "name": "Quill",
+      "age": 22,
+      "sex": "other",
+      "appearance": "Thin and quick, with silver-dyed hair, mismatched socks and a tablet held like a shield.",
+      "sketch": "The new purser, who has read the rules and plans to enforce them.",
+      "wants": [
+        {
+          "id": "1b38a0aa",
+          "text": "Make the ferry compliant"
+        },
+        {
+          "id": "3690dd93",
+          "text": "Be promoted off it"
+        }
+      ],
+      "fear": "Being stuck on a ship that never arrives.",
+      "flaw": "Believes a rule exists for a reason.",
+      "values": [
+        {
+          "id": "3a987853",
+          "text": "Paperwork"
+        },
+        {
+          "id": "f8172d4c",
+          "text": "Fairness"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "dcd5cc8b",
+          "state": "they are sure of themselves",
+          "tendency": "quote a regulation by number"
+        },
+        {
+          "id": "6f6c5f0a",
+          "state": "they are overwhelmed",
+          "tendency": "make a checklist"
+        }
+      ],
+      "competence": "Finds the loophole in any regulation within a minute.",
+      "vulnerability": "Being laughed at.",
+      "speech": "Fast and formal, with footnotes in their voice.",
+      "history": "Trained at a fast-track academy and posted here as a clerical error."
+    },
+    {
+      "id": "0db11133",
+      "name": "Odo",
+      "age": 61,
+      "sex": "male",
+      "appearance": "Heavyset and grey-whiskered, always in a dressing gown over his uniform.",
+      "sketch": "A passenger who has been on board for eleven years and now runs the cargo hold.",
+      "wants": [
+        {
+          "id": "be0213f5",
+          "text": "Never reach his destination"
+        },
+        {
+          "id": "450db360",
+          "text": "Be left alone with his rubber stamps"
+        }
+      ],
+      "fear": "That someone will tell him where he was going.",
+      "flaw": "Treats every question as a negotiation.",
+      "values": [
+        {
+          "id": "01f68607",
+          "text": "Comfort"
+        },
+        {
+          "id": "de7a8dc3",
+          "text": "A good bargain"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "d5dda0f2",
+          "state": "he is comfortable",
+          "tendency": "offer someone a drink and a favour"
+        },
+        {
+          "id": "8f8f2df5",
+          "state": "he is pressed",
+          "tendency": "produce an official-looking stamp"
+        }
+      ],
+      "competence": "Knows every crate, every rumour and every route the ferry has ever taken.",
+      "vulnerability": "The words 'final stop'.",
+      "speech": "Slow, genial, in long run-on sentences.",
+      "history": "Boarded for a weekend trip and has lost the ticket."
+    },
+    {
+      "id": "dd1cf6d3",
+      "name": "Wren",
+      "age": 35,
+      "sex": "female",
+      "appearance": "Tall and neat, in a pressed grey uniform with a thin gold stripe and a stern, unreadable face.",
+      "sketch": "An inspector from the line who arrives to certify the ferry and quietly hopes to fail it.",
+      "wants": [
+        {
+          "id": "de6c46e2",
+          "text": "Close the ferry down on a technicality"
+        },
+        {
+          "id": "288aa5f8",
+          "text": "Be seen as fair"
+        }
+      ],
+      "fear": "That the ferry will pass.",
+      "flaw": "Mistakes charm for corruption.",
+      "values": [
+        {
+          "id": "73bef878",
+          "text": "Standards"
+        },
+        {
+          "id": "e37445af",
+          "text": "Her own good name"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "0dce722c",
+          "state": "she is in charge",
+          "tendency": "ask a question she already knows the answer to"
+        },
+        {
+          "id": "42eef227",
+          "state": "she is unsettled",
+          "tendency": "write something in her notebook"
+        }
+      ],
+      "competence": "Spots the one thing that is genuinely wrong on any ship.",
+      "vulnerability": "Being offered tea.",
+      "speech": "Measured, cool, with long pauses.",
+      "history": "Spent a career closing small lines and has never been thanked for it."
+    }
+  ],
+  "world": {
+    "name": "The Lantern Reach",
+    "era_and_technology": "A far future of slow ferries, paper timetables and engines that still run on goodwill and coal-cakes.",
+    "everyday_life": "Every journey is late, every delay has a form, and the timetable is a work of fiction everyone agrees to respect.",
+    "history": "The Reach was settled by three rival lines that merged when their schedules collided and has been apologising ever since.",
+    "places": [
+      {
+        "id": "b996d177",
+        "name": "The Bridge",
+        "description": "A cramped control room with a cracked window, a captain's chair and a kettle bolted to the floor.",
+        "effect": "Makes every order sound like a request."
+      },
+      {
+        "id": "9ff4f9f8",
+        "name": "The Engine Room",
+        "description": "A warm, loud cavern of brass pipes with a handwritten sign reading Please Be Gentle.",
+        "effect": "Makes shouting pointless and tenderness oddly easy."
+      },
+      {
+        "id": "3122994d",
+        "name": "The Cargo Hold",
+        "description": "A vast hold of crates stamped with the wrong destinations and a hammock slung between two of them.",
+        "effect": "Makes people lose track of time."
+      },
+      {
+        "id": "db3a09f1",
+        "name": "The Passenger Lounge",
+        "description": "A faded lounge with threadbare armchairs and a framed timetable that nobody trusts.",
+        "effect": "Makes every complaint sound like gossip."
+      }
+    ],
+    "objects": [
+      {
+        "id": "c9029f58",
+        "name": "The Timetable",
+        "description": "A laminated sheet of departures pinned to the lounge wall, annotated in six hands.",
+        "significance": "Whoever controls it controls what counts as late."
+      },
+      {
+        "id": "6fa85f2b",
+        "name": "The Stamp Box",
+        "description": "A wooden box of rubber stamps in every shape, none of them quite official.",
+        "significance": "A stamp in the wrong place can make anything legal."
+      }
+    ],
+    "powers": [
+      {
+        "id": "9ab94345",
+        "name": "The Line Authority",
+        "nature": "The remote body that licenses ferries and inspects them.",
+        "hold": "Granting and withdrawing the licence to sail.",
+        "felt": "A formal letter that arrives just before a crisis."
+      }
+    ],
+    "rules": [
+      {
+        "id": "7ef2b238",
+        "statement": "No ferry may sail without a signed certificate of fitness",
+        "cost": "A lapsed certificate grounds the ferry until an inspector arrives.",
+        "when_broken": "The Line Authority withdraws the licence and strands the ferry."
+      }
+    ],
+    "terms": [
+      {
+        "id": "9def2a22",
+        "term": "running late",
+        "meaning": "The ferry's usual condition, and no reason to panic."
+      },
+      {
+        "id": "af8d5df2",
+        "term": "a courtesy delay",
+        "meaning": "Any delay the crew can describe as helpful to the passengers."
+      }
+    ]
+  },
+  "entanglements": {
+    "id": "4c0514dc",
+    "ties": [
+      {
+        "id": "b5409e2c",
+        "tie_from": "97cd1ddd",
+        "tie_to": "17ab24ab",
+        "bond": "Captain and engineer who have never once agreed on a repair schedule.",
+        "edge": "She wants him to promise the engines will hold."
+      },
+      {
+        "id": "665cebbb",
+        "tie_from": "e48d5185",
+        "tie_to": "97cd1ddd",
+        "bond": "A new purser measuring the captain against the rulebook.",
+        "edge": "They want her to admit the ferry is not compliant."
+      },
+      {
+        "id": "0ea99b0c",
+        "tie_from": "0db11133",
+        "tie_to": "97cd1ddd",
+        "bond": "A passenger who feels he owns a share of the ferry.",
+        "edge": "He wants her to keep sailing, whatever the destination."
+      },
+      {
+        "id": "c08b3fe3",
+        "tie_from": "dd1cf6d3",
+        "tie_to": "97cd1ddd",
+        "bond": "An inspector and the captain she has come to examine.",
+        "edge": "She wants the one fault that will ground the ferry."
+      },
+      {
+        "id": "1b64addd",
+        "tie_from": "17ab24ab",
+        "tie_to": "0db11133",
+        "bond": "Engineer and the old man who hides things in his hold.",
+        "edge": "He wants Odo to stop storing crates against the engine casing."
+      },
+      {
+        "id": "1d69fdb8",
+        "tie_from": "97cd1ddd",
+        "tie_to": "9ab94345",
+        "bond": "A captain licensed by a body she has never met.",
+        "edge": "She wants one letter that does not threaten her."
+      }
+    ],
+    "holdings": [
+      {
+        "id": "68de4f68",
+        "holdee": "c9029f58",
+        "held_by": "e48d5185"
+      },
+      {
+        "id": "77bc8213",
+        "holdee": "6fa85f2b",
+        "held_by": "0db11133"
+      },
+      {
+        "id": "07eceb6a",
+        "holdee": "9ff4f9f8",
+        "held_by": "17ab24ab"
+      },
+      {
+        "id": "206099db",
+        "holdee": "db3a09f1",
+        "held_by": "9ab94345"
+      }
+    ]
+  },
+  "setup": {
+    "protagonist": "97cd1ddd",
+    "normal": "Dessa opens the log, sets the departure time and apologises over the speaker in advance. The routine keeps her crew calm and keeps her from asking why the ferry has never arrived on time.",
+    "disruption": "An inspector steps aboard with a clipboard and announces the ferry will be examined for a certificate of fitness before it leaves the dock.",
+    "chapter_count": 10
+  },
+  "outline": {
+    "id": "359bb689",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "58c25334",
+    "entries": []
+  },
+  "shifts": {
+    "id": "bcd9401b",
+    "entries": []
+  },
+  "chapters": [],
+  "locks": []
+}

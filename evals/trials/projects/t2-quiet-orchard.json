@@ -1,0 +1,260 @@
+{
+  "id": "t2-quiet-orchard",
+  "title": "The Orchard Year",
+  "schema_version": 3,
+  "output_language": "en",
+  "example_chapter": null,
+  "card_notes": [],
+  "style": {
+    "person": "third",
+    "tense": "past",
+    "distance": "close",
+    "humor": "dry",
+    "pacing": "lingering",
+    "rhythm": "flowing",
+    "diction": "plain",
+    "formality": "casual",
+    "imagery": "lush",
+    "edge": "clean",
+    "explicitness": "implied",
+    "attitude": "melancholic",
+    "amount": "sparse",
+    "directness": "subtext",
+    "polish": "naturalistic",
+    "voice_difference": "distinct",
+    "lens": "She notices what a place keeps after the people have gone: a worn step, a hook with nothing on it, a sound that no longer comes.",
+    "genre": "Quiet domestic fiction"
+  },
+  "characters": [
+    {
+      "id": "946cba0e",
+      "name": "Maren",
+      "age": 52,
+      "sex": "female",
+      "appearance": "Small and straight-backed, with grey hair cut short for work and a gardener's brown forearms.",
+      "sketch": "A widow who has run the family orchard alone for six years and has not yet decided whether to sell.",
+      "wants": [
+        {
+          "id": "4c535073",
+          "text": "Keep the orchard in the family"
+        },
+        {
+          "id": "7c167379",
+          "text": "Stop being looked after"
+        }
+      ],
+      "fear": "That the work was only ever holding her up.",
+      "flaw": "Answers every offer of help as an insult.",
+      "values": [
+        {
+          "id": "d9a58928",
+          "text": "Doing a job properly"
+        },
+        {
+          "id": "26966dfe",
+          "text": "Never owing anyone"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "3508d871",
+          "state": "she is at peace and the day is ordinary",
+          "tendency": "talk to the trees while she prunes"
+        },
+        {
+          "id": "5b7d4e2b",
+          "state": "she is hurt",
+          "tendency": "start a task that cannot wait"
+        }
+      ],
+      "competence": "Can tell a sick tree from a healthy one by the sound of the bark.",
+      "vulnerability": "A reminder of her husband's habits.",
+      "speech": "Plain and dry, never raising her voice. Says the opposite of what she means when she is tender.",
+      "history": "Came to the orchard as a bride and learned every row by hand."
+    },
+    {
+      "id": "f9d2d268",
+      "name": "Joel",
+      "age": 24,
+      "sex": "male",
+      "appearance": "Lanky and sunburned, with a city haircut growing out and borrowed boots a size too big.",
+      "sketch": "Her late husband's nephew, who has arrived for the harvest and has not said why he left the city.",
+      "wants": [
+        {
+          "id": "e0830b74",
+          "text": "Be useful somewhere"
+        },
+        {
+          "id": "ccc66c06",
+          "text": "Be told he was right to leave"
+        }
+      ],
+      "fear": "That he is the kind of person who quits.",
+      "flaw": "Says yes to everything and resents it later.",
+      "values": [
+        {
+          "id": "63d7fbac",
+          "text": "Being liked"
+        },
+        {
+          "id": "f3a99d55",
+          "text": "Honesty, when it costs nothing"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "f286b367",
+          "state": "he is out of his depth",
+          "tendency": "joke and change the subject"
+        },
+        {
+          "id": "8bdfa4cc",
+          "state": "he is trusted with a job",
+          "tendency": "work until he is sick"
+        }
+      ],
+      "competence": "Quick with numbers, machines and strangers.",
+      "vulnerability": "Being thanked.",
+      "speech": "Fast, easy, full of half-finished jokes.",
+      "history": "Raised in the city by parents who treated the orchard as a place to be escaped."
+    }
+  ],
+  "world": {
+    "name": "Alder Valley",
+    "era_and_technology": "A farming valley some decades ago, with a few trucks, a party line telephone and a co-operative press.",
+    "everyday_life": "The day is set by the weather, the harvest is paid for in packed crates, and nothing is done without being seen from three farms.",
+    "history": "The valley's orchards survived a bad frost and a collapsed market, and the co-operative that saved them has never quite been forgiven.",
+    "places": [
+      {
+        "id": "74779c1a",
+        "name": "The Orchard",
+        "description": "Twelve rows of old apple trees on a south slope, with a stone wall along the lower edge.",
+        "effect": "Slows everyone down to the pace of the trees."
+      },
+      {
+        "id": "f953ec68",
+        "name": "The Farmhouse",
+        "description": "A low stone house with a deep porch and a kitchen that holds the heat of the stove all evening.",
+        "effect": "Makes people tell the truth over a second cup."
+      },
+      {
+        "id": "ebfb42dc",
+        "name": "The Packing Shed",
+        "description": "A tin-roofed shed smelling of cut wood and apples, loud in the rain.",
+        "effect": "Makes talk impossible and silence easy."
+      },
+      {
+        "id": "6dc03fa2",
+        "name": "The Market Square",
+        "description": "A cobbled square in the valley town with a clock that is always four minutes slow.",
+        "effect": "Turns every small conversation into news."
+      }
+    ],
+    "objects": [
+      {
+        "id": "74be367d",
+        "name": "The grafting knife",
+        "description": "A short folding knife with a bone handle and a blade honed thin.",
+        "significance": "It was the one tool her husband never lent."
+      },
+      {
+        "id": "b5d8177a",
+        "name": "The sale letter",
+        "description": "A typed offer from the co-operative, folded in thirds and unanswered.",
+        "significance": "Its deadline falls before the harvest ends."
+      }
+    ],
+    "powers": [
+      {
+        "id": "6552abd2",
+        "name": "The Valley Co-operative",
+        "nature": "The grower-owned body that buys, grades and ships most of the valley's fruit.",
+        "hold": "Setting the price and deciding which crates are graded as sound.",
+        "felt": "A quiet pressure to sell sooner and complain less."
+      }
+    ],
+    "rules": [
+      {
+        "id": "326f89cc",
+        "statement": "Fruit must be graded and crated before it is sold to the co-operative",
+        "cost": "A late harvest is paid at a lower grade.",
+        "when_broken": "The co-operative refuses the crates."
+      }
+    ],
+    "terms": [
+      {
+        "id": "919d3c36",
+        "term": "the long picking",
+        "meaning": "The last week of harvest, when every hand in the valley works until dark."
+      },
+      {
+        "id": "fe9e8681",
+        "term": "second grade",
+        "meaning": "Fruit sold cheap for cider because it is bruised or small."
+      }
+    ]
+  },
+  "entanglements": {
+    "id": "55f942e5",
+    "ties": [
+      {
+        "id": "72414e95",
+        "tie_from": "946cba0e",
+        "tie_to": "f9d2d268",
+        "bond": "Aunt by marriage, with a long-held coolness between their families.",
+        "edge": "She wants him to stay, and cannot say so."
+      },
+      {
+        "id": "0e038937",
+        "tie_from": "f9d2d268",
+        "tie_to": "946cba0e",
+        "bond": "A nephew who has come to the one relative who never asked questions.",
+        "edge": "He wants her to tell him he was right to leave."
+      },
+      {
+        "id": "c85f397e",
+        "tie_from": "946cba0e",
+        "tie_to": "6552abd2",
+        "bond": "A grower who has sold to them for thirty years.",
+        "edge": "She wants to be offered a price she can refuse."
+      }
+    ],
+    "holdings": [
+      {
+        "id": "2324a5dd",
+        "holdee": "74be367d",
+        "held_by": "946cba0e"
+      },
+      {
+        "id": "780e2833",
+        "holdee": "b5d8177a",
+        "held_by": "946cba0e"
+      },
+      {
+        "id": "46dd2f04",
+        "holdee": "ebfb42dc",
+        "held_by": "6552abd2"
+      }
+    ]
+  },
+  "setup": {
+    "protagonist": "946cba0e",
+    "normal": "Maren walks the rows before dawn, prunes, mends and keeps the books at night. The routine fills the hours that her husband's silence used to fill, and keeps her from deciding anything.",
+    "disruption": "Her husband's nephew arrives on the evening bus with one bag and no explanation, a week before the harvest.",
+    "chapter_count": 5
+  },
+  "outline": {
+    "id": "83e9402c",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "29017f69",
+    "entries": []
+  },
+  "shifts": {
+    "id": "df5f0530",
+    "entries": []
+  },
+  "chapters": [],
+  "locks": []
+}

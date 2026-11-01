@@ -1,0 +1,143 @@
+# T3. Absurd science-fiction comedy, third person present, the largest cast (five people) and the longest run (ten chapters).
+id: t3-star-ferry
+title: The Ferry That Was Always Late
+language: en
+tests:
+  - "Largest cast (five) and longest run (ten chapters)"
+  - "Absurd comedy in third person present: tests tense drift and humour without a list of jokes"
+  - "Many ties from one protagonist, so the spotlight varies; minor characters must stay roles with no names"
+read: [1, 5, 10]
+style:
+  person: third
+  tense: present
+  distance: external
+  humor: absurd
+  pacing: brisk
+  rhythm: varied
+  diction: plain
+  formality: casual
+  imagery: occasional
+  attitude: sardonic
+  directness: direct
+  polish: stylised
+  voice_difference: distinct
+  lens: "A narrator who reports the ridiculous with a straight face and a list of what everyone is pretending not to notice."
+  genre: "Workplace space comedy"
+characters:
+  - name: Dessa
+    age: 38
+    sex: female
+    appearance: "Compact and tired-eyed, in a captain's jacket two sizes old with the cuffs rolled and a lanyard of keys that open nothing."
+    sketch: "The captain of a ferry that has never once run on time, and who has stopped apologising."
+    wants: ["Make one clean, punctual crossing", "Keep her crew from quitting"]
+    fear: "That the ferry is late because of her."
+    flaw: "Promises a schedule she knows she cannot keep."
+    values: ["Her crew first", "A clear log"]
+    behaviors:
+      - {state: "she is in control", tendency: "give orders as if they were suggestions"}
+      - {state: "she is blamed", tendency: "reply with a very precise apology"}
+    competence: "Can fly the ferry blind through a debris field by the sound of the engines."
+    vulnerability: "Anyone who calls her ferry a joke."
+    speech: "Dry and clipped, with an unflappable politeness."
+    history: "Inherited the ferry from a captain who vanished mid-crossing and left a note about biscuits."
+  - name: Bram
+    age: 29
+    sex: male
+    appearance: "Round, cheerful and permanently smudged with engine oil, in a boiler suit with his name embroidered backwards."
+    sketch: "The engineer, who believes every problem is the engine's fault and every engine is alive."
+    wants: ["Keep the engines happy", "Be taken seriously as a theorist"]
+    fear: "That the engines are not speaking to him."
+    flaw: "Explains everything at length, and always at the wrong moment."
+    values: ["Loyalty to machines", "A good lunch"]
+    behaviors:
+      - {state: "he is delighted", tendency: "narrate the engine's feelings"}
+      - {state: "he is anxious", tendency: "take something apart"}
+    competence: "Fixes anything with a spanner, a song and half a biscuit."
+    vulnerability: "A compliment about his hair."
+    speech: "Warm, rambling, full of tangents and tiny sound effects."
+    history: "Grew up in a scrapyard where every machine had a name."
+  - name: Quill
+    age: 22
+    sex: other
+    appearance: "Thin and quick, with silver-dyed hair, mismatched socks and a tablet held like a shield."
+    sketch: "The new purser, who has read the rules and plans to enforce them."
+    wants: ["Make the ferry compliant", "Be promoted off it"]
+    fear: "Being stuck on a ship that never arrives."
+    flaw: "Believes a rule exists for a reason."
+    values: ["Paperwork", "Fairness"]
+    behaviors:
+      - {state: "they are sure of themselves", tendency: "quote a regulation by number"}
+      - {state: "they are overwhelmed", tendency: "make a checklist"}
+    competence: "Finds the loophole in any regulation within a minute."
+    vulnerability: "Being laughed at."
+    speech: "Fast and formal, with footnotes in their voice."
+    history: "Trained at a fast-track academy and posted here as a clerical error."
+  - name: Odo
+    age: 61
+    sex: male
+    appearance: "Heavyset and grey-whiskered, always in a dressing gown over his uniform."
+    sketch: "A passenger who has been on board for eleven years and now runs the cargo hold."
+    wants: ["Never reach his destination", "Be left alone with his rubber stamps"]
+    fear: "That someone will tell him where he was going."
+    flaw: "Treats every question as a negotiation."
+    values: ["Comfort", "A good bargain"]
+    behaviors:
+      - {state: "he is comfortable", tendency: "offer someone a drink and a favour"}
+      - {state: "he is pressed", tendency: "produce an official-looking stamp"}
+    competence: "Knows every crate, every rumour and every route the ferry has ever taken."
+    vulnerability: "The words 'final stop'."
+    speech: "Slow, genial, in long run-on sentences."
+    history: "Boarded for a weekend trip and has lost the ticket."
+  - name: Wren
+    age: 35
+    sex: female
+    appearance: "Tall and neat, in a pressed grey uniform with a thin gold stripe and a stern, unreadable face."
+    sketch: "An inspector from the line who arrives to certify the ferry and quietly hopes to fail it."
+    wants: ["Close the ferry down on a technicality", "Be seen as fair"]
+    fear: "That the ferry will pass."
+    flaw: "Mistakes charm for corruption."
+    values: ["Standards", "Her own good name"]
+    behaviors:
+      - {state: "she is in charge", tendency: "ask a question she already knows the answer to"}
+      - {state: "she is unsettled", tendency: "write something in her notebook"}
+    competence: "Spots the one thing that is genuinely wrong on any ship."
+    vulnerability: "Being offered tea."
+    speech: "Measured, cool, with long pauses."
+    history: "Spent a career closing small lines and has never been thanked for it."
+world:
+  name: The Lantern Reach
+  era_and_technology: "A far future of slow ferries, paper timetables and engines that still run on goodwill and coal-cakes."
+  everyday_life: "Every journey is late, every delay has a form, and the timetable is a work of fiction everyone agrees to respect."
+  history: "The Reach was settled by three rival lines that merged when their schedules collided and has been apologising ever since."
+  places:
+    - {name: "The Bridge", description: "A cramped control room with a cracked window, a captain's chair and a kettle bolted to the floor.", effect: "Makes every order sound like a request."}
+    - {name: "The Engine Room", description: "A warm, loud cavern of brass pipes with a handwritten sign reading Please Be Gentle.", effect: "Makes shouting pointless and tenderness oddly easy."}
+    - {name: "The Cargo Hold", description: "A vast hold of crates stamped with the wrong destinations and a hammock slung between two of them.", effect: "Makes people lose track of time."}
+    - {name: "The Passenger Lounge", description: "A faded lounge with threadbare armchairs and a framed timetable that nobody trusts.", effect: "Makes every complaint sound like gossip."}
+  objects:
+    - {name: "The Timetable", description: "A laminated sheet of departures pinned to the lounge wall, annotated in six hands.", significance: "Whoever controls it controls what counts as late."}
+    - {name: "The Stamp Box", description: "A wooden box of rubber stamps in every shape, none of them quite official.", significance: "A stamp in the wrong place can make anything legal."}
+  powers:
+    - {name: "The Line Authority", nature: "The remote body that licenses ferries and inspects them.", hold: "Granting and withdrawing the licence to sail.", felt: "A formal letter that arrives just before a crisis."}
+  rules:
+    - {statement: "No ferry may sail without a signed certificate of fitness", cost: "A lapsed certificate grounds the ferry until an inspector arrives.", when_broken: "The Line Authority withdraws the licence and strands the ferry."}
+  terms:
+    - {term: "running late", meaning: "The ferry's usual condition, and no reason to panic."}
+    - {term: "a courtesy delay", meaning: "Any delay the crew can describe as helpful to the passengers."}
+ties:
+  - {from: Dessa, to: Bram, bond: "Captain and engineer who have never once agreed on a repair schedule.", edge: "She wants him to promise the engines will hold."}
+  - {from: Quill, to: Dessa, bond: "A new purser measuring the captain against the rulebook.", edge: "They want her to admit the ferry is not compliant."}
+  - {from: Odo, to: Dessa, bond: "A passenger who feels he owns a share of the ferry.", edge: "He wants her to keep sailing, whatever the destination."}
+  - {from: Wren, to: Dessa, bond: "An inspector and the captain she has come to examine.", edge: "She wants the one fault that will ground the ferry."}
+  - {from: Bram, to: Odo, bond: "Engineer and the old man who hides things in his hold.", edge: "He wants Odo to stop storing crates against the engine casing."}
+  - {from: Dessa, to: The Line Authority, bond: "A captain licensed by a body she has never met.", edge: "She wants one letter that does not threaten her."}
+holdings:
+  - {holdee: The Timetable, held_by: Quill}
+  - {holdee: The Stamp Box, held_by: Odo}
+  - {holdee: The Engine Room, held_by: Bram}
+  - {holdee: The Passenger Lounge, held_by: The Line Authority}
+setup:
+  protagonist: Dessa
+  normal: "Dessa opens the log, sets the departure time and apologises over the speaker in advance. The routine keeps her crew calm and keeps her from asking why the ferry has never arrived on time."
+  disruption: "An inspector steps aboard with a clipboard and announces the ferry will be examined for a certificate of fitness before it leaves the dock."
+  chapter_count: 10

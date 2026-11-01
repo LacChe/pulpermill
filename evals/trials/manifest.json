@@ -1,0 +1,164 @@
+[
+  {
+    "id": "t1-salt-coast",
+    "title": "The Salt Coast",
+    "language": "en",
+    "chapters": 8,
+    "characters": 3,
+    "genre": "Harbour noir",
+    "person": "first",
+    "tense": "past",
+    "protagonist_has_ties": true,
+    "ties": 3,
+    "ties_to_groups": 1,
+    "tests": [
+      "Noir pressure story, first person past, terse and dry",
+      "Three people; the protagonist is at the end of two ties",
+      "Groups at the end of ties and holdings (a group tie can be the spotlight)",
+      "Eight chapters: a full arc with a middle"
+    ],
+    "read": [
+      1,
+      4,
+      8
+    ]
+  },
+  {
+    "id": "t2-quiet-orchard",
+    "title": "The Orchard Year",
+    "language": "en",
+    "chapters": 5,
+    "characters": 2,
+    "genre": "Quiet domestic fiction",
+    "person": "third",
+    "tense": "past",
+    "protagonist_has_ties": true,
+    "ties": 3,
+    "ties_to_groups": 1,
+    "tests": [
+      "Smallest cast: two people, so every chapter has the same cast",
+      "Quiet, lingering, melancholic third person: little plot, so a chapter can easily repeat the last",
+      "Five chapters, so chapter 5 is the last chapter and must close the story"
+    ],
+    "read": [
+      1,
+      3,
+      5
+    ]
+  },
+  {
+    "id": "t3-star-ferry",
+    "title": "The Ferry That Was Always Late",
+    "language": "en",
+    "chapters": 10,
+    "characters": 5,
+    "genre": "Workplace space comedy",
+    "person": "third",
+    "tense": "present",
+    "protagonist_has_ties": true,
+    "ties": 6,
+    "ties_to_groups": 1,
+    "tests": [
+      "Largest cast (five) and longest run (ten chapters)",
+      "Absurd comedy in third person present: tests tense drift and humour without a list of jokes",
+      "Many ties from one protagonist, so the spotlight varies; minor characters must stay roles with no names"
+    ],
+    "read": [
+      1,
+      5,
+      10
+    ]
+  },
+  {
+    "id": "t4-hollow-court-zh",
+    "title": "空庭记",
+    "language": "zh",
+    "chapters": 6,
+    "characters": 4,
+    "genre": "宫廷权谋",
+    "person": "third",
+    "tense": "past",
+    "protagonist_has_ties": true,
+    "ties": 4,
+    "ties_to_groups": 1,
+    "tests": [
+      "Simplified Chinese story: the instructions stay in English, the story is in Chinese",
+      "Ornate, melancholic third person past in Chinese; person and tense heuristics are skipped, length counts characters",
+      "Four people, ties to a group (the household office)"
+    ],
+    "read": [
+      1,
+      3,
+      6
+    ]
+  },
+  {
+    "id": "t5-lantern-road",
+    "title": "The Lamplighter's Road",
+    "language": "en",
+    "chapters": 7,
+    "characters": 3,
+    "genre": "Cozy fantasy",
+    "person": "first",
+    "tense": "present",
+    "protagonist_has_ties": false,
+    "ties": 3,
+    "ties_to_groups": 1,
+    "tests": [
+      "The protagonist is at neither end of any tie: every spotlight is a tie between other people, and the protagonist must be drawn into it",
+      "First person present, cozy fantasy",
+      "Seven chapters"
+    ],
+    "read": [
+      1,
+      4,
+      7
+    ]
+  },
+  {
+    "id": "t6-glass-harbour",
+    "title": "The Glass Harbour Audit",
+    "language": "en",
+    "chapters": 9,
+    "characters": 4,
+    "genre": "Political thriller",
+    "person": "third",
+    "tense": "past",
+    "protagonist_has_ties": true,
+    "ties": 6,
+    "ties_to_groups": 3,
+    "tests": [
+      "Political thriller with two groups; most ties run to a group, so spotlights are often a person against an institution",
+      "Terse, clinical, subtext; named minor officials are likely and are flagged",
+      "Nine chapters"
+    ],
+    "read": [
+      1,
+      5,
+      9
+    ]
+  },
+  {
+    "id": "t7-last-light",
+    "title": "The Last Light on Kestrel Rock",
+    "language": "en",
+    "chapters": 5,
+    "characters": 3,
+    "genre": "Island drama",
+    "person": "first",
+    "tense": "past",
+    "protagonist_has_ties": true,
+    "ties": 4,
+    "ties_to_groups": 1,
+    "tests": [
+      "Short run of five chapters that has to reach a close (last chapter)",
+      "First person past, melancholic and lush, with a protagonist who has one tie",
+      "Three people on an island: little room for minor characters"
+    ],
+    "read": [
+      1,
+      3,
+      5
+    ]
+  }
+]

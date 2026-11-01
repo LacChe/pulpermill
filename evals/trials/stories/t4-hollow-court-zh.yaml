@@ -1,0 +1,123 @@
+# T4. Simplified Chinese palace intrigue, third person past, four people. Six chapters. The only story in another language.
+id: t4-hollow-court-zh
+title: 空庭记
+language: zh
+tests:
+  - "Simplified Chinese story: the instructions stay in English, the story is in Chinese"
+  - "Ornate, melancholic third person past in Chinese; person and tense heuristics are skipped, length counts characters"
+  - "Four people, ties to a group (the household office)"
+read: [1, 3, 6]
+style:
+  person: third
+  tense: past
+  distance: close
+  humor: none
+  pacing: lingering
+  rhythm: flowing
+  diction: ornate
+  formality: formal
+  imagery: lush
+  attitude: melancholic
+  directness: subtext
+  explicitness: implied
+  lens: "她留意每个人说话时的停顿和手上的小动作，因为在这座宫里，沉默比言语更诚实。"
+  genre: "宫廷权谋"
+characters:
+  - name: 沈清
+    age: 27
+    sex: female
+    appearance: "身形清瘦，眉眼温和，常穿素色衣裙，袖口里藏着一支旧银簪。"
+    sketch: "一名掌管内库账册的女官，谨慎而沉默，从不多问一句。"
+    wants: ["在宫中安稳地活下去", "查清当年父亲获罪的真相"]
+    fear: "怕自己的沉默最终害了别人。"
+    flaw: "总以为只要不出声，就不会被人看见。"
+    values: ["守信", "知恩必报"]
+    behaviors:
+      - {state: "她心中平静", tendency: "低头整理账册"}
+      - {state: "她被人逼问", tendency: "只答半句话，把剩下的咽回去"}
+    competence: "能从一行数字里看出谁动过手脚。"
+    vulnerability: "有人提起她的父亲。"
+    speech: "语气轻而稳，句子很短，从不高声。"
+    history: "自幼随父亲在库房里长大，学会了算账，也学会了闭嘴。"
+  - name: 萧远
+    age: 34
+    sex: male
+    appearance: "高大沉稳，眉间有一道旧疤，常年穿一身深色官服。"
+    sketch: "禁军统领，忠于职守，却被迫在两位主子之间摇摆。"
+    wants: ["保住禁军的名声", "不再替别人背负罪名"]
+    fear: "怕有一天必须在忠诚与良心之间选一个。"
+    flaw: "把服从当作美德，因此从不质疑命令。"
+    values: ["军令如山", "不欠人情"]
+    behaviors:
+      - {state: "他心里有数", tendency: "站在门边，一言不发"}
+      - {state: "他被激怒", tendency: "握紧刀柄，转身离去"}
+    competence: "能在一瞬间判断一处地方是否设有埋伏。"
+    vulnerability: "旧部的信任。"
+    speech: "声音低沉，说话直接，很少修饰。"
+    history: "出身寒门，凭军功一路升迁，从不敢松懈。"
+  - name: 林昭
+    age: 45
+    sex: female
+    appearance: "雍容端庄，鬓边总簪一朵新开的白花，笑意从不到眼底。"
+    sketch: "后宫中最有权势的贵妃，擅长以恩情织网。"
+    wants: ["让自己的儿子继承大统", "清除所有知道旧事的人"]
+    fear: "怕多年经营在一夜之间化为乌有。"
+    flaw: "无法相信任何人不是在利用自己。"
+    values: ["体面", "子嗣"]
+    behaviors:
+      - {state: "她占上风", tendency: "亲手斟茶，温言软语"}
+      - {state: "她感到威胁", tendency: "悄悄换掉身边的人"}
+    competence: "擅长揣摩人心，说出别人最想听的话。"
+    vulnerability: "任何关于她儿子的消息。"
+    speech: "语调柔和，句句带着恩惠，也句句带着试探。"
+    history: "入宫时只是个宫女，靠一步一步的算计走到今天。"
+  - name: 周敏
+    age: 19
+    sex: female
+    appearance: "圆脸大眼，神情机灵，总是踮着脚走路，怕惊动别人。"
+    sketch: "一名新入宫的小宫女，什么都想看，什么都不敢说。"
+    wants: ["攒够银子赎回自己的弟弟", "找到一个可以信任的人"]
+    fear: "怕被人当作棋子随手丢弃。"
+    flaw: "太容易相信对自己好的人。"
+    values: ["亲情", "诚实"]
+    behaviors:
+      - {state: "她很开心", tendency: "哼着家乡的小调"}
+      - {state: "她害怕", tendency: "躲到柱子后面偷听"}
+    competence: "耳朵极灵，宫里的闲话没有一句能躲过她。"
+    vulnerability: "有人答应帮她救弟弟。"
+    speech: "声音清脆，说话很快，常常说到一半又咽回去。"
+    history: "家乡遭了水灾，被卖进宫里做杂役。"
+world:
+  name: 大梁宫城
+  era_and_technology: "一个古代王朝的宫城，用的是墨笔、算盘和铜印，消息靠宫人口耳相传。"
+  everyday_life: "宫里的日子按时辰排得满满当当，每个人都有自己的位置，走错一步都会被人记下。"
+  history: "先帝晚年留下一桩未解的旧案，如今宫里无人敢提，却人人心里有数。"
+  places:
+    - {name: "内库", description: "一座昏暗的石屋，四壁都是账册和铜锁，空气里有墨和潮气的味道。", effect: "让进来的人不自觉地压低声音。"}
+    - {name: "长春殿", description: "后宫中最华丽的宫殿，廊下挂满彩灯，香炉终日不熄。", effect: "让每一句话都显得像恩赐，也像命令。"}
+    - {name: "禁军营房", description: "宫墙下一排朴素的营房，院里的兵器架总是擦得发亮。", effect: "让人觉得每一步都被看着。"}
+    - {name: "冷宫", description: "一座荒废的院落，杂草丛生，门上的封条早已发黄。", effect: "让人想起一切被遗忘的事。"}
+  objects:
+    - {name: "旧账册", description: "一本封面磨损的账册，最后几页被人撕去。", significance: "里面记着当年那桩旧案的银两去向。"}
+    - {name: "银簪", description: "一支样式古旧的银簪，簪头刻着一朵小小的莲花。", significance: "它是确认某个人身份的唯一信物。"}
+  powers:
+    - {name: "内务府", nature: "掌管宫中一切用度与人事的衙门。", hold: "批准每一笔开支，也决定每一个人的去留。", felt: "一道无声的目光，总在你出错之前就已落下。"}
+  rules:
+    - {statement: "宫中任何开支都必须有内务府的印", cost: "无印的账目一律视为私账，要追究经手人。", when_broken: "经手之人被查办，账目被封存。"}
+  terms:
+    - {term: "封存", meaning: "把一本账册或一个人关起来，不许任何人再提起。"}
+    - {term: "例银", meaning: "宫人按月领取的固定银钱。"}
+ties:
+  - {from: 沈清, to: 萧远, bond: "多年前曾共同经历一件险事，从此互相欠着一份人情。", edge: "她想让他相信，那本账册不是栽赃。"}
+  - {from: 林昭, to: 沈清, bond: "贵妃与替她管账的女官。", edge: "她想让沈清永远不要翻开旧账。"}
+  - {from: 周敏, to: 沈清, bond: "新来的小宫女与教她识字的前辈。", edge: "她想让沈清带她逃出宫去。"}
+  - {from: 萧远, to: 内务府, bond: "禁军统领与掌管他俸禄的衙门。", edge: "他想让内务府停止拿他的部下顶罪。"}
+holdings:
+  - {holdee: 旧账册, held_by: 林昭}
+  - {holdee: 银簪, held_by: 沈清}
+  - {holdee: 内库, held_by: 内务府}
+setup:
+  protagonist: 沈清
+  normal: "沈清每日天未亮便到内库核对账册，午后给各宫登记用度，夜里点灯抄录。这套日子让她安稳，也让她不必去想父亲的案子。"
+  disruption: "一本最后几页被撕去的旧账册，在她的案头静静出现，没有人承认放过它。"
+  chapter_count: 6

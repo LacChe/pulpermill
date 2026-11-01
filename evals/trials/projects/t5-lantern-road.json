@@ -1,0 +1,306 @@
+{
+  "id": "t5-lantern-road",
+  "title": "The Lamplighter's Road",
+  "schema_version": 3,
+  "output_language": "en",
+  "example_chapter": null,
+  "card_notes": [],
+  "style": {
+    "person": "first",
+    "tense": "present",
+    "distance": "close",
+    "humor": "dry",
+    "pacing": "balanced",
+    "rhythm": "flowing",
+    "diction": "plain",
+    "formality": "casual",
+    "imagery": "occasional",
+    "edge": "clean",
+    "explicitness": "shown",
+    "attitude": "warm",
+    "amount": "sparse",
+    "directness": "direct",
+    "polish": "naturalistic",
+    "voice_difference": "distinct",
+    "lens": "She sees the small comforts a place offers, who has been fed, who has a lit window, and who is walking home alone.",
+    "genre": "Cozy fantasy"
+  },
+  "characters": [
+    {
+      "id": "b6399524",
+      "name": "Tilda",
+      "age": 19,
+      "sex": "female",
+      "appearance": "Short and freckled, with a patched green coat, a satchel of spare wicks and a lantern pole taller than she is.",
+      "sketch": "A new lamplighter who walks the long road between villages, lighting the lamps that keep the dark things away.",
+      "wants": [
+        {
+          "id": "5754e889",
+          "text": "Be good at the job her aunt left her"
+        },
+        {
+          "id": "0379bdef",
+          "text": "Have somewhere to come home to"
+        }
+      ],
+      "fear": "That the lamps only work because of someone else.",
+      "flaw": "Takes on every stranger's trouble and then resents it.",
+      "values": [
+        {
+          "id": "38ffa355",
+          "text": "A lit window for everyone"
+        },
+        {
+          "id": "c1394798",
+          "text": "Keeping her word"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "b7de3f3e",
+          "state": "she is among people she likes",
+          "tendency": "hand out sweets from her pocket"
+        },
+        {
+          "id": "8c5e610b",
+          "state": "she is afraid",
+          "tendency": "talk faster and louder"
+        }
+      ],
+      "competence": "Can coax a flame from damp wicks and calm any frightened animal.",
+      "vulnerability": "Being told she is too young.",
+      "speech": "Chatty and warm, with a habit of narrating what she is doing.",
+      "history": "Raised by an aunt who walked the road for forty years and never once spoke of why."
+    },
+    {
+      "id": "bd0c5fd5",
+      "name": "Brindle",
+      "age": 47,
+      "sex": "male",
+      "appearance": "Barrel-chested and red-bearded, with flour on his apron and a limp he disguises as a swagger.",
+      "sketch": "The innkeeper at the crossroads who feeds every traveller and never asks their name.",
+      "wants": [
+        {
+          "id": "0d6bcacd",
+          "text": "Keep the inn's hearth lit"
+        },
+        {
+          "id": "ec4ff7e7",
+          "text": "Be forgiven for something he will not name"
+        }
+      ],
+      "fear": "That the person he wronged will walk through his door.",
+      "flaw": "Buys affection with food.",
+      "values": [
+        {
+          "id": "43a8f0c5",
+          "text": "Hospitality"
+        },
+        {
+          "id": "24967b5b",
+          "text": "A debt paid in kind"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "54de3fd0",
+          "state": "he is content",
+          "tendency": "hum while he kneads dough"
+        },
+        {
+          "id": "d3061200",
+          "state": "he is reminded of the past",
+          "tendency": "overfeed whoever is nearest"
+        }
+      ],
+      "competence": "Can feed forty guests from an empty larder.",
+      "vulnerability": "Anyone who refuses his food.",
+      "speech": "Booming and gentle, with a habit of calling everyone 'friend'.",
+      "history": "A former road-guard who left the service under a cloud."
+    },
+    {
+      "id": "4f4de55b",
+      "name": "Sorrel",
+      "age": 33,
+      "sex": "female",
+      "appearance": "Lean and weather-browned, with a hooded travelling cloak and a stillness that makes people check behind them.",
+      "sketch": "A wandering herbalist who arrives at the inn each autumn and leaves before the first snow.",
+      "wants": [
+        {
+          "id": "176b48a8",
+          "text": "Find the last remedy her teacher knew"
+        },
+        {
+          "id": "32605b7d",
+          "text": "Stay somewhere longer than a season"
+        }
+      ],
+      "fear": "That she is running from the only place that wanted her.",
+      "flaw": "Leaves before anyone can ask her to stay.",
+      "values": [
+        {
+          "id": "8b2afe2e",
+          "text": "Healing without payment"
+        },
+        {
+          "id": "5d12ec46",
+          "text": "Keeping secrets"
+        }
+      ],
+      "behaviors": [
+        {
+          "id": "a25b1d0b",
+          "state": "she is among friends",
+          "tendency": "brew a pot of something bitter and insist they drink"
+        },
+        {
+          "id": "1c1a1646",
+          "state": "she is asked to stay",
+          "tendency": "pack her bag"
+        }
+      ],
+      "competence": "Knows which weed cures a fever and which one buries a rumour.",
+      "vulnerability": "Someone remembering her birthday.",
+      "speech": "Quiet and exact, with a dry wit that surprises people.",
+      "history": "Trained under a healer who vanished without a word."
+    }
+  ],
+  "world": {
+    "name": "The Long Road",
+    "era_and_technology": "A land of lantern-lit roads, village inns and hand-copied herbals, where the dark is a thing with habits.",
+    "everyday_life": "Every village pays a toll of oil to the lamplighters, every inn keeps a lit hearth for travellers, and no one walks the road after dusk.",
+    "history": "The lamps were lit generations ago, after a winter when the road swallowed three caravans, and the practice has never been questioned since.",
+    "places": [
+      {
+        "id": "6412055d",
+        "name": "The Crossroads Inn",
+        "description": "A sprawling timber inn with a stone hearth, a crooked sign and a stable full of patient horses.",
+        "effect": "Makes strangers lower their voices and tell the truth."
+      },
+      {
+        "id": "ff7a3d96",
+        "name": "The Long Road",
+        "description": "A pale gravel road through pine forest with a lamp post every hundred paces.",
+        "effect": "Makes every walker feel watched by something kind."
+      },
+      {
+        "id": "2949e6c4",
+        "name": "The Herb Garden",
+        "description": "A walled garden behind the inn full of tangled rosemary, fever-few and night-blooming moonbell.",
+        "effect": "Makes people confess small things while they weed."
+      },
+      {
+        "id": "911fc5f6",
+        "name": "Hollow Bridge",
+        "description": "An old stone bridge over a dark stream, with a lamp that never stays lit.",
+        "effect": "Makes every traveller hurry."
+      }
+    ],
+    "objects": [
+      {
+        "id": "d7028253",
+        "name": "The lantern pole",
+        "description": "A long ash pole with a brass hook, worn dark where hands have held it.",
+        "significance": "It is the only thing that can relight the lamp at Hollow Bridge."
+      },
+      {
+        "id": "5b58499d",
+        "name": "The herbal",
+        "description": "A hand-copied book of remedies with pressed leaves between the pages.",
+        "significance": "It holds a remedy nobody alive has made."
+      }
+    ],
+    "powers": [
+      {
+        "id": "7af1cfb4",
+        "name": "The Lamplighters' Guild",
+        "nature": "The old body that trains, posts and pays every lamplighter.",
+        "hold": "Assigning each lamplighter a stretch of road and a portion of the oil toll.",
+        "felt": "A quiet pride, and a quiet rule that nobody asks why the oil costs so much."
+      }
+    ],
+    "rules": [
+      {
+        "id": "b4465013",
+        "statement": "A lamp left dark for a night must be relit by dawn",
+        "cost": "A lamplighter loses their stretch of road if they fail.",
+        "when_broken": "The dark things walk the road, and the guild withdraws its protection."
+      }
+    ],
+    "terms": [
+      {
+        "id": "7815a067",
+        "term": "oil toll",
+        "meaning": "The fee villages pay each season to keep the lamps burning."
+      },
+      {
+        "id": "9da9ab01",
+        "term": "the hush",
+        "meaning": "The silence that falls on the road when something unlit is nearby."
+      }
+    ]
+  },
+  "entanglements": {
+    "id": "7a49065e",
+    "ties": [
+      {
+        "id": "784a1e49",
+        "tie_from": "bd0c5fd5",
+        "tie_to": "4f4de55b",
+        "bond": "An innkeeper and the herbalist who has wintered in his garden for six years.",
+        "edge": "He wants her to stay past the first snow."
+      },
+      {
+        "id": "d1ebc272",
+        "tie_from": "4f4de55b",
+        "tie_to": "bd0c5fd5",
+        "bond": "A guest who has never once paid for her room in coin.",
+        "edge": "She wants him to stop asking where she goes."
+      },
+      {
+        "id": "49f1db2e",
+        "tie_from": "bd0c5fd5",
+        "tie_to": "7af1cfb4",
+        "bond": "A man who once served on the road and left without a word.",
+        "edge": "He wants them to stop writing to him."
+      }
+    ],
+    "holdings": [
+      {
+        "id": "7b00bf72",
+        "holdee": "6412055d",
+        "held_by": "bd0c5fd5"
+      },
+      {
+        "id": "31599056",
+        "holdee": "5b58499d",
+        "held_by": "4f4de55b"
+      },
+      {
+        "id": "837c76a3",
+        "holdee": "d7028253",
+        "held_by": "7af1cfb4"
+      }
+    ]
+  },
+  "setup": {
+    "protagonist": "b6399524",
+    "normal": "Tilda walks the same stretch of road at dusk with her pole on her shoulder, lights each lamp and waves at each lit window. The routine keeps her busy and keeps her from asking why her aunt never came home.",
+    "disruption": "The lamp at Hollow Bridge goes dark in the middle of the night and will not relight.",
+    "chapter_count": 7
+  },
+  "outline": {
+    "id": "aa2d183e",
+    "beats": []
+  },
+  "summary_events": {
+    "id": "0145566b",
+    "entries": []
+  },
+  "shifts": {
+    "id": "23f4a49d",
+    "entries": []
+  },
+  "chapters": [],
+  "locks": []
+}

@@ -1,0 +1,105 @@
+# T1. Noir pressure, first person, three people, the protagonist has ties. Eight chapters.
+id: t1-salt-coast
+title: The Salt Coast
+language: en
+tests:
+  - "Noir pressure story, first person past, terse and dry"
+  - "Three people; the protagonist is at the end of two ties"
+  - "Groups at the end of ties and holdings (a group tie can be the spotlight)"
+  - "Eight chapters: a full arc with a middle"
+read: [1, 4, 8]
+style:
+  person: first
+  tense: past
+  distance: deep
+  humor: dry
+  pacing: balanced
+  rhythm: terse
+  imagery: occasional
+  attitude: wry
+  directness: subtext
+  lens: "She notices what people do with their hands when they lie, and counts what is missing before she counts what is there."
+  genre: "Harbour noir"
+  narrator_note: "The narrator keeps the shop's books and trusts numbers over people."
+characters:
+  - name: Suvi
+    age: 34
+    sex: female
+    appearance: "Tall and weathered, with salt-cracked hands, a dark braid pinned up under a knitted cap and a ledger-keeper's ink stain on the right cuff."
+    sketch: "Runs the harbour shop her mother left her. Counts everything twice and trusts nothing she has not counted."
+    wants: ["Keep the shop open", "Know the truth about her mother's death"]
+    fear: "Being the one who lets the shop fall."
+    flaw: "Believes that anyone who is kind to her wants something."
+    values: ["Honest weights and measures", "Paying what is owed"]
+    behaviors:
+      - {state: "she is calm and the shop is quiet", tendency: "recount the till"}
+      - {state: "she is cornered", tendency: "answer a question with a question"}
+    competence: "Reads a ledger the way others read faces and notices a figure that has been changed."
+    vulnerability: "A kind word from someone she needs catches her off guard."
+    speech: "Short, flat sentences. She asks more than she says."
+    history: "Grew up behind the counter, doing sums for the boats before she could read."
+  - name: Aino
+    age: 41
+    sex: male
+    appearance: "Stooped and ink-fingered, with a clerk's neat grey coat and a nervous habit of straightening his cuffs."
+    sketch: "A clerk who talks too much when he is nervous and too little when he is sure."
+    wants: ["A post of his own at the harbour board", "Be trusted by someone"]
+    fear: "Being found out as a man who reads other people's letters."
+    flaw: "Cannot leave a secret alone once he has found it."
+    values: ["Being useful", "Keeping a tidy record"]
+    behaviors:
+      - {state: "he is at ease", tendency: "tell a long story with no point"}
+      - {state: "he is watched", tendency: "fall silent and fold his hands"}
+    competence: "Remembers every name and favour owed in the harbour."
+    vulnerability: "Flattery from anyone with rank."
+    speech: "Careful, formal, full of hedges. Apologises before he speaks."
+    history: "Came up from the inland offices on a promise of advancement that never arrived."
+  - name: Pekka
+    age: 67
+    sex: male
+    appearance: "Broad, slow and white-bearded, with hands scarred by rope and a pipe he never lights."
+    sketch: "An old dock landlord who forgives debts in public and collects them in private."
+    wants: ["Be remembered kindly", "Keep the docks out of the board's hands"]
+    fear: "Dying with the last repairs still unpaid for."
+    flaw: "Confuses control with care."
+    values: ["Family name", "A handshake that holds"]
+    behaviors:
+      - {state: "he is amused", tendency: "go quiet and smile at the water"}
+      - {state: "he is crossed", tendency: "raise the rent"}
+    competence: "Knows which planks are rotten and who rotted them."
+    vulnerability: "Any mention of his late wife."
+    speech: "Slow and warm, with proverbs he makes up on the spot."
+    history: "Built half the jetties himself and still thinks of them as his children."
+world:
+  name: The Salt Coast
+  era_and_technology: "A harbour town in an age of steam tugs, paper ledgers and gaslight."
+  everyday_life: "Rent is due on the first of the week, boats are licensed by the season, and anything uncounted is assumed stolen."
+  history: "Three winters ago a flood took the lower docks, and the repairs were paid for by a loan nobody has seen written down."
+  places:
+    - {name: "The Shop", description: "A narrow harbour shop with a brass bell and a back room full of stock.", effect: "Makes anyone inside feel counted and watched."}
+    - {name: "The Docks", description: "Wet planks, coal dust and gulls, with the board's notices nailed to every post.", effect: "Pushes people to talk low and walk fast."}
+    - {name: "The Board House", description: "A grey stone building with tall windows and a locked records room.", effect: "Makes visitors feel small and kept waiting."}
+    - {name: "The Cellar", description: "A flooded stone cellar under the shop that smells of salt and old rope.", effect: "Turns every sound into an echo and every step into a risk."}
+  objects:
+    - {name: "The ledger", description: "A cloth-bound book of accounts with a cracked spine.", significance: "It holds the only record of who paid for the dock repairs."}
+    - {name: "The brass key", description: "A small key worn smooth by years in a pocket.", significance: "It opens something under the shop that people have died over."}
+  powers:
+    - {name: "The Harbour Board", nature: "The body that licenses boats and sets the dock rules.", hold: "Licensing every boat and writing the rules that govern the docks.", felt: "A hush when a clerk in a grey coat walks down the quay."}
+    - {name: "The Dockhands' Brotherhood", nature: "The men who load and unload every cargo.", hold: "Slowing the work down until a grievance is settled.", felt: "A hush when a foreman takes off his cap."}
+  rules:
+    - {statement: "Every boat needs a seasonal licence to dock", cost: "A missed week of fees means the boat is towed away.", when_broken: "The board seizes the boat and sells its cargo."}
+  terms:
+    - {term: "first-day visit", meaning: "The weekly call a clerk makes to collect rent and count stock."}
+    - {term: "counting the tide", meaning: "Checking the water level before the board's inspection."}
+ties:
+  - {from: Suvi, to: Aino, bond: "She tolerates him and half-trusts him.", edge: "She wants to know whom he reports to."}
+  - {from: Suvi, to: Pekka, bond: "Tenant and landlord of forty years' standing.", edge: "She owes him two weeks' rent and needs him to talk about the ledger."}
+  - {from: Aino, to: The Harbour Board, bond: "He works for them and wants to belong.", edge: "He has been asked to report who visits the shop."}
+holdings:
+  - {holdee: The ledger, held_by: Pekka}
+  - {holdee: The Docks, held_by: The Dockhands' Brotherhood}
+setup:
+  protagonist: Suvi
+  normal: "The shop opens at six and the quay is loud by seven. Suvi counts the till twice, weighs the first orders, and keeps the books that keep the shop safe and keep her from asking about her mother."
+  disruption: "The harbour board has changed the dock rules overnight, and the stock in the back room is short by a crate."
+  chapter_count: 8
