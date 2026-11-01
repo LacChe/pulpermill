@@ -1,10 +1,10 @@
-"""Tests for the tokenizer and the generic token budgets: measure, fit, squeeze (the parked story prompts' tests are marked). No model, no GPU.
+"""Tests for the tokenizer and the generic token budgets: measure, fit, squeeze. No model, no GPU.
 The token tests need the Gemma tokenizer files (pulpermill/prompts/tokenizer/ or PULPERMILL_TOKENIZER) and skip without them.
 Run from the repository root: python -m pytest tests/prompts"""
 from pathlib import Path
 
-import prompt_cases as cases
-from test_render import generate_request, parked
+import story_sizes as cases
+from test_render import generate_request
 
 from pulpermill.prompts import budget, render, tokens
 from pulpermill.prompts import textfiles as tx
@@ -13,8 +13,6 @@ try:
     import pytest
 except ImportError:                                                # the plain runner used where pytest is not installed
     pytest = None
-
-GOLDEN = Path(__file__).resolve().parents[2] / "docs" / "prompts" / "samples" / "prompts"
 
 
 def have_tokenizer() -> bool:
@@ -121,7 +119,6 @@ def test_squeezing_shortens_every_length_and_leaves_the_counts_alone():
         assert small["characters"]["sketch"] == base["characters"]["sketch"] // 2
         assert small["characters"]["max_behaviors"] == base["characters"]["max_behaviors"]
         assert small["events"]["full_chapters_writer"] == base["events"]["full_chapters_writer"]
-        assert small["chapter"] == base["chapter"]
     assert tx.limits() == base and tx.limits()["characters"]["sketch"] == 700
 
 
@@ -167,19 +164,3 @@ def test_fixed_fields_have_no_cap():
         for key, f in model.model_fields.items():
             meta = f.json_schema_extra or {}
             assert not (meta.get("fixed") and meta.get("cap")), (card, key)
-
-
-@parked("old text is capped by the parked standing and code renderers, which read removed fields")
-def test_text_a_model_wrote_is_capped_wherever_it_comes_back_in():
-    long = cases.prose(3000)
-    assert len(render.render_standing([{"character": "Suvi", "believes": long, "decided": long}])) < 800
-    plan = {"spotlight": {"what": long}, "open_plants": [{"text": long, "chapter": 2}],
-            "available_reveals": [{"statement": long, "truth": long, "status": "false_belief"}], "legal_shifts": ["harder", "easier"]}
-    assert len(render.render_code_numbers(plan)) < 2600
-
-
-@parked("the golden prompts are the old story prompts, which read the old request shapes")
-def test_the_golden_prompts_are_what_the_code_makes():
-    """If this fails after a wording change on purpose: python tools/render_prompts.py, read the diff, commit the new files."""
-    made = cases.parked_golden()
-    assert {f.stem for f in GOLDEN.glob("*.txt")} == set(made)

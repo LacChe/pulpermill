@@ -1,5 +1,5 @@
 """Card renderers: one function per card or record, returning prose. Names, never ids. A fixed order (the schema's
-RENDER_ORDER where it has one), a length cap per field (limits.yaml), and any clause whose value is empty is left out
+RENDER_ORDER where it has one), a length cap per field (the schema's `cap`, plus limits.yaml), and any clause whose value is empty is left out
 instead of printing an empty label. Nothing here calls a model.
 
 Two scopes: "writer" (the chapter writer, and the extractors that read the same cast) and "planner"."""
@@ -219,13 +219,10 @@ def render_cast(cast: list[dict], *, scope: str = "writer", report: Report | Non
 # ---- World ----------------------------------------------------------------------------------------------------------
 
 def groups_in_play(entanglements: dict) -> set[str]:
-    """Names of the people and groups the on-stage ties and pressures mention. A group in this set is shown in full."""
+    """Names of the people and groups the on-stage ties mention. A group in this set is shown in full."""
     names: set[str] = set()
     for tie in entanglements.get("ties", []):
         names.update([s(tie.get("tie_from")), s(tie.get("tie_to"))])
-    for p in entanglements.get("pressures", []):
-        names.add(s(p.get("source_agent")))
-        names.update(s(b) for b in p.get("bears_on") or [])
     return {n for n in names if n}
 
 
@@ -304,15 +301,11 @@ def render_world(world: dict, *, scope: str = "writer", place: str | None = None
     if block:
         paras.append(block)
 
-    # rules: common, then hidden, then myth
-    rank = {"common": 0, "uncommon": 1, "false_belief": 2}
+    # rules
     rules = []
-    for r in sorted(world.get("rules") or [], key=lambda r: rank.get(r.get("status"), 0)):
-        status = s(r.get("status"))
-        expand = tx.option_expand("world", "rules", status, "status") if status in rank else ""
+    for r in world.get("rules") or []:
         rules.append(fill(spec["rules"]["item_template"], {
             "statement": clip(r.get("statement"), c["rule_statement"], "rule", report).rstrip("."),
-            "status": fill(expand, {"truth": soften(clip(r.get("truth"), c["rule_truth"], "rule.truth", report)).rstrip(".")}),
             "cost": clip(r.get("cost"), c["rule_cost"], "rule", report),
             "when_broken": clip(r.get("when_broken"), c["rule_when_broken"], "rule", report)}))
     block = _items_block("world", "rules", rules, name=name or "this world")
@@ -330,26 +323,9 @@ def render_world(world: dict, *, scope: str = "writer", place: str | None = None
 
 # ---- Entanglements --------------------------------------------------------------------------------------------------
 
-def knowledge_line(item: dict, c: dict, fr: dict, report: Report | None = None) -> str:
-    """One knowledge item as a line: the thing, then who knows it, who suspects it and who is misled (with what they believe
-    instead). An item no one stands towards is left out. Used by the writer's block and by the shifts handles."""
-    parts = []
-    for key in ("knows", "suspects", "misled"):
-        names = [s(n) for n in item.get(key) or [] if s(n)]
-        if names:
-            parts.append(fill(fr[f"knowledge_{key}"], {"names": ", ".join(names)}))
-    if not parts:
-        return ""
-    if item.get("misled") and s(item.get("belief")):
-        parts.append(fill(fr["knowledge_belief"], {"belief": sentence(clip(item.get("belief"), c["fact"], "knowledge", report))}))
-    thing = sentence(clip(item.get("rule") or item.get("fact"), c["fact"], "knowledge", report))
-    return thing + " " + " ".join(parts)
-
-
 def render_entanglements(ent: dict, cast_names: Iterable[str] = (), *, scope: str = "writer",
                          report: Report | None = None) -> str:
-    """Ties, holdings, knowledge, pressures. Writer: anyone or any group not on stage is marked offstage (a name only).
-    Planner: all pressures, no marks."""
+    """Ties and holdings. Writer: anyone or any group not on stage is marked offstage (a name only). Planner: no marks."""
     c = tx.limits()["entanglements"]
     fr = tx.prompt_text("frames")
     spec = tx.schema_text("entanglements")["fields"]
@@ -379,28 +355,12 @@ def render_entanglements(ent: dict, cast_names: Iterable[str] = (), *, scope: st
     if block:
         paras.append(block)
 
-    knowledge = [line for k in ent.get("knowledge") or [] if (line := knowledge_line(k, c, fr, report))]
-    block = _items_block("entanglements", "knowledge", knowledge)
-    if block:
-        paras.append((fr["knowledge_note"] + "\n" if writer else "") + block)
-
-    pressures = []
-    for p in ent.get("pressures") or []:
-        pressures.append(fill(spec["pressures"]["item_template"], {
-            "what": clip(p.get("what"), c["pressure_what"], "pressure", report).rstrip("."),
-            "source_agent": who(p.get("source_agent")), "source_circumstance": s(p.get("source_circumstance")),
-            "bears_on": ", ".join(who(b) for b in p.get("bears_on") or []),
-            "next_move": clip(p.get("next_move"), c["next_move"], "pressure.next_move", report)}))
-    block = _items_block("entanglements", "pressures", pressures)
-    if block:
-        paras.append(block)
-
     if marked[0]:
         paras.insert(0, fr["offstage_note"])
     return "\n\n".join(paras)
 
 
-# ---- Setup, standing, the story so far ------------------------------------------------------------------------------
+# ---- Setup, the story so far ------------------------------------------------------------------------------
 
 def render_setup(setup: dict, goal: str | None, chapter: int, chapter_count: int | None, *, report: Report | None = None) -> str:
     c = tx.limits()["setup"]
@@ -422,17 +382,6 @@ def render_setup(setup: dict, goal: str | None, chapter: int, chapter_count: int
     if total and chapter >= total:
         lines.append(fr["chapter_last"])
     return "\n".join(lines)
-
-
-def render_standing(standing: list[dict], report: Report | None = None) -> str:
-    fr = tx.prompt_text("frames")
-    cap = tx.limits()["standing"]["field"]
-    rows = []
-    for row in standing or []:
-        parts = [fill(tmpl, {"value": clip(row.get(key), cap, f"standing.{s(row.get('character'))}.{key}", report).rstrip(".")}) for key, tmpl in fr["standing_parts"].items() if s(row.get(key))]
-        if parts:
-            rows.append(f"{s(row.get('character'))} " + "; ".join(parts) + ".")
-    return fr["standing_lead"] + "\n" + "\n".join(rows) if rows else ""
 
 
 def _first_sentence(text: str) -> str:
@@ -466,141 +415,17 @@ def render_story_so_far(events: list[dict], chapter: int, *, keep_full: int, rep
 
 def render_earlier_beats(beats: list[dict]) -> str:
     fr = tx.prompt_text("frames")
-    rows = [fr["planner_beat_item"].format(chapter=b.get("chapter"), where=s(b.get("where")), when=s(b.get("when_time")),
-                                           shift=s(b.get("shift")))
+    rows = [fr["planner_beat_item"].format(chapter=b.get("chapter"), where=s(b.get("where")), when=s(b.get("when_time")))
             for b in sorted(beats or [], key=lambda b: int(b.get("chapter") or 0))]
     if not rows:
         return ""
-    last = max(beats, key=lambda b: int(b.get("chapter") or 0))
-    if s(last.get("ends_on")):
-        rows.append(fr["planner_last_end"].format(chapter=last.get("chapter"), end=sentence(s(last.get("ends_on")))))
     return fr["planner_beats_lead"] + "\n" + "\n".join(rows)
 
 
-# ---- The scene ------------------------------------------------------------------------------------------------------
-
-def render_scene(beat: dict, *, protagonist: str, sex: str = "other", open_plants: list[dict] | None = None,
-                 available_reveals: list[dict] | None = None, report: Report | None = None) -> str:
-    """The beat as one situation: where it opens, what is wanted, that something changes, where it stops, then whatever the
-    beat names (reveal, plant, payoff, offstage move) and the pressure in focus, which the aim is to meet. Empty parts leave
-    nothing behind. The writer's own wording is quoted, never recased, because it may begin with a name."""
-    fr = tx.prompt_text("frames")
-    b = tx.limits()["beat"]["field"]
-    cut = lambda key: clip(beat.get(key), b, f"beat.{key}", report)
-    paras = []
-
-    where = s(beat.get("where"))
-    opening = []
-    if where or s(beat.get("when_time")):
-        opening.append(fr["scene_open"].format(where=where or "the place the story left off",
-                                               when=s(beat.get("when_time")) or "with the scene already moving"))
-    if s(beat.get("when_gap")):
-        opening.append(fr["scene_gap"].format(gap=sentence(s(beat["when_gap"])).rstrip(".")))
-    names = [n for n in beat.get("cast") or [] if s(n)]
-    if names:
-        opening.append(fr["scene_present"].format(names=join_names(names), be="is" if len(names) == 1 else "are"))
-    if opening:
-        paras.append(" ".join(opening))
-
-    if cut("collision_goal"):
-        paras.append(fr["scene_goal"].format(name=protagonist, value=sentence(cut("collision_goal"))))
-
-    change = [fr["scene_change"]]
-    if s(beat.get("shift")) in fr["scene_shift"]:
-        change.append(fr["scene_shift"][beat["shift"]])
-    if change:
-        paras.append(" ".join(change))
-
-    if cut("ends_on"):
-        paras.append(fr["scene_end"].format(value=sentence(cut("ends_on"))) + "\n" + fr["scene_end_hold"])
-
-    if s(beat.get("reveal_rule")):
-        statement = sentence(s(beat["reveal_rule"]))
-        match = next((r for r in available_reveals or [] if s(r.get("statement")) == s(beat["reveal_rule"])), {})
-        truth = sentence(s(match.get("truth")))
-        learners = join_names(beat.get("reveal_learners") or [])
-        myth = s(match.get("status")) == "false_belief" and truth
-        reveal = fr["scene_reveal_myth" if myth else "scene_reveal_hidden"].format(statement=statement, truth=truth)
-        if learners:       # who learns it is read from the chapter afterwards; a person may still name them
-            reveal = reveal.replace(" Let it arrive", " " + fr["scene_reveal_learners"].format(learners=learners) + " Let it arrive", 1)
-        paras.append(reveal)
-    if cut("plant"):
-        paras.append(fr["scene_plant"].format(value=sentence(cut("plant"))))
-    if beat.get("payoff"):
-        known = {s(p.get("text")): p.get("chapter") for p in open_plants or []}
-        items = [fr["scene_payoff_item"].format(text=s(t).rstrip("."), chapter=known[s(t)]) if known.get(s(t)) else s(t).rstrip(".")
-                 for t in beat["payoff"]]
-        paras.append(fr["scene_payoff"].format(value=join_names(items)))
-    if s(beat.get("offstage_did")) and s(beat.get("offstage_reach")):
-        paras.append(fr["scene_offstage"].format(did=sentence(soften(clip(beat["offstage_did"], b, "beat.offstage_did", report))),
-                                                  name=protagonist, reach=sentence(clip(beat["offstage_reach"], b, "beat.offstage_reach", report))))
-    if s(beat.get("spotlight")):
-        paras.append(fr["scene_spotlight"].format(name=protagonist, value=sentence(clip(beat["spotlight"], b, "beat.spotlight", report))))
-    paras.append(fr["scene_shape"])
-    return "\n\n".join(paras)
-
-
-# ---- What the planner is told the code has set ----------------------------------------------------------------------
-
-def _goal_lines(req: dict, fr: dict, lim: dict, report: Report | None) -> list[str]:
-    """What the goal arc says about this chapter: the story's goal when the chapters have moved off it, how long the goal has
-    stood, the goal arc's advice near the end, and the goals so far. All of it comes from the page."""
-    plan = req.get("goal_plan") or {}
-    cap = lim["setup"]["goal"]
-    lines = []
-    if s(req.get("story_goal")):
-        lines.append(fr["code_story_goal"].format(value=sentence(clip(req["story_goal"], cap, "story_goal", report))))
-    if s(req.get("goal")) and int(plan.get("age") or 0) >= 1:
-        lines.append(fr["code_goal_age"].format(age=int(plan["age"]), since=int(plan.get("since") or 1)))
-    due = s(plan.get("due"))
-    if due in fr["code_goal_due"]:
-        lines.append(fr["code_goal_due"][due])
-    earlier = [clip(g, cap, "earlier_goal", report).rstrip(".") for g in plan.get("earlier_goals") or [] if s(g)]
-    if earlier:
-        lines.append(fr["code_goals_so_far"].format(items="; ".join(earlier)))
-    return lines
-
-
-def render_code_numbers(req: dict, *, report: Report | None = None) -> str:
-    fr = tx.prompt_text("frames")
-    lim = tx.limits()
-    lines = _goal_lines(req, fr, lim, report)
-    spot = req.get("spotlight") or {}
-    if s(spot.get("what")):
-        lines.append(fr["code_spotlight"].format(value=sentence(clip(spot["what"], lim["entanglements"]["pressure_what"], "spotlight", report))))
-        if s(spot.get("next_move")):
-            lines.append(fr["code_spotlight_move"].format(value=sentence(clip(spot["next_move"], lim["entanglements"]["next_move"], "spotlight_move", report))))
-    shifts = req.get("legal_shifts") or []
-    lines.append(fr["code_shifts"].format(value=" or ".join(shifts)) if shifts and len(shifts) < 2 else fr["code_no_shifts"])
-    plants = req.get("open_plants") or []
-    if plants:
-        lines.append(fr["code_plants"] + "\n" + "\n".join(fr["code_plant_item"].format(text=clip(p.get("text"), lim["code"]["plant"], "plant", report).rstrip("."), chapter=p.get("chapter")) for p in plants))
-    else:
-        lines.append(fr["code_no_plants"])
-    reveals = req.get("available_reveals") or []
-    if reveals:
-        w = lim["world"]
-        rows = [fr["code_reveal_item_myth"].format(statement=sentence(clip(r.get("statement"), w["rule_statement"], "reveal", report)),
-                                                   truth=sentence(clip(r.get("truth"), w["rule_truth"], "reveal", report)))
-                if s(r.get("status")) == "false_belief" and s(r.get("truth")) else
-                fr["code_reveal_item"].format(statement=sentence(clip(r.get("statement"), w["rule_statement"], "reveal", report)))
-                for r in reveals]
-        lines.append(fr["code_reveals"] + "\n" + "\n".join(rows))
-    else:
-        lines.append(fr["code_no_reveals"])
-    seen = (req.get("use_counts") or {}).get("characters") or []
-    if seen:
-        items = [fr["code_cast_item_last"].format(name=c["name"], last=c["last"]) if c.get("last") else fr["code_cast_item_never"].format(name=c["name"])
-                 for c in seen]
-        lines.append(fr["code_cast_seen"].format(items="; ".join(items)))
-    return "\n".join(lines)
-
-
-# ---- Short forms for the extractors and the card calls --------------------------------------------------------------
+# ---- Short forms and id-to-name helpers --------------------------------------------------------------
 
 def render_person_brief(person: dict, *, report: Report | None = None) -> str:
-    """One short paragraph: who, and what drives them. For the Shifts extractor, which compares the chapter with where a
-    person started."""
+    """One short paragraph: who, and what drives them."""
     c = tx.limits()["characters"]
     name = s(person.get("name"))
     she = {"female": "she/her", "male": "he/him"}.get(s(person.get("sex")), "they/them")
@@ -612,53 +437,6 @@ def render_person_brief(person: dict, *, report: Report | None = None) -> str:
         if s(person.get(key)):
             parts.append(f"{label}: {sentence(clip(person[key], c[key], f'{name}.{key}', report))}")
     return " ".join(parts)
-
-
-def render_handles(entanglements: dict, handles: dict[str, dict], cast_names: Iterable[str], *,
-                   report: Report | None = None) -> str:
-    """The live entanglements, each item behind its handle (T1, H1, K1, P1), grouped by what may change."""
-    c = tx.limits()["entanglements"]
-    fr = tx.prompt_text("frames")
-    heads = tx.template("shifts")["may_change"]
-    cast = {s(n) for n in cast_names}
-
-    def who(name: str) -> str:
-        name = s(name)
-        return f"{name} {fr['offstage_marker']}" if name and name not in cast else name
-
-    by_section: dict[str, list[str]] = {}
-    index = {(i["section"], i["id"]): h for h, i in handles.items()}
-    for section in ("ties", "holdings", "knowledge", "pressures"):
-        for item in entanglements.get(section) or []:
-            handle = index.get((section, item.get("id")))
-            if not handle:
-                continue
-            if section == "ties":
-                line = (f"{handle}. {who(item.get('tie_from'))} toward {who(item.get('tie_to'))}. Bond: {sentence(clip(item.get('bond'), c['bond'], 'tie', report))} "
-                        f"Edge: {sentence(clip(item.get('edge'), c['edge'], 'tie', report))}")
-            elif section == "holdings":
-                line = f"{handle}. {s(item.get('holdee'))} is held by {who(item.get('held_by'))}."
-            elif section == "knowledge":
-                line = f"{handle}. " + (knowledge_line(item, c, fr, report) or sentence(clip(item.get("rule") or item.get("fact"), c["fact"], "knowledge", report)))
-            else:
-                bears = ", ".join(who(b) for b in item.get("bears_on") or [])
-                source = who(item.get("source_agent")) or s(item.get("source_circumstance"))
-                line = f"{handle}. {clip(item.get('what'), c['pressure_what'], 'pressure', report).rstrip('.')} (from {source}; bears on {bears})."
-                if s(item.get("next_move")):
-                    line += f" Next move: {sentence(clip(item['next_move'], c['next_move'], 'pressure', report))}"
-            by_section.setdefault(section, []).append(line)
-    return "\n\n".join(heads[sec] + ":\n" + "\n".join(lines) for sec, lines in by_section.items())
-
-
-def render_shifts_history(shifts: list[dict], *, report: Report | None = None) -> str:
-    """How people changed, chapter by chapter, for the end-of-story update."""
-    fr = tx.prompt_text("frames")
-    rows = []
-    for row in sorted(shifts or [], key=lambda r: int(r.get("chapter") or 0)):
-        parts = [fill(tmpl, {"value": s(row.get(key)).rstrip(".")}) for key, tmpl in fr["standing_parts"].items() if s(row.get(key))]
-        if parts:
-            rows.append(tx.template("end_story")["shift_line"].format(chapter=row.get("chapter"), character=s(row.get("character")), parts="; ".join(parts)) + ".")
-    return "\n".join(rows)
 
 
 def names_by_id(related: dict) -> dict[str, str]:
