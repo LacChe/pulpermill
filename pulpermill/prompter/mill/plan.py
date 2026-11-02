@@ -68,9 +68,20 @@ def _mentions(text: str, name: str) -> bool:
     return bool(name) and name.lower() in str(text or "").lower()
 
 
+def spotlight_of(request: dict) -> dict | None:
+    """The spotlight tie of a `generate` request: the one tie whose id is `beat.spotlight`, which the page sends inside the beat. None when the
+    key is missing or names a tie that is not among the request's ties (a legacy-shaped request): the caller then falls back to
+    `spotlight_candidates`. The id is only used here, to pick the tie; it never reaches a prompt."""
+    beat = request.get("beat")
+    wanted = beat.get("spotlight") if isinstance(beat, dict) else None
+    if not isinstance(wanted, str) or not wanted:
+        return None
+    return next((t for t in request.get("ties") or [] if t.get("id") == wanted), None)
+
+
 def spotlight_candidates(request: dict, names: dict[str, str]) -> list[dict]:
-    """The ties a `generate` request may mean by the spotlight (the request does not carry it): the ties whose two ends are both named in the
-    beat's plan or aim, which the planner is told to do. None named: no candidates, and the caller falls back to any tie."""
+    """The ties a `generate` request may mean by the spotlight when it does not say (see `spotlight_of`): the ties whose two ends are both
+    named in the beat's plan or aim, which the planner is told to do. None named: no candidates, and the caller falls back to any tie."""
     beat = request.get("beat") or {}
     text = f"{beat.get('aim', '')} {beat.get('plan', '')}"
     out = []

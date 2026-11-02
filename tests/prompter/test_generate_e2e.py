@@ -78,4 +78,4 @@ def test_the_whole_story_passes_on_the_mill_prompter_with_real_plan_and_generate
     prompts = engine_with_scripts.prompts
     assert any("## Your task" in p for p in prompts) and any("## The plan for this chapter" in p for p in prompts)
     versions = {r for r in log.read_text().split('"version": "') if r.startswith("mill-0.1")}
-    assert versions and all("+plan:plan-1:" in v and "+generate:generate-1:" in v for v in versions)
+    assert versions and all("+plan:plan-1:" in v and "+generate:generate-2:" in v for v in versions)

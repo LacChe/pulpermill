@@ -663,8 +663,9 @@ export function flagsUsed(card) {
 //   plan       Fill the beat's planner fields (where, when_time, aim, plan) for the spotlight tie. Request {chapter,
 //              chapter_count, style, setup, protagonist, cast, world, ties, holdings, spotlight, earlier_beats,
 //              earlier_events, retry?}. Reply {ok, beat}. The beat is by field key, links in words.
-//   generate   Write the chapter, say what happened, and propose the shifts. Request as plan, without the spotlight
-//              and with previous_ending and the beat. Reply {ok, chapter_text, events, shifts}. All or nothing: the page
+//   generate   Write the chapter, say what happened, and propose the shifts. Request as plan, without the top-level spotlight
+//              and with previous_ending and the beat. The spotlight tie's id is sent inside the beat (beat.spotlight), one of the
+//              ties sent. Reply {ok, chapter_text, events, shifts}. All or nothing: the page
 //              commits the chapter and its records as one unit.
 //   There is no call for the end of the story: the page folds the shifts into the cards itself (endstory.js).
 //   The page works out everything deterministic (the effective cards, the spotlight, the cast, what is in play, the

@@ -169,9 +169,12 @@ export function tieInWords(schema, project, tie) {
 
 const placeName = (project, id) => (project.world?.places ?? []).find((p) => p.id === id)?.name ?? "";
 
-// A beat in words, the way the writer reads it: its place by name, and no ids or code fields.
+// A beat in words, the way the writer reads it: its place by name, and no ids or code fields, except one: the spotlight tie's id,
+// as stored, so the backend knows which of the ties it is sent is the one the chapter is about (it is left out when the beat has none).
+// The backend never shows the id to a model.
 export function beatInWords(project, beat) {
-  return { where: placeName(project, beat.where), when_time: beat.when_time ?? "", aim: beat.aim ?? "", plan: beat.plan ?? "" };
+  const words = { where: placeName(project, beat.where), when_time: beat.when_time ?? "", aim: beat.aim ?? "", plan: beat.plan ?? "" };
+  return beat.spotlight ? { ...words, spotlight: beat.spotlight } : words;
 }
 
 // Earlier beats in words for the planner: chapter, where, when, aim and plan.
