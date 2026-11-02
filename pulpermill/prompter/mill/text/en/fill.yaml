@@ -1,1 +1,186 @@
-# Wording for the fill call (mill). Empty until its module is written; keys are free-form, read through common.load_text("fill").
+# Wording for the fill call (mill): one JSON step that fills one card from a note and/or an example chapter. Read through common.load_text("fill").
+# English always; the story's language is named inside the prompt, and names are kept exactly as written.
+# Wording is positive (what to do). Field meanings are in our own words, from the schema's help and why; the schema's good and avoid examples are
+# added by fill.py (one of each, with a note not to reuse their wording, because a copied example is a failing fill).
+# Probe markers (T1 = a Tier 1 probe, where no rule flags a wrong result) say which sentence targets which probe.
+
+languages: {en: English, zh: Simplified Chinese, ja: Japanese, ko: Korean, fr: French, de: German, es: Spanish}
+
+role: "You help a writer fill in one card of a story's setup. The card is the {label} card. Its subject: {intro} Use what the writer gave you to fill its fields."
+
+# ---- input modes. A note is used exactly as the writer meant it; a chapter is read to infer the card. ----
+note_only: "The writer's note for this card is below. Use it exactly as the writer meant it: every fact in it (names, ages, numbers, places, things) goes on the card as written, and what the note leaves open you fill with specific, useful detail that stays faithful to it."
+chapter_only: "The writer gave an example chapter instead of a note. Read it and work out what this card holds: the facts the chapter states go on the card as stated, and what it leaves open you fill with specific detail that fits the chapter."
+both: "The writer gave a note and an example chapter. The note decides what the card holds, exactly as the writer meant it, and every fact in it goes on the card as written. Use the chapter to confirm and enrich the details the note leaves open."
+note_label: "The writer's note:"
+chapter_label: "The example chapter:"
+chapter_gap: "[…]"
+
+language_line: "Write every text you produce in {language}. Keep names exactly as the writer spelled them, and keep the English answer words listed under the fields that offer a choice."
+
+filled_lead: "The card already holds the values below. They are the writer's own, so leave those fields out of your reply and fill the fields that are still empty."
+empty_card: "The card is still empty."
+related_lead: "The cards this card builds on already exist. Read them; they are not yours to change."
+names_lead: "Link only to these names, spelled exactly like this:"
+names_people: "People: {items}."
+names_groups: "Groups: {items}."
+names_places: "Places: {items}."
+names_things: "Things: {items}."
+names_none: "Nothing is available to link to."
+
+fields_lead: "What each field holds:"
+choice_lead: "Choose exactly one of these answer words:"
+choice_item: "\"{key}\": {expand}"
+examples_good: "Good text for this field looks like “{good}”."
+examples_avoid: "Text like “{avoid}” is not yet right for it: turn that kind of text into the good kind."
+examples_note: "The examples only show the kind of text wanted. Write new text for this story and never reuse their wording."
+
+output: "Reply with a JSON object holding only the fields you have something to say for. A field with nothing to say is left out, and a list stays empty when nothing allowed can fill it. Text fields hold plain prose; list fields hold lists of items; no field holds an id, a label or a note to the writer."
+
+# ---- what each field holds (the schema's help and why, in our words) ----
+fields:
+  style:
+    person: "Whose voice tells the story, fixed for every chapter. Read it from the narration of the chapter or from what the note says."
+    tense: "The tense of the narration, fixed for every chapter."
+    distance: "How far the narrator stands from the protagonist's thoughts: outside them, close to them, or inside them."
+    humor: "How much the telling jokes, and what kind of joking it is."
+    pacing: "How fast the telling moves, and how much page each moment gets."
+    narrator_note: "One or two sentences on anything about the narrator that the choices do not cover. Leave it out when the writer's text adds nothing."
+    rhythm: "How the sentences sound: short and clipped, mixed, or long and flowing."
+    diction: "Whether word choice is plain and everyday or elaborate."
+    formality: "How formal the narration sounds."
+    imagery: "How much figurative language the prose uses."
+    edge: "How rough the language is: swearing, bluntness, roughness."
+    explicitness: "Whether intense moments such as violence or intimacy happen on the page or just off it."
+    sentences_note: "One or two sentences on anything about the prose that the choices do not cover. Leave it out when the writer's text adds nothing."
+    attitude: "The narrator's feeling toward the story and its people, which shows in what it notices and how it words an event."
+    stance_note: "One or two sentences on anything about the narrator's attitude that the choice does not cover. Leave it out when the writer's text adds nothing."
+    amount: "How much of the story is carried by conversation."
+    directness: "Whether people say what they mean or leave it underneath."
+    polish: "Whether speech sounds like real talk or like crafted lines."
+    voice_difference: "Whether the characters sound different from one another."
+    dialogue_note: "One or two sentences on anything about dialogue that the choices do not cover. Leave it out when the writer's text adds nothing."
+    lens: "A habit of attention: what the narrator keeps noticing and how it weighs what it sees. A lens is never a subject or a theme; when the writer names a subject, turn it into the kind of noticing that would make that subject surface, and keep the writer's intent."
+    genre: "A tradition or a feeling that sets mood and conventions, in a few words. It requires no particular event and names no one."
+  characters:
+    name: "What the narration calls the person, spelled exactly as the writer spelled it."
+    age: "A whole number of years."
+    sex: "The person's sex, which fixes the pronouns."
+    appearance: "Concrete, checkable details: build, hair, face, marks, usual dress. Facts, not impressions, and every detail the writer lists stays."
+    sketch: "One or two sentences about what this person is like, as a person and not as a job title, with one contradiction that does not fit the type."
+    wants: "Two to five broad desires that cannot all be satisfied at once. Each is a desire in a few words; none names a person, an object or a place, and none is a concrete aim. The pull between the wants is what drives the person."
+    fear: "What this person avoids or protects themselves from."
+    flaw: "A false belief or blind spot that sabotages what they want."
+    values: "Things the person protects or keeps faith with, each phrased as something held dear."
+    behaviors: "How the person acts in different inner states. Each item pairs a broad inner or social state with a leaning, never a single situation or a single act, and at least one item is a calm or happy state."
+    competence: "What they are good at."
+    vulnerability: "Where they can be hurt or caught out, including shame that shapes how they behave."
+    speech: "How they talk: rhythm, vocabulary, what they never say."
+    history: "A short formative background that explains the flaw and the wants, told as events and conditions, with no named person, place or object."
+  world:
+    name: "What the world or setting is called."
+    era_and_technology: "When it is, what people can and cannot do, and the scale (a block, a city, a continent), stated as facts with no mood."
+    everyday_life: "What an ordinary day looks like for most people, and what is scarce, expensive or contested. This is the normal that a disruption will break, so it needs friction."
+    history: "What happened before the story that people still live with, told as events and forces, naming no individual."
+    places: "Places, each with a name, a description you could picture, and what the place does to the people in it. A place that is only scenery gives the story nothing, and every place the writer lists stays."
+    objects: "Things that matter, each with a name, a concrete description, and what it can do or what it means to whoever wants it. A thing has no owner and no location here: who holds it and where it sits are written later, in the ties and holdings."
+    powers: "Institutions, organisations, nations and crowds, each with a name, what kind of group it is, what its hold is (force, money, law, belief, numbers), and how an ordinary person meets it day to day. Say what the group is and how it is felt, never what it currently plans or wants."
+    rules: "Things that are true here, each with what it costs to live by it and what happens when it is broken (impossible, punished, shameful, or a side effect)."
+    terms: "Invented or local words, each with a one-line meaning."
+  entanglements:
+    ties: "Connections between a person and another person or group. Each tie points one way, from one end to the other. The bond is a standing label for what the tie is, and it may carry a clause of shared past. The edge is what the tie makes the person at the from end want, their driver in it."
+    holdings: "Who holds or controls which thing or place: each holding names the thing or place and the person, group or place that holds it."
+  setup:
+    protagonist: "The one character whose eyes we follow, chosen from the existing characters."
+    normal: "An ordinary day for the protagonist before the story, drawn from the world's everyday life and the ties, saying what that normal gave them (safety, status, a routine that kept a want or fear quiet) so that the disruption has something to threaten."
+    disruption: "The event that has already happened and broke the normal, so chapter 1 can open on it."
+    chapter_count: "How many chapters the story runs, a whole number."
+
+# ---- what each card may and may not hold ----
+cards:
+  style:
+    intro: "how the story is told: voice, attitude and the narrator's habit of attention."
+    scope: "You may choose everything on this card freely. It is about the telling and never about the story: it holds no name of any person, place or thing, and no event."
+    specific:
+      # T1 S3: names in a Style note.
+      - "The card must work for any story. When the writer's note names a character or a place (\"Odile narrates\", \"set in the salt marsh\"), describe the voice itself and leave the name out: \"a narrator who tells it in the first person\"."
+      # T1 S4: person and tense follow the text.
+      - "Person and tense are rules for every chapter. Read them from the narration of the example chapter (\"I\" is the first person, \"she\", \"he\" or \"they\" the third; \"walked\" is the past, \"walks\" the present) and from the note when it states them. When the writer is unsure (\"third, past i think, maybe present\"), commit to one person and one tense."
+      - "Fill each choice the writer's text lets you decide. For a choice the text does not touch, take the option that best fits the voice described, and the middle option when nothing points either way. The four note fields stay out unless the writer has something extra to say."
+  characters:
+    intro: "one individual: who they are, what they want, and how they act when things go wrong."
+    scope: "You may create this one person freely. The card names no other person, place or object and no relationship, so that it can move between stories: a relative, partner, boss, friend, rival, home town or heirloom in the note becomes a trait of this person alone."
+    specific:
+      # T1 C8: stated facts are kept exactly.
+      - "Copy every stated fact exactly. The name keeps its spelling, the age is the number given, the sex is the answer word that matches (a woman is \"female\", a man is \"male\"), and every appearance detail the writer lists (a scar, a missing fingertip, a hat she never takes off) appears with nothing dropped and nothing softened."
+      # T1 C1: wants are abstract, never a concrete aim, never a named person.
+      - "A want is a broad desire, such as to be trusted or to be left alone. When the note gives a concrete aim, keep the desire behind it: \"to buy back his father's boat\" becomes \"to make up for the past\", and \"to win the regatta against the Orsini crew\" becomes \"to prove himself\". Aims toward a particular person or object belong to the ties written later, so no want names one."
+      - "Give two to five wants that pull against each other, and keep the writer's own wants among them. When the writer states a single want, add the want that competes with it for the person's time, safety or loyalty."
+      # T1 C4: four distinct ideas.
+      - "Fear, flaw, vulnerability and values say four different things: the fear is what the person avoids, the flaw is a false belief that works against what they want, the vulnerability is the place where someone could press on them, and the values are what they hold dear. When the note gives one idea, keep it in the field it fits best and find a different, consistent idea for each of the others, so that no idea is written twice."
+      - "Phrase each value as something protected (\"keeps faith with the people who stayed\"), never as a prohibition (\"never breaks a promise\")."
+      - "Each behaviour pairs a broad inner state (\"feels cornered\", \"is relaxed\") with a leaning (\"turns sarcastic\", \"hums\"). A single event in the note (\"slams the ledger shut when his sums are checked\") becomes the state and tendency behind it."
+      - "When the note is only a role or a one-line type, build the person: a sketch that says what they are like with one contradiction, and fear, flaw and wants that stay faithful to that type."
+  world:
+    intro: "what exists and what is true: places, things, groups and rules."
+    scope: "You may create places, things, groups, rules and terms freely. The card names no character and never says who holds, knows or wants something, so that any cast can live in it."
+    specific:
+      # W1/E1: no owner in an object.
+      - "A thing's text describes the thing and what it is worth to whoever wants it. When the note says who owns a thing or where it sits (\"a barge owned by the harbourmaster, moored at the north quay\"), keep the barge and leave the owner and the location out; they are written later as holdings."
+      # W2: a group's present plan stays out.
+      - "A group is described by what it is and how an ordinary person meets it day to day (a tax, a curfew, a meter on the air). Leave out what the group is planning or about to do; that belongs to the ties written later."
+      # W5: history and era.
+      - "History is events and forces: a war, a fire, a treaty, a famine. When the note credits it to a person (\"the duke's betrayal\"), say what happened and leave the person out. The era is facts about the time, the technology and the scale, with no mood."
+      - "Places and things have no limit, so every place and thing the writer lists appears. Groups and rules take at most five each: keep the ones the writer stresses."
+      - "No character's name appears anywhere on this card."
+  entanglements:
+    intro: "the connections in this story: ties between people and groups, and who holds what."
+    scope: "You may only connect what already exists: the people, groups, places and things listed below. Create no new person, group, place, thing or rule, in any field and in any free text."
+    specific:
+      # T1 E2: a group that the World does not hold.
+      - "When the note speaks of a group, place or thing that is not on the list, make no tie or holding for it and do not invent it. Fill the ties and holdings you can make from the names you have."
+      # T1 E8: direction. T1 E4: bond and edge apart.
+      - "A tie points from the person whose driver the edge is. Ask who wants something from whom: in \"Odile was hired by Corrin to trace a missing shipment, and he is desperate for it\" Corrin wants the shipment traced, so the tie runs from Corrin to Odile, with the bond \"hired her\" and the edge \"to get the shipment traced\". The same tie is never written twice from both ends."
+      - "Every tie has a bond and an edge, and they differ. The bond is the standing label (what the tie is, with a clause of shared past if the note has one). The edge is what that tie makes the from person want right now. When the note gives only a live aim, invent a bond that fits the note's facts; when it gives only a label, add the edge it implies."
+      # T1 E1/E9: ownership is a holding, never a tie.
+      - "Ownership and control are holdings, never ties. \"Corrin owns the chandlery\" and \"the guild keeps the ledger\" are holdings: the place or thing, and the person or group that holds it. A tie joins a person or group to another person or group, so a place or a thing is never an end of a tie, and no bond says that someone owns something. Things may be held by people, groups or places; places by people or groups."
+      - "A tie needs two different ends. Make a tie for each relationship the note states between two names you may use, whichever way the note words it."
+  setup:
+    intro: "the springboard: who we follow, what just broke their normal, and how long the story runs."
+    scope: "You may write the normal, the disruption and the chapter count. The protagonist is one of the existing characters; create no new person, place or thing, and write no plan and no ending."
+    specific:
+      - "When the note names someone as the lead who is not among the characters, choose the existing character who fits the note best; never add a person."
+      # T1 U6: the normal is a day, not the character card again.
+      - "The normal is a day in the protagonist's life: routines, places and people from the world and the ties, and what that day gave them. Do not restate the character card: their fear, flaw and wants are already written, so show them through what the day contains."
+      - "When the note describes the normal as a mood (\"everything felt grey\"), build the concrete day that would produce it."
+      # T1 U3: the disruption is an event, with no ending.
+      - "The disruption is one event that has already happened and broke the normal, told in the past. It contains no ending, no outcome and no plan: leave out how things will turn out, and keep only the event itself."
+      - "When the note describes a condition (\"the mood in the town was souring\"), name the event that made it so."
+      # T1 U7: a stated chapter count is kept.
+      - "When the note states a number of chapters (\"make it eight chapters\", \"7 chaps\"), chapter_count is exactly that number. When it states none, choose a whole number from 5 to 10 that suits the size of the story."
+
+# ---- the check's lines (shown to the model on its second attempt) ----
+problems:
+  not_object: "Reply with a JSON object holding the card's fields."
+  nothing: "Fill in the card from the writer's text: give at least the fields the note or chapter speaks to."
+  bad_link: "{name} is not one of the names you may link to. Use only the names listed, spelled exactly like this: {names}."
+  stand_in: "The {field} field holds a stand-in ({value}). Write real content for it, or leave the field out."
+  self_tie: "A tie joins two different people or groups; {name} appears at both ends of one."
+  bond_is_edge: "Make the bond of the tie from {tie_from} to {tie_to} a standing label and its edge what the tie makes {tie_from} want; the two must say different things."
+  ownership_tie: "Ownership is a holding, not a tie. Move \"{bond}\" ({tie_from} and {tie_to}) into holdings, or give the tie a bond that is not about owning."
+  holding_pair: "A place can be held by a person or a group, not by another place: {holdee} cannot be held by {held_by}."
+  name_leak: "The world card must name no character; take {name} out of {where} and describe it without the person."
+  one_want: "Give at least two wants that pull against each other."
+  chapter_count: "The writer asked for {count} chapters, so chapter_count is {count}."
+  chapter_count_missing: "Set chapter_count to {count}, the number of chapters the writer asked for."
+
+# Data for the checks, not shown to the model.
+stand_ins: ["n/a", "na", "tbd", "none", "unknown", "todo", "...", "…", "-", "--", "stub text."]
+ownership_words: ["owns", "owner", "owned by", "belongs to", "property of", "possessor"]
+number_words: {one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10}
+
+# The Setup values already on the card, as sentences (the Setup renderer is written for chapter prompts, so the fill has its own).
+setup_protagonist: "The protagonist is {value}."
+setup_normal: "The normal: {value}"
+setup_disruption: "The disruption: {value}"
+setup_count: "The story runs for {value} chapters."

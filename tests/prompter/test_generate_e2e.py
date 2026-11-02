@@ -20,7 +20,7 @@ for sub in ("backend", "e2e"):
 
 from pulpermill.backend.config import Config  # noqa: E402
 from pulpermill.backend.errors import Cancelled  # noqa: E402
-from pulpermill.prompter.mill import generate as gen, plan  # noqa: E402
+from pulpermill.prompter.mill import fill, generate as gen, judge, plan, style_fit  # noqa: E402
 from server_harness import running, wait_idle  # noqa: E402
 from stub_engine import StubEngine  # noqa: E402
 
@@ -55,7 +55,7 @@ class MillEngine(StubEngine):
 @pytest.fixture
 def engine_with_scripts(monkeypatch):
     engine = MillEngine()
-    for module in (plan, gen):
+    for module in (plan, gen, fill, judge, style_fit):      # every call has its own wording now, so every call is scripted
         original = module.build_flow
 
         def build(request, kit, _original=original, _module=module):

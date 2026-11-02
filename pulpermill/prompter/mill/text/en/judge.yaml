@@ -1,1 +1,35 @@
-# Wording for the judge call (mill). Empty until its module is written; keys are free-form, read through common.load_text("judge").
+# Wording for the judge call (mill): one JSON step per model-judged rule that has something to look at. Each rule's own question is the
+# `judge_prompt` in schema/text/en/<card>.yaml; this file wraps it. English always.
+
+role: "You are a careful reviewer of one card of a story's setup. You answer one question about the items listed below, one item at a time."
+card_line: "The card is the {label} card."
+card_line_for: "The card is the {label} card of {name}."
+question_lead: "The question:"
+items_lead: "The items to judge, each shown with the handle you answer by:"
+# The answer: one entry for each listed item, exactly once, in the order listed.
+answer: "Give one answer for each item listed, exactly once, in the order listed. Reply with a JSON object with one key, checks, a list of entries that each hold the item's handle (item) and true or false (ok). Reply with the JSON object only."
+ok_yes: "Set ok to true when your answer to the question is yes for that item, and to false when it is no."
+ok_no: "Set ok to true when your answer to the question is no for that item, and to false when it is yes."
+language_note: "The items may be written in any language; read them as they are."
+
+# Rules whose question is asked so that "yes" is the problem (ok means the answer is no).
+ok_when_no: [object_unowned, power_no_current_goals]
+# Rules about the whole list: they fire only when no item passes (a calm state among the behaviours; a want that conflicts with another).
+fires_when_none_ok: [behaviors_include_calm, wants_conflict]
+
+# How one list item reads as prose (a part with nothing in it drops out). Keys are "<card>.<list field>".
+items:
+  characters.wants: "{text}"
+  characters.values: "{text}"
+  characters.behaviors: "when {state}, they {tendency}"
+  world.places: "{name}: {description} What the place does to the people in it: {effect}"
+  world.objects: "{name}: {description} What it can do, or what it means to whoever wants it: {significance}"
+  world.powers: "{name}, {nature}. What holds its power: {hold}. How an ordinary person meets it day to day: {felt}"
+  world.rules: "{statement} What it costs: {cost}. When it is broken: {when_broken}"
+  world.terms: "{term}: {meaning}"
+  entanglements.ties: "{tie_from} toward {tie_to}, bond: {bond}. Edge: {edge}"
+  entanglements.holdings: "{held_by} holds {holdee}"
+
+problems:
+  missing: "Answer for every listed item: you left out {items}."
+  repeated: "Answer for each listed item exactly once: {items} came up more than once."
