@@ -7,6 +7,7 @@ import {
   projectBefore, regenerateGate, regenerateKey, applyRegenerated, commitRegenerated,
 } from "../../web/generate.js";
 import { readGenerateReply } from "../../web/logic.js";
+import { beatInWords } from "../../web/plan.js";
 import { effectiveProject } from "../../web/effective.js";
 
 const copy = (x) => JSON.parse(JSON.stringify(x));
@@ -55,10 +56,22 @@ test("the generate request opens the story only in chapter 1, and reads the card
   assert.deepEqual(request.setup, { chapter_count: 8 });
   assert.equal(request.protagonist, "c0000001");
   assert.equal(request.cast[0].fear, "Fire");
-  assert.deepEqual(request.beat, { where: "The Archive", when_time: "Dusk, the second day", aim: beat2(p).aim, plan: beat2(p).plan });
+  assert.deepEqual(request.beat, { where: "The Archive", when_time: "Dusk, the second day", aim: beat2(p).aim, plan: beat2(p).plan, spotlight: "t1000001" });
   const first = generateRequest(schema, opening(), opening().outline.beats[0]);
   assert.deepEqual(Object.keys(first.setup).sort(), ["chapter_count", "disruption", "normal", "protagonist"]);
   assert.equal(first.previous_ending, null);
+});
+
+test("the beat in words carries the spotlight tie's id as stored, and leaves the key out when the beat has none", () => {
+  const p = story();
+  const beat = beat2(p);
+  assert.equal(beatInWords(p, beat).spotlight, "t1000001");
+  assert.deepEqual(Object.keys(beatInWords(p, beat)).sort(), ["aim", "plan", "spotlight", "when_time", "where"]);
+  const bare = { ...beat, spotlight: "" };
+  assert.deepEqual(Object.keys(beatInWords(p, bare)).sort(), ["aim", "plan", "when_time", "where"]);
+  delete bare.spotlight;
+  assert.equal("spotlight" in beatInWords(p, bare), false);
+  assert.equal(beatInWords(p, { ...beat, spotlight: "t1000002" }).spotlight, "t1000002", "the id is whatever the beat stores");
 });
 
 test("the inputs key changes with the plan, the picks and what has been written", () => {

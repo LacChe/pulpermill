@@ -4,8 +4,10 @@ cards). Wording lives in text/en/generate.yaml, where the reasoning behind the w
 Rules served: R3 (an interesting story, craft guidance in prose), R5 (minor characters by role, never the plot), R6 (the spotlight tie's edge
 and the protagonist's aim end in a new state; the shifts check demands the edge), R7 (the chapter follows the plan's four points unlabelled).
 
-The generate request does not carry the spotlight tie. The planner is told to name both ends of it in the plan, so the tie is found as the
-one whose two ends the beat's plan names; if none or several are named, any of the named ties (or any tie) satisfies the edge check."""
+The generate request carries the spotlight tie's id inside the beat (`beat.spotlight`, one of the ties sent), and the tie is that one. A request
+without it, or with an id that is not among its ties, falls back to the old reading: the planner is told to name both ends of the tie in the
+plan, so the tie is the one whose two ends the beat's plan names, and if none or several are named, any of the named ties (or any tie)
+satisfies the edge check. The id never reaches a prompt: the model sees the tie's names and its handle."""
 import json
 from typing import Any
 
@@ -15,9 +17,9 @@ from pulpermill.prompter.base import Flow, Step
 from pulpermill.schema.shifts import shiftable_fields
 
 from . import common
-from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, tiers, _norm
+from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-1"
+VERSION = "generate-2"
 WRITE_TOKENS = 3200        # the chapter's output limit; the prompt asks for about 1,800 words, which leaves room
 EVENTS_TOKENS = 800
 SHIFTS_TOKENS = 1600
@@ -30,7 +32,11 @@ def _lang(request: dict) -> str:
 
 
 def _spot(request: dict, names: dict[str, str]) -> tuple[list[dict], bool]:
-    """(the candidate spotlight ties, whether they were identified). Not identified: every tie is a candidate."""
+    """(the candidate spotlight ties, whether they were identified). By id when the beat carries one that matches a tie sent; otherwise by the
+    names in the plan. Not identified: every tie is a candidate."""
+    tie = spotlight_of(request)
+    if tie:
+        return [tie], True
     found = spotlight_candidates(request, names)
     return (found, True) if found else (list(request.get("ties") or []), False)
 
@@ -56,7 +62,7 @@ def write_prompt(request: dict, factor: float = 1.0) -> str:
     candidates, identified = _spot(request, names)
     spot = spotlight_in_words(candidates[0], names) if identified and len(candidates) == 1 else None
 
-    scene_beat = {**beat, "cast": cast_names}
+    scene_beat = {**{k: v for k, v in beat.items() if k != "spotlight"}, "cast": cast_names}     # the tie's id is never shown
     if spot:
         scene_beat["spotlight"] = spot
     with tx.squeeze(cast_f):

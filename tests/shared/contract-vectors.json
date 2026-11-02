@@ -3152,7 +3152,8 @@
           "where": "The Archive",
           "when_time": "Dusk, the second day",
           "aim": "Suvi wants the ledger out before the board counts.",
-          "plan": "Suvi hides the ledger in the quay stores. Marit arrives and asks her to come home. Suvi must choose which to protect first."
+          "plan": "Suvi hides the ledger in the quay stores. Marit arrives and asks her to come home. Suvi must choose which to protect first.",
+          "spotlight": "t1000001"
         }
       }
     },
@@ -3297,7 +3298,164 @@
           "where": "The Archive",
           "when_time": "Dusk, the second day",
           "aim": "Suvi wants the ledger out before the board counts.",
-          "plan": "Suvi hides the ledger in the quay stores. Marit arrives and asks her to come home. Suvi must choose which to protect first."
+          "plan": "Suvi hides the ledger in the quay stores. Marit arrives and asks her to come home. Suvi must choose which to protect first.",
+          "spotlight": "t1000001"
+        }
+      }
+    },
+    {
+      "name": "a generate request whose cast has two ties between the same people",
+      "golden": "generate_two_ties",
+      "valid": true,
+      "data": {
+        "call": "generate",
+        "schema_version": 3,
+        "language": "en",
+        "chapter": 2,
+        "chapter_count": 8,
+        "style": {
+          "person": "first",
+          "tense": "past"
+        },
+        "setup": {
+          "chapter_count": 8
+        },
+        "protagonist": "c0000001",
+        "cast": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "world": {
+          "name": "The Salt Coast",
+          "era_and_technology": "Lamps and ledgers.",
+          "everyday_life": "Tides set the day.",
+          "history": "",
+          "places": [
+            {
+              "id": "p0000001",
+              "name": "The Archive",
+              "description": "Damp stone.",
+              "effect": "People whisper."
+            },
+            {
+              "id": "p0000002",
+              "name": "The Quay",
+              "description": "Salt and rope.",
+              "effect": "Nothing stays secret."
+            }
+          ],
+          "objects": [
+            {
+              "id": "o0000001",
+              "name": "The ledger",
+              "description": "Green cloth cover.",
+              "significance": "Names who owes the board."
+            }
+          ],
+          "powers": [
+            {
+              "id": "g0000001",
+              "name": "The Board",
+              "nature": "Harbour council.",
+              "hold": "It sets the tolls.",
+              "felt": "Everyone pays."
+            }
+          ],
+          "rules": [
+            {
+              "id": "r0000001",
+              "statement": "Debts are written, never spoken.",
+              "cost": "A spoken debt is void.",
+              "when_broken": "The board is shamed."
+            }
+          ],
+          "terms": [
+            {
+              "id": "t0000001",
+              "term": "toll",
+              "meaning": "the harbour fee"
+            }
+          ]
+        },
+        "ties": [
+          {
+            "id": "t1000001",
+            "tie_from": "c0000002",
+            "tie_to": "c0000001",
+            "bond": "mother",
+            "edge": "to bring her daughter home"
+          },
+          {
+            "id": "t1000002",
+            "tie_from": "c0000001",
+            "tie_to": "g0000001",
+            "bond": "clerk of",
+            "edge": "to keep the board from finding the ledger gone"
+          },
+          {
+            "id": "t1000003",
+            "tie_from": "c0000001",
+            "tie_to": "c0000002",
+            "bond": "friend",
+            "edge": "to keep Marit from learning where the ledger is"
+          }
+        ],
+        "holdings": [
+          {
+            "id": "h1000001",
+            "holdee": "o0000001",
+            "held_by": "g0000001"
+          }
+        ],
+        "earlier_events": [
+          {
+            "chapter": 1,
+            "happened": "Suvi learned the board has the ledger.",
+            "changed": "Suvi now knows the board is hunting her."
+          }
+        ],
+        "previous_ending": "She closed the door on the quay and did not look back.",
+        "beat": {
+          "where": "The Archive",
+          "when_time": "Dusk, the second day",
+          "aim": "Suvi wants the ledger out before the board counts.",
+          "plan": "Suvi hides the ledger in the quay stores. Marit arrives and asks her to come home. Suvi must choose which to protect first.",
+          "spotlight": "t1000003"
         }
       }
     },

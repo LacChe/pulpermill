@@ -1200,6 +1200,10 @@ test("the golden requests are exactly what the page builds", () => {
     ],
   };
   const twoStories = story();
+  // The same two people tied both ways, and the second tie is the spotlight: matching the plan's names would find both ties.
+  const twoTies = story();
+  twoTies.entanglements.ties.push({ id: "t1000003", tie_from: "c0000001", tie_to: "c0000002", bond: "friend", edge: "to keep Marit from learning where the ledger is" });
+  twoTies.outline.beats[1].spotlight = "t1000003";
   const blankOpening = () => { const p = opening(); p.setup.normal = ""; p.setup.disruption = ""; return p; };
   const built = {
     status: { call: "status" },
@@ -1214,6 +1218,7 @@ test("the golden requests are exactly what the page builds", () => {
     plan_chapter_1: planApi.planRequest(schema, blankOpening(), blankOpening().outline.beats[0]),
     generate: generateApi.generateRequest(schema, twoStories, twoStories.outline.beats[1]),
     generate_chapter_1: generateApi.generateRequest(schema, opening(), opening().outline.beats[0]),
+    generate_two_ties: generateApi.generateRequest(schema, twoTies, twoTies.outline.beats[1]),
   };
   const golden = contractVectors.requests.filter((v) => v.golden);
   assert.deepEqual(golden.map((v) => v.golden).sort(), Object.keys(built).sort(), "every request the page makes has a golden case");
