@@ -156,7 +156,7 @@ def test_a_story_that_cannot_fit_is_too_long_before_the_chapter_is_written():
     request = {**_generate(), "previous_ending": "word " * 100000}
     engine = FakeEngine()
     with running(engine=engine, run=None) as (base, _):
-        assert post(base, request).status_code == 413
+        assert post(base, request, timeout=30).status_code == 413          # counting 100,000 words of tokens takes 9 to 13 s on a slow machine
     assert engine.calls == 0
 
 
