@@ -1,1 +1,18 @@
-# Wording for the style_fit call (mill). Empty until its module is written; keys are free-form, read through common.load_text("style_fit").
+# Wording for the style_fit call (mill): can the protagonist's personality carry the person, tense and voice the Style card chose? English always.
+
+languages: {en: English, zh: Simplified Chinese, ja: Japanese, ko: Korean, fr: French, de: German, es: Spanish}
+
+role: "You check whether a story's chosen voice can be carried by its protagonist. The Style card has fixed how the story is told, and the protagonist is the person the story follows."
+voice_lead: "How the story is told:"
+person_lead: "The protagonist:"
+behaviors_lead: "{name} acts in these ways, depending on the state they are in: {items}."
+protagonist_bare: "Nothing more is known of the protagonist than the name {name}."
+
+# What counts as a conflict. The line between a real conflict and a preference is the heart of this call.
+task: "Decide whether this protagonist can carry the person, the tense and the voice described above for a whole story. Compare the protagonist's sketch, fear, flaw, speech and behaviours with them. A conflict is something in the protagonist that makes the chosen voice impossible or self-contradicting to sustain: a first-person narrator who by nature never puts anything into words, in a voice set to take the reader deep inside their thoughts; or a first-person narration that is ornate and formal for a protagonist whose own speech and habits are blunt and clipped. In the first person the narrator is the protagonist, so their speech and temperament must be able to produce the telling. In the third person the narrator stands apart from the protagonist, so conflicts are rare and come only from what the voice asks of the protagonist's inner life."
+preference: "A preference is not a conflict. A quiet person in a brisk, funny voice fits; a shy protagonist in the first person fits; a protagonist who talks little in a narration that is full of observation fits. Say that the voice does not fit only when you can name the trait and the choice that cannot live together."
+
+output: "Reply with a JSON object with two keys. fits: true when there is no real conflict, false when there is one. message: when fits is false, one or two sentences in {language} that name the protagonist and say which of their traits meets which choice of voice (person, tense, distance, attitude or diction) and what the writer could change; when fits is true, an empty string."
+
+problems:
+  message_needed: "When fits is false, say in the message which trait of {name} meets which choice of voice, so that the writer knows what to look at."
