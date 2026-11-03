@@ -16,7 +16,7 @@ from pulpermill.prompter.stub.stub import sample
 
 from . import common
 
-VERSION = "fill-2"
+VERSION = "fill-3"
 MAX_OUTPUT = 2000      # a long World (nine places and their detail) is the heaviest reply
 
 
@@ -127,7 +127,10 @@ def field_guidance(card: str, keys: list[str]) -> str:
         if options and not isinstance(next(iter(options.values())), str):
             choices = " ".join(w["choice_item"].format(key=o, expand=r.s(v.get("expand")).replace("{name}", "the person")) for o, v in options.items())
             line += f" {w['choice_lead']} {choices}"
-        examples = field.get("examples") or next((i["examples"] for i in (field.get("item_fields") or {}).values() if i.get("examples")), None)
+        items = (w.get("item_fields") or {}).get(card, {}).get(key)
+        if items:
+            line += "\n" + w["item_lead"] + "\n" + "\n".join(f"  {k}: {v}" for k, v in items.items())
+        examples = field.get("examples") or next((i["examples"] for i in (field.get("item_fields") or {}).values() if i.get("examples")), None) if isinstance(field.get("item_fields") or {}, dict) else field.get("examples")
         if examples and examples.get("good") and examples.get("avoid"):
             line += " " + w["examples_good"].format(good=examples["good"][0]) + " " + w["examples_avoid"].format(avoid=examples["avoid"][0])
         out.append(line)
@@ -199,6 +202,34 @@ def stated_chapter_count(note: str) -> int | None:
     return words[m.group(1)] if m else None
 
 
+def item_required(card: str, key: str) -> list[str]:
+    """The fields every item of the list `key` of `card` must carry, as the card's schema marks them (ids are made by the page)."""
+    from typing import get_args
+    from pulpermill.schema import CARDS
+    item = get_args(CARDS[card][0].model_fields[key].annotation)[0]
+    return [k for k, f in item.model_fields.items() if k != "id" and f.is_required()]
+
+
+def empty_item_field(card: str, value: dict) -> str | None:
+    """One plain line naming the list and the field when an item the fill wrote lacks a required field or holds it empty; else None.
+    The grammar already requires the fields, but it still allows an empty string."""
+    from pulpermill.schema import CARDS
+    pr = common.load_text("fill")["problems"]
+    for key, items in value.items():
+        if not isinstance(items, list) or key not in CARDS[card][0].model_fields:
+            continue
+        try:
+            needed = item_required(card, key)
+        except (IndexError, AttributeError, TypeError):
+            continue
+        for item in items:
+            if isinstance(item, dict):
+                for field in needed:
+                    if not r.s(item.get(field)):
+                        return pr["empty_item_field"].format(list=key, field=field)
+    return None
+
+
 def fill_problem(request: dict, value: Any) -> str | None:
     """None when the reply is usable, else one plain line saying what to fix."""
     p = common.load_text("fill")
@@ -213,6 +244,10 @@ def fill_problem(request: dict, value: Any) -> str | None:
     for path, text in _strings(value):
         if path.split(".")[-1] not in choices and (_norm(text) in p["stand_ins"] or text.strip().lower() in p["stand_ins"]):
             return pr["stand_in"].format(field=path.split(".")[-1], value=text.strip())
+
+    empty = empty_item_field(card, value)
+    if empty:
+        return empty
 
     def linked(name, allowed, shown):
         return pr["bad_link"].format(name=name, names=", ".join(sorted(shown))) if name and name not in allowed else None

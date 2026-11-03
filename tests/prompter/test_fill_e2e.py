@@ -52,5 +52,5 @@ def test_every_fixture_of_the_kit_is_filled_and_judged_on_the_mill_prompter(engi
     failed = [row for row in rows if row.get("ok") not in (None, "", "true", "True", "1", "yes")]
     assert not failed, failed[:3]
     meta = json.loads((out / "meta.json").read_text())
-    assert "mill-0.1" in json.dumps(meta) and "fill:fill-2" in json.dumps(meta)
+    assert "mill-0.1" in json.dumps(meta) and "fill:fill-3" in json.dumps(meta)
     assert any("## " not in p and p.startswith("You help a writer fill in one card") for p in engine_with_scripts.prompts)

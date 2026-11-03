@@ -89,11 +89,13 @@ def _with_enum(node: Schema, names: list[str]) -> Schema:
     return node
 
 
-def _clean(node: Any, refs: dict | None, drop_fixed: bool) -> Any:
+def _clean(node: Any, refs: dict | None, drop_fixed: bool, item_required: bool = False, inside_list: bool = False) -> Any:
     """A model schema node reduced to the keywords above: every field optional, ids left out (the page makes them), and each link field
-    limited to the names in `refs` (keyed by reference source, such as "characters" or "world.places")."""
+    limited to the names in `refs` (keyed by reference source, such as "characters" or "world.places"). With `item_required` (the fill),
+    the fields inside a list item stay required when the schema marks them required: a fill may leave a card's own field alone, but an
+    item it writes is whole (`inside_list` is true for the object that is the item of a list)."""
     if isinstance(node, list):
-        return [_clean(v, refs, drop_fixed) for v in node]
+        return [_clean(v, refs, drop_fixed, item_required, inside_list) for v in node]
     if not isinstance(node, dict):
         return node
     out: Schema = {}
@@ -106,16 +108,17 @@ def _clean(node: Any, refs: dict | None, drop_fixed: bool) -> Any:
             for name, spec in value.items():
                 if name == "id" or (drop_fixed and spec.get("fixed")):
                     continue
-                child = _clean(spec, refs, drop_fixed)
+                child = _clean(spec, refs, drop_fixed, item_required)
                 sources = spec.get("ref")
                 if refs and sources:
                     names = unique([n for source in sources for n in refs.get(source, [])])
                     if names:
                         child = _with_enum(child, names)
                 props[name] = child
-            out["properties"], out["required"], out["additionalProperties"] = props, [], False
+            kept = [k for k in node.get("required") or [] if k in props] if item_required and inside_list else []
+            out["properties"], out["required"], out["additionalProperties"] = props, kept, False
         else:
-            out[key] = _clean(value, refs, drop_fixed)
+            out[key] = _clean(value, refs, drop_fixed, item_required, inside_list=(key == "items"))
     return out
 
 
@@ -131,7 +134,8 @@ def _exclusive(schema: Schema, card_id: str) -> Schema:
             keys = [k for k in rule.params["fields"] if k in item["properties"]]
             if len(keys) == 2:
                 schema["properties"][list_field]["items"] = {"anyOf": [
-                    {**item, "properties": {n: v for n, v in item["properties"].items() if n not in [o for o in keys if o != key]}, "required": [key]}
+                    {**item, "properties": {n: v for n, v in item["properties"].items() if n not in [o for o in keys if o != key]},
+                     "required": [r for r in item.get("required") or [] if r not in keys] + [key]}
                     for key in keys]}
     return schema
 
@@ -148,12 +152,13 @@ def link_names(characters: list[str], world: dict | None) -> dict[str, list[str]
 # ---- A card fill ----------------------------------------------------------------------------------------------------
 
 def fill(request: dict) -> Schema:
-    """The reply shape for a fill: the card's fields, all optional, no ids, links limited to the names of the related cards."""
+    """The reply shape for a fill: the card's own fields all optional, but the fields of every list item it writes required as the schema says
+    (a tie always has both ends, a bond and an edge), no ids, links limited to the names of the related cards. A list may be empty."""
     related = request.get("related") or {}
     people = related.get("characters") or []
     people = [people] if isinstance(people, dict) else people
     refs = link_names([p.get(cards.label_key("characters")) for p in people if isinstance(p, dict)], related.get("world"))
-    return _exclusive(_clean(card_model_schema(request["card"]), refs, False), request["card"])
+    return _exclusive(_clean(card_model_schema(request["card"]), refs, False, item_required=True), request["card"])
 
 
 # ---- The planner's fields of a beat ---------------------------------------------------------------------------------

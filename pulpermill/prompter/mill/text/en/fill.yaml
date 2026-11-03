@@ -88,13 +88,55 @@ fields:
     rules: "Things that are true here, each with what it costs to live by it and what happens when it is broken (impossible, punished, shameful, or a side effect)."
     terms: "Invented or local words, each with a one-line meaning."
   entanglements:
-    ties: "Connections between a person and another person or group. Each tie points one way, from one end to the other. The bond is a standing label for what the tie is, and it may carry a clause of shared past. The edge is what the tie makes the person at the from end want, their driver in it."
+    ties: "Connections between a person and another person or group. Each tie points one way, from one end to the other. The bond is a standing label that reads from the from end: it says what the from end is to the to end, and it may carry a clause of shared past. The edge is what the tie makes the person at the from end want, their driver in it."
     holdings: "Who holds or controls which thing or place: each holding names the thing or place and the person, group or place that holds it."
   setup:
     protagonist: "The one character whose eyes we follow, chosen from the existing characters."
     normal: "An ordinary day for the protagonist before the story, drawn from the world's everyday life and the ties, saying what that normal gave them (safety, status, a routine that kept a want or fear quiet) so that the disruption has something to threaten."
     disruption: "The event that has already happened and broke the normal, so chapter 1 can open on it."
     chapter_count: "How many chapters the story runs, a whole number."
+
+# ---- what each field inside a list item holds (printed under its list; every item field has one) ----
+item_lead: "Every item holds:"
+item_fields:
+  characters:
+    wants:
+      text: "One broad desire in a few words."
+    values:
+      text: "One thing the person protects or keeps faith with, phrased as something held dear."
+    behaviors:
+      state: "A broad inner or social state, such as feeling cornered or being relaxed."
+      tendency: "What the person does in that state, a leaning and never a single act."
+  world:
+    places:
+      name: "What the narration calls the place."
+      description: "What you could picture standing there: concrete things to see, hear and smell."
+      effect: "What the place does to the people in it: how it changes what they do, say or risk."
+    objects:
+      name: "What the narration calls the thing."
+      description: "What it looks and feels like, in concrete detail."
+      significance: "What it can do, or what it means to whoever wants it."
+    powers:
+      name: "What the group is called."
+      nature: "What kind of group it is, in one plain sentence."
+      hold: "How it holds power over people: force, money, law, belief or numbers."
+      felt: "How an ordinary person meets it day to day."
+    rules:
+      statement: "The fact itself, in one plain sentence about how things are here. The price of living by it and the result of breaking it go in the next two fields."
+      cost: "What it costs people to live by the rule."
+      when_broken: "What happens when the rule is broken: it proves impossible, someone is punished, someone is shamed, or a side effect follows."
+    terms:
+      term: "The invented or local word, spelled as people use it."
+      meaning: "What it means, in one line."
+  entanglements:
+    ties:
+      tie_from: "The person or group at the from end, the one whose driver the edge is, named exactly as listed."
+      tie_to: "The person or group at the to end, named exactly as listed and different from the from end."
+      bond: "A standing label that reads from the from end: it says what the from end is to the to end (a tie from a mother to her son has the bond \"mother\"), and it may carry a clause of shared past."
+      edge: "What the from end wants in this tie, as a driver, in a short phrase that differs from the bond."
+    holdings:
+      holdee: "The thing or place that is held, named exactly as listed."
+      held_by: "The person, group or place that holds it, named exactly as listed."
 
 # ---- what each card may and may not hold ----
 cards:
@@ -140,7 +182,7 @@ cards:
       # T1 E2: a group that the World does not hold.
       - "When the note speaks of a group, place or thing that is not on the list, make no tie or holding for it and do not invent it. Fill the ties and holdings you can make from the names you have."
       # T1 E8: direction. T1 E4: bond and edge apart.
-      - "A tie points from the person whose driver the edge is. Ask who wants something from whom: in \"Odile was hired by Corrin to trace a missing shipment, and he is desperate for it\" Corrin wants the shipment traced, so the tie runs from Corrin to Odile, with the bond \"hired her\" and the edge \"to get the shipment traced\". The same tie is never written twice from both ends."
+      - "A tie points from the person whose driver the edge is. Ask who wants something from whom: in \"Odile was hired by Corrin to trace a missing shipment, and he is desperate for it\" Corrin wants the shipment traced, so the tie runs from Corrin to Odile, with the bond \"hired her\" (what Corrin is to Odile) and the edge \"to get the shipment traced\". The same tie is never written twice from both ends."
       - "Every tie has a bond and an edge, and they differ. The bond is the standing label (what the tie is, with a clause of shared past if the note has one). The edge is what that tie makes the from person want right now. When the note gives only a live aim, invent a bond that fits the note's facts; when it gives only a label, add the edge it implies."
       # T1 E1/E9: ownership is a holding, never a tie.
       - "Ownership and control are holdings, never ties. \"Corrin owns the chandlery\" and \"the guild keeps the ledger\" are holdings: the place or thing, and the person or group that holds it. A tie joins a person or group to another person or group, so a place or a thing is never an end of a tie, and no bond says that someone owns something. Things may be held by people, groups or places; places by people or groups."
@@ -170,6 +212,7 @@ problems:
   ownership_tie: "Ownership is a holding, not a tie. Move \"{bond}\" ({tie_from} and {tie_to}) into holdings, or give the tie a bond that is not about owning."
   holding_pair: "A place can be held by a person or a group, not by another place: {holdee} cannot be held by {held_by}."
   unknown_person: "The normal and the disruption name {names}, who is on no card. Use only the names from the cards, and refer to anyone else by role (the woodcutter, a neighbour)."
+  empty_item_field: "Every item in {list} needs a {field}: write it for each item, or leave the item out."
   name_leak: "The world card must name no character; take {name} out of {where} and describe it without the person."
   one_want: "Give at least two wants that pull against each other."
   chapter_count: "The writer asked for {count} chapters, so chapter_count is {count}."
