@@ -10,6 +10,7 @@ import { effectiveProject } from "../../web/effective.js";
 import { lockStaticCards, storyStarted, cardLocked, STATIC_CARDS } from "../../web/gate.js";
 import { makeAfterStory, afterStoryChanges } from "../../web/endstory.js";
 import { stageText } from "../../web/logic.js";
+import { fill } from "../../web/text.js";
 
 const WEB = new URL("../../web/", import.meta.url);
 const copy = (x) => JSON.parse(JSON.stringify(x));
@@ -124,7 +125,7 @@ test("a stage shows its name and step i of n when n is known, and an unknown nam
 // ---- The wording the panels read ---------------------------------------------------------------------
 
 // Every `STRINGS.key` (and STRINGS.group.key) a panel file reads is a key of its section in the bundle, so no panel shows a bare key.
-const PANELS = { "planpanel.js": "plan", "generatepanel.js": "generate", "endpanel.js": "end", "story.js": "story", "welcomestrip.js": "welcome" };
+const PANELS = { "planpanel.js": "plan", "generatepanel.js": "generate", "runall.js": "runall", "endpanel.js": "end", "story.js": "story", "welcomestrip.js": "welcome" };
 for (const [file, name] of Object.entries(PANELS)) {
   test(`${file} reads only strings the ${name} section has`, () => {
     const code = readFileSync(new URL(file, WEB), "utf8").split("\n").map((line) => line.split("//")[0]).join("\n");
@@ -133,6 +134,19 @@ for (const [file, name] of Object.entries(PANELS)) {
     assert.deepEqual([...new Set(missing)], []);
   });
 }
+
+test("planpanel.js reads only strings the runall section has for its run-all button", () => {
+  const code = readFileSync(new URL("planpanel.js", WEB), "utf8").split("\n").map((line) => line.split("//")[0]).join("\n");
+  const keys = [...code.matchAll(/\bRUN\.(\w+)/g)].map((m) => m[1]);
+  assert.ok(keys.length > 0);
+  assert.deepEqual([...new Set(keys)].filter((key) => !(key in bundle.runall)), []);
+});
+
+test("every run-all message fills all its marks from the values the code gives", () => {
+  assert.match(fill(bundle.runall.button, { from: 3, to: 6 }), /^Plan and write chapters 3 to 6$/);
+  assert.match(fill(bundle.runall.progress, { n: 3, total: 6, what: stageText({ name: "write", index: 2, of: 3 }) }), /^Chapter 3 of 6: .*writing the chapter.*step 2 of 3/);
+  assert.doesNotMatch(fill(bundle.runall.failedWrite, { n: 3, why: "x" }), /\{/);
+});
 
 test("the welcome steps name the five cards and no longer mention anything removed", () => {
   const text = JSON.stringify(bundle.welcome);

@@ -14,6 +14,7 @@ import { untouched } from "./undo.js";
 import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
 import { createGeneratePanel } from "./generatepanel.js";
+import { createRunAll } from "./runall.js";
 import { forgetFolds } from "./folds.js";
 import { createEndPanel } from "./endpanel.js";
 import { createExportPanel } from "./exportpanel.js";
@@ -63,6 +64,7 @@ let tabIcon;
 let storyBar;
 let planPanel;
 let generatePanel;
+let runAll;
 let endPanel;
 let exportPanel;
 let chapterPanel;
@@ -198,6 +200,7 @@ function replaceProject(next, savedAs = next) {
   forgetFolds();
   planPanel?.reset();
   generatePanel?.reset();
+  runAll?.reset();
   endPanel?.reset();
   importPanel?.reset();
   view = { card: "style", characterId: null, chapter: null };
@@ -638,7 +641,14 @@ try {
     notice: (text, kind) => showNotice(text, kind),
     redraw: () => show(),
   });
+  runAll = createRunAll({
+    schema, client, getProject: () => project, errorText,
+    changed: () => touchState(), redraw: () => show(),
+    notice: (text, kind) => showNotice(text, kind),
+  });
+  runAll.onChange(() => planPanel.refresh());
   planPanel = createPlanPanel({
+    runAll,
     schema, client, getProject: () => project, backendWhere, errorText,
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),

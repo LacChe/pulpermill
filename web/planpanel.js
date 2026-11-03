@@ -14,6 +14,7 @@ import { stageText, instanceName } from "./logic.js";
 import { section, fill, msg, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
+import { STRINGS as RUN } from "./runall.js";
 
 export const STRINGS = section("plan");
 
@@ -33,6 +34,9 @@ export function createPlanPanel(hooks) {
   let stageLine = null;
   let mine = false;                     // this panel pressed the button and is waiting
   let tag = null;                       // the seconds beside the button
+  let runButton = null;                 // the run-all button, its Stop and its progress line
+  let runStop = null;
+  let runLine = null;
   let shownIn = null;                   // the card the panel was last drawn into, so it can be drawn again alone
   let shownKey = null;                  // what the panel was drawn from, so a change made in the Outline form is noticed
 
@@ -61,7 +65,11 @@ export function createPlanPanel(hooks) {
 
   function refresh() {
     const { working: busy, stage } = hooks.client.state;
-    if (button) button.disabled = busy || button.dataset.blocked === "true";
+    const running = Boolean(hooks.runAll?.running);
+    if (button) button.disabled = busy || running || button.dataset.blocked === "true";
+    if (runButton) runButton.disabled = busy || running || runButton.dataset.blocked === "true";
+    if (runStop) runStop.hidden = !running;
+    if (runLine) runLine.textContent = running ? hooks.runAll.progressText() : "";
     if (stageLine) stageLine.textContent = busy && mine ? stageText(stage) || STRINGS.working : "";
     tag?.update();
   }
@@ -119,6 +127,9 @@ export function createPlanPanel(hooks) {
   function draw(container) {
     const project = hooks.getProject();
     button = null;
+    runButton = null;
+    runStop = null;
+    runLine = null;
     stageLine = null;
     tag = null;
     shownIn = container;
@@ -193,8 +204,18 @@ export function createPlanPanel(hooks) {
     stageLine = node("span", { className: "note", textContent: "" });
     panel.append(node("div", { className: "plan-actions" }, button, tag.node, stageLine),
       node("p", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) }));
+    if (hooks.runAll && info.count) {
+      runButton = node("button", { type: "button", className: "validate", textContent: fill(chapter >= info.count ? RUN.buttonOne : RUN.button, { n: chapter, from: chapter, to: info.count }) });
+      runButton.dataset.blocked = String(Boolean(problem));
+      runButton.addEventListener("click", () => hooks.runAll.start(project, beat));
+      runStop = node("button", { type: "button", className: "validate", textContent: RUN.stop, hidden: true });
+      runStop.addEventListener("click", () => hooks.runAll.stop());
+      runLine = node("span", { className: "note", textContent: "" });
+      panel.append(node("div", { className: "plan-actions" }, runButton, runStop, runLine),
+        node("p", { className: "note", textContent: fill(RUN.help, { where: hooks.backendWhere() }) }));
+    }
     refresh();
   }
 
-  return { draw, refresh, sync, reset() { draft = null; button = null; stageLine = null; tag = null; mine = false; shownIn = null; shownKey = null; } };
+  return { draw, refresh, sync, reset() { draft = null; button = null; runButton = null; runStop = null; runLine = null; stageLine = null; tag = null; mine = false; shownIn = null; shownKey = null; } };
 }

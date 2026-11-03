@@ -483,6 +483,20 @@
     "badType": "{where}{key} has the wrong type.",
     "badOption": "{where}{key} must be one of: {options} (got {got})."
   },
+  "runall": {
+    "button": "Plan and write chapters {from} to {to}",
+    "buttonOne": "Plan and write chapter {n}",
+    "stop": "Stop the run",
+    "help": "Plans and writes each remaining chapter in turn, the same way the two buttons do, and asks nothing in between. It stops at the first problem and keeps every chapter already written. Each step is sent to {where}.",
+    "progress": "Chapter {n} of {total}: {what}",
+    "planning": "The model is planning…",
+    "writing": "The model is writing…",
+    "done": "Done: {k} chapter(s) written and saved, up to chapter {to}.",
+    "stopped": "Stopped during chapter {n}.",
+    "failedPlan": "Stopped at chapter {n}, while planning it: {why}",
+    "failedWrite": "Stopped at chapter {n}, while writing it: {why}",
+    "kept": "Every chapter written before it is kept."
+  },
   "progress": {
     "generic": "The model is working…",
     "step": "{label} (step {index} of {of})",
