@@ -180,7 +180,9 @@ class Attempts:
 def note_soft(call: str, step: str, line: str, what: str = "accepted") -> None:
     """Says once on the server console (not the run log) that a soft problem was accepted or an echo trimmed. `line` is the problem line
     or a count, never story text."""
-    log.warning("call=%s step=%s soft problem %s: %s", call, step, what, " ".join(str(line).split()))
+    one = " ".join(str(line).split())
+    # The facts also travel in the record, so a trace the backend keeps can pick them up through `logging` (nothing is imported from it).
+    log.warning("call=%s step=%s soft problem %s: %s", call, step, what, one, extra={"pulpermill_soft": {"call": call, "step": step, "what": what, "line": one}})
 
 
 _SENTENCE_END = re.compile(r"(?<=[.!?…])[\"”’']*\s+|\n+")

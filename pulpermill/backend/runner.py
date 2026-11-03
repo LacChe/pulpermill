@@ -16,7 +16,7 @@ from typing import Any
 from pulpermill.prompter.base import Flow, Step
 from pulpermill.prompts import budget, tokens
 
-from . import assemble, debuglog, language as lang, shape
+from . import assemble, debuglog, language as lang, shape, trace as tracelog
 from .errors import BackendError
 from .handles import Unresolved
 from .kit import Kit
@@ -132,6 +132,7 @@ def run_step(ctx: RunContext, step: Step, factor: float, language: str | None, p
     constrain_first = step.kind == "json" and ctx.config.constrain == "always"
     problem = None
     debug = debuglog.for_config(ctx.config)        # None unless the opt-in debug capture is on
+    trace = tracelog.for_config(ctx.config)        # None unless the opt-in trace is on
     refused = 0
     for number in range(1, MAX_ATTEMPTS + 1):
         ctx.cancel.raise_if_cancelled()
@@ -149,13 +150,20 @@ def run_step(ctx: RunContext, step: Step, factor: float, language: str | None, p
         attempt = Attempt(number, constrained, time.monotonic() - started, run=dict(getattr(ctx.engine, "last_run", None) or {}) or None)
         result.attempts.append(attempt)
         entry["attempts"].append({"constrained": constrained, "seconds": round(attempt.seconds, 2), "run": attempt.run})
+        soft: list[str] = []
         try:
-            result.value = parse(text)
+            if trace is None:
+                result.value = parse(text)
+            else:
+                with trace.capture() as soft:
+                    result.value = parse(text)
+            _trace(ctx, trace, step, attempt, current, text, None, soft)
             return result
         except Unusable as e:
             problem = attempt.problem = short(e)
             entry["attempts"][-1]["problem"] = problem
             refused += 1
+            _trace(ctx, trace, step, attempt, current, text, str(e), [])
             if debug is not None:
                 _capture(ctx, debug, step, attempt, str(e), text, current if refused == 1 else None)
     raise BackendError("bad_output", problem or "")
@@ -172,6 +180,21 @@ def _capture(ctx: RunContext, debug: "debuglog.DebugLog", step: Step, attempt: A
                       reply=text, tokens=tokens, prompt=prompt, first_of_step=prompt is not None)
     except Exception as e:
         log.warning("the debug capture could not record an attempt (%s)", type(e).__name__)
+
+
+def _trace(ctx: RunContext, trace: "tracelog.Trace | None", step: Step, attempt: Attempt, prompt: str, text: str, problem: str | None,
+           soft: list[str]) -> None:
+    """One attempt, used (`problem` None) or refused, into the trace file. Never raises, whatever the engine or the disk does."""
+    if trace is None:
+        return
+    try:
+        tokens = (attempt.run or {}).get("output_tokens")
+        if tokens is None and isinstance(text, str):
+            tokens = ctx.engine.count_tokens(text)
+        trace.record(call=ctx.notes.get("call"), step=step.name, attempt=attempt.number, constrained=attempt.constrained, prompt=prompt,
+                     reply=text, used=problem is None, problem=problem, tokens=tokens, seconds=attempt.seconds, soft=soft)
+    except Exception as e:
+        log.warning("the trace could not record an attempt (%s)", type(e).__name__)
 
 
 def run_flow(ctx: RunContext, flow: Flow, language: str | None) -> list[Any]:

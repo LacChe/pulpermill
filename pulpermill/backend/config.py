@@ -63,6 +63,8 @@ class Config:
     debug_path: str | None = None           # opt-in (debuglog.py): a file that gets one JSON line per REFUSED attempt, with the full problem line and the
                                             # model's raw reply. It holds story text: never share or commit it. None = off, nothing is written.
     debug_prompts: bool = False             # with debug_path: the first refused attempt of each step also keeps its prompt text (prompts are large)
+    trace_path: str | None = None           # opt-in (trace.py): a file that gets one JSON line per ATTEMPT of every step, used or refused, with the full
+                                            # prompt and reply. It holds story text: never share or commit it, and it is never sent to the page. None = off.
     max_body_bytes: int = 4_000_000         # a request larger than this is bad_request; the biggest real project is far below it
     model: ModelSettings = field(default_factory=ModelSettings)
     prose: Sampling = field(default_factory=Sampling)          # free prose (the step names it "prose")

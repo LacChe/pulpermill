@@ -80,11 +80,18 @@ def debug_file(log_path: str | None, debug: bool, debug_path: str | None = None)
     return debug_path or os.path.join(os.path.dirname(log_path) if log_path else ".", "pulpermill-debug.jsonl")
 
 
+def trace_file(log_path: str | None, trace: bool, trace_path: str | None = None) -> str | None:
+    """Where the trace goes: None when `trace` is off; else `trace_path`, or `pulpermill-trace.jsonl` beside the run log."""
+    if not trace:
+        return None
+    return trace_path or os.path.join(os.path.dirname(log_path) if log_path else ".", "pulpermill-trace.jsonl")
+
+
 def launch(*, token: str | None = None, ngrok_authtoken: str | None = None, hf_token: str | None = None, overrides: dict[str, Any] | None = None,
            port: int = 8000, tunnel: Callable[[int, str | None], str] | None = open_tunnel, serve: bool = True,
            engine: Engine | None = None, downloader: Callable | None = None, wait_for_server: float = 30.0,
            log_path: str | None = "/kaggle/working/pulpermill-runs.jsonl", prompter: str | None = None,
-           debug: bool = False, debug_path: str | None = None) -> dict[str, Any]:
+           debug: bool = False, debug_path: str | None = None, trace: bool = False, trace_path: str | None = None) -> dict[str, Any]:
     """Returns {"url", "server", "engine", "config"} (when serve is False; otherwise blocks until the server stops).
     `engine` lets a test skip the real model; `tunnel=None` skips ngrok. `prompter` names the wording module
     (a folder under pulpermill/prompter/; default: the Config's, `stub`); an unknown name stops the launch before the model is loaded.
@@ -93,11 +100,14 @@ def launch(*, token: str | None = None, ngrok_authtoken: str | None = None, hf_t
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", stream=sys.stdout)
     model = replace(Config().model, **(overrides or {}))
     config = Config(token=token or None, host="0.0.0.0", port=port, model=model, log_path=log_path, debug_path=debug_file(log_path, debug, debug_path),
+                    trace_path=trace_file(log_path, trace, trace_path),
                     **({"prompter": prompter} if prompter else {}))
     load_prompter(config.prompter)       # an unknown name fails here, before the model is downloaded and loaded
     log.info("settings: %s n_ctx=%d prompter=%s", config.describe(), model.n_ctx, config.prompter)
     if config.debug_path:
         log.warning("debug capture is ON: refused attempts are written to %s. It holds story text; do not share or commit it.", config.debug_path)
+    if config.trace_path:
+        log.warning("trace is ON: every attempt of every step, with its prompt and reply, is written to %s. It holds story text; do not share or commit it.", config.trace_path)
     check_settings(config)
     log.info("hugging face token: %s", "set" if use_hub_token(hf_token) else "none (downloads are anonymous and slower)")
     if engine is None:
