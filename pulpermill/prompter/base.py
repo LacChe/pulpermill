@@ -28,6 +28,11 @@ class Step:
                 `value` is the parsed JSON, or the text for a "text" step.
     sampling    which sampling set to use: "prose", "thinking" or "structured".
     language    True when the reply is written in the story's language, so the runner checks it (a short text always passes).
+    attempts    how many tries the runner gives this step (at least 1); each retry carries one line about what was wrong with the one before.
+    fallback    optional fallback() -> value, a last resort. When every attempt was refused, the runner uses what it returns as the step's
+                value (in the same shape a parsed reply would have), marks it in the run record and the trace, and goes on. With none, the
+                runner answers `bad_output`. It makes no model call and must not fail; it is for a step whose loss would throw away work
+                that is already done (a chapter that was written, for example).
     """
     name: str
     text: Callable[[float], str]
@@ -37,6 +42,8 @@ class Step:
     check: Callable[[Any], str | None] | None = None
     sampling: str = "structured"
     language: bool = True
+    attempts: int = 2
+    fallback: Callable[[], Any] | None = None
 
     def __post_init__(self):
         if not _NAME.match(self.name):
@@ -49,6 +56,10 @@ class Step:
             raise ValueError("a text step has no grammar")
         if self.max_output < 1:
             raise ValueError("max_output must be at least 1")
+        if not isinstance(self.attempts, int) or isinstance(self.attempts, bool) or self.attempts < 1:
+            raise ValueError("attempts must be a whole number, at least 1")
+        if self.fallback is not None and not callable(self.fallback):
+            raise ValueError("fallback must be a function that takes nothing")
         if self.sampling not in SAMPLING:
             raise ValueError(f"sampling is one of {SAMPLING}, not {self.sampling!r}")
 

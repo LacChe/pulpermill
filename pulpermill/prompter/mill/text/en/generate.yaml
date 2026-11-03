@@ -70,7 +70,6 @@ events_chapter_lead: "The chapter:"
 events_problems:
   empty_happened: "Say in plain sentences what happened in the chapter."
   empty_changed: "Add one short sentence naming what is different at the end of the chapter."
-  long_changed: "Keep changed to one short sentence."
 
 # ---- shifts step ----
 shifts_task: "Below is chapter {chapter} of a story and the cards it was written from. Record only what changed in this chapter: what is different at its end compared with its start."

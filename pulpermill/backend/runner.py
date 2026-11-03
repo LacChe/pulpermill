@@ -2,8 +2,9 @@
 
 - Before the first token, every step the flow may run (flow.worst_case()) is measured and squeezed to the fullest factor at which all
   of them fit; a call that cannot fit is answered `too_long` at once, not after the first step has been written.
-- Two attempts per step. The second carries one short line about what was wrong with the first (not the first reply itself).
-  Then `bad_output`. A reply fails when it is not valid JSON in the step's grammar (a reply cut off at max_output is one of these),
+- Two attempts per step unless the step asks for another number (`Step.attempts`). Each retry carries one short line about what was
+  wrong with the attempt before it (not that reply itself). Then the step's `fallback()` value when it has one (marked in the run
+  record and the trace), else `bad_output`. A reply fails when it is not valid JSON in the step's grammar (a reply cut off at max_output is one of these),
   when the step's own check says so, or when it is not in the language asked for.
 - Stop (Cancelled) passes straight through and is never retried.
 - Progress is `{name, index, of}`; the run record gets the prompter's name and version, the squeeze, and every step's attempts.
@@ -24,7 +25,7 @@ from .pipelines.context import RunContext
 
 log = logging.getLogger("pulpermill")
 
-MAX_ATTEMPTS = 2
+MAX_ATTEMPTS = 2            # the default number of attempts; a Step says its own (Step.attempts)
 PROBLEM_CHARS = 300
 RETRY_LINE = ("Your previous reply could not be used: {problem}\n"
               "Reply again from the start, in exactly the format asked for above.")
@@ -48,6 +49,7 @@ class Result:
     value: Any
     measure: budget.Measure
     attempts: list[Attempt] = field(default_factory=list)
+    fallback: bool = False              # True when the value is the step's fallback, not a reply
 
     @property
     def retried(self) -> bool:
@@ -134,7 +136,7 @@ def run_step(ctx: RunContext, step: Step, factor: float, language: str | None, p
     debug = debuglog.for_config(ctx.config)        # None unless the opt-in debug capture is on
     trace = tracelog.for_config(ctx.config)        # None unless the opt-in trace is on
     refused = 0
-    for number in range(1, MAX_ATTEMPTS + 1):
+    for number in range(1, step.attempts + 1):
         ctx.cancel.raise_if_cancelled()
         current = prompt
         if problem is not None:
@@ -166,7 +168,30 @@ def run_step(ctx: RunContext, step: Step, factor: float, language: str | None, p
             _trace(ctx, trace, step, attempt, current, text, str(e), [])
             if debug is not None:
                 _capture(ctx, debug, step, attempt, str(e), text, current if refused == 1 else None)
-    raise BackendError("bad_output", problem or "")
+    if step.fallback is None:
+        raise BackendError("bad_output", problem or "")
+    return _fallback(ctx, trace, step, result, entry, prompt, problem)
+
+
+def _fallback(ctx: RunContext, trace: "tracelog.Trace | None", step: Step, result: Result, entry: dict, prompt: str, problem: str | None) -> Result:
+    """Every attempt was refused and the step has a last resort: its value stands in. Marked in the run record (`fallback`) and as one more
+    line in the trace (`fallback: true`, the next attempt number, no reply). A fallback that itself fails is a `bad_output` like any other."""
+    try:
+        result.value = step.fallback()
+    except Exception as e:
+        log.error("call=%s step=%s the fallback failed (%s)", ctx.notes.get("call"), step.name, type(e).__name__)
+        raise BackendError("bad_output", problem or "") from None
+    result.fallback = True
+    entry["fallback"] = True
+    log.warning("call=%s step=%s no reply could be used after %d attempts (%s); the step's fallback was used", ctx.notes.get("call"), step.name,
+                len(result.attempts), problem)
+    if trace is not None:
+        try:
+            trace.record(call=ctx.notes.get("call"), step=step.name, attempt=len(result.attempts) + 1, constrained=False, prompt=prompt, reply="",
+                         used=True, problem=None, tokens=None, seconds=0.0, fallback=True)
+        except Exception as e:
+            log.warning("the trace could not record a fallback (%s)", type(e).__name__)
+    return result
 
 
 def _capture(ctx: RunContext, debug: "debuglog.DebugLog", step: Step, attempt: Attempt, problem: str, text: str, prompt: str | None) -> None:

@@ -244,3 +244,67 @@ def test_an_engine_loaded_with_another_n_ctx_is_refused_at_startup():
     runner.check_n_ctx(FakeEngine())
     with pytest.raises(RuntimeError, match="n_ctx"):
         runner.check_n_ctx(FakeEngine(n_ctx=8192))
+
+
+# ---- Step.attempts and Step.fallback (I2) -------------------------------------------------------------------------------------------
+
+def test_a_step_can_ask_for_more_attempts_and_each_retry_carries_the_last_problem():
+    ctx, engine, _ = make()
+    engine.script("no", "still no", "nope", GOOD)
+    assert run(ctx, json_step(attempts=4)) == [{"fits": True, "message": ""}]
+    assert engine.calls == 4 and [len(p["attempts"]) for p in ctx.notes["passes"]] == [4]
+    assert all("could not be used" in p for p in engine.prompts[1:]) and engine.prompts[3].count("could not be used") == 1
+    assert [a["constrained"] for a in ctx.notes["passes"][0]["attempts"]] == [True] * 4
+
+
+def test_the_default_is_still_two_attempts_then_bad_output():
+    assert json_step().attempts == 2 and json_step().fallback is None
+    ctx, engine, _ = make()
+    engine.script("a", "b", GOOD)
+    with pytest.raises(BackendError) as e:
+        run(ctx, json_step())
+    assert e.value.kind == "bad_output" and engine.calls == 2
+
+
+def test_after_the_last_refused_attempt_the_fallback_value_stands_in_and_is_marked():
+    ctx, engine, _ = make()
+    engine.script("a", "b", "c")
+    out = run(ctx, json_step(attempts=3, fallback=lambda: {"fits": False, "message": "from code"}))
+    assert out == [{"fits": False, "message": "from code"}] and engine.calls == 3
+    entry = ctx.notes["passes"][0]
+    assert entry["fallback"] is True and len(entry["attempts"]) == 3 and all("problem" in a for a in entry["attempts"])
+
+
+def test_a_step_that_succeeds_never_calls_its_fallback_and_is_not_marked():
+    ctx, engine, _ = make()
+    engine.script("a", GOOD)
+    called = []
+    run(ctx, json_step(attempts=3, fallback=lambda: called.append(1)))
+    assert called == [] and "fallback" not in ctx.notes["passes"][0]
+
+
+def test_a_failing_fallback_is_bad_output_and_a_stop_is_never_a_fallback():
+    ctx, engine, _ = make()
+    engine.script("a", "b")
+    with pytest.raises(BackendError) as e:
+        run(ctx, json_step(fallback=lambda: 1 / 0))
+    assert e.value.kind == "bad_output"
+    ctx, engine, _ = make()
+    engine.script("a")
+    ctx.cancel.set()
+    with pytest.raises(Cancelled):
+        run(ctx, json_step(fallback=lambda: {}))
+
+
+def test_a_text_step_can_have_a_fallback_too():
+    ctx, engine, _ = make()
+    engine.script("", "")
+    assert run(ctx, text_step(fallback=lambda: "from code")) == ["from code"]
+
+
+def test_a_step_with_a_bad_attempts_or_fallback_is_refused_when_it_is_made():
+    for bad in (0, -1, 1.5, True):
+        with pytest.raises(ValueError):
+            json_step(attempts=bad)
+    with pytest.raises(ValueError):
+        json_step(fallback="not callable")

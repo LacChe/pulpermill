@@ -16,7 +16,7 @@ The interface uses no story vocabulary: only the five calls, `fill`, `judge`, `s
 ```python
 class Prompter:  name; version; flow(call, request: dict, kit) -> Flow
 class Flow:      next(results) -> Step | None;  reply(results) -> dict;  worst_case() -> list[Step];  notes: dict
-class Step:      name, text(squeeze) -> str, kind "text"|"json", max_output, grammar, check, sampling, language
+class Step:      name, text(squeeze) -> str, kind "text"|"json", max_output, grammar, check, sampling, language, attempts, fallback
 ```
 
 * **`Prompter.flow(call, request, kit)`**: one Flow per request. `request` is the validated request as a plain dict.
@@ -36,6 +36,8 @@ class Step:      name, text(squeeze) -> str, kind "text"|"json", max_output, gra
   * `check(value)`: optional; return `None` or one plain line saying what is wrong. The line is shown to the model on the retry.
   * `sampling`: `prose`, `thinking` or `structured`: the Config's sampling sets (the story language picks Chinese's own `prose`).
   * `language`: True when the reply is written in the story's language, so the runner checks it.
+  * `attempts`: how many tries the runner gives the step (default 2, at least 1). Each retry carries one line about what was wrong with the one before.
+  * `fallback`: optional `fallback() -> value`. After the last refused attempt the runner uses it as the step's value instead of answering `bad_output`, and marks that in the run record (`fallback`) and the trace. It makes no model call and must not fail. Use it only where losing the step would throw away work that is already done.
 
 ## The kit (what the runner offers)
 

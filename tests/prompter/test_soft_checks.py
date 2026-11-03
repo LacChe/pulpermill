@@ -239,7 +239,7 @@ def test_the_chapter_is_used_after_a_second_attempt_with_only_soft_problems_thro
 
 def test_the_versions_were_bumped():
     from pulpermill.prompter.mill import VERSION
-    assert VERSION == "mill-0.2" and plan.VERSION == "plan-3" and gen.VERSION == "generate-5"
+    assert VERSION == "mill-0.2" and plan.VERSION == "plan-3" and gen.VERSION == "generate-6"
 
 
 # ---- helpers ---------------------------------------------------------------------------------------------------------------

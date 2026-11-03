@@ -20,7 +20,7 @@ from pulpermill.schema.shifts import shiftable_fields
 from . import common
 from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-5"
+VERSION = "generate-6"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -31,6 +31,8 @@ OVERSHOOT_WORDS, OVERSHOOT_HAN = 1500, 3000      # the write check only speaks a
 WRITE_TOKENS = 2560
 EVENTS_TOKENS = 800
 SHIFTS_TOKENS = 1600
+EVENTS_ATTEMPTS, SHIFTS_ATTEMPTS = 4, 3          # after the chapter is written, each of these steps is retried on its own and then falls back
+CHANGED_WORDS, HAPPENED_WORDS = 45, 60           # the most words `changed` keeps (one short sentence) and the fallback's `happened` keeps
 
 
 def _lang(request: dict) -> str:
@@ -170,9 +172,45 @@ def events_problem(value: Any) -> str | None:
         return p["empty_happened"]
     if not changed:
         return p["empty_changed"]
-    if len(changed.split()) > 45 or changed.rstrip(".!? ").count(". ") >= 1:
-        return p["long_changed"]
-    return None
+    return None          # a `changed` that runs on is repaired in code (repair_events), not refused
+
+
+_SENTENCE_END = re.compile(r"[.!?…]+[\"”’')\]]*(?=\s|$)|[。！？]+[”’」』）]*")
+
+
+def sentences(text: str) -> list[str]:
+    """The sentences of a text, in order, each with its closing punctuation; a text without any stop is one sentence."""
+    text, out, start = r.s(text), [], 0
+    for m in _SENTENCE_END.finditer(text):
+        piece = text[start:m.end()].strip()
+        if piece:
+            out.append(piece)
+        start = m.end()
+    tail = text[start:].strip()
+    return out + [tail] if tail else out
+
+
+def _words(text: str, limit: int) -> str:
+    """At most `limit` words of the text, ended with a full stop when it was cut."""
+    words = r.s(text).split()
+    return " ".join(words) if len(words) <= limit else " ".join(words[:limit]).rstrip(",;:—–- ") + "."
+
+
+def repair_events(value: Any) -> dict:
+    """`changed` as one short sentence: its first sentence, cut to CHANGED_WORDS words. Everything else is left as it came."""
+    out = dict(value or {})
+    first = sentences(out.get("changed"))
+    out["changed"] = _words(first[0], CHANGED_WORDS) if first else r.s(out.get("changed"))
+    return out
+
+
+def events_fallback(chapter_text: str) -> dict:
+    """What `events` says when no model reply could be used: plain code over the chapter (no model call). `happened` is the chapter's opening
+    sentences, `changed` its last sentence, both in the chapter's own language."""
+    found = sentences(chapter_text)
+    if not found:
+        return {"happened": r.s(chapter_text)[:400], "changed": ""}
+    return {"happened": _words(" ".join(found[:2]), HAPPENED_WORDS), "changed": _words(found[-1], CHANGED_WORDS)}
 
 
 # ---- shifts ----------------------------------------------------------------------------------------------------------------
@@ -282,6 +320,7 @@ class GenerateFlow(Flow):
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
         self.echo_accepted = False          # the write reply that was used carried an echo that the last attempt let through
+        self.notes = {"events_fallback": False, "shifts_fallback": False}      # for the run log: did a step's last resort stand in for it?
 
     def _write_check(self):
         """A check for one write step instance: strict on its first call, soft-tolerant on its second (the runner's last attempt)."""
@@ -306,11 +345,19 @@ class GenerateFlow(Flow):
         if n == 0:
             return Step("write", lambda f: write_prompt(self.request, f), "text", WRITE_TOKENS, None, self._write_check(), "prose", True)
         chapter = results[0]
+
+        def noted(key: str, value: Any):
+            def fallback():
+                self.notes[key] = True
+                return value() if callable(value) else value
+            return fallback
         if n == 1:
             return Step("events", lambda f: events_prompt(self.request, chapter, f), "json", EVENTS_TOKENS,
-                        g.obj({"happened": g.text(), "changed": g.text()}), events_problem, "structured", True)
+                        g.obj({"happened": g.text(), "changed": g.text()}), events_problem, "structured", True,
+                        EVENTS_ATTEMPTS, noted("events_fallback", lambda: events_fallback(chapter)))
         return Step("shifts", lambda f: shifts_prompt(self.request, self.kit, chapter, f), "json", SHIFTS_TOKENS,
-                    g.obj({"shifts": g.shifts()}), lambda v: shifts_problem(self.request, self.kit, v), "structured", False)
+                    g.obj({"shifts": g.shifts()}), lambda v: shifts_problem(self.request, self.kit, v), "structured", False,
+                    SHIFTS_ATTEMPTS, noted("shifts_fallback", {"shifts": []}))
 
     def next(self, results):
         return self._step(len(results), results) if len(results) < 3 else None
@@ -325,7 +372,7 @@ class GenerateFlow(Flow):
             text, dropped = common.trim_echo(text, r.s(self.request.get("previous_ending")))
             if dropped:
                 common.note_soft("generate", "write", f"{dropped} repeated opening sentence(s) dropped", what="trimmed")
-        return {"chapter_text": text, "events": results[1], "shifts": results[2]["shifts"]}
+        return {"chapter_text": text, "events": repair_events(results[1]), "shifts": results[2]["shifts"]}
 
 
 def build_flow(request, kit) -> Flow:

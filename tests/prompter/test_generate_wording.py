@@ -251,11 +251,31 @@ def test_the_events_prompt_holds_the_chapter_and_asks_for_happened_and_changed()
     assert "at the start its edge was: to bring her daughter home" in prompt
 
 
-def test_the_events_check_wants_what_happened_and_one_short_changed_sentence():
-    assert gen.events_problem({"happened": "Suvi hid the ledger and Marit found her.", "changed": "Suvi can no longer hide."}) is None
+def test_the_events_check_refuses_only_an_empty_or_too_short_reply():
+    happened = "Suvi hid the ledger and Marit found her."
+    assert gen.events_problem({"happened": happened, "changed": "Suvi can no longer hide."}) is None
     assert "plain sentences" in gen.events_problem({"happened": "", "changed": "x"})
-    assert "short sentence" in gen.events_problem({"happened": "Suvi hid the ledger and Marit found her.", "changed": ""})
-    assert "one short sentence" in gen.events_problem({"happened": "Suvi hid the ledger and Marit found her.", "changed": "Suvi can hide no more. Marit knows everything now."})
+    assert "short sentence" in gen.events_problem({"happened": happened, "changed": ""})
+    # a changed that runs on is not refused: the flow repairs it
+    assert gen.events_problem({"happened": happened, "changed": "Suvi can hide no more. Marit knows everything now."}) is None
+
+
+def test_a_running_on_changed_is_repaired_to_its_first_sentence_and_the_word_cap():
+    fixed = gen.repair_events({"happened": "H", "changed": "Suvi can hide no more. Marit knows everything now."})
+    assert fixed == {"happened": "H", "changed": "Suvi can hide no more."}
+    long = gen.repair_events({"happened": "H", "changed": " ".join(["word"] * 80) + "."})
+    assert len(long["changed"].split()) == gen.CHANGED_WORDS and long["changed"].endswith(".")
+    assert gen.repair_events({"happened": "H", "changed": "No stop here"})["changed"] == "No stop here"
+    assert gen.repair_events({"happened": "H", "changed": "她再也无法隐藏。马里特全都知道了。"})["changed"] == "她再也无法隐藏。"
+
+
+def test_the_events_fallback_is_plain_code_over_the_chapter():
+    chapter = "Suvi hid the ledger. Marit searched the house. They quarrelled at the table. In the end Suvi gave the ledger up."
+    got = gen.events_fallback(chapter)
+    assert got == {"happened": "Suvi hid the ledger. Marit searched the house.", "changed": "In the end Suvi gave the ledger up."}
+    assert gen.events_fallback("A single sentence")["changed"] == "A single sentence"
+    assert gen.events_fallback("   ") == {"happened": "", "changed": ""}
+    assert len(gen.events_fallback("word " * 500)["happened"].split()) <= gen.HAPPENED_WORDS
 
 
 # ---- the shifts step ------------------------------------------------------------------------------------------------------
@@ -349,7 +369,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-5:" in load_prompter("mill").version
+    assert "+generate:generate-6:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------
@@ -472,3 +492,72 @@ def test_every_generate_vector_is_answered_through_the_real_server_on_the_stub_p
         reply = contract.parse_reply("generate", body)
         assert reply.chapter_text and reply.events.happened
         assert wait_idle(base_url)
+
+
+# ---- after the chapter is written: each step on its own, then a last resort (2A) -----------------------------------------------------
+
+def _generate(*texts, **config):
+    """The real generate flow on the fake engine, scripted: write, then events and shifts as given. Returns (reply, ctx, engine, good)."""
+    from pulpermill.backend import runner
+    from pulpermill.backend.engine.base import CancelFlag
+    from pulpermill.backend.pipelines import RunContext
+    request = base()
+    kit = Kit(request)
+    good = gen.script(request, kit)
+    engine = FakeEngine()
+    engine.script(*[good[i] if isinstance(i, int) else i for i in texts])      # an int stands for the module's own good text number i
+    ctx = RunContext(engine, CancelFlag(), [].append, Config(**config))
+    ctx.notes["call"] = "generate"
+    flow = gen.build_flow(request, kit)
+    return flow.reply(runner.run_flow(ctx, flow, "en")), ctx, engine, good
+
+
+def test_the_two_steps_after_the_write_get_more_attempts_and_a_fallback_each():
+    steps = gen.build_flow(base(), Kit(base())).worst_case()
+    write, events, shifts = steps
+    assert (write.attempts, write.fallback) == (2, None)
+    assert (events.attempts, shifts.attempts) == (4, 3) and callable(events.fallback) and callable(shifts.fallback)
+    assert shifts.fallback() == {"shifts": []}
+
+
+def test_an_events_step_that_fails_every_attempt_still_returns_the_chapter_with_a_fallback():
+    reply, ctx, engine, good = _generate(0, "no json", "still no", "nope", "again no", 2)
+    assert reply["chapter_text"] == good[0].strip() and reply["events"] == gen.events_fallback(good[0].strip())
+    assert reply["shifts"] and ctx.notes["flow"] == {"events_fallback": True, "shifts_fallback": False}
+    events_pass = [p for p in ctx.notes["passes"] if p["step"] == "events"][0]
+    assert len(events_pass["attempts"]) == 4 and events_pass["fallback"] is True and engine.calls == 6
+
+
+def test_a_first_events_attempt_that_fails_does_not_rerun_the_other_steps():
+    reply, ctx, engine, good = _generate(0, "no json", 1, 2)
+    assert engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False}
+    assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 2), ("shifts", 1)]
+    assert reply["events"]["happened"] == json.loads(good[1])["happened"]
+
+
+def test_a_shifts_step_that_fails_every_attempt_gives_an_empty_list_and_keeps_the_events():
+    reply, ctx, engine, good = _generate(0, 1, "bad", "worse", "worst")
+    assert reply["shifts"] == [] and reply["events"]["changed"] == json.loads(good[1])["changed"]
+    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": True} and engine.calls == 5
+
+
+def test_the_write_step_keeps_its_own_two_attempts_and_no_fallback():
+    from pulpermill.backend.errors import BackendError
+    with pytest.raises(BackendError) as e:
+        _generate("", "")
+    assert e.value.kind == "bad_output"
+
+
+def test_an_events_reply_that_runs_on_is_repaired_not_retried():
+    long = json.dumps({"happened": "The people met and quarrelled over the ledger.", "changed": "Suvi can hide no more. Marit knows everything now."})
+    reply, ctx, engine, _ = _generate(0, long, 2)
+    assert engine.calls == 3 and reply["events"]["changed"] == "Suvi can hide no more."
+
+
+def test_every_fallback_is_a_line_in_the_trace(tmp_path):
+    path = tmp_path / "trace.jsonl"
+    _generate(0, "a", "b", "c", "d", 2, trace_path=str(path))
+    lines = [json.loads(x) for x in path.read_text().splitlines()]
+    events = [x for x in lines if x["step"] == "events"]
+    assert [(x["attempt"], x["used"], x.get("fallback")) for x in events] == [(1, False, None), (2, False, None), (3, False, None), (4, False, None), (5, True, True)]
+    assert events[-1]["reply"] == "" and events[-1]["problem"] is None
