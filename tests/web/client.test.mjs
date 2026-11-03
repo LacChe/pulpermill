@@ -343,6 +343,25 @@ test("a connection that drops during a story call ends it as unreachable after a
   assert.equal(client.state.working, false);
 });
 
+test("a call that runs out of time is cancelled by name on the backend, and ends as a timeout", async () => {
+  const seen = [];
+  const fetchImpl = (url, { body, signal }) => {
+    const request = JSON.parse(body);
+    seen.push(request);
+    if (request.call === "status") return Promise.resolve(json({ ok: true, state: "idle" }));
+    if (request.call === "cancel") return Promise.resolve(json({ ok: true }));
+    return new Promise((resolve, reject) => signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" }))));
+  };
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl, sleep: noSleep, timeouts: { style_fit: 20 } });
+  const reply = await client.start({ call: "style_fit", style: {}, protagonist: {} }).done;
+  assert.equal(reply.error.kind, "timeout");
+  const sent = seen.find((r) => r.call === "style_fit");
+  const cancel = seen.find((r) => r.call === "cancel");
+  assert.ok(cancel, "a cancel was sent");
+  assert.equal(cancel.job_id, sent.job_id);
+  assert.equal(client.state.working, false);
+});
+
 test("one failed status check among good ones does not end the call", async () => {
   let checks = 0;
   const fetchImpl = async (url, { body }) => {

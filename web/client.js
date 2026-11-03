@@ -68,9 +68,11 @@ export function blockedByPage(setting, pageProtocol) {
 
 // ---- The client ----------------------------------------------------------------
 
+// How long the page waits for one model call before giving up (ms). 900000 = 15 minutes. Written as plain numbers:
+// tests/schema/test_contract.py reads this table and wants a number after each call's name.
 export const DEFAULT_TIMEOUTS = {
-  status: 5000, fill: 180000, judge: 180000, style_fit: 120000,
-  plan: 300000, generate: 1800000,
+  status: 5000, fill: 900000, judge: 900000, style_fit: 900000,
+  plan: 900000, generate: 900000,
 };
 
 // The fallback when the body is not an answer. It agrees with HTTP_STATUS in pulpermill/contract.py.
@@ -205,7 +207,11 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
     controller.signal.addEventListener("abort", () => attempt.abort());
     let lost = false;
     let why = null;
-    const timer = setTimeout(() => { why = "timeout"; controller.abort(); }, limits[call] ?? limits.fill);
+    // On the time limit the call is also cancelled by name, as Stop does, so the backend does not go on running a call the page gave up on.
+    const timer = setTimeout(() => {
+      why = "timeout"; controller.abort();
+      if (jobId) post(fetchImpl, current.url, { call: "cancel", job_id: jobId }, undefined, secret).catch(() => {});
+    }, limits[call] ?? limits.fill);
     const handle = {
       stop() {
         why ??= "stopped"; controller.abort();
