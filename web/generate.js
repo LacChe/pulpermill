@@ -11,7 +11,7 @@ import { storyStarted, cardLocked } from "./gate.js";
 import { watch } from "./undo.js";
 import { msg, joinList } from "./text.js";
 import {
-  chapterInfo, beatForChapter, beatBlockers, castProblem, planIsStale, planInputsHash, scene, beatInWords, eventsInWords, chapterOfBeat,
+  chapterInfo, beatForChapter, beatBlockers, castProblem, planIsStale, planInputsHash, scene, beatInWords, eventsInWords, chapterOfBeat, spotlightEdges,
 } from "./plan.js";
 
 export const PREVIOUS_ENDING_CHARS = 1500;   // how much of the last chapter's end the model is shown
@@ -70,6 +70,7 @@ export function generateRequest(schema, project, beat) {
     protagonist: eff.setup?.protagonist ?? "",
     ...scene(eff, chapter, beat.cast, { where: beat.where }),
     earlier_events: eventsInWords(eff, chapter - 1),
+    spotlight_edges: spotlightEdges(project, beat.spotlight, chapter),
     previous_ending: chapter > 1 ? previousEnding(project, PREVIOUS_ENDING_CHARS, chapter) : null,
     beat: beatInWords(eff, beat),
   };

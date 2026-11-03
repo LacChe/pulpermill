@@ -131,6 +131,10 @@ class _StoryRequest(Envelope):
     world: dict[str, Any]                   # effective World values: places and objects, the groups in play, rules, terms
     ties: list[dict[str, Any]]              # the ties among the cast, plus ties from a cast member to a group, with ids
     holdings: list[dict[str, Any]]          # holdings of cast members and of the groups in play, with ids
+    # The spotlight tie's edge in earlier chapters, oldest first, words only: each chapter's edge as it stood going into it,
+    # consecutive repeats collapsed, the current edge left out, blanks left out. Empty for chapter 1 and when the edge never
+    # changed. A page that does not send it is read as sending [] (a later addition, so older requests stay valid).
+    spotlight_edges: list[str] = Field(default_factory=list)
 
 
 class PlanRequest(_StoryRequest):

@@ -273,6 +273,24 @@ export function planGate(project, beat) {
   return { ok: true, chapter };
 }
 
+// ---- The edge trail -----------------------------------------------------------------------
+
+// The spotlight tie's edge in the chapters before `chapter`, oldest first, for the backend to tell a real move from a rewording.
+// Each chapter's edge is the one the tie had going into that chapter (the effective project at that chapter). Chapters in which the
+// tie does not exist yet, or has no edge, give a blank. Consecutive repeats are collapsed, the last one (the current chapter's own
+// edge) is dropped and blanks are left out, so [A, A, B] going into a chapter where the edge is B gives [A].
+export function spotlightEdges(project, spotlightId, chapter) {
+  const last = Number(chapter);
+  if (!spotlightId || !Number.isFinite(last) || last < 2) return [];
+  const run = [];
+  for (let c = 1; c <= last; c++) {
+    const tie = (effectiveProject(project, c).entanglements?.ties ?? []).find((t) => t.id === spotlightId);
+    const edge = typeof tie?.edge === "string" ? tie.edge.trim() : "";
+    if (run.length === 0 || run[run.length - 1] !== edge) run.push(edge);
+  }
+  return run.slice(0, -1).filter((edge) => edge !== "");
+}
+
 // ---- The plan request --------------------------------------------------------------------
 
 // Plan chapter `beat.chapter`. `beat` holds the spotlight and the cast (the page's own picks, which the writer may have changed).
@@ -290,6 +308,7 @@ export function planRequest(schema, project, beat, { retry = null } = {}) {
     spotlight: beat.spotlight,
     earlier_beats: earlierBeats(eff, chapter),
     earlier_events: eventsInWords(eff, chapter - 1),
+    spotlight_edges: spotlightEdges(project, beat.spotlight, chapter),
   };
   if (retry) request.retry = { beat: copyOf(retry.beat), problems: [...retry.problems] };
   return request;

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { story, opening, schema } from "./fixture.mjs";
 import {
   pickSpotlight, requiredCast, tiesInPlay, groupsInPlay, holdingsInPlay, newBeat, ensureBeat, castProblem, planGate, planRequest, scene,
-  landBeat, placeBeat, commitPlan, beatBlockers, planIsStale, planInputsHash, chapterInfo, beatForChapter, writtenBeatIds, castKey, staleBeatIds,
+  landBeat, placeBeat, commitPlan, beatBlockers, planIsStale, planInputsHash, chapterInfo, beatForChapter, writtenBeatIds, castKey, staleBeatIds, spotlightEdges,
 } from "../../web/plan.js";
 
 const copy = (x) => JSON.parse(JSON.stringify(x));
@@ -274,4 +274,68 @@ test("landing a plan is one commit with an undo that refuses when the Outline wa
   p.outline.beats[1].plan = "Edited by hand.";
   assert.equal(second.undo(), false);
   assert.equal(p.outline.beats[1].aim, "Again.");
+});
+
+// ---- The edge trail (the spotlight tie's edges in earlier chapters) ----
+
+// Three chapters written and the fourth beat planned. The tie "t1000001" starts as "to bring her daughter home", and shifts of chapters 2 and
+// 3 change its edge, so going into chapters 1, 2, 3, 4 it reads: home, home, stay, trust.
+function threeChapters() {
+  const p = story();
+  const tie = "t1000001";
+  const edgeShift = (id, beat, edge) => ({ id, beat, card: "entanglements", target: null, patch: { ties: [{ op: "replace", id: tie, values: { edge } }] } });
+  p.outline.beats.push(
+    { id: "b0000003", chapter: 3, where: "p0000001", when_time: "Night", cast: ["c0000001", "c0000002"], spotlight: tie, aim: "Suvi wants out.", plan: "She runs." },
+    { id: "b0000004", chapter: 4, where: "p0000002", when_time: "Dawn", cast: ["c0000001", "c0000002"], spotlight: tie, aim: "", plan: "" });
+  p.chapters.push({ id: "k0000002", beat: "b0000002", text: "Chapter two." }, { id: "k0000003", beat: "b0000003", text: "Chapter three." });
+  p.summary_events.entries.push({ id: "e0000002", beat: "b0000002", happened: "Two.", changed: "" }, { id: "e0000003", beat: "b0000003", happened: "Three.", changed: "" });
+  p.shifts.entries.push(edgeShift("s0000001", "b0000002", "to make her daughter stay"), edgeShift("s0000002", "b0000003", "to trust her daughter"));
+  return p;
+}
+
+test("the edge trail lists the tie's earlier edges oldest first and leaves out the current one", () => {
+  const p = threeChapters();
+  assert.deepEqual(spotlightEdges(p, "t1000001", 4), ["to bring her daughter home", "to make her daughter stay"], "going into chapter 4 the edge is 'trust'");
+  assert.deepEqual(spotlightEdges(p, "t1000001", 3), ["to bring her daughter home"]);
+  assert.deepEqual(spotlightEdges(p, "t1000001", 2), [], "the edge has not changed yet, so there is nothing earlier");
+  assert.deepEqual(spotlightEdges(p, "t1000001", 1), []);
+});
+
+test("an edge that stays the same for several chapters is listed once, and one that comes back is listed again", () => {
+  const p = threeChapters();
+  p.shifts.entries.push({ id: "s0000003", beat: "b0000003", card: "entanglements", target: null, patch: { ties: [{ op: "replace", id: "t1000001", values: { bond: "mother and daughter" } }] } });
+  assert.deepEqual(spotlightEdges(p, "t1000001", 4), ["to bring her daughter home", "to make her daughter stay"], "a shift that leaves the edge alone adds nothing");
+  p.outline.beats.push({ id: "b0000004x", chapter: 4, where: "p0000001", when_time: "Noon", cast: [], spotlight: "t1000001", aim: "", plan: "" });
+  p.shifts.entries.push({ id: "s0000004", beat: "b0000004", card: "entanglements", target: null, patch: { ties: [{ op: "replace", id: "t1000001", values: { edge: "to bring her daughter home" } }] } });
+  assert.deepEqual(spotlightEdges(p, "t1000001", 5), ["to bring her daughter home", "to make her daughter stay", "to trust her daughter"]);
+});
+
+test("a tie that did not exist yet, or has no edge, adds nothing to the trail", () => {
+  const p = threeChapters();
+  p.entanglements.ties.push({ id: "t1000009", tie_from: "c0000001", tie_to: "c0000002", bond: "friend", edge: "" });
+  assert.deepEqual(spotlightEdges(p, "t1000009", 4), []);
+  p.shifts.entries.push({ id: "s0000005", beat: "b0000002", card: "entanglements", target: null, patch: { ties: [{ op: "replace", id: "t1000009", values: { edge: "to keep a secret" } }] } });
+  assert.deepEqual(spotlightEdges(p, "t1000009", 4), [], "from chapter 3 on the edge is the same one, and that is the current one");
+  assert.deepEqual(spotlightEdges(p, "t1999999", 4), [], "no such tie");
+  assert.deepEqual(spotlightEdges(p, "", 4), []);
+  assert.deepEqual(spotlightEdges(p, null, 4), []);
+});
+
+test("the plan request carries the trail, an empty one for chapter 1 and for a tie that never changed", () => {
+  const p = threeChapters();
+  const beat4 = p.outline.beats.find((b) => b.id === "b0000004");
+  assert.deepEqual(planRequest(schema, p, beat4).spotlight_edges, ["to bring her daughter home", "to make her daughter stay"]);
+  assert.deepEqual(planRequest(schema, p, { ...beat4, spotlight: "t1000002" }).spotlight_edges, [], "the Board tie's edge never changed");
+  assert.deepEqual(planRequest(schema, story(), story().outline.beats[1]).spotlight_edges, []);
+  const first = opening();
+  assert.deepEqual(planRequest(schema, first, first.outline.beats[0]).spotlight_edges, []);
+  assert.deepEqual(planRequest(schema, p, beat4), planRequest(schema, copy(p), beat4), "asking again gives the same request");
+});
+
+test("working out the trail changes nothing in the project", () => {
+  const p = threeChapters();
+  const before = JSON.stringify(p);
+  spotlightEdges(p, "t1000001", 4);
+  planRequest(schema, p, p.outline.beats.find((b) => b.id === "b0000004"));
+  assert.equal(JSON.stringify(p), before);
 });

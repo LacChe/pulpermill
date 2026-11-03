@@ -54,6 +54,47 @@ def test_status_calls_and_job_calls_are_answered_by_the_server_itself():
                 contract.parse_reply(v["data"]["call"], body)
 
 
+STORY_VALID = [v for v in VALID if v["data"]["call"] in ("plan", "generate")]
+
+
+def _without_trail(request: dict) -> dict:
+    return {k: v for k, v in request.items() if k != "spotlight_edges"}
+
+
+@pytest.mark.parametrize("vector", STORY_VALID, ids=lambda v: v["name"])
+def test_a_story_request_with_or_without_the_edge_trail_is_valid_and_answered(vector):
+    """The trail is optional: a page that does not send it is read as sending none, and a trail changes no answer."""
+    plain = _without_trail(vector["data"])
+    assert contract.parse_request(plain).spotlight_edges == []
+    answers = []
+    for request in (plain, {**plain, "spotlight_edges": ["to keep Marit at arm's length", "to make Marit proud of her"]}):
+        assert contract.parse_request(request).spotlight_edges == request.get("spotlight_edges", [])
+        engine = FakeEngine()
+        scripted(engine, request)
+        with running(engine=engine, run=None) as (base, _):
+            response = post(base, request)
+            body = response.json()
+            assert response.status_code == 200 and body["ok"] is True, body
+            contract.parse_reply(request["call"], body)
+            assert wait_idle(base)
+        answers.append(body)
+    assert answers[0] == answers[1]
+
+
+def test_the_golden_story_requests_send_the_trail_even_when_it_is_empty():
+    golden = [v for v in STORY_VALID if isinstance(v.get("golden"), str)]
+    assert golden and all(isinstance(v["data"].get("spotlight_edges"), list) for v in golden)
+
+
+@pytest.mark.parametrize("bad", ["to keep Marit at arm's length", None, [1], [["a"]], {"edge": "a"}], ids=["text", "null", "numbers", "nested", "object"])
+@pytest.mark.parametrize("call", ["plan", "generate"])
+def test_an_edge_trail_that_is_not_a_list_of_text_is_refused(call, bad):
+    from pydantic import ValidationError
+    request = next(v["data"] for v in STORY_VALID if v["data"]["call"] == call)
+    with pytest.raises(ValidationError):
+        contract.parse_request({**request, "spotlight_edges": bad})
+
+
 def _generate():
     return next(v["data"] for v in VALID if v["data"]["call"] == "generate")
 

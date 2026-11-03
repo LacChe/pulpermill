@@ -7,7 +7,7 @@ import {
   projectBefore, regenerateGate, regenerateKey, applyRegenerated, commitRegenerated,
 } from "../../web/generate.js";
 import { readGenerateReply } from "../../web/logic.js";
-import { beatInWords } from "../../web/plan.js";
+import { beatInWords, planRequest } from "../../web/plan.js";
 import { effectiveProject } from "../../web/effective.js";
 
 const copy = (x) => JSON.parse(JSON.stringify(x));
@@ -258,4 +258,30 @@ test("regenerating the latest chapter warns about nothing later", () => {
   const gate = regenerateGate(schema, p, 3);
   const out = applyRegenerated(schema, p, gate, read());
   assert.equal(out.warnings.some((w) => w.kind === "later"), false);
+});
+
+// Three chapters written and the fourth beat planned; shifts of chapters 2 and 3 change the edge of the tie "t1000001", so going into
+// chapters 1, 2, 3, 4 it reads: home, home, stay, trust.
+function edgeStory() {
+  const p = story();
+  const edgeShift = (id, beat, edge) => ({ id, beat, card: "entanglements", target: null, patch: { ties: [{ op: "replace", id: "t1000001", values: { edge } }] } });
+  p.outline.beats.push(
+    { id: "b0000003", chapter: 3, where: "p0000001", when_time: "Night", cast: ["c0000001", "c0000002"], spotlight: "t1000001", aim: "Suvi wants out.", plan: "She runs." },
+    { id: "b0000004", chapter: 4, where: "p0000002", when_time: "Dawn", cast: ["c0000001", "c0000002"], spotlight: "t1000001", aim: "Suvi wants to stay.", plan: "She unpacks." });
+  p.chapters.push({ id: "k0000002", beat: "b0000002", text: "Chapter two." }, { id: "k0000003", beat: "b0000003", text: "Chapter three." });
+  p.shifts.entries.push(edgeShift("s0000001", "b0000002", "to make her daughter stay"), edgeShift("s0000002", "b0000003", "to trust her daughter"));
+  return p;
+}
+
+test("the generate request carries the spotlight tie's earlier edges, the same trail the plan request sent", () => {
+  const p = edgeStory();
+  const beat4 = p.outline.beats.find((b) => b.id === "b0000004");
+  const request = generateRequest(schema, p, beat4);
+  assert.deepEqual(request.spotlight_edges, ["to bring her daughter home", "to make her daughter stay"]);
+  assert.deepEqual(request.spotlight_edges, planRequest(schema, p, beat4).spotlight_edges);
+  assert.equal("spotlight" in request, false, "the spotlight itself still travels only in the plan request");
+  assert.deepEqual(generateRequest(schema, p, { ...beat4, spotlight: "t1000002" }).spotlight_edges, [], "the Board tie's edge never changed");
+  assert.deepEqual(generateRequest(schema, story(), beat2(story())).spotlight_edges, []);
+  const first = opening();
+  assert.deepEqual(generateRequest(schema, first, first.outline.beats[0]).spotlight_edges, []);
 });
