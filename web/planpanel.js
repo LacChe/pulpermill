@@ -6,7 +6,7 @@
 import { storyStarted, cardLocked } from "./gate.js";
 import { planChapter } from "./client.js";
 import {
-  CAST_MAX, castKey, chapterInfo, beatForChapter, newBeat, requiredCast, tiesInPlay, tieInWords, withSpotlight, castProblem,
+  CAST_MAX, castKey, chapterInfo, beatForChapter, newBeat, requiredCast, spotlightTies, tiesInPlay, tieInWords, withSpotlight, castProblem,
   planIsStale, commitPlan,
 } from "./plan.js";
 import { effectiveProject } from "./effective.js";
@@ -132,10 +132,12 @@ export function createPlanPanel(hooks) {
     if (cardLocked(project, "outline")) { panel.append(node("p", { className: "help", textContent: STRINGS.reasons.outline_locked })); return; }
     const chapter = info.next;
     const eff = effectiveProject(project, chapter);
-    const allTies = eff.entanglements?.ties ?? [];
-    if (!allTies.length) { panel.append(node("p", { className: "help", textContent: STRINGS.noTies })); return; }
+    if (!(eff.entanglements?.ties ?? []).length) { panel.append(node("p", { className: "help", textContent: STRINGS.noTies })); return; }
 
     const { beat, existing } = working(project, chapter);
+    // Only a tie between two characters is offered as the spotlight (a group is not in the cast). A beat that already holds
+    // another tie as its spotlight (saved before this rule) keeps showing it, so no saved choice is lost.
+    const allTies = (eff.entanglements?.ties ?? []).filter((t) => spotlightTies(eff).some((s) => s.id === t.id) || t.id === beat.spotlight);
     const stale = Boolean(existing && planIsStale(project, existing));
     shownKey = keyOf(beat, stale);
     panel.append(node("p", { className: "plan-chapter", textContent: fill(info.count ? STRINGS.chapterOf : STRINGS.chapterOnly, { n: chapter, total: info.count }) }));

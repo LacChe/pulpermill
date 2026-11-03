@@ -24,7 +24,8 @@ test("where the story stands: chapters written, the next one, and whether it is 
 
 test("the spotlight is a tie of the project, the same one every time, and null with no ties", () => {
   const p = story();
-  const ids = new Set(p.entanglements.ties.map((t) => t.id));
+  p.entanglements.ties.push({ id: "t1000003", tie_from: "c0000001", tie_to: "c0000002", bond: "friend", edge: "to stay close" });   // a second tie between two people; the one to the Board is a group tie
+  const ids = new Set(p.entanglements.ties.filter((t) => t.id !== "t1000002").map((t) => t.id));
   assert.ok(ids.has(pickSpotlight(p, 2).id));
   assert.equal(pickSpotlight(p, 2).id, pickSpotlight(copy(p), 2).id);
   const seen = new Set();

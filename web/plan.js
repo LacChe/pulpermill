@@ -7,7 +7,7 @@
 // the protagonist and the two characters of that tie (a group is never cast). The beat remembers a hash of what its plan was
 // made from, so a later change to those inputs marks the plan stale (it is never replanned by itself).
 
-import { envelope, blankItem, wordsToId, validate, isFilled, settledProject, findInstance, lookupLabel } from "./logic.js";
+import { envelope, blankItem, wordsToId, validate, isFilled, settledProject, findInstance, tieWords, isCharacterTie } from "./logic.js";
 import { effectiveProject } from "./effective.js";
 import { pickMany, rng, projectSeed, PICK_MAX } from "./pick.js";
 import { storyStarted, cardLocked } from "./gate.js";
@@ -58,10 +58,16 @@ const groupIds = (project) => new Set((project.world?.powers ?? []).map((g) => g
 
 // ---- The spotlight and the cast ------------------------------------------------
 
-// The tie the chapter is about: one of the ties as they stand going into the chapter (shifts included), picked at random from
-// the project and the chapter, so asking again gives the same tie. Null when there is no tie.
+// The ties a spotlight may be: between two characters (a group is not in the cast, so a tie to one never is the spotlight).
+export function spotlightTies(project) {
+  return (project.entanglements?.ties ?? []).filter((t) => isCharacterTie(project, t));
+}
+
+// The tie the chapter is about: one of the character-to-character ties as they stand going into the chapter (shifts included),
+// picked at random from the project and the chapter, so asking again gives the same tie. Null when there is none.
 export function pickSpotlight(project, chapter) {
-  const ties = effectiveProject(project, chapter).entanglements?.ties ?? [];
+  const eff = effectiveProject(project, chapter);
+  const ties = spotlightTies(eff);
   if (!ties.length) return null;
   const next = rng(projectSeed(project), chapter, "spotlight");
   return copyOf(ties[Math.floor(next() * ties.length)]);
@@ -156,13 +162,11 @@ export function withSpotlight(project, beat, spotlightId) {
   return { spotlight: spotlightId, cast };
 }
 
-// A tie in words, for the plan panel: "Suvi and Ola, mother (edge: to care for him)". Ends are named by their cards, a group by its
+// A tie in words, for the plan panel: "Suvi and Ola: mother (edge: to care for him)". Ends are named by their cards, a group by its
 // name. Returns {from, to, bond, edge, text}. `project` should be the effective project, so a tie a shift made reads right.
+// The words come from logic.js `tieWords`, which the link pickers use too. `schema` is kept so callers do not change.
 export function tieInWords(schema, project, tie) {
-  const defs = schema.cards.entanglements.fields.find((f) => f.key === "ties").item_fields;
-  const end = (key) => lookupLabel(project, defs.find((d) => d.key === key), tie[key]);
-  const out = { from: end("tie_from"), to: end("tie_to"), bond: tie.bond ?? "", edge: tie.edge ?? "" };
-  return { ...out, text: msg(out.edge ? "plan.tieWords" : "plan.tieWordsNoEdge", out) };
+  return tieWords(project, tie);
 }
 
 // ---- What the model is sent ------------------------------------------------------------

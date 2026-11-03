@@ -164,7 +164,7 @@ function pickerOptions(field, values, scope, ctx) {
   const sources = pickerSources(field, values, scope.fields, ctx.project, ctx.card);
   const chosen = values[field.key];
   const keep = Array.isArray(chosen) ? chosen : isFilled(chosen) ? [chosen] : [];
-  return { sources, entries: refOptions(ctx.project, sources, STRINGS.unnamed, { where: field.ref_where, keep }) };
+  return { sources, entries: refOptions(ctx.project, sources, STRINGS.unnamed, { where: field.ref_where, keep, characterTiesOnly: field.key === "spotlight" }) };
 }
 
 // A dropdown over entries of other cards. Rebuilds itself when a sibling changes.

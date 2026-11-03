@@ -327,6 +327,25 @@ function sourceList(project, source) {
   return project[cardId]?.[key] ?? [];
 }
 
+// A tie's ends: a tie runs between characters and groups (world.powers). Both lookups are by id.
+const endName = (project, id, unnamed) => {
+  const hit = [...(project.characters ?? []), ...(project.world?.powers ?? [])].find((x) => x.id === id);
+  return hit ? entryLabel(hit, unnamed) : unnamed;
+};
+
+// A tie in words: "{from} and {to}: {bond} (edge: {edge})", with no edge part when it has none. The one source of these words:
+// the link pickers, the plan panel and the chapter panel all read it. Returns {from, to, bond, edge, text}.
+export function tieWords(project, tie, unnamed = msg("common.unnamed")) {
+  const out = { from: endName(project, tie.tie_from, unnamed), to: endName(project, tie.tie_to, unnamed), bond: tie.bond ?? "", edge: tie.edge ?? "" };
+  return { ...out, text: msg(out.edge ? "plan.tieWords" : "plan.tieWordsNoEdge", out) };
+}
+
+// A tie between two characters (neither end is a group). Only these may be a chapter's spotlight.
+export function isCharacterTie(project, tie) {
+  const people = new Set((project.characters ?? []).map((c) => c.id));
+  return people.has(tie?.tie_from) && people.has(tie?.tie_to);
+}
+
 function entryLabel(item, unnamed) {
   for (const key of NAME_KEYS) {
     if (typeof item[key] === "string" && item[key].trim()) return item[key].trim();
@@ -337,13 +356,16 @@ function entryLabel(item, unnamed) {
 // Every entry of the given sources as {value: id, label, source}. `unnamed` is shown for entries with no name yet.
 // `options.where` ({key: [values]}) keeps only entries whose key holds one of the values (ref_where).
 // `options.keep` lists ids that stay in the list even when the filters would drop them, so a saved choice is not lost.
+// `options.characterTiesOnly` drops ties that have a group at an end (the spotlight picker); a tie is always listed in words.
 export function refOptions(project, sources, unnamed = msg("common.unnamed"), options = {}) {
-  const { where, keep = [] } = options;
+  const { where, keep = [], characterTiesOnly = false } = options;
   const out = [];
   for (const source of sources) {
     for (const item of sourceList(project, source)) {
       if (!keep.includes(item.id) && where && !Object.entries(where).every(([key, allowed]) => allowed.includes(item[key]))) continue;
-      out.push({ value: item.id, label: entryLabel(item, unnamed), source });
+      const isTie = source === "entanglements.ties";
+      if (isTie && characterTiesOnly && !keep.includes(item.id) && !isCharacterTie(project, item)) continue;
+      out.push({ value: item.id, label: isTie ? tieWords(project, item, unnamed).text : entryLabel(item, unnamed), source });
     }
   }
   return out;

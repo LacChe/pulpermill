@@ -28,6 +28,7 @@ export async function readyProject() {
   for (const id of ["style", "world", "entanglements", "setup"]) await fillOne(id);
   p.world.places.forEach((place, i) => { place.name = `Place ${i + 1}`; });   // the mock names every sample place alike, so give each its own
   p.setup.protagonist = p.characters[0].id;
+  p.entanglements.ties[0].tie_to = p.characters[1].id === p.entanglements.ties[0].tie_from ? p.characters[0].id : p.characters[1].id;   // the mock ties a person to a group, and a spotlight tie is between two people
   p.entanglements.holdings[0].holdee = p.world.objects[0].id;   // the mock names every sample thing alike, so it cannot pick one
   return p;
 }
