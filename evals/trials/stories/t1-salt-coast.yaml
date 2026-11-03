@@ -1,4 +1,4 @@
-# T1. Noir pressure, first person, three people, the protagonist has ties. Eight chapters.
+# T1. Noir pressure, first person, three people, the protagonist has ties. Twelve chapters.
 id: t1-salt-coast
 title: The Salt Coast
 language: en
@@ -6,8 +6,8 @@ tests:
   - "Noir pressure story, first person past, terse and dry"
   - "Three people; the protagonist is at the end of two ties"
   - "Groups at the end of ties and holdings (a group tie can be the spotlight)"
-  - "Eight chapters: a full arc with a middle"
-read: [1, 4, 8]
+  - "Twelve chapters: a full arc with a long middle, so the middle chapters must not repeat each other"
+read: [1, 6, 12]
 style:
   person: first
   tense: past
@@ -102,4 +102,4 @@ setup:
   protagonist: Suvi
   normal: "The shop opens at six and the quay is loud by seven. Suvi counts the till twice, weighs the first orders, and keeps the books that keep the shop safe and keep her from asking about her mother."
   disruption: "The harbour board has changed the dock rules overnight, and the stock in the back room is short by a crate."
-  chapter_count: 8
+  chapter_count: 12

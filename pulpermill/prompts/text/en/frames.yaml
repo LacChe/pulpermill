@@ -17,7 +17,7 @@ places_other: "Other places in {name}: {items}."
 object_held: "Held by {held_by}."
 uses_none: "Not used in any chapter yet."
 uses_some: "Used in {n} earlier chapter{s}."
-power_felt_only: "{name}: Ordinary people feel it as {felt}"
+power_felt_only: "{name}, as ordinary people feel it: {felt}"
 
 # ---- The story so far ----
 story_lead: "The story so far:"

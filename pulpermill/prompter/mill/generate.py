@@ -9,6 +9,7 @@ without it, or with an id that is not among its ties, falls back to the old read
 plan, so the tie is the one whose two ends the beat's plan names, and if none or several are named, any of the named ties (or any tie)
 satisfies the edge check. The id never reaches a prompt: the model sees the tie's names and its handle."""
 import json
+import re
 from typing import Any
 
 from pulpermill.prompts import render as r
@@ -19,8 +20,15 @@ from pulpermill.schema.shifts import shiftable_fields
 from . import common
 from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-2"
-WRITE_TOKENS = 3200        # the chapter's output limit; the prompt asks for about 1,800 words, which leaves room
+VERSION = "generate-3"
+
+# The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
+# WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
+# prose with dialogue (a 254-word sample repeated to length): 1,200 English words = 1,402 tokens; 2,400 Chinese characters = 2,041 tokens.
+# The larger count (Chinese) plus 25 percent is 2,551, rounded up to 2,560. English alone would need only about 1,760.
+CAP_WORDS, CAP_HAN = 1200, 2400
+OVERSHOOT_WORDS, OVERSHOOT_HAN = 1500, 3000      # the write check only speaks above these, so a few extra words never cost a second attempt
+WRITE_TOKENS = 2560
 EVENTS_TOKENS = 800
 SHIFTS_TOKENS = 1600
 
@@ -91,9 +99,26 @@ def write_prompt(request: dict, factor: float = 1.0) -> str:
         _section(heads["history"], history),
         _section(heads["ending"], w["ending_lead"].format(previous=chapter - 1) + "\n\n" + ending if ending else ""),
         _section(heads["craft"], "\n\n".join(craft)),
-        w["closing"].format(language=lang),
+        w["closing"].format(language=lang, **w["length"]["zh" if is_zh(request) else "en"]),
     ]
     return "\n\n".join(b for b in blocks if b)
+
+
+def is_zh(request: dict) -> bool:
+    return str(request.get("language") or "en").lower().startswith("zh")
+
+
+def write_problem(request: dict, text: Any) -> str | None:
+    """One plain line when the chapter is far over the cap (more than 1,500 words, or 3,000 Han characters for Chinese); None otherwise.
+    Under the cap, or a little over it, passes. A short chapter is never rejected."""
+    body = r.s(text)
+    if is_zh(request):
+        over, cap = len(re.findall(r"[\u4e00-\u9fff]", body)) > OVERSHOOT_HAN, "zh"
+    else:
+        over, cap = len(re.findall(r"[\w'’-]+", body)) > OVERSHOOT_WORDS, "en"
+    if not over:
+        return None
+    return common.load_text("generate")["write_problems"]["too_long"].format(cap=common.load_text("generate")["length"][cap]["cap"])
 
 
 # ---- events ----------------------------------------------------------------------------------------------------------------
@@ -236,7 +261,7 @@ class GenerateFlow(Flow):
     def _step(self, n: int, results: list) -> Step:
         g = self.kit.grammar
         if n == 0:
-            return Step("write", lambda f: write_prompt(self.request, f), "text", WRITE_TOKENS, None, None, "prose", True)
+            return Step("write", lambda f: write_prompt(self.request, f), "text", WRITE_TOKENS, None, lambda v: write_problem(self.request, v), "prose", True)
         chapter = results[0]
         if n == 1:
             return Step("events", lambda f: events_prompt(self.request, chapter, f), "json", EVENTS_TOKENS,

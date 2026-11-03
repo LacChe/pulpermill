@@ -1,12 +1,12 @@
-# T3. Absurd science-fiction comedy, third person present, the largest cast (five people) and the longest run (ten chapters).
+# T3. Absurd science-fiction comedy, third person present, the largest cast (five people) and the longest run (twenty chapters).
 id: t3-star-ferry
 title: The Ferry That Was Always Late
 language: en
 tests:
-  - "Largest cast (five) and longest run (ten chapters)"
+  - "Largest cast (five) and longest run (twenty chapters, the most allowed: a long history for the planner and the writer to cut)"
   - "Absurd comedy in third person present: tests tense drift and humour without a list of jokes"
   - "Many ties from one protagonist, so the spotlight varies; minor characters must stay roles with no names"
-read: [1, 5, 10]
+read: [1, 10, 20]
 style:
   person: third
   tense: present
@@ -140,4 +140,4 @@ setup:
   protagonist: Dessa
   normal: "Dessa opens the log, sets the departure time and apologises over the speaker in advance. The routine keeps her crew calm and keeps her from asking why the ferry has never arrived on time."
   disruption: "An inspector steps aboard with a clipboard and announces the ferry will be examined for a certificate of fitness before it leaves the dock."
-  chapter_count: 10
+  chapter_count: 20

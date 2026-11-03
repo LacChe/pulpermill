@@ -69,7 +69,7 @@ def test_trial_is_a_valid_project_under_schema_version_3(path):
     Project.model_validate(data)
     assert data["schema_version"] == SCHEMA_VERSION == 3
     assert data["chapters"] == [] and data["outline"]["beats"] == [] and data["summary_events"]["entries"] == [] and data["shifts"]["entries"] == []
-    assert 5 <= data["setup"]["chapter_count"] <= 10
+    assert 10 <= data["setup"]["chapter_count"] <= 20
     assert data["output_language"] in ("en", "zh")
 
 
@@ -110,7 +110,8 @@ def test_the_kit_covers_what_it_is_meant_to_cover():
     assert {e["person"] for e in MANIFEST} == {"first", "third"} and {e["tense"] for e in MANIFEST} == {"past", "present"}
     assert any(e["protagonist_has_ties"] for e in MANIFEST) and any(not e["protagonist_has_ties"] for e in MANIFEST)
     assert any(e["ties_to_groups"] for e in MANIFEST)
-    assert min(e["chapters"] for e in MANIFEST) == 5 and max(e["chapters"] for e in MANIFEST) == 10
+    assert min(e["chapters"] for e in MANIFEST) == 10 and max(e["chapters"] for e in MANIFEST) == 20         # decided 3 Nov: 10 to 20 chapters
+    assert all(10 <= e["chapters"] <= 20 for e in MANIFEST) and len({e["chapters"] for e in MANIFEST}) >= 5
 
 
 def test_the_chinese_story_is_in_chinese():

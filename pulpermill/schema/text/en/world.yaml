@@ -84,7 +84,7 @@ fields:
     delete_confirm: "Delete this group?"
     item_title: "{name}"
     lead_in: "Groups with power in {name}:\n{items}"
-    item_template: "{name}: {nature} It holds power by {hold} Ordinary people feel it as {felt}"
+    item_template: "{name}: {nature} How it holds power: {hold} How ordinary people feel it: {felt}"
     item_join: "\n"
     item_fields:
       name: {label: "Name", help: "What the group is called.", placeholder: "e.g. The Water Guild"}

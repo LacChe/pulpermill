@@ -157,7 +157,7 @@ cards:
       - "The disruption is one event that has already happened and broke the normal, told in the past. It contains no ending, no outcome and no plan: leave out how things will turn out, and keep only the event itself."
       - "When the note describes a condition (\"the mood in the town was souring\"), name the event that made it so."
       # T1 U7: a stated chapter count is kept.
-      - "When the note states a number of chapters (\"make it eight chapters\", \"7 chaps\"), chapter_count is exactly that number. When it states none, choose a whole number from 5 to 10 that suits the size of the story."
+      - "When the note states a number of chapters (\"make it eight chapters\", \"7 chaps\"), chapter_count is exactly that number. When it states none, choose a whole number from 10 to 20 that suits the size of the story."
 
 # ---- the check's lines (shown to the model on its second attempt) ----
 problems:

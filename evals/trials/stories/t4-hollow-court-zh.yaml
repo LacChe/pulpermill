@@ -1,4 +1,4 @@
-# T4. Simplified Chinese palace intrigue, third person past, four people. Six chapters. The only story in another language.
+# T4. Simplified Chinese palace intrigue, third person past, four people. Fourteen chapters. The only story in another language.
 id: t4-hollow-court-zh
 title: 空庭记
 language: zh
@@ -6,7 +6,7 @@ tests:
   - "Simplified Chinese story: the instructions stay in English, the story is in Chinese"
   - "Ornate, melancholic third person past in Chinese; person and tense heuristics are skipped, length counts characters"
   - "Four people, ties to a group (the household office)"
-read: [1, 3, 6]
+read: [1, 7, 14]
 style:
   person: third
   tense: past
@@ -120,4 +120,4 @@ setup:
   protagonist: 沈清
   normal: "沈清每日天未亮便到内库核对账册，午后给各宫登记用度，夜里点灯抄录。这套日子让她安稳，也让她不必去想父亲的案子。"
   disruption: "一本最后几页被撕去的旧账册，在她的案头静静出现，没有人承认放过它。"
-  chapter_count: 6
+  chapter_count: 14

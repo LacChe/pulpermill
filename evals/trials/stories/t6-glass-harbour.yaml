@@ -1,13 +1,13 @@
 # T6. Political thriller, third person past, four people and two groups. Most ties run to a group, so the spotlight is often a
-# person against an institution. Terse, clinical, subtext. Nine chapters.
+# person against an institution. Terse, clinical, subtext. Fifteen chapters.
 id: t6-glass-harbour
 title: The Glass Harbour Audit
 language: en
 tests:
   - "Political thriller with two groups; most ties run to a group, so spotlights are often a person against an institution"
   - "Terse, clinical, subtext; named minor officials are likely and are flagged"
-  - "Nine chapters"
-read: [1, 5, 9]
+  - "Fifteen chapters"
+read: [1, 8, 15]
 style:
   person: third
   tense: past
@@ -127,4 +127,4 @@ setup:
   protagonist: Iris Vane
   normal: "Iris opens each audit with the same ritual: lay out the working papers, list every record she is owed, and write the date in the margin. The routine keeps her methodical and keeps her from thinking about her last case."
   disruption: "On her second day at the port, two days of shipping manifests she asked for turn up overwritten."
-  chapter_count: 9
+  chapter_count: 15

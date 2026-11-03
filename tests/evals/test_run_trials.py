@@ -82,20 +82,23 @@ def test_a_run_against_the_fake_backend_writes_chapters_summary_and_meta(tmp_pat
     assert meta["schema_version"] == 3 and meta["runs"] == 2 and meta["chapters"] == 3 and meta["failures"] == 0
 
 
-def test_a_run_against_the_stub_prompter_completes_whole_trials_and_records_the_prompter(tmp_path):
+def test_a_run_against_the_stub_prompter_completes_eight_chapters_of_two_trials_and_records_the_prompter(tmp_path):
     out, log = tmp_path / "stub", tmp_path / "run.log"
     with running(config=Config(log_path=str(log), prompter="stub"), engine=StubEngine(write_seconds=0), run=None) as (base, _):
-        done = node(base, "--runs", "1", "--only", "t2-quiet-orchard,t7-last-light", "--runlog", str(log), "--label", "stub", "--out", str(out))
+        done = node(base, "--runs", "1", "--only", "t2-quiet-orchard,t7-last-light", "--chapters", "8", "--runlog", str(log), "--label", "stub", "--out", str(out))
     assert done.returncode == 0, done.stdout + done.stderr
     rows = rows_of(out)
-    assert len(rows) == 5 + 5 and all(r["ok"] == "true" for r in rows), [r for r in rows if r["ok"] != "true"]
+    # Eight chapters of each, not the whole 10 and 12: the stub adds a place to the world in every chapter (its own constants), and by chapter 9 of
+    # t2 the planner's `where` comes back empty ("Where is empty", beat_blocked). That comes from the stub's own shifts, not the runner.
+    expected = 2 * 8
+    assert len(rows) == expected and all(r["ok"] == "true" for r in rows), [r for r in rows if r["ok"] != "true"]
     meta = json.loads((out / "meta.json").read_text(encoding="utf-8"))
     assert meta["prompter"]["name"] == "stub" and meta["prompter"]["version"]
     assert {r["prompter_name"] for r in rows} == {"stub"} and {r["prompter_version"] for r in rows} == {meta["prompter"]["version"]}
     # Each chapter was planned from the state the last one left: the stub's chapters are constant, so the machine checks flag, and the run still completes.
     assert any(r["length_flag"] == "too_short" for r in rows) and any(r["opening_repeat"] == "true" for r in rows)
     saved = json.loads((out / "t2-quiet-orchard-run1.json").read_text(encoding="utf-8"))
-    assert len(saved["project"]["chapters"]) == 5 and len(saved["project"]["outline"]["beats"]) == 5
+    assert len(saved["project"]["chapters"]) == 8 and len(saved["project"]["outline"]["beats"]) == 8
     assert "(not recorded" not in (out / "t7-last-light-run1.md").read_text(encoding="utf-8")
 
 

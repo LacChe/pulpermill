@@ -1,12 +1,12 @@
-# T2. Quiet domestic literary, third person close, the smallest cast (two people), the protagonist has ties. Five chapters, so chapter 5 is the last.
+# T2. Quiet domestic literary, third person close, the smallest cast (two people), the protagonist has ties. Ten chapters, so chapter 10 is the last (the shortest run allowed).
 id: t2-quiet-orchard
 title: The Orchard Year
 language: en
 tests:
   - "Smallest cast: two people, so every chapter has the same cast"
   - "Quiet, lingering, melancholic third person: little plot, so a chapter can easily repeat the last"
-  - "Five chapters, so chapter 5 is the last chapter and must close the story"
-read: [1, 3, 5]
+  - "Ten chapters, the shortest run allowed, so chapter 10 is the last chapter and must close the story"
+read: [1, 5, 10]
 style:
   person: third
   tense: past
@@ -85,4 +85,4 @@ setup:
   protagonist: Maren
   normal: "Maren walks the rows before dawn, prunes, mends and keeps the books at night. The routine fills the hours that her husband's silence used to fill, and keeps her from deciding anything."
   disruption: "Her husband's nephew arrives on the evening bus with one bag and no explanation, a week before the harvest."
-  chapter_count: 5
+  chapter_count: 10

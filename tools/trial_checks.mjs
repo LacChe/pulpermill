@@ -18,7 +18,12 @@
 //                  object, a group or a term from the cards (or an ordinary calendar word). English only. offstage_names are names of
 //                  characters who are in the story but not in this chapter's cast. Both list names and count them.
 
-export const LIMITS = { en: { min: 250, max: 2500 }, zh: { min: 400, max: 5000 } };
+// Length limits (3 Nov): a chapter is at most 1,200 words, or 2,400 Han characters (twice the word figure; Chinese counts Han characters).
+// The maximum is the cap the writer prompt states, so a chapter over it is a lead even though the write step only retries above 1,500 words
+// (3,000 characters). The minimum is 500 words / 1,000 characters, a little over half the 900 to 1,200 the prompt aims for: too short to hold
+// the four points of a chapter. The old minimum (250 / 400) was set for about 1,800 words and is too low for a cap of 1,200. A chapter under the
+// minimum is flagged for a person to look at; the kit never asks for padding.
+export const LIMITS = { en: { min: 500, max: 1200 }, zh: { min: 1000, max: 2400 } };
 const CALENDAR = new Set("Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March April May June July August September October November December Mr Mrs Ms Dr Sir Lady Lord God I".split(" "));
 
 const words = (text) => (text.match(/[\p{L}\p{N}'’-]+/gu) ?? []);

@@ -30,7 +30,7 @@ Read the chapter first, as a reader. Then read the beat and the spotlight tie ab
 ## What the machine columns mean (`summary.csv`)
 | Column | Meaning |
 | --- | --- |
-| `length`, `length_flag` | Words (characters of Han script for Chinese). Flagged under 250 or over 2500 words (400 / 5000 characters) |
+| `length`, `length_flag` | Words (characters of Han script for Chinese). Flagged under 500 or over 1,200 words (1,000 / 2,400 characters). 1,200 words is the writer's cap |
 | `person_found`, `person_flag` | The person the narration is mostly in (first or third), from pronouns outside dialogue; `drift` when it is not the Style's person. `unclear` below 10 pronouns |
 | `tense_found`, `tense_flag` | The tense the narration is mostly in, from common verb forms; `drift` when it is not the Style's tense. English only. `unclear` below 20 verb forms |
 | `opening_repeat` | The opening of this chapter matches the opening of an earlier one |

@@ -50,7 +50,14 @@ craft_people: "Only the people on stage act in this chapter. Anyone else the sce
 craft_change: "By the end of the chapter the tie in the spotlight and the protagonist's aim must stand differently from the way they stood at the start. Show that change on the page, through what people do and say, and end on a moment that leaves the situation changed and makes the next chapter matter."
 craft_change_last: "By the end of the chapter the tie in the spotlight and the protagonist's aim must stand differently from the way they stood at the start. Show that change on the page, through what people do and say, and end the story on a moment that settles what it set in motion."
 
-closing: "Write only the text of the chapter, in {language}, from its first sentence to its last: no title, no notes and no summary after the end. A full chapter runs about 1,800 words."
+# Length (decided 3 Nov: at most 1,200 words). Stated positively as a complete chapter that fits the cap and ends on a finished beat; the closing line stays the
+# last line of the prompt. Chinese is counted in characters at twice the word figure (the trials kit's own ratio), so 2,400 characters.
+closing: "Write only the text of the chapter, in {language}, from its first sentence to its last: no title, no notes and no summary after the end. Write a complete chapter of up to {cap}, aiming for roughly {aim}, so that it reads whole and ends on a finished beat."
+length:
+  en: {cap: "1,200 words", aim: "900 to 1,200 words"}
+  zh: {cap: "2,400 Chinese characters", aim: "1,800 to 2,400 Chinese characters"}
+write_problems:
+  too_long: "Shorten the chapter to at most {cap} by keeping the scenes the plan needs and cutting the rest."
 
 # ---- events step ----
 events_task: "Below is chapter {chapter} of a story. Record what actually happened in it, from the text itself, in {language}."

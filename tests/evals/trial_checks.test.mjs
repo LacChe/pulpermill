@@ -13,7 +13,17 @@ const base = { language: "en", style: { person: "first", tense: "past" }, eff, c
 test("length is counted in words, and a short or long chapter is flagged", () => {
   assert.equal(checkChapter({ ...base, text: "One two three." }).length_flag, "too_short");
   assert.equal(checkChapter({ ...base, text: "word ".repeat(LIMITS.en.max + 1) }).length_flag, "too_long");
-  assert.equal(checkChapter({ ...base, text: "word ".repeat(400) }).length_flag, "");
+  assert.equal(checkChapter({ ...base, text: "word ".repeat(800) }).length_flag, "");
+});
+
+test("limits: 500 to 1,200 words and 1,000 to 2,400 Han characters", () => {
+  assert.deepEqual(LIMITS, { en: { min: 500, max: 1200 }, zh: { min: 1000, max: 2400 } });
+  const zh = { ...base, language: "zh", style: { person: "third", tense: "past" } };
+  assert.equal(checkChapter({ ...zh, text: "她走进内库。".repeat(481) }).length_flag, "too_long");     // 5 Han characters a repeat: 2,405
+  assert.equal(checkChapter({ ...zh, text: "她走进内库。".repeat(480) }).length_flag, "");            // exactly 2,400 passes
+  assert.equal(checkChapter({ ...zh, text: "她走进内库。".repeat(300) }).length_flag, "");
+  assert.equal(checkChapter({ ...zh, text: "她走进内库。".repeat(100) }).length_flag, "too_short");
+  assert.equal(checkChapter({ ...base, text: "word ".repeat(1200) }).length_flag, "");
 });
 
 test("Chinese length counts Han characters", () => {

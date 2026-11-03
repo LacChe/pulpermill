@@ -55,7 +55,7 @@ def all_ids(node, found=None):
 
 def test_fill_drops_a_clause_with_an_empty_token():
     assert fill("{a}: {b} Next move: {c}", {"a": "X", "b": "Y", "c": ""}) == "X: Y"
-    assert fill("{a}: {b} Next move: {c}", {"a": "X", "b": "Y", "c": "Z"}) == "X: Y Next move: Z"
+    assert fill("{a}: {b} Next move: {c}", {"a": "X", "b": "Y", "c": "Z"}) == "X: Y. Next move: Z"
 
 
 def test_fill_does_not_double_a_full_stop():
@@ -148,8 +148,8 @@ def test_writer_world_has_the_beats_place_in_full_and_the_other_places_by_name()
 def test_a_group_out_of_play_shows_only_how_it_is_felt():
     req = generate_request()
     text = render_world(req["world"], scope="writer", place="The Docks", in_play=groups_in_play(named(req)))
-    assert "It holds power by Licensing every boat" in text
-    assert "The Dockhands' Brotherhood: Ordinary people feel it as a hush" in text
+    assert "How it holds power: Licensing every boat" in text
+    assert "The Dockhands' Brotherhood, as ordinary people feel it: A hush" in text
     assert "Slowing the work down" not in text
 
 
@@ -186,12 +186,11 @@ def test_pronouns_agree_with_the_person_in_the_portrait():
     assert "protects themselves from" in render_cast(other, scope="writer") and "sabotages their own aims" in render_cast(other, scope="writer")
 
 
-def test_a_value_that_starts_with_a_function_word_continues_the_sentence_and_a_name_keeps_its_capital():
-    from pulpermill.prompts.render import soften
-    assert soften("She wants to know") == "she wants to know" and soften("The board closed it") == "the board closed it"
-    assert soften("Ines learns the name") == "Ines learns the name" and soften("I know") == "I know"
+def test_a_tie_edge_follows_a_colon_so_a_phrase_or_a_sentence_reads_alike():
     text = render_entanglements(named(generate_request()), ["Suvi", "Aino", "Pekka"], scope="writer")
-    assert "Right now, she wants to know whom he reports to." in text
+    assert "Drives Suvi: She wants to know whom he reports to." in text
+    ties = {"ties": [{"tie_from": "Suvi", "tie_to": "Aino", "bond": "owes her since the fire", "edge": "to care for him"}]}
+    assert "Suvi toward Aino: owes her since the fire. Drives Suvi: to care for him." in render_entanglements(ties, scope="planner")
 
 
 def test_punctuation_is_tidy_around_the_lines_the_renderers_make():
@@ -451,3 +450,136 @@ def test_a_shift_for_the_world_has_no_target_and_an_empty_patch_has_nothing_to_s
     text = render_shift({"beat": 2, "card": "world", "patch": {"everyday_life": "Quiet now."}})
     assert text == "In chapter 2, the world changed: everyday life is now Quiet now."
     assert render_shift({"beat": 2, "card": "entanglements", "patch": {}}) == "In chapter 2, the ties and holdings changed:"
+
+
+# ---- Sentence ends (A6) ---------------------------------------------------------------------------------------------
+
+from pulpermill.prompts.render import (render_person_brief, render_earlier_beats, sentence, tidy)  # noqa: E402
+
+_TERM = "[.!?…。！？]"
+
+
+def _boundary_story(stop: str):
+    """One of every card, with each stored value made unique and ending in `stop` (or in nothing)."""
+    v = lambda tag: f"Zq{tag}x{stop}"       # noqa: E731
+    person = {"name": "Suvi", "sex": "female", "age": 34, "appearance": v("app"), "sketch": v("sk"), "wants": [{"text": v("w1")}, {"text": v("w2")}],
+              "fear": v("fear"), "flaw": v("flaw"), "values": [{"text": v("v1")}, {"text": v("v2")}],
+              "behaviors": [{"state": v("bs"), "tendency": v("bt")}], "competence": v("comp"), "vulnerability": v("vul"),
+              "speech": v("sp"), "history": v("hist")}
+    world = {"name": "Coast", "era_and_technology": v("era"), "everyday_life": v("life"), "history": v("whist"),
+             "places": [{"name": "Dock", "description": v("pd"), "effect": v("pe")}],
+             "objects": [{"name": "Key", "description": v("od"), "significance": v("os"), "held_by": "Suvi"}],
+             "powers": [{"name": "Board", "nature": v("pn"), "hold": v("ph"), "felt": v("pf")}],
+             "rules": [{"statement": v("rs"), "cost": v("rc"), "when_broken": v("rw")}],
+             "terms": [{"term": "Toll", "meaning": v("t1")}, {"term": "Fee", "meaning": v("t2")}]}
+    ties = {"ties": [{"tie_from": "Suvi", "tie_to": "Board", "bond": v("bond"), "edge": v("edge")}], "holdings": [{"held_by": "Suvi", "holdee": "Key"}]}
+    setup = {"protagonist": "Suvi", "normal": v("norm"), "disruption": v("disr")}
+    events = [{"chapter": 1, "happened": v("hap1"), "changed": v("chg1")}, {"chapter": 2, "happened": v("hap2"), "changed": v("chg2")},
+              {"chapter": 3, "happened": v("hap3"), "changed": v("chg3")}]
+    beat = {"where": v("where"), "when_time": v("when"), "cast": ["Suvi"], "spotlight": v("spot"), "aim": v("aim"), "plan": v("plan")}
+    tie = {"tie_from": "Suvi", "tie_to": "Aino", "bond": v("sbond"), "edge": v("sedge")}
+    shift = {"chapter": 2, "card": "characters", "target": "c1", "patch": {"fear": v("sf"), "wants": [{"op": "add", "values": {"text": v("sa")}}]}}
+    style = {"person": "third", "tense": "past", "genre": v("genre"), "lens": v("lens"), "narrator_note": v("nn"), "sentences_note": v("sn"),
+             "stance_note": v("st"), "dialogue_note": v("dn")}
+    return person, world, ties, setup, events, beat, tie, shift, style
+
+
+def _render_every_card(stop: str) -> list[tuple[str, str]]:
+    person, world, ties, setup, events, beat, tie, shift, style = _boundary_story(stop)
+    out = [("person writer", render_cast([person], scope="writer")), ("person planner", render_cast([person], scope="planner")),
+           ("world writer", render_world(world, scope="writer", place="Dock")), ("world planner", render_world(world, scope="planner")),
+           ("ties writer", render_entanglements(ties, ["Suvi", "Board"], scope="writer")),
+           ("ties planner", render_entanglements(ties, ["Suvi"], scope="planner")),
+           ("setup", render_setup(setup, 1, 12)), ("history writer", render_history(events, 4, scope="writer", keep_full=1)),
+           ("history planner", render_history(events, 4, scope="planner", keep_full=1)), ("story so far", render_story_so_far(events, 4, keep_full=1)),
+           ("scene writer", render_scene(beat, scope="writer")), ("scene planner", render_scene(beat, scope="planner")),
+           ("spotlight", render_spotlight(tie, [person], scope="planner")), ("person brief", render_person_brief(person)),
+           ("style", render_style(style, scope="writer")), ("shift", render_shift(shift, {"c1": "Suvi"}))]
+    return out
+
+
+def _values(stop: str) -> list[str]:
+    found = set()
+    for card in _boundary_story(stop):
+        stack = [card]
+        while stack:
+            node = stack.pop()
+            if isinstance(node, dict):
+                stack.extend(node.values())
+            elif isinstance(node, list):
+                stack.extend(node)
+            elif isinstance(node, str) and node.startswith("Zq"):
+                found.add(node)
+    return sorted(found)
+
+
+def _check_boundaries(stop: str):
+    seen = 0
+    for where, text in _render_every_card(stop):
+        for value in _values(stop):
+            for m in re.finditer(re.escape(value), text):
+                seen += 1
+                end = m.end()
+                tail = text[end:end + 2]
+                ok = value[-1] in ".!?…。！？" or (tail[:1] and tail[0] in ".!?…。！？;,:)\n") or end == len(text) or text[end] == "\n"
+                assert ok, f"{where}: {value!r} runs into {text[end:end + 25]!r}"
+    assert seen > 40
+
+
+def test_no_value_runs_into_the_next_sentence_when_it_has_no_final_stop():
+    _check_boundaries("")
+
+
+def test_no_value_runs_into_the_next_sentence_when_it_ends_in_a_stop():
+    _check_boundaries(".")
+
+
+def test_no_stop_is_doubled_in_either_mode():
+    for stop in ("", ".", "?", "!", "…", "。"):
+        for where, text in _render_every_card(stop):
+            assert not re.search(r"(?<![.\d])\.\.(?!\.)", text), f"{where}: doubled stop"
+            assert not re.search(r"[?!…。！？]\.", text), f"{where}: a stop after a stop"
+
+
+def test_the_three_lines_that_ran_together_now_read_properly():
+    person = {"name": "Suvi", "sex": "female", "fear": "Being found out", "flaw": "She hoards what she knows"}
+    text = render_cast([person], scope="planner")
+    assert "Suvi avoids and protects herself from: Being found out. Suvi holds a false belief or blind spot that sabotages her own aims: She hoards what she knows." in text
+    world = {"name": "Coast", "rules": [{"statement": "Debts are written, never spoken", "cost": "A spoken debt is void.", "when_broken": "The board is shamed."}],
+             "powers": [{"name": "The Board", "nature": "Seven men.", "hold": "It sets the tolls", "felt": "A fee"}]}
+    out = render_world(world, scope="writer")
+    assert "Debts are written, never spoken. Cost: A spoken debt is void. When broken: The board is shamed." in out
+    assert "The Board: Seven men. How it holds power: It sets the tolls. How ordinary people feel it: A fee." in out
+
+
+def test_a_value_that_already_ends_a_sentence_is_not_given_another_stop():
+    for value in ('He said "go."', "Is it?", "Run!", "Wait…", "他走了。", "她问：“去哪？”", "(a note.)"):
+        assert sentence(value) == value
+        assert tidy(value + ".") == value, value
+    assert sentence("A plain value") == "A plain value." and sentence('He called it "the Ledger"') == 'He called it "the Ledger".'
+    person = {"name": "Suvi", "sex": "female", "fear": "Is it over?", "flaw": 'Says "never."', "wants": [{"text": "Is it safe?"}]}
+    text = render_cast([person], scope="planner")
+    assert "from: Is it over? Suvi" in text and 'her own aims: Says "never."' in text and "Is it safe?" in text and "?." not in text
+    assert 'never.".' not in text
+
+
+def test_chinese_values_keep_their_own_stops_and_get_an_english_one_only_when_bare():
+    person = {"name": "Suvi", "fear": "被人发现。", "flaw": "她囤积秘密"}
+    text = render_cast([person], scope="planner")
+    assert "被人发现。 Suvi" in text and "。." not in text
+    assert "她囤积秘密." in text
+
+
+def test_a_clipped_value_ends_at_a_stop_or_in_an_ellipsis_and_reads_on():
+    person = {"name": "Suvi", "sex": "female", "fear": "A fear that goes on and on without any end in sight, " * 20, "flaw": "Short"}
+    text = render_cast([person], scope="planner", report=Report())
+    assert "…" in text and "….." not in text and "…. " not in text
+    zh = {"name": "Suvi", "fear": "他害怕。" * 80, "flaw": "x"}
+    assert render_cast([zh], scope="planner").count("害怕。") >= 1
+
+
+def test_the_beats_timeline_and_the_brief_take_values_with_or_without_stops():
+    beats = [{"chapter": 1, "where": "The Docks.", "when_time": "Friday night."}]
+    assert "Chapter 1: at The Docks, Friday night." in render_earlier_beats(beats)
+    brief = render_person_brief({"name": "Suvi", "wants": [{"text": "Keep the shop."}, {"text": "Know why"}]})
+    assert "Wants: Keep the shop; Know why." in brief

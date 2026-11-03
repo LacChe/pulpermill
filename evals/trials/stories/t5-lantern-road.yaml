@@ -1,13 +1,13 @@
 # T5. Cozy fantasy, first person present, three people. The protagonist is at neither end of any tie, so every spotlight is a tie
-# between other people and the chapter has to bring the protagonist into it. Seven chapters.
+# between other people and the chapter has to bring the protagonist into it. Eleven chapters.
 id: t5-lantern-road
 title: The Lamplighter's Road
 language: en
 tests:
   - "The protagonist is at neither end of any tie: every spotlight is a tie between other people, and the protagonist must be drawn into it"
   - "First person present, cozy fantasy"
-  - "Seven chapters"
-read: [1, 4, 7]
+  - "Eleven chapters"
+read: [1, 6, 11]
 style:
   person: first
   tense: present
@@ -104,4 +104,4 @@ setup:
   protagonist: Tilda
   normal: "Tilda walks the same stretch of road at dusk with her pole on her shoulder, lights each lamp and waves at each lit window. The routine keeps her busy and keeps her from asking why her aunt never came home."
   disruption: "The lamp at Hollow Bridge goes dark in the middle of the night and will not relight."
-  chapter_count: 7
+  chapter_count: 11

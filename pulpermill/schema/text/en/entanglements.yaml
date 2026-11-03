@@ -16,7 +16,7 @@ fields:
     delete_confirm: "Delete this tie?"
     item_title: "{tie_from} → {tie_to}"
     lead_in: "Ties between people and groups:\n{items}"
-    item_template: "{tie_from} toward {tie_to}: {bond}. Right now, {edge}"
+    item_template: "{tie_from} toward {tie_to}: {bond} Drives {tie_from}: {edge}"
     item_join: "\n"
     item_fields:
       tie_from: {label: "From", help: "A character or a group.", placeholder: "Choose a character or group", no_options: "No characters or groups yet. Add some in Characters or World first.", disabled_reason: "Already the other end of this tie. A tie can't point at itself."}

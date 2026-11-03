@@ -15,10 +15,10 @@ PRONOUNS = {
     "male": {"they": "he", "them": "him", "their": "his", "themselves": "himself"},
     "other": {"they": "they", "them": "them", "their": "their", "themselves": "themselves"},
 }
-# Words that may safely start a sentence-case value without being a name. Used to lower the first letter where a template
-# continues a sentence ("Right now, she wants ..."). A name is never in this list, so a name is never lowered.
-_FUNCTION_WORDS = {"a", "an", "the", "he", "she", "they", "it", "his", "her", "their", "its", "this", "that", "there",
-                   "these", "those", "we", "you", "some", "every", "each", "no", "all", "any", "when", "if", "while", "once"}
+# What ends a sentence, with any closing quote or bracket after it. English and Chinese stops both count, so a Chinese value that ends
+# in 。 never gets an English full stop after it.
+_CLOSERS = "\"”’'»)」』）]"
+_TERMINAL = re.compile(r"[.!?…。！？][" + re.escape(_CLOSERS) + r"]*$")
 
 
 # ---- Small tools ----------------------------------------------------------------------------------------------------
@@ -45,19 +45,19 @@ def clip(text: str, limit: int | None, where: str = "", report: Report | None = 
     if not limit or len(text) <= limit:
         return text
     cut = text[:limit]
-    ends = [m.end() for m in re.finditer(r"[.!?][\"”')]?(?=\s|$)", cut)]
-    out = cut[:ends[-1]].strip() if ends and ends[-1] >= limit * 0.5 else cut[:cut.rfind(" ")].strip() + "…"
+    ends = [m.end() for m in re.finditer(r"[.!?][\"”')]?(?=\s|$)|[。！？][”’」』）]?", cut)]
+    space = cut.rfind(" ")
+    out = cut[:ends[-1]].strip() if ends and ends[-1] >= limit * 0.5 else (cut[:space] if space > 0 else cut).strip() + "…"
     if report is not None:
         report.clips.append(f"{where}: {len(text)} -> {len(out)} characters")
     return out
 
 
-def soften(text: str) -> str:
-    """Lowers the first letter of a value that starts with a function word, so it can follow a comma or a lead-in. Names and
-    other words keep their capital."""
+def bare(text: str) -> str:
+    """A value that sits inside a clause or a list ("when {state}, ...", "a; b; c") without its own final full stop, since the
+    template supplies the stop or the separator. A question mark, an exclamation mark, an ellipsis and a Chinese stop stay."""
     text = s(text)
-    m = re.match(r"([A-Za-z]+)\b", text)
-    return text[0].lower() + text[1:] if m and m.group(1).lower() in _FUNCTION_WORDS and m.group(1) != "I" else text
+    return text[:-1].rstrip() if text.endswith(".") and not text.endswith("..") else text
 
 
 def join_names(names: Iterable[str]) -> str:
@@ -68,13 +68,17 @@ def join_names(names: Iterable[str]) -> str:
 
 
 def sentence(text: str) -> str:
+    """Ends the text with a full stop when it has no terminal punctuation. A closing quote or bracket after a stop counts as the stop;
+    a value that ends in a colon, a semicolon, a comma or a dash is left as it is."""
     text = s(text)
-    return text if not text or text[-1] in ".!?:\"”')" else text + "."
+    return text if not text or _TERMINAL.search(text) or text[-1] in ":;,—–-" else text + "."
 
 
 def tidy(text: str) -> str:
-    """A value that already ends in a full stop must not meet the template's own."""
-    return re.sub(r"(?<![.\d])\.\.(?!\.)", ".", text)
+    """A value that already ends in a stop must not meet the template's own: no ".." and no "?." or "…." or '."."'."""
+    text = re.sub(r"(?<![.\d])\.\.(?!\.)", ".", text)
+    text = re.sub(r"([!?…。！？][" + re.escape(_CLOSERS) + r"]*)\.(?![.\d])", r"\1", text)
+    return re.sub(r"(\.[" + re.escape(_CLOSERS) + r"]+)\.(?![.\d])", r"\1", text)
 
 
 _SEGMENT = re.compile(r"(?<=\})\s+(?=[A-Z])|(?<=\.)\s+(?=[A-Z{])")
@@ -83,7 +87,7 @@ _TOKEN = re.compile(r"\{(\w+)\}")
 
 def fill(template: str, tokens: dict[str, Any], *, drop_first: bool = False) -> str:
     """Fills {tokens}. The template is read as clauses; a clause after the first that holds an empty token is dropped,
-    so an empty box leaves no label behind. With `drop_first`, the first clause is dropped the same way (for a template
+    so an empty box leaves no label behind, and a clause that ends in a value gets its full stop when another clause follows. With `drop_first`, the first clause is dropped the same way (for a template
     whose every clause stands alone)."""
     kept = []
     for i, part in enumerate(_SEGMENT.split(template)):
@@ -91,6 +95,7 @@ def fill(template: str, tokens: dict[str, Any], *, drop_first: bool = False) -> 
         if (i > 0 or drop_first) and any(not s(tokens.get(n)) for n in names):
             continue
         kept.append(_TOKEN.sub(lambda m: s(tokens.get(m.group(1), "")), part))
+    kept = [sentence(part) for part in kept[:-1]] + kept[-1:]          # a clause that is followed by another one ends its sentence
     return tidy(" ".join(kept)).strip()
 
 
@@ -103,14 +108,16 @@ def _items_block(card: str, key: str, items: list[str], **tokens) -> str:
     if not items:
         return ""
     join = tx.field(card, key).get("item_join") or "\n"
-    return fill_lead(tx.field(card, key)["lead_in"], join.join(items), tokens)
+    if join.strip():                                     # a list in one line: each item is a phrase, and the list ends with a stop
+        return sentence(fill_lead(tx.field(card, key)["lead_in"], join.join(bare(i) for i in items), tokens))
+    return fill_lead(tx.field(card, key)["lead_in"], join.join(sentence(i) for i in items), tokens)   # one sentence per line
 
 
 def fill_lead(lead_in: str, items: str, tokens: dict[str, Any]) -> str:
     """A lead-in with {items} filled with already-rendered lines. The lines are not re-read as templates."""
     marker = "\u0000ITEMS\u0000"
     text = _TOKEN.sub(lambda m: marker if m.group(1) == "items" else s(tokens.get(m.group(1), "")), lead_in)
-    return text.replace(marker, items).strip()
+    return tidy(text.replace(marker, items)).strip()
 
 
 # ---- Style ----------------------------------------------------------------------------------------------------------
@@ -142,7 +149,7 @@ def render_style(style: dict, *, scope: str = "writer", report: Report | None = 
                 extra = directives["lead_in_extra"].get(key, "")
                 pieces.append(f"{fill(spec['lead_in'], {'value': value.rstrip('.')})} {extra}".strip())
         if pieces:
-            paragraphs.append(" ".join(pieces))
+            paragraphs.append(" ".join(sentence(p) for p in pieces))
     return "\n\n".join(paragraphs)
 
 
@@ -162,7 +169,7 @@ def render_person(person: dict, *, scope: str = "writer", report: Report | None 
     lines: list[str] = []
 
     def put(para: list[str]):
-        para = [p for p in para if p]
+        para = [sentence(p) for p in para if p]
         if para:
             lines.append(" ".join(para))
 
@@ -185,21 +192,21 @@ def render_person(person: dict, *, scope: str = "writer", report: Report | None 
     drive = []
     wants = _list_items(person, "wants", "text", c["want_item"], report)
     if wants:
-        drive.append(fill_lead(chars["wants"]["lead_in"], "; ".join(wants), {"name": name}))
+        drive.append(_items_block("characters", "wants", wants, name=name))
     if s(person.get("fear")):
         drive.append(fill(frames["portrait_fear"], {"name": name, "themselves": pro["themselves"], "value": clip(person["fear"], c["fear"], f"{name}.fear", report)}))
     if s(person.get("flaw")):
         drive.append(fill(frames["portrait_flaw"], {"name": name, "their": pro["their"], "value": clip(person["flaw"], c["flaw"], f"{name}.flaw", report)}))
     values = _list_items(person, "values", "text", c["value_item"], report)
     if values:
-        drive.append(fill_lead(chars["values"]["lead_in"], "; ".join(values), {"name": name}))
+        drive.append(_items_block("characters", "values", values, name=name))
     if writer:
         behaviors = [fill(frames["portrait_behavior"],
-                          {"state": clip(b.get("state"), c["behavior_state"], f"{name}.behavior", report),
-                           "tendency": clip(b.get("tendency"), c["behavior_tendency"], f"{name}.behavior", report)})
+                          {"state": bare(clip(b.get("state"), c["behavior_state"], f"{name}.behavior", report)),
+                           "tendency": bare(clip(b.get("tendency"), c["behavior_tendency"], f"{name}.behavior", report))})
                      for b in (person.get("behaviors") or [])[: c["max_behaviors"]]]
         if behaviors:
-            drive.append(fill_lead(chars["behaviors"]["lead_in"], "; ".join(behaviors), {"name": name}))
+            drive.append(_items_block("characters", "behaviors", behaviors, name=name))
     put(drive)
 
     # texture and past
@@ -253,7 +260,7 @@ def render_world(world: dict, *, scope: str = "writer", place: str | None = None
         if s(world.get(key)):
             head.append(lead("world", key, name=name or "this world", value=clip(world[key], c[key], f"world.{key}", report)))
     if head:
-        paras.append(" ".join(head))
+        paras.append(" ".join(sentence(h) for h in head))
 
     # places
     places = world.get("places") or []
@@ -266,6 +273,7 @@ def render_world(world: dict, *, scope: str = "writer", place: str | None = None
         line = fill(spec["places"]["item_template"], {
             "name": s(p.get("name")), "description": clip(p.get("description"), c["place_description"], "place", report),
             "effect": clip(p.get("effect"), c["place_effect"], "place", report)})
+        line = sentence(line)
         shown.append(f"{line} {_uses(p)}".strip() if not writer else line)
     block = _items_block("world", "places", shown, name=name or "this world")
     if writer and others:
@@ -279,6 +287,7 @@ def render_world(world: dict, *, scope: str = "writer", place: str | None = None
         line = fill(spec["objects"]["item_template"], {
             "name": s(o.get("name")), "description": clip(o.get("description"), c["object_description"], "object", report),
             "significance": clip(o.get("significance"), c["object_significance"], "object", report)})
+        line = sentence(line)
         extras = [fill(fr["object_held"], {"held_by": o.get("held_by")}) if s(o.get("held_by")) else ""]
         if not writer:
             extras.append(_uses(o))
@@ -292,8 +301,8 @@ def render_world(world: dict, *, scope: str = "writer", place: str | None = None
     for g in world.get("powers") or []:
         gname = s(g.get("name"))
         tokens = {"name": gname, "nature": clip(g.get("nature"), c["power_nature"], "power", report),
-                  "hold": soften(clip(g.get("hold"), c["power_hold"], "power", report)),
-                  "felt": soften(clip(g.get("felt"), c["power_felt"], "power", report))}
+                  "hold": clip(g.get("hold"), c["power_hold"], "power", report),
+                  "felt": clip(g.get("felt"), c["power_felt"], "power", report)}
         if writer and in_play is not None and gname not in in_play:
             powers.append(fill(fr["power_felt_only"], tokens))       # the felt line always; the rest only when in play
         else:
@@ -306,7 +315,7 @@ def render_world(world: dict, *, scope: str = "writer", place: str | None = None
     rules = []
     for r in world.get("rules") or []:
         rules.append(fill(spec["rules"]["item_template"], {
-            "statement": clip(r.get("statement"), c["rule_statement"], "rule", report).rstrip("."),
+            "statement": clip(r.get("statement"), c["rule_statement"], "rule", report),
             "cost": clip(r.get("cost"), c["rule_cost"], "rule", report),
             "when_broken": clip(r.get("when_broken"), c["rule_when_broken"], "rule", report)}))
     block = _items_block("world", "rules", rules, name=name or "this world")
@@ -316,7 +325,7 @@ def render_world(world: dict, *, scope: str = "writer", place: str | None = None
     if writer:
         terms = [fill(spec["terms"]["item_template"], {"term": s(t.get("term")), "meaning": clip(t.get("meaning"), c["term_meaning"], "term", report)})
                  for t in world.get("terms") or []]
-        block = _items_block("world", "terms", ["; ".join(terms)] if terms else [], name=name or "this world")
+        block = _items_block("world", "terms", terms, name=name or "this world")
         if block:
             paras.append(block)
     return "\n\n".join(paras)
@@ -344,7 +353,7 @@ def render_entanglements(ent: dict, cast_names: Iterable[str] = (), *, scope: st
     paras = []
     ties = [fill(spec["ties"]["item_template"], {
         "tie_from": who(t.get("tie_from")), "tie_to": who(t.get("tie_to")),
-        "bond": clip(t.get("bond"), c["bond"], "tie.bond", report), "edge": soften(clip(t.get("edge"), c["edge"], "tie.edge", report))})
+        "bond": clip(t.get("bond"), c["bond"], "tie.bond", report), "edge": clip(t.get("edge"), c["edge"], "tie.edge", report)})
         for t in ent.get("ties") or []]
     block = _items_block("entanglements", "ties", ties)
     if block:
@@ -375,9 +384,9 @@ def render_setup(setup: dict, chapter: int, chapter_count: int | None, *, protag
         lines.append(lead("setup", "protagonist", value=who))
     if chapter == 1:
         if s(setup.get("normal")):
-            lines.append(fr["chapter_one_normal"].format(value=clip(setup["normal"], c["normal"], "setup.normal", report)))
+            lines.append(sentence(fr["chapter_one_normal"].format(value=clip(setup["normal"], c["normal"], "setup.normal", report))))
         if s(setup.get("disruption")):
-            lines.append(fr["chapter_one_break"].format(value=clip(setup["disruption"], c["disruption"], "setup.disruption", report)))
+            lines.append(sentence(fr["chapter_one_break"].format(value=clip(setup["disruption"], c["disruption"], "setup.disruption", report))))
     total = int(chapter_count or 0)
     lines.append(fr["chapter_of"].format(n=chapter, total=total) if total else fr["chapter_of_unknown"].format(n=chapter))
     if total and chapter >= total:
@@ -386,7 +395,7 @@ def render_setup(setup: dict, chapter: int, chapter_count: int | None, *, protag
 
 
 def _first_sentence(text: str) -> str:
-    m = re.match(r"(.+?[.!?])(\s|$)", s(text))
+    m = re.match(r"(.+?(?:[.!?](?=\s|$)|[。！？]))", s(text))
     return m.group(1) if m else s(text)
 
 
@@ -405,7 +414,7 @@ def _history(events: list[dict], chapter: int, keep_full: int, lead_in: str, rep
             text = clip(e.get("changed") or _first_sentence(e.get("happened")), c["changed"], f"events.{e['chapter']}", report)
             out.append(fr["story_older"].format(chapter=e["chapter"], text=sentence(text)))
     for e in recent:
-        para = fr["story_chapter"].format(chapter=e["chapter"], happened=clip(e.get("happened"), c["happened"], f"events.{e['chapter']}", report))
+        para = fr["story_chapter"].format(chapter=e["chapter"], happened=sentence(clip(e.get("happened"), c["happened"], f"events.{e['chapter']}", report)))
         if s(e.get("changed")):
             para += " " + fr["story_changed"].format(changed=sentence(clip(e["changed"], c["changed"], f"events.{e['chapter']}.changed", report)))
         out.append(para)
@@ -428,7 +437,7 @@ def render_history(events: list[dict], chapter: int, *, scope: str, keep_full: i
 
 def render_earlier_beats(beats: list[dict]) -> str:
     fr = tx.prompt_text("frames")
-    rows = [fr["planner_beat_item"].format(chapter=b.get("chapter"), where=s(b.get("where")), when=s(b.get("when_time")))
+    rows = [fr["planner_beat_item"].format(chapter=b.get("chapter"), where=bare(b.get("where")), when=bare(b.get("when_time")))
             for b in sorted(beats or [], key=lambda b: int(b.get("chapter") or 0))]
     if not rows:
         return ""
@@ -571,8 +580,8 @@ def render_shift(entry: dict, handles_or_names: dict[str, str] | None = None) ->
         field = _humanize(key)
         if isinstance(value, list) and all(isinstance(op, dict) and "op" in op for op in value):
             for op in value:
-                values = "; ".join(x for x in (_value_words(card, key, k, v, names) for k, v in (op.get("values") or {}).items()) if x)
-                old = s(names.get(s(op.get("id")))) or fr["shift_unknown_item"]
+                values = "; ".join(bare(x) for x in (_value_words(card, key, k, v, names) for k, v in (op.get("values") or {}).items()) if x)
+                old = bare(names.get(s(op.get("id")))) or fr["shift_unknown_item"]
                 frame = {"add": "shift_add", "replace": "shift_replace", "remove": "shift_remove"}[op["op"]]
                 pieces.append(sentence(fill(fr[frame], {"field": field, "values": values, "old": old}, drop_first=True) or field))
         else:
@@ -594,7 +603,7 @@ def render_person_brief(person: dict, *, report: Report | None = None) -> str:
     wants = [clip(w.get("text"), c["want_item"], f"{name}.wants", report) for w in person.get("wants") or []]
     parts = [f"{name} ({she})."]
     if wants:
-        parts.append("Wants: " + "; ".join(wants) + ".")
+        parts.append(sentence("Wants: " + "; ".join(bare(w) for w in wants)))
     for key, label in (("fear", "Fear"), ("flaw", "Flaw")):
         if s(person.get(key)):
             parts.append(f"{label}: {sentence(clip(person[key], c[key], f'{name}.{key}', report))}")

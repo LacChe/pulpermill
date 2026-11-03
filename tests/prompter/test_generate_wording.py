@@ -83,7 +83,9 @@ def test_the_writer_prompt_holds_the_plan_the_voice_the_cast_the_ending_and_the_
                    "The Board [offstage]", "wants of their own", "subtext", "did not see coming", "no labels, no headings"):
         assert needed in prompt, needed
     assert prompt.index("## The plan for this chapter") < prompt.index("## The people on stage")      # the plan is the spine, read first
-    assert prompt.rstrip().endswith("about 1,800 words.")                                              # the task is said again at the end
+    assert prompt.rstrip().endswith("so that it reads whole and ends on a finished beat.")            # the task is said again at the end, with the cap
+    assert "a complete chapter of up to 1,200 words, aiming for roughly 900 to 1,200 words" in prompt.splitlines()[-1]
+    assert "1,800" not in prompt
 
 
 def test_minor_characters_appear_by_role_and_only_the_cast_act():
@@ -169,6 +171,76 @@ def test_every_step_at_its_heaviest_fits_the_context_at_some_squeeze(size):
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert all(m.ok for m in measures) and len(measures) == 3
     assert steps[0].max_output == gen.WRITE_TOKENS and budget.input_limit(gen.WRITE_TOKENS) > 8000    # the chapter has room to be written
+
+
+def test_a_chinese_story_states_the_cap_in_characters_at_twice_the_word_figure():
+    request = base()
+    request["language"] = "zh"
+    last = gen.write_prompt(request).splitlines()[-1]
+    assert "up to 2,400 Chinese characters" in last and "1,800 to 2,400 Chinese characters" in last and "1,200 words" not in last
+    assert last.startswith("Write only the text of the chapter, in Chinese") or "Chinese" in last
+
+
+@pytest.mark.skipif(not tokens.available(), reason="the tokenizer files are not installed")
+def test_the_output_limit_holds_a_chapter_at_the_cap_with_room_to_spare():
+    english = " ".join((" ".join([CHAPTER] * 75)).split()[:1200])      # 1,200 words
+    chinese = "她走进内库，听见门外的脚步声，没有回头。" * 142          # 17 Han characters a repeat: 2,414, a little over the cap
+    assert len(english.split()) == 1200 and len(re.findall(r"[\u4e00-\u9fff]", chinese)) >= 2400
+    for text in (english, chinese):
+        assert tokens.count(text) < gen.WRITE_TOKENS, (tokens.count(text), gen.WRITE_TOKENS)
+    assert gen.WRITE_TOKENS == 2560 and gen.CAP_WORDS == 1200 and gen.CAP_HAN == 2 * gen.CAP_WORDS
+
+
+@pytest.mark.skipif(not tokens.available(), reason="the tokenizer files are not installed")
+def test_chapter_19_of_20_with_18_earlier_events_fits_and_cuts_the_oldest_history_first():
+    request = inflate(one_tie(), cast=6, each=5, ties=6, chapters=18, chars=900)
+    request["beat"], request["ties"] = one_tie()["beat"], request["ties"][:2]
+    request["previous_ending"] = one_tie()["previous_ending"]
+    request["chapter"], request["chapter_count"] = 19, 20
+    assert len(request["earlier_events"]) == 18
+    flow = gen.build_flow(request, Kit(request))
+    made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
+    assert all(m.ok for m in measures) and len(measures) == 3
+    full, squeezed = sections(gen.write_prompt(request, 1.0)), sections(gen.write_prompt(request, 0.55))
+    history = "The story so far"
+    assert squeezed[history] != full[history] and "Chapter 18" in squeezed[history]
+    assert "chapter 19 of 20" in gen.write_prompt(request, factor)
+
+
+# ---- the write step's length check ------------------------------------------------------------------------------------------
+
+def words_of(n: int) -> str:
+    return " ".join(["word"] * n)
+
+
+@pytest.mark.parametrize("n, flagged", [(300, False), (1200, False), (1500, False), (1501, True), (2400, True)])
+def test_the_write_check_speaks_only_when_the_chapter_is_far_over_the_cap(n, flagged):
+    problem = gen.write_problem(base(), words_of(n))
+    assert (problem is not None) == flagged
+    if flagged:
+        assert problem == "Shorten the chapter to at most 1,200 words by keeping the scenes the plan needs and cutting the rest." and "\n" not in problem
+
+
+@pytest.mark.parametrize("text", ["", "One line.", words_of(10)])
+def test_the_write_check_never_rejects_a_short_chapter(text):
+    assert gen.write_problem(base(), text) is None
+
+
+@pytest.mark.parametrize("n, flagged", [(2400, False), (3000, False), (3001, True)])
+def test_the_write_check_counts_han_characters_for_chinese(n, flagged):
+    request = base()
+    request["language"] = "zh"
+    problem = gen.write_problem(request, "她" * n)
+    assert (problem is not None) == flagged
+    if flagged:
+        assert "at most 2,400 Chinese characters" in problem
+    assert gen.write_problem(request, "word " * 1600) is None          # Latin words do not count in a Chinese story
+
+
+def test_the_write_step_carries_the_length_check_and_the_first_attempt_is_kept_when_it_passes():
+    request = base()
+    step = gen.build_flow(request, Kit(request)).next([])
+    assert step.name == "write" and step.max_output == gen.WRITE_TOKENS and step.check(words_of(1500)) is None and step.check(words_of(1600))
 
 
 # ---- the events step ------------------------------------------------------------------------------------------------------
@@ -277,7 +349,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-2:" in load_prompter("mill").version
+    assert "+generate:generate-3:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------
