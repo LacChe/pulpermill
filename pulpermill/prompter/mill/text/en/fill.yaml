@@ -147,7 +147,7 @@ cards:
       - "A tie needs two different ends. Make a tie for each relationship the note states between two names you may use, whichever way the note words it."
   setup:
     intro: "the springboard: who we follow, what just broke their normal, and how long the story runs."
-    scope: "You may write the normal, the disruption and the chapter count. The protagonist is one of the existing characters; create no new person, place or thing, and write no plan and no ending."
+    scope: "You may write the normal, the disruption and the chapter count. The protagonist is one of the existing characters; create no new person, place or thing, and write no plan and no ending. People beyond the Characters card appear by role (the woodcutter, a neighbour), unnamed."
     specific:
       - "When the note names someone as the lead who is not among the characters, choose the existing character who fits the note best; never add a person."
       # T1 U6: the normal is a day, not the character card again.
@@ -169,6 +169,7 @@ problems:
   bond_is_edge: "Make the bond of the tie from {tie_from} to {tie_to} a standing label and its edge what the tie makes {tie_from} want; the two must say different things."
   ownership_tie: "Ownership is a holding, not a tie. Move \"{bond}\" ({tie_from} and {tie_to}) into holdings, or give the tie a bond that is not about owning."
   holding_pair: "A place can be held by a person or a group, not by another place: {holdee} cannot be held by {held_by}."
+  unknown_person: "The normal and the disruption name {names}, who is on no card. Use only the names from the cards, and refer to anyone else by role (the woodcutter, a neighbour)."
   name_leak: "The world card must name no character; take {name} out of {where} and describe it without the person."
   one_want: "Give at least two wants that pull against each other."
   chapter_count: "The writer asked for {count} chapters, so chapter_count is {count}."

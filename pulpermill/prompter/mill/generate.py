@@ -20,7 +20,7 @@ from pulpermill.schema.shifts import shiftable_fields
 from . import common
 from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-3"
+VERSION = "generate-4"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -97,7 +97,7 @@ def write_prompt(request: dict, factor: float = 1.0) -> str:
         _section(heads["world"], world_text),
         _section(heads["entanglements"], r.render_entanglements({"ties": ties, "holdings": holdings}, cast_names, scope="writer")),
         _section(heads["history"], history),
-        _section(heads["ending"], w["ending_lead"].format(previous=chapter - 1) + "\n\n" + ending if ending else ""),
+        _section(heads["ending"], w["ending_lead"].format(previous=chapter - 1, chapter=chapter) + "\n\n" + ending if ending else ""),
         _section(heads["craft"], "\n\n".join(craft)),
         w["closing"].format(language=lang, **w["length"]["zh" if is_zh(request) else "en"]),
     ]
@@ -109,16 +109,30 @@ def is_zh(request: dict) -> bool:
 
 
 def write_problem(request: dict, text: Any) -> str | None:
-    """One plain line when the chapter is far over the cap (more than 1,500 words, or 3,000 Han characters for Chinese); None otherwise.
-    Under the cap, or a little over it, passes. A short chapter is never rejected."""
+    """One plain line saying what to fix, or None. In this order: the chapter is far over the cap (more than 1,500 words, or 3,000 Han
+    characters for Chinese; under the cap, or a little over it, passes and a short chapter is never rejected); the opening repeats a sentence
+    of the previous chapter's ending; the chapter names a person who is on no card (English only, and a plain name must come back at least
+    twice, because a good chapter costs more than a missed name)."""
     body = r.s(text)
+    p = common.load_text("generate")["write_problems"]
     if is_zh(request):
         over, cap = len(re.findall(r"[\u4e00-\u9fff]", body)) > OVERSHOOT_HAN, "zh"
     else:
         over, cap = len(re.findall(r"[\w'’-]+", body)) > OVERSHOOT_WORDS, "en"
-    if not over:
-        return None
-    return common.load_text("generate")["write_problems"]["too_long"].format(cap=common.load_text("generate")["length"][cap]["cap"])
+    if over:
+        return p["too_long"].format(cap=common.load_text("generate")["length"][cap]["cap"])
+    ending = r.s(request.get("previous_ending"))
+    if ending and not is_zh(request) and common.echoes_ending(body, ending):
+        return p["echo"]
+    strangers = common.names_found(request, [body], _card_text(request), min_count=2)
+    if strangers:
+        return p["unknown_person"].format(names=", ".join(strangers))
+    return None
+
+
+def _card_text(request: dict) -> list:
+    """What the writer may take names from: the cards the request carries and the beat the person approved. Not the earlier chapters' records."""
+    return [request.get(k) for k in ("cast", "world", "ties", "holdings", "setup", "style", "beat")]
 
 
 # ---- events ----------------------------------------------------------------------------------------------------------------
@@ -293,7 +307,11 @@ def script(request: dict, kit: Any) -> list[str]:
     if targets:
         handle, tie = targets[0]
         shifts.append({"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": handle, "values": {"edge": f"to settle what this chapter opened ({tie.get('edge')})"}}]}})
-    chapter = ("The scene was already moving when the chapter began, and nobody in it had time to waste. A clerk waited by the door, saying nothing. "
-               "What was said at the table cost something, and what was left unsaid cost more, until the last choice of the night changed the room.")
+    n = int(request["chapter"])
+    pick = lambda words, k: words[(n * k) % len(words)]
+    chapter = (f"By the time the {pick(['lantern', 'harbour', 'orchard', 'bridge', 'cellar'], 3)} bell stopped ringing, a {pick(['quarrel', 'bargain', 'rumour', 'wager', 'debt'], 7)} "
+               f"over {pick(['bread', 'timber', 'cloth', 'rope', 'candles'], 2)} had spread through the {pick(['market', 'quarry', 'meadow', 'tavern', 'furnace'], 5)} on round {n}. "
+               f"A clerk waited by the {pick(['gate', 'stairs', 'counter', 'window', 'stove'], 4)}, saying nothing. Round {n} cost {pick(['coins', 'keys', 'sacks', 'letters', 'barrels'], 6)} to somebody. "
+               f"What was said at the table cost something, and what was left unsaid cost more, until the last choice of the night changed the room.")
     return [chapter, json.dumps({"happened": "The people met and quarrelled, and one of them gave something up.", "changed": "The tie and the aim now stand somewhere new."}),
             json.dumps({"shifts": shifts})]

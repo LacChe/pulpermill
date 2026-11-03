@@ -331,4 +331,4 @@ def test_a_reply_that_fails_the_check_is_asked_for_again_with_the_line_and_then_
 
 
 def test_the_version_follows_the_wording():
-    assert "+fill:fill-1:" in load_prompter("mill").version
+    assert "+fill:fill-2:" in load_prompter("mill").version

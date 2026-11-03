@@ -16,7 +16,7 @@ from pulpermill.prompter.stub.stub import sample
 
 from . import common
 
-VERSION = "fill-1"
+VERSION = "fill-2"
 MAX_OUTPUT = 2000      # a long World (nine places and their detail) is the heaviest reply
 
 
@@ -251,6 +251,12 @@ def fill_problem(request: dict, value: Any) -> str | None:
         if wants is not None and len(wants) < 2 and not (request.get("values") or {}).get("wants"):
             return pr["one_want"]
     if card == "setup":
+        # Rule 5: people beyond the Characters card are never named. The cards and the writer's own text (note, example chapter, values) are
+        # the names that may be used.
+        strangers = common.names_found(request, [r.s(value.get("normal")), r.s(value.get("disruption"))],
+                                       [request.get(k) for k in ("note", "example_chapter", "values", "related")])
+        if strangers:
+            return pr["unknown_person"].format(names=", ".join(strangers))
         count = stated_chapter_count(r.s(request.get("note")))
         if count and "chapter_count" in value and int(value["chapter_count"]) != count:
             return pr["chapter_count"].format(count=count)

@@ -13,7 +13,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import common
 
-VERSION = "plan-1"
+VERSION = "plan-2"
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
 
@@ -230,6 +230,11 @@ def plan_problem(request: dict, value: Any) -> str | None:
         absent = [e for e in ends if e and not _mentions(plan, e)]
         if absent:
             return p["missing_names"].format(names=" and ".join(absent))
+    # Rule 5: a person on no card is named by role only. The cards and the writer's own setup text are the names that may be used.
+    strangers = common.names_found(request, [where, r.s(beat.get("when_time")), aim, plan],
+                                   [request.get(k) for k in ("cast", "world", "ties", "holdings", "setup", "style")])
+    if strangers:
+        return p["unknown_person"].format(names=", ".join(strangers))
     return None
 
 

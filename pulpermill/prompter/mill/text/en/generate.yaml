@@ -38,14 +38,14 @@ plan_note: "This plan is the spine of the chapter. It is organised in four point
 voice_rule: "Person and tense are rules: keep every sentence in the voice above, in the narration, in thoughts and in the tags around dialogue, from the first sentence to the last."
 
 # Continuity. {previous} is the number of the chapter before.
-ending_lead: "Chapter {previous} ended with the passage below. Begin where it left things, with no recap, and keep everything it established true."
+ending_lead: "Chapter {previous} ended with the passage below. It is background, there so that you keep continuity: everything it established stays true. Chapter {chapter} starts with a new moment that follows from it (a little later, somewhere else, or the next thing that happens), and its first sentence is a new one."
 
 # R3. Craft guidance in second person prose; four paragraphs, no checklist.
 craft_interest: "Make this a chapter someone wants to keep reading. Build scenes where something is at stake and a person could lose something before the scene ends. Prefer the specific detail and the surprising one to the generic one: the object nobody thought to put on the table, the thing a person says instead of the thing they mean. Give the people wants of their own, let them make choices that cost them, and let their flaws and fears get in their way."
 craft_dialogue: "Write dialogue with subtext. People in a tense scene rarely say exactly what they mean: they change the subject, answer a different question, or say the safe thing while the real one sits underneath. Keep the amount and manner of dialogue to the measure the voice above sets."
 craft_turn: "Prepare a turn the reader did not see coming but accepts once it lands, because it grows from what these people want and from what the chapter has already shown. Let the climax land in something a person does or decides, rather than in a thought."
 # R5. Minor characters.
-craft_people: "Only the people on stage act in this chapter. Anyone else the scene needs, such as a guard or a clerk, appears by role (the guard, a clerk) with no name, stays in the background, and never makes the decisions that carry the story."
+craft_people: "Only the people on stage act in this chapter. Every name in the chapter is a name from the cards above. Anyone else the scene needs, such as a guard or a clerk, appears by role (the guard, a clerk) with no name, stays in the background, and never makes the decisions that carry the story."
 # R6. The change on the page.
 craft_change: "By the end of the chapter the tie in the spotlight and the protagonist's aim must stand differently from the way they stood at the start. Show that change on the page, through what people do and say, and end on a moment that leaves the situation changed and makes the next chapter matter."
 craft_change_last: "By the end of the chapter the tie in the spotlight and the protagonist's aim must stand differently from the way they stood at the start. Show that change on the page, through what people do and say, and end the story on a moment that settles what it set in motion."
@@ -57,6 +57,8 @@ length:
   en: {cap: "1,200 words", aim: "900 to 1,200 words"}
   zh: {cap: "2,400 Chinese characters", aim: "1,800 to 2,400 Chinese characters"}
 write_problems:
+  echo: "The chapter opens by repeating the end of the last chapter. Begin with a new moment that follows from that ending, and make the first sentence new."
+  unknown_person: "The chapter names {names}, who is on no card. Use only the names from the cards, and refer to anyone else by role (the clerk, a neighbour)."
   too_long: "Shorten the chapter to at most {cap} by keeping the scenes the plan needs and cutting the rest."
 
 # ---- events step ----

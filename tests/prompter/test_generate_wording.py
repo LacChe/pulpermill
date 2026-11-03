@@ -349,7 +349,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-3:" in load_prompter("mill").version
+    assert "+generate:generate-4:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------
