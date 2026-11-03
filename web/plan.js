@@ -118,13 +118,24 @@ export function holdingsInPlay(project, cast) {
   return (project.entanglements?.holdings ?? []).filter((h) => holders.has(h.held_by)).map(copyOf);
 }
 
-// A new beat for a chapter: the code's fields are set, the spotlight is picked, and the cast starts as the required cast. The
-// planner's fields are blank. `chapter` defaults to the next one to write.
+// A cast of up to CAST_MAX: the people already chosen come first (the required members, then any the writer kept), then the other
+// characters in card order until the cast is full. `project` should be the effective project.
+export function fillCast(project, first) {
+  const cast = [];
+  for (const id of [...asList(first), ...(project.characters ?? []).map((c) => c.id)]) {
+    if (cast.length >= Math.max(CAST_MAX, asList(first).length)) break;
+    if (isFilled(id) && isCharacter(project, id) && !cast.includes(id)) cast.push(id);
+  }
+  return cast;
+}
+
+// A new beat for a chapter: the code's fields are set, the spotlight is picked, and the cast is the required cast filled up to
+// CAST_MAX with the other characters in card order. The planner's fields are blank. `chapter` defaults to the next one to write.
 export function newBeat(schema, project, chapter = chapterInfo(project).next) {
   const taken = beatsOf(project).map((b) => b.id);
   const eff = effectiveProject(project, chapter);
   const tie = pickSpotlight(project, chapter);
-  return { ...blankItem(BEAT_FIELD(schema), taken), chapter, stale: false, cast: requiredCast(eff, tie?.id), spotlight: tie?.id ?? "", planned_from: null };
+  return { ...blankItem(BEAT_FIELD(schema), taken), chapter, stale: false, cast: fillCast(eff, requiredCast(eff, tie?.id)), spotlight: tie?.id ?? "", planned_from: null };
 }
 
 // The unwritten beat for the next chapter, made and put in the Outline when there is none yet. Returns it.
@@ -151,14 +162,15 @@ export function castProblem(project, castIds, spotlightId = null) {
 
 // The spotlight changed to another tie: the beat's new spotlight and cast. The cast keeps everyone the writer added, drops the two
 // characters the old tie required (unless the new tie needs them too) and gains the characters the new tie requires. The protagonist
-// stays. The required members come first, and the cast never goes over CAST_MAX (it is the extras that are cut). Used by the plan
-// panel's picker; `project` is any project, the effective cards are worked out here.
+// stays. The required members come first, the extras the writer kept follow, and the cast is filled up to CAST_MAX with the other
+// characters in card order (it never goes over CAST_MAX). Used by the plan panel's picker; `project` is any project, the effective cards are worked out here.
 export function withSpotlight(project, beat, spotlightId) {
   const eff = effectiveProject(project, Number(beat.chapter));
   const before = requiredCast(eff, beat.spotlight);
   const extras = asList(beat.cast).filter((id) => !before.includes(id));
   const required = requiredCast(eff, spotlightId);
-  const cast = [...required, ...extras.filter((id) => !required.includes(id))].slice(0, Math.max(CAST_MAX, required.length));
+  const kept = [...required, ...extras.filter((id) => !required.includes(id))].slice(0, Math.max(CAST_MAX, required.length));
+  const cast = fillCast(eff, kept);
   return { spotlight: spotlightId, cast };
 }
 

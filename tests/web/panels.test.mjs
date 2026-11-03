@@ -42,7 +42,7 @@ test("changing the spotlight swaps the required characters and keeps the ones th
   const beat = { chapter: 2, spotlight: "t1000001", cast: ["c0000001", "c0000002", "c0000004"] };      // Rue was added by hand
   const next = withSpotlight(p, beat, "t3");
   assert.equal(next.spotlight, "t3");
-  assert.deepEqual(next.cast, ["c0000001", "c0000003", "c0000004"], "Marit left with her tie; Joss came in; Rue stays");
+  assert.deepEqual(next.cast, ["c0000001", "c0000003", "c0000004", "c0000002"], "Marit left with her tie; Joss came in; Rue stays; the cast is topped up from the cards, so Suvi is back as supporting");
   assert.equal(castProblem(effectiveProject(p, 2), next.cast, next.spotlight), null);
 });
 
@@ -55,6 +55,17 @@ test("a tie that touches a group needs only the protagonist, and the cast is nev
   assert.equal(next.cast[0], "c0000001");
   assert.ok(next.cast.length <= CAST_MAX);
   assert.ok(!next.cast.includes("c0000002") || next.cast.length <= CAST_MAX, "the old tie's character is only kept as an extra");
+});
+
+test("changing the spotlight keeps the cast full, with the required members first", () => {
+  const p = story();
+  for (let i = 3; i <= 6; i++) p.characters.push({ id: `c000000${i}`, name: `Extra ${i}` });
+  p.entanglements.ties.push({ id: "t3", tie_from: "c0000005", tie_to: "c0000006", bond: "rival", edge: "to win" });
+  const beat = { chapter: 2, spotlight: "t1000001", cast: ["c0000001", "c0000002", "c0000003", "c0000004", "c0000005"] };
+  const next = withSpotlight(p, beat, "t3");
+  assert.equal(next.cast.length, CAST_MAX);
+  assert.deepEqual(next.cast.slice(0, 3), ["c0000001", "c0000005", "c0000006"], "protagonist and the new tie's two ends come first");
+  assert.equal(castProblem(effectiveProject(p, 2), next.cast, next.spotlight), null);
 });
 
 test("withSpotlight changes nothing it was given", () => {

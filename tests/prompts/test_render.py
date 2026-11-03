@@ -331,6 +331,13 @@ def test_the_writers_scene_begins_in_motion_and_the_planners_does_not():
     assert planner in writer
 
 
+def test_the_writer_is_told_that_people_outside_the_spotlight_tie_are_supporting():
+    cast = [{"id": "c0000001", "name": "Suvi"}, {"id": "c0000002", "name": "Aino"}]
+    note = "People outside the spotlight tie are supporting: they can pull on the tie or react to it, and the scene stays about the tie."
+    assert note in render_cast(cast, scope="writer")
+    assert note not in render_cast(cast, scope="planner")
+
+
 def test_a_scene_with_empty_values_leaves_no_empty_label():
     text = render_scene({"where": "", "when_time": None, "cast": [], "spotlight": "", "aim": "Keep the key", "plan": ""}, scope="planner")
     assert text == "The protagonist is after this: Keep the key."

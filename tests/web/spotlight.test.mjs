@@ -95,6 +95,7 @@ test("with no character tie the beat has no spotlight, without an error", () => 
   assert.equal(pickSpotlight(p, 1), null);
   const beat = newBeat(schema, p, 1);
   assert.equal(beat.spotlight, "");
-  assert.deepEqual(beat.cast, ["c1"]);
+  assert.deepEqual(beat.cast, p.characters.map((c) => c.id).slice(0, 5), "with no tie the cast is the protagonist first, then the other characters in card order");
+  assert.equal(beat.cast[0], "c1");
   assert.equal(planGate(p, beat).reason, "no_tie");   // the contract needs a spotlight among the ties sent, so the page does not send one
 });

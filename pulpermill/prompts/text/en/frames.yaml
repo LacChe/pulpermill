@@ -2,7 +2,7 @@
 # model separately). Phrased positively. Tokens in {braces} are filled by pulpermill/prompts/render.py.
 
 # ---- People ----
-portraits_note: "These are the people on stage. Use their wants, fears, flaws and values to decide what they choose, and show the choice. Let a flaw cost someone something. Let competence show in how a person handles a task. Let each person's way of speaking show in what they say. Dispositions are tendencies: draw on the one the moment calls for, and let the others rest."
+portraits_note: "These are the people on stage. Use their wants, fears, flaws and values to decide what they choose, and show the choice. Let a flaw cost someone something. Let competence show in how a person handles a task. Let each person's way of speaking show in what they say. Dispositions are tendencies: draw on the one the moment calls for, and let the others rest. People outside the spotlight tie are supporting: they can pull on the tie or react to it, and the scene stays about the tie."
 sketch: "Who {name} is: {value}"
 offstage_marker: "[offstage]"
 offstage_note: "People and groups marked [offstage] are somewhere else. They may be mentioned or thought of; only the people on stage appear in the scene."

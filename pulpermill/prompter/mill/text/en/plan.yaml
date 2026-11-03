@@ -34,7 +34,7 @@ spotlight_names: "Name both ends of the spotlight tie, {tie_from} and {tie_to}, 
 movement: "The end point must stand clearly apart from the starting point. By the end of the chapter, the edge of the spotlight tie (what drives {tie_from} in it) and the protagonist's aim must each have moved to a distinctly new state: the aim reached, lost or turned into a new one, the edge changed into something different from what it was. Say in Act 4 what each of the two has become."
 
 # R5. Minor characters by role only, and never the carriers of the plot.
-people_rule: "Only the people on stage act, and every name in the plan is a name from the cards. Anyone else the chapter needs, such as a guard or a clerk, appears by role (the guard, a clerk) with no name, stays in the background, and never carries the plot: every decision that drives the chapter belongs to someone on stage."
+people_rule: "Only the people on stage act, and every name in the plan is a name from the cards. Anyone else the chapter needs, such as a guard or a clerk, appears by role (the guard, a clerk) with no name, stays in the background, and never carries the plot: every decision that drives the chapter belongs to someone on stage. People on stage who are outside the spotlight tie are supporting: they can pull on the tie or react to it, and the chapter stays about the tie."
 
 # R7. Where the chapter sits.
 first_chapter: "This is the first chapter. Act 1 opens from the ordinary life and the disruption described under the heading about who the story follows, and the conflict of Act 2 grows out of that disruption."

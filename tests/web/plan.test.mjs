@@ -109,6 +109,23 @@ test("ensureBeat makes and places the next chapter's beat once", () => {
   assert.equal(p.outline.beats.length, 2);
 });
 
+test("a new beat's cast is the required members, then the other characters in card order, up to five", () => {
+  const p = story();
+  p.outline.beats = [p.outline.beats[0]];
+  p.characters.push({ id: "c0000003", name: "Joss" });
+  const three = newBeat(schema, p, 2);
+  assert.equal(three.cast.length, 3, "3 characters: everyone is in");
+  assert.deepEqual(three.cast.slice(0, requiredCast(p, three.spotlight).length), requiredCast(p, three.spotlight));
+  for (let i = 4; i <= 6; i++) p.characters.push({ id: `c000000${i}`, name: `Extra ${i}` });
+  const six = newBeat(schema, p, 2);
+  const need = requiredCast(p, six.spotlight);
+  assert.equal(six.cast.length, 5, "6 characters: the cast stops at five");
+  assert.deepEqual(six.cast.slice(0, need.length), need, "the required members come first");
+  const rest = p.characters.map((c) => c.id).filter((id) => !need.includes(id));
+  assert.deepEqual(six.cast.slice(need.length), rest.slice(0, 5 - need.length), "then the others in card order");
+  assert.equal(castProblem(p, six.cast, six.spotlight), null);
+});
+
 test("a cast must have the protagonist, at most five, real characters, and the spotlight's pair", () => {
   const p = story();
   assert.equal(castProblem(p, ["c0000001", "c0000002"], "t1000001"), null);

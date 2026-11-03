@@ -13,8 +13,8 @@
 //             (evals/trials/tools/check_requests.py). Writes nothing. Exit 1 when a request is refused or a chapter does not complete.
 // Output: <out>/summary.csv (one row per trial, run and chapter), <out>/meta.json, <out>/<trial>-run<n>.md (the chapters, then their flags),
 // <out>/<trial>-run<n>.json (the finished project). <out> defaults to evals/trials/results/<label>/.
-// The cast of each chapter is the one the page starts with (the protagonist and the two ends of the spotlight tie) plus, in some chapters,
-// a deterministic extra person, so cast sizes vary within a trial. A trial is the same on every run except for the model.
+// The cast of each chapter is the one the page starts with: the protagonist, the two ends of the spotlight tie, then the other
+// characters in card order up to CAST_MAX. A trial is the same on every run except for the model.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { runPython } from "./run_python.mjs";
 import { fileURLToPath } from "node:url";
@@ -22,7 +22,7 @@ import { schema } from "../tests/web/helpers.mjs";
 import "../tests/web/text-setup.mjs";
 import { createClient, parseBackendSetting, planChapter, generateChapter } from "../web/client.js";
 import { createMock } from "../web/mock.js";
-import { ensureBeat, placeBeat, planRequest, CAST_MAX, castProblem, chapterInfo } from "../web/plan.js";
+import { ensureBeat, placeBeat, planRequest, castProblem, chapterInfo } from "../web/plan.js";
 import { lockStaticCards, startGate } from "../web/gate.js";
 import { commitChapter } from "../web/generate.js";
 import { effectiveProject } from "../web/effective.js";
@@ -69,19 +69,6 @@ const prompter = (() => {
   return { name: "", version: "" };
 })();
 
-// A deterministic extra person for some chapters: chapters 2, 4, 6... add the next character not yet in the cast, up to CAST_MAX.
-function chooseCast(project, beat) {
-  const n = Number(beat.chapter);
-  const cast = [...beat.cast];
-  if (n % 2 === 0) {
-    const eff = effectiveProject(project, n);
-    const rest = (eff.characters ?? []).map((c) => c.id).filter((id) => !cast.includes(id));
-    const next = rest[(n / 2 - 1) % Math.max(rest.length, 1)];
-    if (next && cast.length < CAST_MAX) cast.push(next);
-  }
-  return cast;
-}
-
 const csv = (rows) => rows.map((r) => r.map((c) => `"${String(c ?? "").replaceAll('"', '""')}"`).join(",")).join("\n") + "\n";
 const header = ["trial", "run", "chapter", "ok", "error", "seconds", "cast_size", "spotlight", ...CHECK_COLUMNS, "plan_retried", "warnings", "prompter_name", "prompter_version"];
 const rows = [];
@@ -102,7 +89,6 @@ for (const entry of wanted) {
     const sections = [];
     for (let n = 1; n <= total; n++) {
       const beat = ensureBeat(schema, project);
-      beat.cast = chooseCast(project, beat);
       const eff = effectiveProject(project, n);
       const why = castProblem(eff, beat.cast, beat.spotlight);
       const t0 = Date.now();

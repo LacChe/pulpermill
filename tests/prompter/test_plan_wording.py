@@ -72,6 +72,11 @@ def test_minor_characters_appear_by_role_and_never_carry_the_plot():
     assert "by role" in plan.build_prompt(base()) and "never carries the plot" in plan.build_prompt(base())
 
 
+def test_people_outside_the_spotlight_tie_are_told_they_are_supporting():
+    prompt = plan.build_prompt(base())
+    assert "outside the spotlight tie are supporting" in prompt and "the chapter stays about the tie" in prompt
+
+
 def test_the_prompt_holds_no_ids_and_no_raw_option_keys():
     request = base()
     request["style"] = {"person": "first", "tense": "past", "humor": "dry", "pacing": "brisk", "genre": "harbour noir", "lens": "an exact clerk's eye"}
