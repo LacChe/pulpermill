@@ -1,5 +1,6 @@
 """Small helpers shared by the call modules: wording files, a handle label, a clipping helper, and the stub's flow as the fallback."""
 import hashlib
+import logging
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -152,3 +153,55 @@ def echoes_ending(opening: str, ending: str, first: int = 2, min_words: int = 6)
             if SequenceMatcher(None, a, b, autojunk=False).find_longest_match(0, len(a), 0, len(b)).size >= 8:
                 return True
     return False
+
+
+# ---- Hard and soft problems ------------------------------------------------------------------------------------------------
+# A hard problem (nothing to use: far over the cap, a plan that is not in the four-points shape or lacks a required part) refuses every
+# attempt. A soft problem (an echoed opening, a name on no card) is a defect a person can read and fix, so the first attempt is strict,
+# the retry line carries the problem to the model, and a second attempt with only soft problems is used. The runner gives each step
+# two attempts (backend/runner.py MAX_ATTEMPTS, not imported: a prompter never needs the runner); a step's check runs once per reply
+# that is not empty and not malformed, in order, so the second check call is the last attempt.
+ATTEMPTS = 2
+log = logging.getLogger("pulpermill")
+
+
+class Attempts:
+    """Counts the calls to one step instance's check. One is made per step instance (a new one starts again at the first attempt)."""
+
+    def __init__(self, attempts: int = ATTEMPTS):
+        self.attempts, self.calls = attempts, 0
+
+    def tick(self) -> bool:
+        """Records one check call. True when it is the last attempt, the one that accepts soft problems."""
+        self.calls += 1
+        return self.calls >= self.attempts
+
+
+def note_soft(call: str, step: str, line: str, what: str = "accepted") -> None:
+    """Says once on the server console (not the run log) that a soft problem was accepted or an echo trimmed. `line` is the problem line
+    or a count, never story text."""
+    log.warning("call=%s step=%s soft problem %s: %s", call, step, what, " ".join(str(line).split()))
+
+
+_SENTENCE_END = re.compile(r"(?<=[.!?…])[\"”’']*\s+|\n+")
+_WORD = re.compile(r"[\w'’-]+")
+MIN_TRIMMED_WORDS = 400
+
+
+def trim_echo(opening: str, ending: str, first: int = 2, min_words: int = MIN_TRIMMED_WORDS) -> tuple[str, int]:
+    """(the text, how many sentences were dropped). Of the first `first` sentences, each one that repeats a sentence of the previous ending
+    is dropped, whole sentences only; the rest is kept as it was. When what remains has fewer than `min_words` words, or nothing repeats,
+    the text is returned whole."""
+    pieces, start = [], 0
+    for m in _SENTENCE_END.finditer(opening):
+        pieces.append(opening[start:m.end()])
+        start = m.end()
+    if opening[start:].strip():
+        pieces.append(opening[start:])
+    drop = [i for i, piece in enumerate(pieces[:first]) if piece.strip() and echoes_ending(piece, ending, first=1)]
+    if not drop:
+        return opening, 0
+    kept = "".join(piece for i, piece in enumerate(pieces) if i not in drop).lstrip()
+    if len(_WORD.findall(kept)) < min_words:
+        return opening, 0
+    return kept, len(drop)

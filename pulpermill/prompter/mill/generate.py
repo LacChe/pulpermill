@@ -20,7 +20,7 @@ from pulpermill.schema.shifts import shiftable_fields
 from . import common
 from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-4"
+VERSION = "generate-5"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -108,11 +108,11 @@ def is_zh(request: dict) -> bool:
     return str(request.get("language") or "en").lower().startswith("zh")
 
 
-def write_problem(request: dict, text: Any) -> str | None:
-    """One plain line saying what to fix, or None. In this order: the chapter is far over the cap (more than 1,500 words, or 3,000 Han
-    characters for Chinese; under the cap, or a little over it, passes and a short chapter is never rejected); the opening repeats a sentence
-    of the previous chapter's ending; the chapter names a person who is on no card (English only, and a plain name must come back at least
-    twice, because a good chapter costs more than a missed name)."""
+def write_findings(request: dict, text: Any) -> tuple[str | None, list[tuple[str, str]]]:
+    """(the hard problem line or None, the soft problems as [(kind, line)]). Hard: the chapter is far over the cap (more than 1,500 words, or
+    3,000 Han characters for Chinese; under the cap, or a little over it, passes and a short chapter is never rejected). Soft, in this order:
+    the opening repeats a sentence of the previous chapter's ending ("echo"); the chapter names a person who is on no card ("unknown_person";
+    English only, and a plain name must come back at least twice, because a good chapter costs more than a missed name)."""
     body = r.s(text)
     p = common.load_text("generate")["write_problems"]
     if is_zh(request):
@@ -120,14 +120,24 @@ def write_problem(request: dict, text: Any) -> str | None:
     else:
         over, cap = len(re.findall(r"[\w'’-]+", body)) > OVERSHOOT_WORDS, "en"
     if over:
-        return p["too_long"].format(cap=common.load_text("generate")["length"][cap]["cap"])
+        return p["too_long"].format(cap=common.load_text("generate")["length"][cap]["cap"]), []
+    soft: list[tuple[str, str]] = []
     ending = r.s(request.get("previous_ending"))
     if ending and not is_zh(request) and common.echoes_ending(body, ending):
-        return p["echo"]
+        soft.append(("echo", p["echo"]))
     strangers = common.names_found(request, [body], _card_text(request), min_count=2)
     if strangers:
-        return p["unknown_person"].format(names=", ".join(strangers))
-    return None
+        soft.append(("unknown_person", p["unknown_person"].format(names=", ".join(strangers))))
+    return None, soft
+
+
+def write_problem(request: dict, text: Any, tolerate_soft: bool = False) -> str | None:
+    """One plain line saying what to fix, or None. A hard problem always speaks; a soft one (the echo, then the unknown person) speaks
+    unless `tolerate_soft` (the last attempt), when the reply is let through."""
+    hard, soft = write_findings(request, text)
+    if hard:
+        return hard
+    return soft[0][1] if soft and not tolerate_soft else None
 
 
 def _card_text(request: dict) -> list:
@@ -271,11 +281,30 @@ def shifts_problem(request: dict, kit: Any, value: Any) -> str | None:
 class GenerateFlow(Flow):
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
+        self.echo_accepted = False          # the write reply that was used carried an echo that the last attempt let through
+
+    def _write_check(self):
+        """A check for one write step instance: strict on its first call, soft-tolerant on its second (the runner's last attempt)."""
+        attempts = common.Attempts()
+
+        def check(value):
+            last = attempts.tick()
+            hard, soft = write_findings(self.request, value)
+            self.echo_accepted = False
+            if hard:
+                return hard
+            if soft and not last:
+                return soft[0][1]
+            for kind, line in soft:
+                common.note_soft("generate", "write", line)
+            self.echo_accepted = any(kind == "echo" for kind, _ in soft)
+            return None
+        return check
 
     def _step(self, n: int, results: list) -> Step:
         g = self.kit.grammar
         if n == 0:
-            return Step("write", lambda f: write_prompt(self.request, f), "text", WRITE_TOKENS, None, lambda v: write_problem(self.request, v), "prose", True)
+            return Step("write", lambda f: write_prompt(self.request, f), "text", WRITE_TOKENS, None, self._write_check(), "prose", True)
         chapter = results[0]
         if n == 1:
             return Step("events", lambda f: events_prompt(self.request, chapter, f), "json", EVENTS_TOKENS,
@@ -291,7 +320,12 @@ class GenerateFlow(Flow):
         return [self._step(n, [chapter, {}]) for n in range(3)]
 
     def reply(self, results):
-        return {"chapter_text": results[0].strip(), "events": results[1], "shifts": results[2]["shifts"]}
+        text = results[0].strip()
+        if self.echo_accepted:
+            text, dropped = common.trim_echo(text, r.s(self.request.get("previous_ending")))
+            if dropped:
+                common.note_soft("generate", "write", f"{dropped} repeated opening sentence(s) dropped", what="trimmed")
+        return {"chapter_text": text, "events": results[1], "shifts": results[2]["shifts"]}
 
 
 def build_flow(request, kit) -> Flow:

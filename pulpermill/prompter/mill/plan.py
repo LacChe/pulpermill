@@ -13,7 +13,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import common
 
-VERSION = "plan-2"
+VERSION = "plan-3"
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
 
@@ -201,41 +201,47 @@ def plan_points(text: str) -> list[str]:
     return out
 
 
-def plan_problem(request: dict, value: Any) -> str | None:
-    """None when the plan is usable, else one plain line saying what to fix."""
+def plan_findings(request: dict, value: Any) -> tuple[str | None, str | None]:
+    """(the hard problem line or None, the soft problem line or None). Hard: no place, no aim, an abstract or repeated aim, the plan not in
+    the four points in order, a spotlight end the plan does not name. Soft: a person on no card is named (a defect a person can read and fix)."""
     p = common.load_text("plan")["problems"]
     names = names_of(request)
     beat = value if isinstance(value, dict) else {}
     where, aim, plan = r.s(beat.get("where")), r.s(beat.get("aim")), r.s(beat.get("plan"))
     if not where:
-        return p["missing_where"]
+        return p["missing_where"], None
     if not aim:
-        return p["missing_aim"]
+        return p["missing_aim"], None
     if aim_is_abstract(aim):
-        return p["abstract_aim"]
+        return p["abstract_aim"], None
     retry = (request.get("retry") or {}).get("beat") or {}
     if retry and _norm(retry.get("aim")) == _norm(aim):
-        return p["same_as_retry"].format(aim=r.s(retry.get("aim")))
+        return p["same_as_retry"].format(aim=r.s(retry.get("aim"))), None
     for b in sorted(request.get("earlier_beats") or [], key=lambda b: int(b.get("chapter") or 0)):
         old = _words(b.get("aim"))
         if old and len(old & _words(aim)) / len(old | _words(aim)) >= 0.8:
-            return p["repeated_aim"].format(chapter=b.get("chapter"), aim=r.s(b.get("aim")))
+            return p["repeated_aim"].format(chapter=b.get("chapter"), aim=r.s(b.get("aim"))), None
     found = plan_points(plan)
     missing = [f"Act {n}" for n in POINTS if n not in found]
     if missing or found != sorted(found):
-        return p["missing_points"].format(missing=", ".join(missing) or "the right order")
+        return p["missing_points"].format(missing=", ".join(missing) or "the right order"), None
     tie = next((t for t in request.get("ties") or [] if t.get("id") == request.get("spotlight")), None)
     if tie:
         ends = [names.get(tie.get("tie_from"), ""), names.get(tie.get("tie_to"), "")]
         absent = [e for e in ends if e and not _mentions(plan, e)]
         if absent:
-            return p["missing_names"].format(names=" and ".join(absent))
+            return p["missing_names"].format(names=" and ".join(absent)), None
     # Rule 5: a person on no card is named by role only. The cards and the writer's own setup text are the names that may be used.
     strangers = common.names_found(request, [where, r.s(beat.get("when_time")), aim, plan],
                                    [request.get(k) for k in ("cast", "world", "ties", "holdings", "setup", "style")])
-    if strangers:
-        return p["unknown_person"].format(names=", ".join(strangers))
-    return None
+    return None, (p["unknown_person"].format(names=", ".join(strangers)) if strangers else None)
+
+
+def plan_problem(request: dict, value: Any, tolerate_soft: bool = False) -> str | None:
+    """None when the plan is usable, else one plain line saying what to fix. A soft problem (the unknown person) is let through when
+    `tolerate_soft` (the last attempt)."""
+    hard, soft = plan_findings(request, value)
+    return hard or (None if tolerate_soft else soft)
 
 
 # ---- The flow -------------------------------------------------------------------------------------------------------------
@@ -244,9 +250,22 @@ class PlanFlow(Flow):
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
 
+    def _check(self):
+        """A check for one plan step instance: strict on its first call, soft-tolerant on its second (the runner's last attempt)."""
+        attempts = common.Attempts()
+
+        def check(value):
+            last = attempts.tick()
+            hard, soft = plan_findings(self.request, value)
+            if hard or (soft and not last):
+                return hard or soft
+            if soft:
+                common.note_soft("plan", "plan", soft)
+            return None
+        return check
+
     def _step(self) -> Step:
-        return Step("plan", lambda f: build_prompt(self.request, f), "json", MAX_OUTPUT, self.kit.grammar.plan_beat(),
-                    lambda v: plan_problem(self.request, v), "thinking", True)
+        return Step("plan", lambda f: build_prompt(self.request, f), "json", MAX_OUTPUT, self.kit.grammar.plan_beat(), self._check(), "thinking", True)
 
     def next(self, results):
         return None if results else self._step()

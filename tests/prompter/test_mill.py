@@ -42,7 +42,7 @@ def test_mill_loads_by_name_with_a_version_and_the_default_is_still_the_stub():
 def test_the_version_is_the_base_plus_one_piece_per_call_with_its_own_wording():
     # B1 and B2 give calls their own wording, so the version is no longer the bare base.
     version = load_prompter("mill").version
-    assert version.startswith("mill-0.1")
+    assert version.startswith("mill-0.2")
     assert all(piece.split(":")[0] in set(CALLS) for piece in version.split("+")[1:] if piece)
 
 
@@ -104,7 +104,7 @@ def test_a_calls_own_module_is_picked_by_name_and_the_others_still_run_the_stub(
     assert mill.flow("plan", plan_req, Kit(plan_req)) is sentinel and seen == [plan_req]
     fill_req = request("fill")
     assert mill.flow("fill", fill_req, Kit(fill_req)).next([]).name == "fill"      # untouched calls stay on the stub's flow
-    assert mill.version.startswith("mill-0.1+plan:plan-9")
+    assert mill.version.startswith("mill-0.2+plan:plan-9")
 
 
 def test_a_module_that_is_missing_falls_back_and_one_without_build_flow_is_an_error(monkeypatch):
@@ -132,11 +132,11 @@ def test_a_wording_edit_changes_the_version_by_itself(monkeypatch, tmp_path):
     (tmp_path / "en").mkdir()
     path = tmp_path / "en" / "generate.yaml"
     path.write_text("# header only\n")
-    assert mill.version == "mill-0.1+generate:g-1"
+    assert mill.version == "mill-0.2+generate:g-1"
     path.write_text("write: Tell it well.\n")
     first = mill.version
     path.write_text("write: Tell it very well.\n")
-    assert first != mill.version and first.startswith("mill-0.1+generate:g-1:") and len(first.split(":")[-1]) == 6
+    assert first != mill.version and first.startswith("mill-0.2+generate:g-1:") and len(first.split(":")[-1]) == 6
 
 
 def test_the_wording_files_exist_for_every_call():

@@ -229,4 +229,4 @@ def test_a_plan_that_fails_the_check_is_asked_for_again_with_the_line_and_then_u
 
 
 def test_the_version_follows_the_wording():
-    assert "+plan:plan-2:" in load_prompter("mill").version
+    assert "+plan:plan-3:" in load_prompter("mill").version

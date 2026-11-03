@@ -40,4 +40,4 @@ def test_the_whole_story_passes_on_the_mill_prompter(scaffold_only, tmp_path):
     assert not failed, "\n".join(failed)
     records = [json.loads(l) for l in log.read_text().splitlines() if l.strip()]
     named = [r["prompter"] for r in records if isinstance(r.get("prompter"), dict)]
-    assert named and all(p == {"name": "mill", "version": "mill-0.1"} for p in named)
+    assert named and all(p == {"name": "mill", "version": "mill-0.2"} for p in named)

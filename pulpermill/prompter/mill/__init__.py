@@ -4,7 +4,7 @@ from typing import Any
 
 from .mill import MillPrompter, load_module
 
-VERSION = "mill-0.1"        # the base of the version string; MillPrompter.version adds one piece per call that has its own wording
+VERSION = "mill-0.2"        # the base of the version string; MillPrompter.version adds one piece per call that has its own wording
 
 
 def prompter() -> MillPrompter:
