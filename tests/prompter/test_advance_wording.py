@@ -79,6 +79,7 @@ def test_a_squeeze_keeps_the_newest_entries():
 def test_the_reason_check_wants_a_reason():
     step = advance.aim_step(request(), "x")
     assert step.check({"reason": "", "kind": "new_kind"}) and step.check({"reason": "It differs.", "kind": "new_kind"}) is None
+    assert step.check({"reason": "x " * 300, "kind": "new_kind"})
 
 
 def test_the_verdicts_are_bad_only_for_the_one_word_each():

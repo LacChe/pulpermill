@@ -114,7 +114,9 @@ def aim_prompt(request: dict, aim: str, factor: float = 1.0) -> str:
 
 def _reason_check(value: Any) -> str | None:
     reason = r.s(value.get("reason")) if isinstance(value, dict) else ""
-    return None if reason else "Give the reason first, as one short sentence."
+    if not reason:
+        return "Give the reason first, as one short sentence."
+    return "Keep the reason to one short sentence." if len(reason) > 400 else None
 
 
 def aim_step(request: dict, aim: str) -> Step:

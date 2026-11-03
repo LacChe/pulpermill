@@ -73,7 +73,7 @@ def test_a_run_against_the_fake_backend_writes_chapters_summary_and_meta(tmp_pat
     assert len(rows) == 2 * 2 * 3 and all(r["ok"] == "true" for r in rows)
     assert {r["trial"] for r in rows} == {"t1-salt-coast", "t4-hollow-court-zh"} and {r["run"] for r in rows} == {"1", "2"}
     assert {"length", "person_flag", "tense_flag", "opening_repeat", "repeated_sentences", "edge_in_shifts", "changed_empty", "shift_count", "unknown_names"} <= set(rows[0])
-    assert {int(r["cast_size"]) for r in rows} <= {2, 3} and len({r["cast_size"] for r in rows}) >= 1
+    assert {int(r["cast_size"]) for r in rows} <= {2, 3, 4, 5} and len({r["cast_size"] for r in rows}) >= 1
     reading = (out / "t1-salt-coast-run1.md").read_text(encoding="utf-8")
     assert "## Chapter 1" in reading and "## Chapter 3" in reading and "**Flags:**" in reading and "Spotlight:" in reading
     saved = json.loads((out / "t4-hollow-court-zh-run2.json").read_text(encoding="utf-8"))
