@@ -73,18 +73,31 @@ def use_hub_token(hf_token: str | None) -> bool:
     return bool(hf_token)
 
 
+def debug_file(log_path: str | None, debug: bool, debug_path: str | None = None) -> str | None:
+    """Where the debug capture goes: None when `debug` is off; else `debug_path`, or `pulpermill-debug.jsonl` beside the run log."""
+    if not debug:
+        return None
+    return debug_path or os.path.join(os.path.dirname(log_path) if log_path else ".", "pulpermill-debug.jsonl")
+
+
 def launch(*, token: str | None = None, ngrok_authtoken: str | None = None, hf_token: str | None = None, overrides: dict[str, Any] | None = None,
            port: int = 8000, tunnel: Callable[[int, str | None], str] | None = open_tunnel, serve: bool = True,
            engine: Engine | None = None, downloader: Callable | None = None, wait_for_server: float = 30.0,
-           log_path: str | None = "/kaggle/working/pulpermill-runs.jsonl", prompter: str | None = None) -> dict[str, Any]:
+           log_path: str | None = "/kaggle/working/pulpermill-runs.jsonl", prompter: str | None = None,
+           debug: bool = False, debug_path: str | None = None) -> dict[str, Any]:
     """Returns {"url", "server", "engine", "config"} (when serve is False; otherwise blocks until the server stops).
     `engine` lets a test skip the real model; `tunnel=None` skips ngrok. `prompter` names the wording module
-    (a folder under pulpermill/prompter/; default: the Config's, `stub`); an unknown name stops the launch before the model is loaded."""
+    (a folder under pulpermill/prompter/; default: the Config's, `stub`); an unknown name stops the launch before the model is loaded.
+    `debug=True` turns on the debug capture (debuglog.py): every refused attempt's problem line and raw reply go to a file beside the run
+    log (`pulpermill-debug.jsonl`, or `debug_path`). That file holds story text: do not share or commit it. Off by default."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", stream=sys.stdout)
     model = replace(Config().model, **(overrides or {}))
-    config = Config(token=token or None, host="0.0.0.0", port=port, model=model, log_path=log_path, **({"prompter": prompter} if prompter else {}))
+    config = Config(token=token or None, host="0.0.0.0", port=port, model=model, log_path=log_path, debug_path=debug_file(log_path, debug, debug_path),
+                    **({"prompter": prompter} if prompter else {}))
     load_prompter(config.prompter)       # an unknown name fails here, before the model is downloaded and loaded
     log.info("settings: %s n_ctx=%d prompter=%s", config.describe(), model.n_ctx, config.prompter)
+    if config.debug_path:
+        log.warning("debug capture is ON: refused attempts are written to %s. It holds story text; do not share or commit it.", config.debug_path)
     check_settings(config)
     log.info("hugging face token: %s", "set" if use_hub_token(hf_token) else "none (downloads are anonymous and slower)")
     if engine is None:

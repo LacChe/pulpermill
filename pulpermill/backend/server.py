@@ -63,6 +63,18 @@ def _short(error: ValidationError) -> str:
     return f"{where}: {first.get('msg', 'invalid')}"[:300]
 
 
+def _bad_output_line(call: str, notes: dict, config: Config) -> str:
+    """The console line for a call that ended bad_output: the call and the step whose attempts were refused. With the debug setting on
+    it also carries the first 200 characters of the last problem line. The problem line may quote the story, so without that setting
+    the console says no more than the run log does."""
+    refused = [p for p in notes.get("passes", []) if p.get("attempts") and "problem" in p["attempts"][-1]]
+    last = refused[-1] if refused else None
+    line = f"call={call} result=bad_output step={last['step'] if last else '?'}"
+    if config.debug_path and last:
+        line += " problem=" + " ".join(str(last["attempts"][-1]["problem"]).split())[:200]
+    return line
+
+
 class Job:
     """Whether a model call is running, and what stage it says it is in (`{name, index, of}`). The only state the server keeps."""
 
@@ -182,6 +194,8 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
                 result = outcome[0] if outcome[0] == "ok" else outcome[1][0]
                 log.info("call=%s done secs=%.2f result=%s retries=%s", model.call, seconds, result,
                          sum(max(len(p.get("attempts", [])) - 1, 0) for p in ctx.notes.get("passes", [])))
+                if result == "bad_output":
+                    log.warning("%s", _bad_output_line(model.call, ctx.notes, config))
                 runs.add(runlog.build(model.call, started_at, seconds, result, stages.done, ctx.notes))     # before the lock is released: idle means the record is written
                 if runs.failed:
                     log.warning("the run log could not be written (%s); records are kept in memory only", runs.failed)

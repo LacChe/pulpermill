@@ -8,7 +8,11 @@ the notebook beside it.
 
 What a record never holds: the writer's text, the model's text, the token, or an error's detail. An attempt's problem line may quote
 the story, so only whether it failed is kept, and a flow's notes are kept only when they are numbers or short plain words.
-Counts, names, versions and seconds are all it says."""
+Counts, names, versions and seconds are all it says.
+
+The one opt-in exception is NOT this file: with `Config.debug_path` set (the launcher's `debug=True`, a file beside this log,
+`pulpermill-debug.jsonl`), debuglog.py writes the problem line in full and the model's raw reply for every refused attempt. That file
+holds story text and is never to be shared or committed. This module is unchanged by it and keeps every rule above."""
 import json
 import threading
 import time

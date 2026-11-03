@@ -16,7 +16,7 @@ from typing import Any
 from pulpermill.prompter.base import Flow, Step
 from pulpermill.prompts import budget, tokens
 
-from . import assemble, language as lang, shape
+from . import assemble, debuglog, language as lang, shape
 from .errors import BackendError
 from .handles import Unresolved
 from .kit import Kit
@@ -131,6 +131,8 @@ def run_step(ctx: RunContext, step: Step, factor: float, language: str | None, p
     ctx.notes.setdefault("passes", []).append(entry)       # the run's record: what ran, in order, and how each attempt went
     constrain_first = step.kind == "json" and ctx.config.constrain == "always"
     problem = None
+    debug = debuglog.for_config(ctx.config)        # None unless the opt-in debug capture is on
+    refused = 0
     for number in range(1, MAX_ATTEMPTS + 1):
         ctx.cancel.raise_if_cancelled()
         current = prompt
@@ -153,7 +155,23 @@ def run_step(ctx: RunContext, step: Step, factor: float, language: str | None, p
         except Unusable as e:
             problem = attempt.problem = short(e)
             entry["attempts"][-1]["problem"] = problem
+            refused += 1
+            if debug is not None:
+                _capture(ctx, debug, step, attempt, str(e), text, current if refused == 1 else None)
     raise BackendError("bad_output", problem or "")
+
+
+def _capture(ctx: RunContext, debug: "debuglog.DebugLog", step: Step, attempt: Attempt, problem: str, text: str, prompt: str | None) -> None:
+    """One refused attempt into the debug file: the full problem line (not the shortened one), the raw reply and the output tokens.
+    Never raises, whatever the engine or the disk does."""
+    try:
+        tokens = (attempt.run or {}).get("output_tokens")
+        if tokens is None and isinstance(text, str):
+            tokens = ctx.engine.count_tokens(text)
+        debug.refused(call=ctx.notes.get("call"), step=step.name, attempt=attempt.number, constrained=attempt.constrained, problem=problem,
+                      reply=text, tokens=tokens, prompt=prompt, first_of_step=prompt is not None)
+    except Exception as e:
+        log.warning("the debug capture could not record an attempt (%s)", type(e).__name__)
 
 
 def run_flow(ctx: RunContext, flow: Flow, language: str | None) -> list[Any]:
@@ -176,6 +194,7 @@ def run_call(request, ctx: RunContext) -> dict:
     req = request.model_dump()
     kit = Kit(req)
     ctx.notes["prompter"] = {"name": ctx.prompter.name, "version": ctx.prompter.version}
+    ctx.notes["call"] = request.call            # kept for the debug capture; the run log's record builder does not read it
     flow = ctx.prompter.flow(request.call, req, kit)
     results = run_flow(ctx, flow, request.language)
     try:

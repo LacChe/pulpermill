@@ -60,6 +60,9 @@ class Config:
     prompter: str = "stub"                  # which prompter answers the calls: the folder name under pulpermill/prompter/. An unknown name stops the server at startup.
     prompt_version_note: str = ""           # free text recorded in the run log's first line
     log_path: str | None = None            # one JSON line per call (runlog.py); None = keep in memory only. The launcher sets it.
+    debug_path: str | None = None           # opt-in (debuglog.py): a file that gets one JSON line per REFUSED attempt, with the full problem line and the
+                                            # model's raw reply. It holds story text: never share or commit it. None = off, nothing is written.
+    debug_prompts: bool = False             # with debug_path: the first refused attempt of each step also keeps its prompt text (prompts are large)
     max_body_bytes: int = 4_000_000         # a request larger than this is bad_request; the biggest real project is far below it
     model: ModelSettings = field(default_factory=ModelSettings)
     prose: Sampling = field(default_factory=Sampling)          # free prose (the step names it "prose")
