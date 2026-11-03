@@ -60,6 +60,12 @@ def bare(text: str) -> str:
     return text[:-1].rstrip() if text.endswith(".") and not text.endswith("..") else text
 
 
+def state_clause(text: str) -> str:
+    """A behaviour's state as it sits after "when" in the template: no final stop of its own, and no "When" of its own either, since a writer
+    often types the state as a clause that starts with it ("When cornered") and the template would say "when When cornered"."""
+    return re.sub(r"^when\s+", "", bare(text), flags=re.I)
+
+
 def join_names(names: Iterable[str]) -> str:
     names = [n for n in (s(x) for x in names) if n]
     if len(names) <= 1:
@@ -202,7 +208,7 @@ def render_person(person: dict, *, scope: str = "writer", report: Report | None 
         drive.append(_items_block("characters", "values", values, name=name))
     if writer:
         behaviors = [fill(frames["portrait_behavior"],
-                          {"state": bare(clip(b.get("state"), c["behavior_state"], f"{name}.behavior", report)),
+                          {"state": state_clause(clip(b.get("state"), c["behavior_state"], f"{name}.behavior", report)),
                            "tendency": bare(clip(b.get("tendency"), c["behavior_tendency"], f"{name}.behavior", report))})
                      for b in (person.get("behaviors") or [])[: c["max_behaviors"]]]
         if behaviors:

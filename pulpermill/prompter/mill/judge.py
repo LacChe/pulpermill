@@ -29,6 +29,9 @@ def _ties_words(request: dict) -> dict[str, list[dict]]:
 
 def _item_text(template: str, item: dict, factor: float) -> str:
     tokens = {k: common.clip(r.s(v), factor) for k, v in item.items() if k != "id"}
+    for key in tokens:                                          # a value the template follows with a comma or a semicolon carries no stop of its own
+        if re.search(r"\{" + key + r"\}[,;]", template):
+            tokens[key] = r.state_clause(tokens[key]) if key == "state" else r.bare(tokens[key])
     return r.fill(template, {m: tokens.get(m, "") for m in re.findall(r"\{(\w+)\}", template)})
 
 

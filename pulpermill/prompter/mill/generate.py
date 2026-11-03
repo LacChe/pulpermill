@@ -182,7 +182,7 @@ def _reference(request: dict, kit: Any, names: dict[str, str], factor: float) ->
         lines = ["The ties and holdings:"]
         for item in in_names(request.get("ties") or [], ("tie_from", "tie_to"), names):
             if item.get("id"):
-                text = f"{item['tie_from']} toward {item['tie_to']}: {r.s(item.get('bond'))}. Edge: {r.s(item.get('edge'))}"
+                text = f"{item['tie_from']} toward {item['tie_to']}: {r.bare(item.get('bond'))}. Edge: {r.s(item.get('edge'))}"
                 lines.append(common.labelled(scope, "ties", item["id"], common.clip(text, factor)))
         for item in in_names(request.get("holdings") or [], ("holdee", "held_by"), names):
             if item.get("id"):
@@ -213,9 +213,9 @@ def shifts_prompt(request: dict, kit: Any, chapter_text: str, factor: float = 1.
     edge = ""
     if targets and identified and len(targets) == 1:
         handle, tie = targets[0]
-        edge = w["shifts_edge"].format(tie_from=names.get(tie["tie_from"], ""), tie_to=names.get(tie["tie_to"], ""), handle=handle, edge=r.s(tie.get("edge")))
+        edge = w["shifts_edge"].format(tie_from=names.get(tie["tie_from"], ""), tie_to=names.get(tie["tie_to"], ""), handle=handle, edge=r.bare(tie.get("edge")))
     elif targets:
-        listed = "; ".join(w["shifts_edge_item"].format(handle=h, tie_from=names.get(t["tie_from"], ""), tie_to=names.get(t["tie_to"], ""), edge=r.s(t.get("edge")))
+        listed = "; ".join(w["shifts_edge_item"].format(handle=h, tie_from=names.get(t["tie_from"], ""), tie_to=names.get(t["tie_to"], ""), edge=r.bare(t.get("edge")))
                            for h, t in targets)
         edge = w["shifts_edge_any"].format(ties=listed)
     parts = [w["shifts_task"].format(chapter=request["chapter"]),

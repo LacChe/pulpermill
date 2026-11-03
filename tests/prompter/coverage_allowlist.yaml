@@ -1,0 +1,16 @@
+# C1: card fields no prompt shows, each with the reason. Only code-only fields belong here: ids, links the page keeps, and what the page computes.
+# A key is the schema field (card.field, or card.list.item_field). The coverage test fails for a field that is neither shown nor listed here,
+# and for a listed field that no longer exists.
+
+outline.beats.chapter: "code-only: the chapter number is how the page orders beats; the model is told the chapter in the request's own `chapter` and `chapter_count`"
+outline.beats.stale: "code-only: the page marks a beat stale when an earlier chapter was regenerated; it never reaches a call"
+outline.beats.planned_from: "code-only: a hash the page keeps to tell whether a beat is stale; it never reaches a call"
+
+summary_events.entries.beat: "code-only: the link from an events entry to its chapter; the prompts get the chapter number and the entry's own text"
+
+shifts.entries.beat: "code-only: the link from a shift to its chapter; shifts are folded into the effective cards the page sends, so no shift list is sent"
+shifts.entries.card: "code-only: shifts are folded into the effective cards by the page (the request carries no shift list); the model only writes this key in a reply"
+shifts.entries.target: "code-only: shifts are folded into the effective cards by the page; the model only writes this key in a reply, as a character's name"
+shifts.entries.patch: "code-only: shifts are folded into the effective cards by the page; the model only writes patches in a reply, and the cards it sees already carry earlier ones"
+
+shifts.entries: "code-only: the list of shift entries is the page's own record; none of its fields reaches a call (see its items above)"

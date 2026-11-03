@@ -28,7 +28,7 @@ def build_prompt(request: dict, factor: float = 1.0) -> str:
         portrait = w["protagonist_bare"].format(name=name)
     # The fit scope of the person renderer leaves the behaviours out; the voice question needs them (how the person acts under stress).
     frame = tx.prompt_text("frames")["portrait_behavior"]
-    habits = [r.fill(frame, {"state": r.s(b.get("state")), "tendency": r.s(b.get("tendency"))}) for b in person.get("behaviors") or [] if r.s(b.get("state"))]
+    habits = [r.fill(frame, {"state": r.state_clause(b.get("state")), "tendency": r.bare(b.get("tendency"))}) for b in person.get("behaviors") or [] if r.s(b.get("state"))]
     if habits:
         portrait = (portrait if portrait != w["protagonist_bare"].format(name=name) else "") + "\n" + w["behaviors_lead"].format(name=name, items="; ".join(habits))
     return "\n\n".join([

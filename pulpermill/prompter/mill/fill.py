@@ -309,5 +309,5 @@ def script(request: dict, kit: Any) -> list[str]:
         value["holdings"] = [{"holdee": held[0], "held_by": holders[0]}] if holders and held else []   # an empty list when nothing can be linked
     if card == "setup":
         value["protagonist"] = (names["people"] or [""])[0]
-        value["chapter_count"] = stated_chapter_count(r.s(request.get("note"))) or 6
+        value["chapter_count"] = stated_chapter_count(r.s(request.get("note"))) or 12
     return [json.dumps(value, ensure_ascii=False)]
