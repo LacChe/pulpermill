@@ -1,0 +1,124 @@
+{
+ "about": "Labelled cases for the advancement judge (pulpermill/prompter/mill/advance.py). Rewords and same_kind cases come from the first test story; genuine moves are hand-written. Names are placeholders for the story's cards. The chain's first aim (bake sun loaves) is the chapter-1 baseline, so it is listed as new_kind; the other three aims from the story are same_kind against the chain before them.",
+ "edge_pairs": [
+  {
+   "old_edge": "needs to prove her skill",
+   "new_edge": "to earn Orla's approval",
+   "expected": "rewords",
+   "note": "first test story"
+  },
+  {
+   "old_edge": "wants her company at the fair",
+   "new_edge": "to see what she'll create",
+   "expected": "rewords",
+   "note": "first test story"
+  },
+  {
+   "old_edge": "to see what she'll create",
+   "new_edge": "to see if she'll rise to the challenge",
+   "expected": "rewords",
+   "note": "first test story"
+  },
+  {
+   "old_edge": "wants Orla's approval",
+   "new_edge": "fears losing Orla to a rival baker",
+   "expected": "complicates",
+   "note": "hand-written: a fear joins the want"
+  },
+  {
+   "old_edge": "needs to prove her skill",
+   "new_edge": "no longer cares what Orla thinks and wants her to leave the bakery",
+   "expected": "reverses",
+   "note": "hand-written"
+  },
+  {
+   "old_edge": "wants her to stay and help at the stall",
+   "new_edge": "needs her to stay or the stall is lost by Friday",
+   "expected": "escalates",
+   "note": "hand-written: the stakes rise"
+  },
+  {
+   "old_edge": "to win her trust",
+   "new_edge": "trusts her at last and hands over the keys",
+   "expected": "resolves",
+   "note": "hand-written"
+  }
+ ],
+ "aim_chains": [
+  {
+   "protagonist": "Pim",
+   "earlier_aims": [],
+   "new_aim": "Bake sun loaves to impress Orla",
+   "expected": "new_kind",
+   "note": "chapter 1 has no earlier aim"
+  },
+  {
+   "protagonist": "Pim",
+   "earlier_aims": [
+    "Bake sun loaves to impress Orla"
+   ],
+   "new_aim": "Get second-choice wood to experiment and impress Orla",
+   "expected": "same_kind",
+   "note": "first test story"
+  },
+  {
+   "protagonist": "Pim",
+   "earlier_aims": [
+    "Bake sun loaves to impress Orla",
+    "Get second-choice wood to experiment and impress Orla"
+   ],
+   "new_aim": "Gather apples for a loaf to impress Orla and Corbin",
+   "expected": "same_kind",
+   "note": "first test story"
+  },
+  {
+   "protagonist": "Pim",
+   "earlier_aims": [
+    "Bake sun loaves to impress Orla",
+    "Get second-choice wood to experiment and impress Orla",
+    "Gather apples for a loaf to impress Orla and Corbin"
+   ],
+   "new_aim": "Win a market stall to impress Orla",
+   "expected": "same_kind",
+   "note": "first test story"
+  },
+  {
+   "protagonist": "Pim",
+   "earlier_aims": [
+    "Bake sun loaves to impress Orla"
+   ],
+   "new_aim": "Beat Corbin's rival loaf to the guild judge before the noon bell",
+   "expected": "new_kind",
+   "note": "hand-written: a rival and a deadline"
+  },
+  {
+   "protagonist": "Pim",
+   "earlier_aims": [
+    "Bake sun loaves to impress Orla",
+    "Beat Corbin's rival loaf to the guild judge before the noon bell"
+   ],
+   "new_aim": "Find out who sold the oven's flue plans to the Guild",
+   "expected": "new_kind",
+   "note": "hand-written: an investigation"
+  },
+  {
+   "protagonist": "Pim",
+   "earlier_aims": [
+    "Win a market stall to impress Orla"
+   ],
+   "new_aim": "Persuade Orla to give back the stall key she took",
+   "expected": "new_kind",
+   "note": "hand-written: a confrontation"
+  },
+  {
+   "protagonist": "Pim",
+   "earlier_aims": [
+    "Bake sun loaves to impress Orla",
+    "Win a market stall to impress Orla"
+   ],
+   "new_aim": "Hide the burnt batch from the inspector before the Guild arrives",
+   "expected": "new_kind",
+   "note": "hand-written: a deadline and a secret"
+  }
+ ]
+}
