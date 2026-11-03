@@ -17,7 +17,7 @@
 // Characters: a fixture's character notes name no character, so one character is created per note, in order, and the note is attached to it
 // (a fixture with no character note gets one character, for the chapter to fill).
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { runPython } from "./run_python.mjs";
 import { fileURLToPath } from "node:url";
 import { schema } from "../tests/web/helpers.mjs";
 import "../tests/web/text-setup.mjs";
@@ -134,7 +134,7 @@ for (const entry of wanted) {
 
 if (dry) {
   // Judge requests are built too: one per card the fixture filled, from the finished values.
-  const check = spawnSync("python3", [fileURLToPath(new URL("tools/check_requests.py", kit))], { input: JSON.stringify(sent), encoding: "utf8" });
+  const check = runPython(fileURLToPath(new URL("tools/check_requests.py", kit)), JSON.stringify(sent));
   process.stdout.write(check.stdout);
   if (check.status !== 0) { process.stderr.write(check.stderr); console.error("dry run: some requests break the contract"); process.exit(1); }
   const failed = rows.filter((r) => r[3] !== true);

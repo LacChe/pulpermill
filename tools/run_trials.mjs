@@ -16,7 +16,7 @@
 // The cast of each chapter is the one the page starts with (the protagonist and the two ends of the spotlight tie) plus, in some chapters,
 // a deterministic extra person, so cast sizes vary within a trial. A trial is the same on every run except for the model.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { runPython } from "./run_python.mjs";
 import { fileURLToPath } from "node:url";
 import { schema } from "../tests/web/helpers.mjs";
 import "../tests/web/text-setup.mjs";
@@ -149,7 +149,7 @@ for (const entry of wanted) {
 }
 
 if (dry) {
-  const check = spawnSync("python3", [fileURLToPath(new URL("evals/trials/tools/check_requests.py", new URL("../", import.meta.url)))], { input: JSON.stringify(sent), encoding: "utf8" });
+  const check = runPython(fileURLToPath(new URL("evals/trials/tools/check_requests.py", new URL("../", import.meta.url))), JSON.stringify(sent));
   process.stdout.write(check.stdout);
   if (check.status !== 0) { process.stderr.write(check.stderr); console.error("dry run: some requests break the contract"); process.exit(1); }
   if (failures) { console.error(`dry run: ${failures} chapters did not complete`); process.exit(1); }
