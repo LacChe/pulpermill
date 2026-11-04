@@ -2185,7 +2185,7 @@
       {
        "key": "pressure",
        "label": "World pressure",
-       "help": "One rule or object of the world that this chapter has to put to work: it changes what someone can do, forces a choice, or costs someone something. The system picks one at random, and you can change it or clear it.",
+       "help": "One rule or object of the world that this chapter has to put to work: it changes what someone can do, forces a choice, or costs someone something. The system picks one at random for every chapter, and you can change it.",
        "input": "select",
        "kind": "note",
        "required": false,

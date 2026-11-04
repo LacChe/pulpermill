@@ -74,14 +74,8 @@ export function pickSpotlight(project, chapter) {
 }
 
 // ---- The pressure -------------------------------------------------------------------
-// One rule or object of the world that a chapter is asked to put to work. Off unless the page address says `?pressure=on`; with
-// it off nothing below changes what the page sends or stores. The flag is read once, when the page loads.
-export function readPressureFlag(search = globalThis.location?.search ?? "") {
-  try { return new URLSearchParams(search).get("pressure") === "on"; } catch { return false; }
-}
-let pressureFlag = readPressureFlag();
-export const pressureOn = () => pressureFlag;
-export function setPressureFlag(on) { pressureFlag = Boolean(on); }     // for tests
+// One rule or object of the world that every chapter is asked to put to work. It is always on: a beat gets one when it is made, and
+// again when its plan is committed if it has none (or its pick is gone), as long as the world holds a rule or an object.
 
 // Every rule and object of a project, rules first: [{id, kind}].
 export function pressureElements(project) {
@@ -91,18 +85,17 @@ export function pressureElements(project) {
 
 // The element a new beat starts with: one of the rules and objects of the cards as they stand going into the chapter, drawn
 // uniformly at random from the project and the chapter, so asking again gives the same one. Nothing is remembered from other
-// chapters, so the same element may come up twice in a row. Null when the flag is off or the world has neither.
+// chapters, so the same element may come up twice in a row. Null when the world has neither.
 export function pickPressure(project, chapter) {
-  if (!pressureOn()) return null;
   const all = pressureElements(effectiveProject(project, chapter));
   if (!all.length) return null;
   const next = rng(projectSeed(project), chapter, "pressure");
   return all[Math.floor(next() * all.length)].id;
 }
 
-// The beat's pressure id, or null: the flag is off, the beat has none, or it points at a rule or object that is gone.
+// The beat's pressure id, or null: the beat has none, or it points at a rule or object that is gone.
 export function pressureOf(project, beat) {
-  if (!pressureOn() || !beat?.pressure) return null;
+  if (!beat?.pressure) return null;
   return pressureElements(project).some((e) => e.id === beat.pressure) ? beat.pressure : null;
 }
 
@@ -181,7 +174,7 @@ export function newBeat(schema, project, chapter = chapterInfo(project).next) {
   const tie = pickSpotlight(project, chapter);
   const beat = { ...blankItem(BEAT_FIELD(schema), taken), chapter, stale: false, cast: fillCast(eff, requiredCast(eff, tie?.id)), spotlight: tie?.id ?? "", planned_from: null };
   const pressure = pickPressure(project, chapter);
-  if (pressure) beat.pressure = pressure; else delete beat.pressure;     // no pressure field at all unless one was picked
+  if (pressure) beat.pressure = pressure; else delete beat.pressure;     // no pressure field when the world has no rule or object to pick
   return beat;
 }
 
@@ -412,6 +405,11 @@ export function placeBeat(project, beat) {
 // answers false and changes nothing when the Outline was edited since.
 export function commitPlan(project, beat) {
   const undo = watch(project, ["outline"]);
+  const eff = effectiveProject(project, Number(beat.chapter));
+  if (!pressureOf(eff, beat)) {                                  // a planned beat always carries a pressure when the world has one
+    const pick = pickPressure(project, Number(beat.chapter));
+    if (pick) beat.pressure = pick;
+  }
   placeBeat(project, beat);
   undo.settle();
   return { undo: () => undo.undo() };

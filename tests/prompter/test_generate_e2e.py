@@ -84,4 +84,4 @@ def test_the_whole_story_passes_on_the_mill_prompter_with_real_plan_and_generate
     for call in ("plan", "generate"):
         rows = [x for x in records if x.get("call") == call and x.get("result") == "ok"]
         assert rows and all(type(x["notes"]["minor_names"]) is int and type(x["notes"]["minor_new"]) is int for x in rows), call
-        assert all(x["notes"]["pressure_on"] is False and "pressure_effect" not in x["notes"] for x in rows), call       # the page sends no pressure unless `?pressure=on`
+        assert all(x["notes"]["pressure_on"] is True for x in rows), call       # the page always sends a pressure (the story's world has rules and objects)

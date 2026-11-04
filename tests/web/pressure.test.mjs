@@ -1,15 +1,14 @@
 import "./text-setup.mjs";
-import test, { afterEach } from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
 import { story, opening, schema } from "./fixture.mjs";
 import {
-  newBeat, pickPressure, pressureOf, pressureInWords, pressureElements, readPressureFlag, setPressureFlag, pressureOn,
+  newBeat, pickPressure, pressureOf, pressureInWords, pressureElements, commitPlan,
   planRequest, scene, planInputsHash, planIsStale,
 } from "../../web/plan.js";
 import { generateRequest } from "../../web/generate.js";
 
 const copy = (x) => JSON.parse(JSON.stringify(x));
-afterEach(() => setPressureFlag(false));
 
 // The fixture story with a bigger world, so the seeded 5-item cut has something to drop: 12 rules and 12 objects.
 function bigWorld() {
@@ -20,33 +19,27 @@ function bigWorld() {
 }
 const ids = (list) => list.map((x) => x.id);
 
-test("the flag is on only for ?pressure=on in the page address", () => {
-  assert.equal(readPressureFlag("?pressure=on"), true);
-  assert.equal(readPressureFlag("?x=1&pressure=on"), true);
-  for (const s of ["", "?pressure=off", "?pressure=", "?pressure=1", "?pressures=on"]) assert.equal(readPressureFlag(s), false, s);
-  assert.equal(pressureOn(), false, "off by default");
-});
-
-test("flag off: a new beat has no pressure field, and requests, scene() and the hash are what they were", () => {
+test("a new beat gets a pressure from a world that has one, with no flag in the page address", () => {
   const p = story();
-  p.outline.beats[1].pressure = "r0000001";                // even a beat that carries one sends nothing while the flag is off
-  const clean = copy(p);
-  delete clean.outline.beats[1].pressure;
-
-  assert.equal("pressure" in newBeat(schema, p, 2), false);
-  const withField = planRequest(schema, p, p.outline.beats[1]);
-  const without = planRequest(schema, clean, clean.outline.beats[1]);
-  assert.deepEqual(withField, without);
-  assert.equal("pressure" in withField, false);
-  assert.deepEqual(generateRequest(schema, p, p.outline.beats[1]), generateRequest(schema, clean, clean.outline.beats[1]));
-  assert.equal("pressure" in generateRequest(schema, p, p.outline.beats[1]), false);
-  assert.equal(planInputsHash(p, p.outline.beats[1]), planInputsHash(clean, clean.outline.beats[1]));
-  assert.deepEqual(scene(p, 2, ["c0000001"], { pressure: null }), scene(p, 2, ["c0000001"]));
-  assert.equal(pickPressure(p, 2), null);
+  assert.ok(pressureElements(p).some((e) => e.id === newBeat(schema, p, 2).pressure));
 });
 
-test("flag on: a new beat gets one rule or object, the same one when asked again", () => {
-  setPressureFlag(true);
+test("committing a plan fills in a pressure the beat lacks or whose pick is gone, and keeps a valid one", () => {
+  const p = story();
+  const beat = { ...p.outline.beats[1] };
+  delete beat.pressure;
+  commitPlan(p, beat);
+  const filled = p.outline.beats.find((b) => b.id === beat.id).pressure;
+  assert.ok(pressureElements(p).some((e) => e.id === filled), "filled in");
+  const gone = { ...beat, pressure: "r9999999" };
+  commitPlan(p, gone);
+  assert.ok(pressureElements(p).some((e) => e.id === p.outline.beats.find((b) => b.id === beat.id).pressure), "a gone pick is replaced");
+  const keep = { ...beat, pressure: "o0000001" };
+  commitPlan(p, keep);
+  assert.equal(p.outline.beats.find((b) => b.id === beat.id).pressure, "o0000001");
+});
+
+test("a new beat gets one rule or object, the same one when asked again", () => {
   const p = bigWorld();
   const all = new Set(pressureElements(p).map((e) => e.id));
   const first = newBeat(schema, p, 2).pressure;
@@ -55,8 +48,7 @@ test("flag on: a new beat gets one rule or object, the same one when asked again
   assert.equal(pickPressure(p, 2), first);
 });
 
-test("flag on: a different chapter or a different seed can give a different element", () => {
-  setPressureFlag(true);
+test("a different chapter or a different seed can give a different element", () => {
   const p = bigWorld();
   const byChapter = new Set([1, 2, 3, 4, 5, 6, 7, 8].map((c) => pickPressure(p, c)));
   assert.ok(byChapter.size > 1, "chapters do not all draw the same element");
@@ -66,8 +58,7 @@ test("flag on: a different chapter or a different seed can give a different elem
   assert.ok([...kinds].every((k) => k === "rule" || k === "object"));
 });
 
-test("flag on: nothing earlier is looked at, so the same element may come twice in a row", () => {
-  setPressureFlag(true);
+test("nothing earlier is looked at, so the same element may come twice in a row", () => {
   const p = story();
   p.world.rules = [];                                      // one object only: every chapter draws it
   const a = pickPressure(p, 2);
@@ -75,8 +66,7 @@ test("flag on: nothing earlier is looked at, so the same element may come twice 
   assert.equal(pickPressure(p, 3), a);
 });
 
-test("flag on: a world with no rules and no objects gives none, and the beat has no field", () => {
-  setPressureFlag(true);
+test("a world with no rules and no objects gives none, and the beat has no field", () => {
   const p = story();
   p.world.rules = []; p.world.objects = [];
   assert.equal(pickPressure(p, 2), null);
@@ -84,7 +74,6 @@ test("flag on: a world with no rules and no objects gives none, and the beat has
 });
 
 test("the pick follows the cards as they stand going into the chapter", () => {
-  setPressureFlag(true);
   const p = story();
   p.world.rules = [{ id: "r0000001", statement: "Debts are written, never spoken.", cost: "c", when_broken: "w" }];
   p.world.objects = [];
@@ -92,7 +81,6 @@ test("the pick follows the cards as they stand going into the chapter", () => {
 });
 
 test("the picked element is in the scene's lists even when the 5-item cut would drop it", () => {
-  setPressureFlag(true);
   const p = bigWorld();
   let droppedWithout = 0;
   for (const element of pressureElements(p)) {
@@ -107,7 +95,6 @@ test("the picked element is in the scene's lists even when the 5-item cut would 
 });
 
 test("the request carries the pressure in words, no id, and the same element is in the world lists", () => {
-  setPressureFlag(true);
   const p = bigWorld();
   for (const id of [p.world.rules[7].id, p.world.objects[9].id]) {
     const beat = { ...p.outline.beats[1], pressure: id };
@@ -129,7 +116,6 @@ test("the request carries the pressure in words, no id, and the same element is 
 });
 
 test("a pressure whose id no longer exists, or none at all, is left out of the request", () => {
-  setPressureFlag(true);
   const p = story();
   const gone = { ...p.outline.beats[1], pressure: "r9999999" };
   assert.equal(pressureOf(p, gone), null);
@@ -139,7 +125,6 @@ test("a pressure whose id no longer exists, or none at all, is left out of the r
 });
 
 test("changing or clearing the pressure makes a planned beat stale; the same pressure does not", () => {
-  setPressureFlag(true);
   const p = story();
   const beat = p.outline.beats[1];
   beat.pressure = "r0000001";
@@ -152,18 +137,15 @@ test("changing or clearing the pressure makes a planned beat stale; the same pre
   assert.equal(planIsStale(p, cleared), true, "cleared, field gone");
 });
 
-test("the hash holds the pressure's id only when the flag is on and one is set", () => {
+test("the hash holds the pressure's id when one is set", () => {
   const p = story();
   const beat = { ...p.outline.beats[1] };
+  delete beat.pressure;
   const plain = planInputsHash(p, beat);
-  assert.equal(planInputsHash(p, { ...beat, pressure: "r0000001" }), plain, "flag off");
-  setPressureFlag(true);
-  assert.equal(planInputsHash(p, beat), plain, "flag on, none set");
-  assert.notEqual(planInputsHash(p, { ...beat, pressure: "r0000001" }), plain, "flag on, one set");
+  assert.notEqual(planInputsHash(p, { ...beat, pressure: "r0000001" }), plain);
 });
 
 test("the opening story, planned for chapter 1, takes a pressure like any other chapter", () => {
-  setPressureFlag(true);
   const p = opening();
   const beat = newBeat(schema, p, 1);
   assert.ok(!beat.pressure || pressureElements(p).some((e) => e.id === beat.pressure));
