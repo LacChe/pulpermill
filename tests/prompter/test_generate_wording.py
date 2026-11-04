@@ -369,7 +369,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-7:" in load_prompter("mill").version
+    assert "+generate:generate-9:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------
@@ -523,14 +523,14 @@ def test_the_two_steps_after_the_write_get_more_attempts_and_a_fallback_each():
 def test_an_events_step_that_fails_every_attempt_still_returns_the_chapter_with_a_fallback():
     reply, ctx, engine, good = _generate(0, "no json", "still no", "nope", "again no", 2)
     assert reply["chapter_text"] == good[0].strip() and reply["events"] == gen.events_fallback(good[0].strip())
-    assert reply["shifts"] and ctx.notes["flow"] == {"events_fallback": True, "shifts_fallback": False, "edge_move": "complicates"}
+    assert reply["shifts"] and ctx.notes["flow"] == {"events_fallback": True, "shifts_fallback": False, "edge_move": "complicates", "minor_names": 0, "minor_new": 0}
     events_pass = [p for p in ctx.notes["passes"] if p["step"] == "events"][0]
     assert len(events_pass["attempts"]) == 4 and events_pass["fallback"] is True and engine.calls == 7
 
 
 def test_a_first_events_attempt_that_fails_does_not_rerun_the_other_steps():
     reply, ctx, engine, good = _generate(0, "no json", 1, 2)
-    assert engine.calls == 5 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "complicates"}
+    assert engine.calls == 5 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "complicates", "minor_names": 0, "minor_new": 0}
     assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 2), ("shifts", 1), ("advance_edge", 1)]
     assert reply["events"]["happened"] == json.loads(good[1])["happened"]
 
@@ -538,7 +538,7 @@ def test_a_first_events_attempt_that_fails_does_not_rerun_the_other_steps():
 def test_a_shifts_step_that_fails_every_attempt_gives_an_empty_list_and_keeps_the_events():
     reply, ctx, engine, good = _generate(0, 1, "bad", "worse", "worst")
     assert reply["shifts"] == [] and reply["events"]["changed"] == json.loads(good[1])["changed"]
-    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": True} and engine.calls == 5
+    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": True, "minor_names": 0, "minor_new": 0} and engine.calls == 5
 
 
 def test_the_write_step_keeps_its_own_two_attempts_and_no_fallback():
@@ -589,7 +589,7 @@ def test_with_the_flag_off_the_verdict_only_goes_to_the_notes_and_the_reply_is_t
     monkeypatch.setattr(advance, "ENFORCE", False)
     reply, ctx, engine, good = _generate(0, 1, 2, REWORDS)
     plain, _, _, _ = _generate(0, 1, 2)
-    assert reply == plain and engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords"}
+    assert reply == plain and engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords", "minor_names": 0, "minor_new": 0}
     assert [s.name for s in gen.build_flow(base(), Kit(base())).worst_case()][-1] == "advance_edge" and len(gen.build_flow(base(), Kit(base())).worst_case()) == 4
 
 
@@ -597,7 +597,7 @@ def test_a_reworded_edge_sends_only_the_shifts_back_once_with_the_judges_line_an
     reply, ctx, engine, good = _generate(0, 1, 2, REWORDS, 2)
     assert engine.calls == 6 and reply["chapter_text"] == good[0].strip()
     assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 1), ("shifts", 1), ("advance_edge", 1), ("shifts", 1), ("advance_edge", 1)]
-    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords", "edge_resent": True, "edge_move_after": "complicates"}
+    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords", "edge_resent": True, "edge_move_after": "complicates", "minor_names": 0, "minor_new": 0}
     assert "Your first list of changes was set aside." not in engine.prompts[2]
     assert "Your first list of changes was set aside. Same want, new words." in engine.prompts[4] and "Let the edge move" in engine.prompts[4]
     assert engine.prompts[4].rindex("Let the edge move") < engine.prompts[4].rindex("Reply with a JSON object with one key")                # the line sits ahead of the format rule

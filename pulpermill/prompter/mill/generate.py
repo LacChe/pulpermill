@@ -21,7 +21,7 @@ from pulpermill.schema.shifts import shiftable_fields
 from . import advance, common
 from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-8"
+VERSION = "generate-9"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -116,9 +116,8 @@ def is_zh(request: dict) -> bool:
 
 def write_findings(request: dict, text: Any) -> tuple[str | None, list[tuple[str, str]]]:
     """(the hard problem line or None, the soft problems as [(kind, line)]). Hard: the chapter is far over the cap (more than 1,500 words, or
-    3,000 Han characters for Chinese; under the cap, or a little over it, passes and a short chapter is never rejected). Soft, in this order:
-    the opening repeats a sentence of the previous chapter's ending ("echo"); the chapter names a person who is on no card ("unknown_person";
-    English only, and a plain name must come back at least twice, because a good chapter costs more than a missed name)."""
+    3,000 Han characters for Chinese; under the cap, or a little over it, passes and a short chapter is never rejected). Soft: the opening
+    repeats a sentence of the previous chapter's ending ("echo"). A person on no card is never a problem here (see `write_names`)."""
     body = r.s(text)
     p = common.load_text("generate")["write_problems"]
     if is_zh(request):
@@ -131,23 +130,30 @@ def write_findings(request: dict, text: Any) -> tuple[str | None, list[tuple[str
     ending = r.s(request.get("previous_ending"))
     if ending and not is_zh(request) and common.echoes_ending(body, ending):
         soft.append(("echo", p["echo"]))
-    strangers = common.names_found(request, [body], _card_text(request), min_count=2)
-    if strangers:
-        soft.append(("unknown_person", p["unknown_person"].format(names=", ".join(strangers))))
     return None, soft
 
 
 def write_problem(request: dict, text: Any, tolerate_soft: bool = False) -> str | None:
-    """One plain line saying what to fix, or None. A hard problem always speaks; a soft one (the echo, then the unknown person) speaks
-    unless `tolerate_soft` (the last attempt), when the reply is let through."""
+    """One plain line saying what to fix, or None. A hard problem always speaks; a soft one (the echo) speaks unless `tolerate_soft` (the
+    last attempt), when the reply is let through."""
     hard, soft = write_findings(request, text)
     if hard:
         return hard
     return soft[0][1] if soft and not tolerate_soft else None
 
 
+def write_names(request: dict, text: Any) -> tuple[int, list[str]]:
+    """(how many people on no card the chapter names, and which of them are new). English only, and a plain name must come back at least
+    twice, because a good chapter costs more than a missed name. The count includes names the earlier chapters used; the new ones are in no
+    earlier chapter's events either."""
+    return common.minor_people(request, [r.s(text)], _card_text(request), common.earlier_records(request), min_count=2)
+
+
 def _card_text(request: dict) -> list:
-    """What the writer may take names from: the cards the request carries and the beat the person approved. Not the earlier chapters' records."""
+    """What the writer may take names from: the cards the request carries and the beat the person approved. The earlier chapters' records are
+    not in this list: they are a separate allowance (`common.earlier_records`), because `write_names` counts with and without them. They once
+    were excluded on purpose, so that a name could not be passed along from chapter to chapter. That changed: the history shown to the model
+    carries those names, so refusing a name the prompt itself shows contradicts the prompt."""
     return [request.get(k) for k in ("cast", "world", "ties", "holdings", "setup", "style", "beat")]
 
 
@@ -343,7 +349,9 @@ class GenerateFlow(Flow):
         self.notes = {"events_fallback": False, "shifts_fallback": False}      # for the run log: did a step's last resort stand in for it?
 
     def _write_check(self):
-        """A check for one write step instance: strict on its first call, soft-tolerant on its second (the runner's last attempt)."""
+        """A check for one write step instance: strict on its first call, soft-tolerant on its second (the runner's last attempt). Only the
+        echo is soft. A person on no card never refuses a reply: the chapter that is used has its counts recorded in the notes (interface
+        M1) and its new names put to the trace as a soft note."""
         attempts = common.Attempts()
 
         def check(value):
@@ -357,6 +365,10 @@ class GenerateFlow(Flow):
             for kind, line in soft:
                 common.note_soft("generate", "write", line)
             self.echo_accepted = any(kind == "echo" for kind, _ in soft)
+            total, new = write_names(self.request, value)
+            self.notes["minor_names"], self.notes["minor_new"] = total, len(new)
+            if new:
+                common.note_soft("generate", "write", common.load_text("generate")["write_problems"]["unknown_person"].format(names=", ".join(new)))
             return None
         return check
 

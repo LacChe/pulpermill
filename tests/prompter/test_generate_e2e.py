@@ -2,6 +2,7 @@
 The fake engine answers a plan or generate call with the module's own `script(request, kit)` (queued when the flow is built) and leaves
 the other calls to the stub's scripts, so the page's rules, the runner's checks (the planner check, the edge check) and the contract
 are all exercised end to end with no model."""
+import json
 import shutil
 import subprocess
 import sys
@@ -78,4 +79,8 @@ def test_the_whole_story_passes_on_the_mill_prompter_with_real_plan_and_generate
     prompts = engine_with_scripts.prompts
     assert any("## Your task" in p for p in prompts) and any("## The plan for this chapter" in p for p in prompts)
     versions = {r for r in log.read_text().split('"version": "') if r.startswith("mill-0.2")}
-    assert versions and all("+plan:plan-5:" in v and "+generate:generate-8:" in v and "+advance:advance-2:" in v for v in versions)
+    assert versions and all("+plan:plan-6:" in v and "+generate:generate-9:" in v and "+advance:advance-2:" in v for v in versions)
+    records = [json.loads(x) for x in log.read_text().splitlines() if x.strip()]          # the walk-on counts (interface M1) are in every plan and chapter record
+    for call in ("plan", "generate"):
+        rows = [x for x in records if x.get("call") == call and x.get("result") == "ok"]
+        assert rows and all(type(x["notes"]["minor_names"]) is int and type(x["notes"]["minor_new"]) is int for x in rows), call

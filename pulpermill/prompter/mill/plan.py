@@ -14,7 +14,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common
 
-VERSION = "plan-5"
+VERSION = "plan-6"
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
 JUDGE_ATTEMPTS = 2        # the advancement judge (observe-only): two tries, then a neutral verdict, so a judge can never fail a call
@@ -207,47 +207,47 @@ def plan_points(text: str) -> list[str]:
     return out
 
 
-def plan_findings(request: dict, value: Any) -> tuple[str | None, str | None]:
-    """(the hard problem line or None, the soft problem line or None). Hard: no place, no aim, an abstract or repeated aim, the plan not in
-    the four points in order, a spotlight end the plan does not name. Soft: a person on no card is named (a defect a person can read and fix)."""
+def plan_problem(request: dict, value: Any) -> str | None:
+    """None when the plan is usable, else one plain line saying what to fix: no place, no aim, an abstract or repeated aim, the plan not in
+    the four points in order, a spotlight end the plan does not name. A person on no card is never a problem here (see `plan_names`)."""
     p = common.load_text("plan")["problems"]
     names = names_of(request)
     beat = value if isinstance(value, dict) else {}
     where, aim, plan = r.s(beat.get("where")), r.s(beat.get("aim")), r.s(beat.get("plan"))
     if not where:
-        return p["missing_where"], None
+        return p["missing_where"]
     if not aim:
-        return p["missing_aim"], None
+        return p["missing_aim"]
     if aim_is_abstract(aim):
-        return p["abstract_aim"], None
+        return p["abstract_aim"]
     retry = (request.get("retry") or {}).get("beat") or {}
     if retry and _norm(retry.get("aim")) == _norm(aim):
-        return p["same_as_retry"].format(aim=r.s(retry.get("aim"))), None
+        return p["same_as_retry"].format(aim=r.s(retry.get("aim")))
     for b in sorted(request.get("earlier_beats") or [], key=lambda b: int(b.get("chapter") or 0)):
         old = _words(b.get("aim"))
         if old and len(old & _words(aim)) / len(old | _words(aim)) >= 0.8:
-            return p["repeated_aim"].format(chapter=b.get("chapter"), aim=r.s(b.get("aim"))), None
+            return p["repeated_aim"].format(chapter=b.get("chapter"), aim=r.s(b.get("aim")))
     found = plan_points(plan)
     missing = [f"Act {n}" for n in POINTS if n not in found]
     if missing or found != sorted(found):
-        return p["missing_points"].format(missing=", ".join(missing) or "the right order"), None
+        return p["missing_points"].format(missing=", ".join(missing) or "the right order")
     tie = next((t for t in request.get("ties") or [] if t.get("id") == request.get("spotlight")), None)
     if tie:
         ends = [names.get(tie.get("tie_from"), ""), names.get(tie.get("tie_to"), "")]
         absent = [e for e in ends if e and not _mentions(plan, e)]
         if absent:
-            return p["missing_names"].format(names=" and ".join(absent)), None
-    # Rule 5: a person on no card is named by role only. The cards and the writer's own setup text are the names that may be used.
-    strangers = common.names_found(request, [where, r.s(beat.get("when_time")), aim, plan],
-                                   [request.get(k) for k in ("cast", "world", "ties", "holdings", "setup", "style")])
-    return None, (p["unknown_person"].format(names=", ".join(strangers)) if strangers else None)
+            return p["missing_names"].format(names=" and ".join(absent))
+    return None
 
 
-def plan_problem(request: dict, value: Any, tolerate_soft: bool = False) -> str | None:
-    """None when the plan is usable, else one plain line saying what to fix. A soft problem (the unknown person) is let through when
-    `tolerate_soft` (the last attempt)."""
-    hard, soft = plan_findings(request, value)
-    return hard or (None if tolerate_soft else soft)
+def plan_names(request: dict, value: Any) -> tuple[int, list[str]]:
+    """(how many people on no card the plan names, and which of them are new). Rule 5 asks for role only, but a name is no reason to throw a
+    plan away, so this only counts. The count includes names the earlier chapters used (the history shown to the model carries them); the
+    new ones are in no earlier chapter's events or plan either. The cards and the writer's own setup text are the names that may be used."""
+    beat = value if isinstance(value, dict) else {}
+    return common.minor_people(request, [r.s(beat.get("where")), r.s(beat.get("when_time")), r.s(beat.get("aim")), r.s(beat.get("plan"))],
+                               [request.get(k) for k in ("cast", "world", "ties", "holdings", "setup", "style")],
+                               common.earlier_records(request, beats=True))
 
 
 # ---- The flow -------------------------------------------------------------------------------------------------------------
@@ -255,19 +255,25 @@ def plan_problem(request: dict, value: Any, tolerate_soft: bool = False) -> str 
 class PlanFlow(Flow):
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
-        self.notes: dict[str, Any] = {}         # for the run log: the aim judge's verdict word, and whether its last resort stood in for it
+        self.notes: dict[str, Any] = {}         # for the run log: the aim judge's verdict word, whether its last resort stood in for it, and the walk-on counts (minor_names, minor_new)
+
+    def _count_names(self, value: Any) -> list[str]:
+        """Records the walk-on counts of the plan that stands (interface M1) in the notes, and returns the new names."""
+        total, new = plan_names(self.request, value)
+        self.notes["minor_names"], self.notes["minor_new"] = total, len(new)
+        return new
 
     def _check(self):
-        """A check for one plan step instance: strict on its first call, soft-tolerant on its second (the runner's last attempt)."""
-        attempts = common.Attempts()
-
+        """A check for one plan step instance. Every problem it returns is hard and refuses the attempt. A person on no card never does: the
+        plan is used, its new names go to the trace as a soft note, and the counts go to the run record. The last reply to pass is the one used,
+        so its counts are the ones that stay."""
         def check(value):
-            last = attempts.tick()
-            hard, soft = plan_findings(self.request, value)
-            if hard or (soft and not last):
-                return hard or soft
-            if soft:
-                common.note_soft("plan", "plan", soft)
+            hard = plan_problem(self.request, value)
+            if hard:
+                return hard
+            new = self._count_names(value)
+            if new:
+                common.note_soft("plan", "plan", common.load_text("plan")["problems"]["unknown_person"].format(names=", ".join(new)))
             return None
         return check
 
@@ -290,6 +296,7 @@ class PlanFlow(Flow):
         """The plan step once more, with the judge's line. If this pass cannot be used either, the first plan stands (it was usable)."""
         def keep_first():
             self.notes["aim_resend_fallback"] = True
+            self._count_names(first)          # the plan that stands is the first one, so its counts are the ones to record
             return first
         return self._step(line, keep_first)
 

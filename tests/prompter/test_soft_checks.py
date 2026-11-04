@@ -1,6 +1,8 @@
-"""A12: a chapter or a plan is not thrown away for a soft problem. Hard problems refuse every attempt; soft ones (an echoed opening, a name
-on no card) refuse the first attempt, ride the retry line to the model, and are let through on the last. An accepted echo is trimmed to
-whole sentences. The checks are driven directly and through the backend's runner (prompts patched: only the checks are under test)."""
+"""A12: a chapter or a plan is not thrown away for a soft problem. Hard problems refuse every attempt; the one soft problem (an echoed
+opening, in the chapter) refuses the first attempt, rides the retry line to the model, and is let through on the last. An accepted echo is
+trimmed to whole sentences. A name on no card is no problem at all (minor1): the reply is used on the first attempt, the new names go to the
+trace as a soft note, and the counts go to the run record. The checks are driven directly and through the backend's runner (prompts patched:
+only the checks are under test)."""
 import logging
 from types import SimpleNamespace
 
@@ -47,24 +49,50 @@ def count_words(text):
 
 # ---- the chapter: two tiers ------------------------------------------------------------------------------------------------
 
-def test_a_chapter_with_only_an_unknown_person_fails_the_first_check_and_passes_the_second():
+def test_a_chapter_with_only_an_unknown_person_passes_the_first_check_and_is_counted():
     req = request()
     req.pop("previous_ending")
     body = FRESH + " " + SOFT_NAME + " " + filler(200)
-    _, check = write_check(req)
-    first = check(body)
-    assert first and "Zorblax" in first
+    flow, check = write_check(req)
     assert check(body) is None
+    assert flow.notes["minor_names"] == 1 and flow.notes["minor_new"] == 1
 
 
-def test_the_plain_write_problem_is_still_strict_and_tolerates_soft_only_on_request():
+def test_the_plain_write_problem_has_no_name_in_it_and_tolerates_the_echo_only_on_request():
     req = request()
     req.pop("previous_ending")
     body = FRESH + " " + SOFT_NAME
-    assert "Zorblax" in gen.write_problem(req, body)
-    assert gen.write_problem(req, body, tolerate_soft=True) is None
+    assert gen.write_problem(req, body) is None
     hard, soft = gen.write_findings(req, body)
-    assert hard is None and [k for k, _ in soft] == ["unknown_person"]
+    assert hard is None and soft == [] and gen.write_names(req, body) == (1, ["Zorblax"])
+    echo = request()
+    assert "repeating the end" in gen.write_problem(echo, ECHO) and gen.write_problem(echo, ECHO, tolerate_soft=True) is None
+
+
+def test_a_name_the_story_already_used_is_counted_but_not_new_in_the_notes():
+    req = request()
+    req.pop("previous_ending")
+    req["earlier_events"] = [{"chapter": 1, "happened": "Zorblax came to the gate.", "changed": "Nobody trusts Zorblax."}]
+    flow, check = write_check(req)
+    assert check(FRESH + " " + SOFT_NAME + " " + filler(200)) is None
+    assert flow.notes["minor_names"] == 1 and flow.notes["minor_new"] == 0
+
+
+def test_a_chapter_with_no_unknown_person_records_two_zeros():
+    req = request()
+    req.pop("previous_ending")
+    flow, check = write_check(req)
+    assert check(FRESH + " " + filler(200)) is None
+    assert (flow.notes["minor_names"], flow.notes["minor_new"]) == (0, 0)
+
+
+def test_the_counts_are_those_of_the_reply_that_was_used_not_of_a_refused_one():
+    req = request()
+    flow, check = write_check(req)
+    assert "repeating the end" in check(ECHO + " " + SOFT_NAME + " " + filler(200))          # refused: no counts yet
+    assert "minor_names" not in flow.notes
+    assert check(FRESH + " " + filler(200)) is None
+    assert (flow.notes["minor_names"], flow.notes["minor_new"]) == (0, 0)
 
 
 def test_a_chapter_far_over_the_cap_fails_both_check_calls():
@@ -140,13 +168,10 @@ def test_the_accepted_problem_and_the_trim_are_said_once_each_on_the_console_wit
 
 
 def test_counts_start_again_for_every_step_instance():
-    req = request()
-    req.pop("previous_ending")
-    body = FRESH + " " + SOFT_NAME
-    flow = gen.GenerateFlow(req, SimpleNamespace(grammar=None))
+    flow = gen.GenerateFlow(request(), SimpleNamespace(grammar=None))
     one, two = flow._step(0, []).check, flow._step(0, []).check
-    assert one(body) and one(body) is None
-    assert two(body)                                    # a new step instance is on its first attempt
+    assert one(ECHO) and one(ECHO) is None              # the echo is the soft problem now: refused once, then let through
+    assert two(ECHO)                                    # a new step instance is on its first attempt
     assert common.Attempts().tick() is False
 
 
@@ -171,16 +196,38 @@ def plan_check(req):
     return plan.PlanFlow(req, KIT)._step().check
 
 
-def test_a_plan_with_only_an_unknown_person_fails_the_first_check_and_passes_the_second():
+def plan_flow_check(req):
+    flow = plan.PlanFlow(req, KIT)
+    return flow, flow._step().check
+
+
+NAMED = " Master Elmsworth, a stern clerk, oversees deliveries."
+
+
+def test_a_plan_with_only_an_unknown_person_passes_the_first_check_and_is_counted(caplog):
     req = plan_request()
     beat = good_plan(req)
     assert plan.plan_problem(req, beat) is None
-    named = {**beat, "plan": beat["plan"] + " Master Elmsworth, a stern clerk, oversees deliveries."}
-    check = plan_check(req)
-    first = check(named)
-    assert first and "Master Elmsworth" in first
-    assert check(named) is None
-    assert "Master Elmsworth" in plan.plan_problem(req, named) and plan.plan_problem(req, named, tolerate_soft=True) is None
+    named = {**beat, "plan": beat["plan"] + NAMED}
+    flow, check = plan_flow_check(req)
+    with caplog.at_level(logging.WARNING, logger="pulpermill"):
+        assert check(named) is None
+    assert plan.plan_problem(req, named) is None
+    assert flow.notes["minor_names"] == 1 and flow.notes["minor_new"] == 1
+    lines = [r.getMessage() for r in caplog.records if r.getMessage().startswith("call=plan step=plan soft problem accepted")]
+    assert len(lines) == 1 and "Master Elmsworth" in lines[0]            # the trace line may carry the name; the run record never does
+    assert not any(isinstance(v, str) for v in flow.notes.values())
+
+
+def test_a_plan_whose_only_name_is_in_the_history_is_counted_but_not_new_and_says_nothing(caplog):
+    req = plan_request()
+    req["earlier_events"] = [{"chapter": 1, "happened": "Master Elmsworth called at the gate.", "changed": "He knows."}]
+    named = {**good_plan(req), "plan": good_plan(req)["plan"] + NAMED}
+    flow, check = plan_flow_check(req)
+    with caplog.at_level(logging.WARNING, logger="pulpermill"):
+        assert check(named) is None
+    assert flow.notes["minor_names"] == 1 and flow.notes["minor_new"] == 0
+    assert not [r for r in caplog.records if "soft problem" in r.getMessage()]
 
 
 def test_a_plan_that_lacks_a_required_part_fails_both_check_calls():
@@ -191,34 +238,54 @@ def test_a_plan_that_lacks_a_required_part_fails_both_check_calls():
         assert check(broken) and check(broken)
 
 
-def test_a_plan_with_both_a_hard_and_a_soft_problem_reports_the_hard_one_on_the_last_attempt(caplog):
+def test_a_plan_with_both_a_hard_problem_and_a_name_reports_the_hard_one_on_every_attempt_and_counts_nothing(caplog):
     req = plan_request()
     broken = {**good_plan(req), "plan": "Act 1: Master Elmsworth waits. Act 2: Master Elmsworth leaves."}
-    check = plan_check(req)
-    assert check(broken)
+    flow, check = plan_flow_check(req)
     with caplog.at_level(logging.WARNING, logger="pulpermill"):
-        line = check(broken)
-    assert line and "Master Elmsworth" not in line.split("Act")[0] and not [r for r in caplog.records if "soft problem" in r.getMessage()]
+        first, second = check(broken), check(broken)
+    assert first and second and "Master Elmsworth" not in first and "Master Elmsworth" not in second
+    assert not [r for r in caplog.records if "soft problem" in r.getMessage()] and "minor_names" not in flow.notes
 
 
-def test_the_plan_uses_the_soft_reply_on_the_second_attempt_through_the_runner_and_says_so_once(monkeypatch, caplog):
+def test_the_plan_is_used_on_the_first_attempt_through_the_runner_and_the_counts_reach_the_run_record(monkeypatch, caplog):
     req = plan_request()
-    named = {**good_plan(req), "plan": good_plan(req)["plan"] + " Master Elmsworth, a stern clerk, oversees deliveries."}
+    named = {**good_plan(req), "plan": good_plan(req)["plan"] + NAMED}
     import json
-    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0: "Plan the chapter.")
+    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, extra="": "Plan the chapter.")
     ctx, engine = context()
     verdict = json.dumps({"reason": "It is after something new.", "kind": "new_kind"})        # the aim judge runs after the plan from chapter 2 on
-    engine.script(json.dumps(named), json.dumps(named), verdict)
+    engine.script(json.dumps(named), verdict)
     with caplog.at_level(logging.WARNING, logger="pulpermill"):
         value = runner.run_flow(ctx, plan.PlanFlow(req, KIT), "en")[0]
-    assert value == named and engine.calls == 3 and "Master Elmsworth" in engine.prompts[1]          # the retry line carried the problem
+    assert value == named and engine.calls == 2 and [p["step"] for p in ctx.notes["passes"]] == ["plan", "advance_aim"]          # the plan ran once
+    assert ctx.notes["flow"]["minor_names"] == 1 and ctx.notes["flow"]["minor_new"] == 1
     assert len([r for r in caplog.records if r.getMessage().startswith("call=plan step=plan soft problem accepted")]) == 1
+
+
+def test_a_plan_that_is_sent_back_by_the_aim_judge_records_the_counts_of_the_plan_that_stands(monkeypatch):
+    import json
+    req = plan_request()
+    first = {**good_plan(req), "plan": good_plan(req)["plan"] + NAMED}
+    second = {**good_plan(req), "aim": "Carry the spare lantern across the harbour before the tide turns"}
+    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, extra="": "Plan the chapter.")
+    same = json.dumps({"reason": "It is another errand.", "kind": "same_kind"})
+    ctx, engine = context()
+    engine.script(json.dumps(first), same, json.dumps(second), json.dumps({"reason": "New.", "kind": "new_kind"}))
+    flow = plan.PlanFlow(req, KIT)
+    assert flow.reply(runner.run_flow(ctx, flow, "en"))["beat"] == second
+    assert (ctx.notes["flow"]["minor_names"], ctx.notes["flow"]["minor_new"]) == (0, 0)          # the second plan has no name
+    ctx, engine = context()
+    engine.script(json.dumps(first), same, "no json", "still none")                                   # the second pass cannot be used: the first stands
+    flow = plan.PlanFlow(req, KIT)
+    assert flow.reply(runner.run_flow(ctx, flow, "en"))["beat"] == first
+    assert (ctx.notes["flow"]["minor_names"], ctx.notes["flow"]["minor_new"]) == (1, 1)
 
 
 def test_a_hard_plan_problem_still_ends_bad_output_through_the_runner(monkeypatch):
     import json
     req = plan_request()
-    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0: "Plan the chapter.")
+    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, extra="": "Plan the chapter.")
     ctx, engine = context()
     bad = json.dumps({**good_plan(req), "where": ""})
     engine.script(bad, bad)
@@ -227,20 +294,34 @@ def test_a_hard_plan_problem_still_ends_bad_output_through_the_runner(monkeypatc
     assert e.value.kind == "bad_output"
 
 
-def test_the_chapter_is_used_after_a_second_attempt_with_only_soft_problems_through_the_runner(monkeypatch):
+def test_a_chapter_with_only_an_unknown_person_is_used_after_one_attempt_through_the_runner(monkeypatch):
     monkeypatch.setattr(gen, "write_prompt", lambda request, factor=1.0: "Write the chapter.")
     req = request()
     req.pop("previous_ending")
     body = FRESH + " " + SOFT_NAME + " " + filler(200)
     ctx, engine = context()
-    engine.script(body, body)
-    [text] = runner.run_flow(ctx, WriteOnly(gen.GenerateFlow(req, SimpleNamespace(grammar=None))), "en")
-    assert text == body and engine.calls == 2 and "Zorblax" in engine.prompts[1]
+    engine.script(body)
+    inner = gen.GenerateFlow(req, SimpleNamespace(grammar=None))
+    [text] = runner.run_flow(ctx, WriteOnly(inner), "en")
+    assert text == body and engine.calls == 1                                     # the whole attempt was kept
+    assert (inner.notes["minor_names"], inner.notes["minor_new"]) == (1, 1)
+
+
+def test_an_echo_still_sends_the_chapter_back_once_through_the_runner(monkeypatch):
+    monkeypatch.setattr(gen, "write_prompt", lambda request, factor=1.0: "Write the chapter.")
+    body = FRESH + " " + SOFT_NAME + " " + filler(200)
+    ctx, engine = context()
+    engine.script(ECHO + " " + filler(200), body)
+    inner = gen.GenerateFlow(request(), SimpleNamespace(grammar=None))
+    [text] = runner.run_flow(ctx, WriteOnly(inner), "en")
+    assert text == body and engine.calls == 2 and "repeating the end" in engine.prompts[1]
+    assert "Zorblax" not in engine.prompts[1]                                     # a name never rides the retry line
+    assert (inner.notes["minor_names"], inner.notes["minor_new"]) == (1, 1)       # the counts are those of the chapter that was used
 
 
 def test_the_versions_were_bumped():
     from pulpermill.prompter.mill import VERSION
-    assert VERSION == "mill-0.2" and plan.VERSION == "plan-4" and gen.VERSION == "generate-7"
+    assert VERSION == "mill-0.2" and plan.VERSION == "plan-6" and gen.VERSION == "generate-9"
 
 
 # ---- helpers ---------------------------------------------------------------------------------------------------------------

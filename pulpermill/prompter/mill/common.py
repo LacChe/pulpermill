@@ -128,6 +128,30 @@ def names_found(request: dict, texts: list[str], allowed: list[Any], min_count: 
     return strange_names("\n".join(t for t in texts if t), card_words(*allowed), min_count)
 
 
+def earlier_records(request: dict, beats: bool = False) -> list[str]:
+    """The text of the earlier chapters' records, as the history shown to the model carries it: what happened and what changed in each
+    chapter (`earlier_events`), and with `beats` the plan of each earlier beat (`earlier_beats`). The names in them are established: the
+    model was shown them, so a later chapter that uses one has not invented anyone."""
+    def text(value: Any) -> str:
+        return value if isinstance(value, str) else ""
+    out: list[str] = []
+    for event in request.get("earlier_events") or []:
+        if isinstance(event, dict):
+            out += [text(event.get("happened")), text(event.get("changed"))]
+    if beats:
+        out += [text(b.get("plan")) for b in request.get("earlier_beats") or [] if isinstance(b, dict)]
+    return out
+
+
+def minor_people(request: dict, texts: list[str], allowed: list[Any], earlier: list[str], min_count: int = 1) -> tuple[int, list[str]]:
+    """(how many people on no card the `texts` name, and which of them are new). The count is the old rule: it includes the names the earlier
+    chapters already used. The new ones are the names that are also in none of the `earlier` records. Same detector, same `min_count`, and
+    empty for a language the detector does not read. A person the story has named before is a walk-on the history carries, not an invention."""
+    everyone = names_found(request, texts, allowed, min_count)
+    new = names_found(request, texts, [*allowed, earlier], min_count) if everyone else []
+    return len(everyone), new
+
+
 def _norm_words(text: str) -> str:
     return " ".join(re.sub(r"[^\w\s]", " ", text.lower().replace("’", "'").replace("'", "")).split())
 
@@ -157,10 +181,13 @@ def echoes_ending(opening: str, ending: str, first: int = 2, min_words: int = 6)
 
 # ---- Hard and soft problems ------------------------------------------------------------------------------------------------
 # A hard problem (nothing to use: far over the cap, a plan that is not in the four-points shape or lacks a required part) refuses every
-# attempt. A soft problem (an echoed opening, a name on no card) is a defect a person can read and fix, so the first attempt is strict,
-# the retry line carries the problem to the model, and a second attempt with only soft problems is used. The runner gives each step
-# two attempts (backend/runner.py MAX_ATTEMPTS, not imported: a prompter never needs the runner); a step's check runs once per reply
-# that is not empty and not malformed, in order, so the second check call is the last attempt.
+# attempt. A soft problem (an echoed opening) is a defect a person can read and fix, so the first attempt is strict, the retry line
+# carries the problem to the model, and a second attempt with only soft problems is used. The runner gives each step two attempts
+# (backend/runner.py MAX_ATTEMPTS, not imported: a prompter never needs the runner); a step's check runs once per reply that is not
+# empty and not malformed, in order, so the second check call is the last attempt.
+# A name on no card is not a problem at all in the plan and write steps (it was a soft one): a refusal throws away a whole attempt
+# for a walk-on the history may already carry. The step is used on the first attempt, the names go to the trace through `note_soft`,
+# and the counts go to the run record (`minor_people`).
 ATTEMPTS = 2
 log = logging.getLogger("pulpermill")
 
