@@ -14,7 +14,7 @@ Recorded in step A1. Plain statements; change one only on purpose.
 3. The writer call encourages interesting stories; how this is worded follows what works best in prompt design for this model.
 4. The planner collides the protagonist's aim with the spotlight tie into a plan that moves forward.
 5. Minor characters never carry the plot, and appear only by role, with no names.
-6. By the end of every chapter the spotlight tie's edge and the protagonist's aim must each have moved to a distinctly new state.
+6. Every chapter settles the collision of the protagonist's aim and the spotlight tie for good, and ends with both in a new state that grows out of that outcome. Only the last chapter's state is final. Position is told as first, last or in between, and nothing else.
 7. Every chapter is designed in four points: Act 1 starting point (who, where, when); Act 2 central conflict emerges; Act 3 climax or turning point; Act 4 end point. This is per chapter and does not depend on the chapter count. Chapter count is 10 to 20, and a chapter is at most 1,200 words (decided 3 Nov).
 
 ## Deferred
