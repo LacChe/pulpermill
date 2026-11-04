@@ -497,7 +497,7 @@ test("writing a chapter is one call, and resolves to the outcome without changin
   assert.equal(JSON.stringify(p), text);
 });
 
-test("a chapter the page cannot ask for says why; a plan edited while the model wrote is refused as changed", async () => {
+test("a chapter the page cannot ask for says why; a plan edited while the model wrote is kept and flagged as edited", async () => {
   const p = await startedProject();
   assert.equal((await generateChapter(mockClient(), schema, p).done).reason, "no_beat");
   const beat = ensureBeat(schema, p);
@@ -506,7 +506,10 @@ test("a chapter the page cannot ask for says why; a plan edited while the model 
   const slow = countingMock({ delay: 40 });
   const call = generateChapter(mockClient(slow), schema, p);
   setTimeout(() => { beat.aim = "Edited meanwhile."; }, 5);
-  assert.equal((await call.done).reason, "changed");
+  const result = await call.done;
+  assert.equal(result.ok, true);
+  assert.equal(result.edited, true);
+  assert.ok(result.outcome.chapter.text);
 });
 
 test("writing chapter 1 again goes back to the state going into it", async () => {

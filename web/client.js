@@ -382,7 +382,7 @@ export function planChapter(client, schema, project, beat) {
 // Write the next chapter: one call that writes it and reads it. Nothing is changed: it resolves to
 // {ok: true, outcome, beat, stale} where `outcome` is applyGenerated's (the chapter, its events, its shifts and the lines the chapter
 // note shows) and the page commits it with commitChapter. {ok: false, reason} when the page cannot make the request (see
-// generateGate), {ok: false, reason: "changed"} when the plan's inputs were edited while the model wrote, and the call's failure otherwise.
+// generateGate), {ok: false, reason: "changed"} only when the beat is gone, and the call's failure otherwise. A plan edited while the model wrote is kept, with `edited: true`.
 export function generateChapter(client, schema, project) {
   const gate = generateGate(schema, project);
   if (!gate.ok) return { done: Promise.resolve({ ok: false, reason: gate.reason, problems: gate.problems }), stop() {} };
@@ -394,8 +394,9 @@ export function generateChapter(client, schema, project) {
       const read = readGenerateReply(reply);
       if (!read.ok) return read;
       const again = generateGate(schema, project);
-      if (!again.ok || inputsKey(schema, project, again.beat) !== key) return { ok: false, reason: "changed" };
-      return { ok: true, beat: gate.beat, stale: gate.stale, read, outcome: applyGenerated(schema, project, gate.beat, read) };
+      if (!again.ok) return { ok: false, reason: "changed" };      // the beat itself is gone, so there is nothing to write into
+      const edited = inputsKey(schema, project, again.beat) !== key;   // edited meanwhile: the chapter is kept, the page warns
+      return { ok: true, beat: gate.beat, stale: gate.stale, read, edited, outcome: applyGenerated(schema, project, gate.beat, read) };
     }),
   };
 }
@@ -412,8 +413,8 @@ export function regenerateChapter(client, schema, project, number) {
     done: call.done.then((reply) => {
       const read = readGenerateReply(reply);
       if (!read.ok) return read;
-      if (regenerateKey(schema, project, number) !== key) return { ok: false, reason: "changed" };
-      return { ok: true, ctx: gate, read, outcome: applyRegenerated(schema, project, gate, read) };
+      const edited = regenerateKey(schema, project, number) !== key;   // edited meanwhile: the chapter is kept, the page warns
+      return { ok: true, ctx: gate, read, edited, outcome: applyRegenerated(schema, project, gate, read) };
     }),
   };
 }

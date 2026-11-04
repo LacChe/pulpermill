@@ -50,6 +50,7 @@ export function createRunAll(hooks) {
 
   async function loop(project, firstBeat) {
     let written = 0;
+    let edited = false;
     const first = run.chapter;
     const gone = { ok: false, written, reason: "switched" };                    // another project was opened: end without a word
     const end = (n, phase, result, reasons) => {
@@ -88,10 +89,11 @@ export function createRunAll(hooks) {
       commitChapter(project, outcome);
       setChapterNote(project, outcome.chapter.id, { changes: outcome.changes, warnings: outcome.warnings });
       written++;
+      if (wrote.edited) edited = true;
       hooks.changed();
       hooks.redraw();
     }
-    hooks.notice(fill(STRINGS.done, { k: written, from: first, to: run.total }));
+    hooks.notice(joinList([fill(STRINGS.done, { k: written, from: first, to: run.total }), edited ? STRINGS.editedMeanwhile : ""].filter(Boolean), "sentence"), edited ? "notice-bad" : "");
     return { ok: true, written };
   }
 

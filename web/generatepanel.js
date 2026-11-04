@@ -68,7 +68,7 @@ export function createGeneratePanel(hooks) {
     const n = Number(result.beat.chapter);
     const { undo } = commitChapter(project, outcome);
     setChapterNote(project, outcome.chapter.id, { changes: outcome.changes, warnings: outcome.warnings });
-    hooks.notice(fill(STRINGS.done, { n }), "", {
+    hooks.notice(joinList([fill(STRINGS.done, { n }), result.edited ? STRINGS.editedMeanwhile : ""].filter(Boolean), "sentence"), result.edited ? "notice-bad" : "", {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
@@ -101,7 +101,7 @@ export function createGeneratePanel(hooks) {
     const { undo } = commitRegenerated(project, outcome);
     const earlier = copyNote(project, "chapter", outcome.chapter.id);
     setChapterNote(project, outcome.chapter.id, { changes: outcome.changes, warnings: outcome.warnings, before: outcome.before });
-    hooks.notice(fill(STRINGS.againDone, { n: number }), "", {
+    hooks.notice(joinList([fill(STRINGS.againDone, { n: number }), result.edited ? STRINGS.editedMeanwhile : ""].filter(Boolean), "sentence"), result.edited ? "notice-bad" : "", {
       label: STRINGS.undo,
       run: () => {
         if (hooks.getProject() !== project) return;
