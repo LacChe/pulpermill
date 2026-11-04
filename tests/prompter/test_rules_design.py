@@ -148,8 +148,8 @@ def test_rule6_the_shifts_check_rejects_a_chapter_that_leaves_the_edge_unchanged
 
 def test_rule6_the_writer_and_the_events_step_ask_for_the_change_the_check_looks_for():
     texts = prompts("generate", gen_with())
-    assert "the tie in the spotlight and the protagonist's aim must stand differently" in texts["write"]
-    assert "where the protagonist's aim and the tie in the spotlight stand at the end of the chapter" in texts["events"]
+    assert "the protagonist wanting something new and the tie standing differently" in texts["write"]
+    assert "what the protagonist wants and what drives the tie now as a result" in texts["events"]
     assert "its edge was: to bring her daughter home" in texts["shifts"] and "The new edge must differ from the old one" in texts["shifts"]
     plan_text = prompts("plan", plan_with())["plan"]
     assert "must each have moved to a distinctly new state" in plan_text and "Say in Act 4 what each of the two has become" in plan_text
@@ -227,6 +227,8 @@ def test_rule7_the_writer_prompt_carries_the_plan_and_where_the_chapter_stands()
         assert first["beat"]["plan"] in prompt and first["beat"]["aim"] in prompt
     assert "Open the story where ordinary life was: Tides and ledgers." in p_first and "What just broke it: The ledger is gone." in p_first
     assert "This is the last chapter" in p_last and "settles what it set in motion" in p_last
+    assert all("cannot be taken back" in p for p in (p_first, p_mid, p_last))
+    assert "makes the next chapter matter" not in p_last and "makes the next chapter matter" in p_mid
     assert "last chapter" not in p_first.replace("How the last chapter ended", "") and "last chapter" not in p_mid.replace("How the last chapter ended", "")
     assert "Open the story" not in p_mid and "Open the story" not in p_last
     assert len({p_first, p_mid, p_last}) == 3

@@ -154,6 +154,26 @@ def test_the_first_and_the_last_chapter_are_written_differently():
     assert len({p_first, p_last, p_mid}) == 3
 
 
+SHARED_CRAFT = "must be settled on the page: show how it ends, through what people do and say, and let it cost something that stays spent."
+
+
+def test_every_chapter_is_told_to_settle_its_collision_on_the_page_with_the_same_force():
+    first = {**base(), "chapter": 1, "earlier_events": [], "previous_ending": None,
+             "setup": {"protagonist": "c0000001", "normal": "Tides and ledgers.", "disruption": "The ledger is gone.", "chapter_count": 8}}
+    for request in (first, base(), {**base(), "chapter": 8}):
+        prompt = gen.write_prompt(request)
+        assert SHARED_CRAFT in prompt and "cannot be taken back" in prompt and "it is where the collision of this chapter is shown decided" in prompt
+    assert "nothing new opened" in gen.write_prompt({**base(), "chapter": 8}) and "nothing new opened" not in gen.write_prompt(base())
+
+
+def test_the_events_and_shifts_prompts_carry_how_the_collision_ended():
+    request = one_tie()
+    assert "how the collision of the protagonist's aim and the tie in the spotlight ended" in gen.events_prompt(request, CHAPTER)
+    grows = "must grow out of how the collision of the chapter ended"
+    assert grows in gen.shifts_prompt(request, Kit(request), CHAPTER)
+    assert grows in gen.shifts_prompt(legacy(base()), Kit(base()), CHAPTER)
+
+
 # ---- the squeeze ----------------------------------------------------------------------------------------------------------
 
 def big() -> dict:
