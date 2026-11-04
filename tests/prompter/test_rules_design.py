@@ -38,11 +38,11 @@ def gen_with(**changes) -> dict:
 
 
 def good_plan(request: dict) -> dict:
-    return json.loads(mill_plan.script(request, Kit(request))[0])
+    return json.loads(mill_plan.script(request, Kit(request))[1])
 
 
 def plan_check(request: dict):
-    return flow_for("plan", request)[0].next([]).check
+    return flow_for("plan", request)[0].next(["A brainstorm of three options."]).check          # the plan step comes after the brainstorm
 
 
 def shifts_check(request: dict):
@@ -292,23 +292,24 @@ def test_rule7_a_plan_without_its_third_point_is_asked_for_again_with_the_line_a
     request = plan_with()
     good = good_plan(request)
     engine = FakeEngine()
-    engine.script(json.dumps({**good, "plan": without_point(good["plan"], 3)}), json.dumps(good), *mill_plan.script(request, Kit(request))[1:])
+    texts = mill_plan.script(request, Kit(request))
+    engine.script(texts[0], json.dumps({**good, "plan": without_point(good["plan"], 3)}), json.dumps(good), *texts[2:])
     with running(config=Config(prompter="mill"), engine=engine, run=None) as (base_url, _):
         response = post(base_url, request)
         assert response.status_code == 200 and response.json()["beat"]["plan"] == good["plan"]
         assert wait_idle(base_url)
-    assert engine.calls == 2 + len(mill_plan.script(request, Kit(request))[1:]) and "Your previous reply could not be used" in engine.prompts[1] and "Act 3" in engine.prompts[1]
+    assert engine.calls == 3 + len(texts[2:]) and "Your previous reply could not be used" in engine.prompts[2] and "Act 3" in engine.prompts[2]
 
 
 def test_rule4_an_abstract_aim_is_asked_for_again_with_the_line_and_then_used():
     request = plan_with(earlier_beats=[])
     good = good_plan(request)
     engine = FakeEngine()
-    engine.script(json.dumps({**good, "aim": "Feel better about her mother"}), json.dumps(good))
+    engine.script(mill_plan.script(request, Kit(request))[0], json.dumps({**good, "aim": "Feel better about her mother"}), json.dumps(good))
     with running(config=Config(prompter="mill"), engine=engine, run=None) as (base_url, _):
         assert post(base_url, request).status_code == 200
         assert wait_idle(base_url)
-    assert engine.calls == 2 and "state of mind" in engine.prompts[1]
+    assert engine.calls == 3 and "state of mind" in engine.prompts[2]
 
 
 def test_rule6_a_chapter_whose_shifts_leave_the_edge_unchanged_is_asked_for_again_with_the_line_and_then_used():

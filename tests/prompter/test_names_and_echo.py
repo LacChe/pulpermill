@@ -111,7 +111,7 @@ def plan_request():
 
 
 def good_plan(request):
-    return json.loads(plan.script(request, __import__("pulpermill.backend.kit", fromlist=["Kit"]).Kit(request))[0])
+    return json.loads(plan.script(request, __import__("pulpermill.backend.kit", fromlist=["Kit"]).Kit(request))[1])
 
 
 def test_master_elmsworth_in_a_plan_is_counted_not_refused_and_a_role_counts_nothing():

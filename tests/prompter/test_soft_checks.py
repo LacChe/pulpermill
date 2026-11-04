@@ -252,13 +252,14 @@ def test_the_plan_is_used_on_the_first_attempt_through_the_runner_and_the_counts
     req = plan_request()
     named = {**good_plan(req), "plan": good_plan(req)["plan"] + NAMED}
     import json
-    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, extra="": "Plan the chapter.")
+    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, *more: "Plan the chapter.")
     ctx, engine = context()
     verdict = json.dumps({"reason": "It is after something new.", "kind": "new_kind"})        # the aim judge runs after the plan from chapter 2 on
-    engine.script(json.dumps(named), verdict)
+    brainstorm = plan.script(req, KIT)[0]                                                            # the brainstorm runs first
+    engine.script(brainstorm, json.dumps(named), verdict)
     with caplog.at_level(logging.WARNING, logger="pulpermill"):
-        value = runner.run_flow(ctx, plan.PlanFlow(req, KIT), "en")[0]
-    assert value == named and engine.calls == 2 and [p["step"] for p in ctx.notes["passes"]] == ["plan", "advance_aim"]          # the plan ran once
+        value = runner.run_flow(ctx, plan.PlanFlow(req, KIT), "en")[1]
+    assert value == named and engine.calls == 3 and [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan", "advance_aim"]          # the plan ran once
     assert ctx.notes["flow"]["minor_names"] == 1 and ctx.notes["flow"]["minor_new"] == 1
     assert len([r for r in caplog.records if r.getMessage().startswith("call=plan step=plan soft problem accepted")]) == 1
 
@@ -268,15 +269,16 @@ def test_a_plan_that_is_sent_back_by_the_aim_judge_records_the_counts_of_the_pla
     req = plan_request()
     first = {**good_plan(req), "plan": good_plan(req)["plan"] + NAMED}
     second = {**good_plan(req), "aim": "Carry the spare lantern across the harbour before the tide turns"}
-    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, extra="": "Plan the chapter.")
+    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, *more: "Plan the chapter.")
     same = json.dumps({"reason": "It is another errand.", "kind": "same_kind"})
     ctx, engine = context()
-    engine.script(json.dumps(first), same, json.dumps(second), json.dumps({"reason": "New.", "kind": "new_kind"}))
+    brainstorm = plan.script(req, KIT)[0]
+    engine.script(brainstorm, json.dumps(first), same, json.dumps(second), json.dumps({"reason": "New.", "kind": "new_kind"}))
     flow = plan.PlanFlow(req, KIT)
     assert flow.reply(runner.run_flow(ctx, flow, "en"))["beat"] == second
     assert (ctx.notes["flow"]["minor_names"], ctx.notes["flow"]["minor_new"]) == (0, 0)          # the second plan has no name
     ctx, engine = context()
-    engine.script(json.dumps(first), same, "no json", "still none")                                   # the second pass cannot be used: the first stands
+    engine.script(brainstorm, json.dumps(first), same, "no json", "still none")                                   # the second pass cannot be used: the first stands
     flow = plan.PlanFlow(req, KIT)
     assert flow.reply(runner.run_flow(ctx, flow, "en"))["beat"] == first
     assert (ctx.notes["flow"]["minor_names"], ctx.notes["flow"]["minor_new"]) == (1, 1)
@@ -285,10 +287,10 @@ def test_a_plan_that_is_sent_back_by_the_aim_judge_records_the_counts_of_the_pla
 def test_a_hard_plan_problem_still_ends_bad_output_through_the_runner(monkeypatch):
     import json
     req = plan_request()
-    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, extra="": "Plan the chapter.")
+    monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, *more: "Plan the chapter.")
     ctx, engine = context()
     bad = json.dumps({**good_plan(req), "where": ""})
-    engine.script(bad, bad)
+    engine.script(plan.script(req, KIT)[0], bad, bad)
     with pytest.raises(BackendError) as e:
         runner.run_flow(ctx, plan.PlanFlow(req, KIT), "en")
     assert e.value.kind == "bad_output"
@@ -321,7 +323,7 @@ def test_an_echo_still_sends_the_chapter_back_once_through_the_runner(monkeypatc
 
 def test_the_versions_were_bumped():
     from pulpermill.prompter.mill import VERSION
-    assert VERSION == "mill-0.2" and plan.VERSION == "plan-6" and gen.VERSION == "generate-9"
+    assert VERSION == "mill-0.2" and plan.VERSION == "plan-7" and gen.VERSION == "generate-9"
 
 
 # ---- helpers ---------------------------------------------------------------------------------------------------------------

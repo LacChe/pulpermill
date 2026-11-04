@@ -1,6 +1,8 @@
-"""The `plan` call: one JSON step that designs a chapter. The planner collides the protagonist's aim with the spotlight tie (R4), designs the
-chapter in four points inside the `plan` text (R7), and ends in a state where both have moved (R6). Minor characters appear by role only (R5).
-Wording lives in text/en/plan.yaml; this module assembles it from the renderers and checks the reply.
+"""The `plan` call: a free-text brainstorm of three chapters that differ in kind, then one JSON step that designs the chapter from them, then the
+aim judge (advance.py). The planner collides the protagonist's aim with the spotlight tie (R4), designs the chapter in four points inside the
+`plan` text (R7), and ends in a state where both have moved (R6). Minor characters appear by role only (R5). The brainstorm only helps the plan:
+if it cannot be had, the plan goes ahead without it. Wording lives in text/en/plan.yaml; this module assembles it from the renderers and checks
+the reply.
 
 Helpers at the top (names, ties in words, squeeze tiers, the spotlight) are shared with generate.py."""
 import math
@@ -14,9 +16,13 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common
 
-VERSION = "plan-6"
+VERSION = "plan-7"
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
+BRAINSTORM_OUTPUT = 400       # about 350 tokens of free text, with a little room, so a cut-off tail is the exception
+BRAINSTORM_ATTEMPTS = 2       # then the plan goes ahead without a brainstorm: it is a help to the plan, never a reason to fail a call
+BRAINSTORM_MIN_CHARS = 120    # three options cannot be told in less
+BRAINSTORM_STAND_IN = "word " * BRAINSTORM_OUTPUT       # the longest a brainstorm can be as the plan prompt carries it (a token a word), for the worst case
 JUDGE_ATTEMPTS = 2        # the advancement judge (observe-only): two tries, then a neutral verdict, so a judge can never fail a call
 RESEND_STAND_IN = "word " * 90        # the longest line the judge can send a plan back with (a 400-character reason and the advice), for the worst case
 AIM_STAND_IN = "word " * 60       # the longest an aim is shown to a model (300 characters), for the worst case
@@ -111,7 +117,17 @@ def _chapter_note(w: dict, chapter: int, total: int) -> str:
     return f"{note} {w['late_chapter']}" if total and chapter >= math.ceil(total * 2 / 3) else note
 
 
-def build_prompt(request: dict, factor: float = 1.0, extra: str = "") -> str:
+def other_end(request: dict, names: dict[str, str]) -> str:
+    """The person at the other end of the spotlight tie from the protagonist (the to end when the protagonist is on neither end)."""
+    tie = next((t for t in request.get("ties") or [] if t.get("id") == request.get("spotlight")), None) or {}
+    a, b = names.get(tie.get("tie_from"), ""), names.get(tie.get("tie_to"), "")
+    me = protagonist_name(request, names)
+    return (a if me and me == b else b) or a or "the other person in the tie"
+
+
+def _context(request: dict, factor: float, kinds: bool = False) -> dict:
+    """What the brainstorm prompt and the plan prompt share: the names, the tie, the chapter's place in the story, and every section that
+    comes before the task. `kinds` shows the earlier aims as the kinds already used (the brainstorm's wording) and not as plain aims."""
     w = common.load_text("plan")
     names = names_of(request)
     chapter, total = int(request["chapter"]), int(request.get("chapter_count") or 0)
@@ -135,15 +151,69 @@ def build_prompt(request: dict, factor: float = 1.0, extra: str = "") -> str:
     beats = [{**b, "when_time": b.get("when_time") or b.get("when")} for b in request.get("earlier_beats") or []]
     timeline = r.render_earlier_beats(beats)
     aims = [w["aims_item"].format(chapter=b["chapter"], aim=r.s(b.get("aim"))) for b in sorted(beats, key=lambda b: int(b["chapter"])) if r.s(b.get("aim"))]
-    aims_text = w["aims_lead"] + "\n" + "\n".join(aims) if aims else ""
+    lead = w["kinds_lead" if kinds else "aims_lead"]
+    aims_text = lead + "\n" + "\n".join(aims) if aims else ""
 
+    setup = r.render_setup(request.get("setup") or {}, chapter, total or None, protagonist_name=protagonist_name(request, names))
+    blocks = [
+        _section(heads["tone"], r.render_style(request.get("style") or {}, scope="planner")),
+        _section(heads["setup"], setup),
+        _section(heads["cast"], cast_text),
+        _section(heads["world"], world_text),
+        _section(heads["entanglements"], r.render_entanglements({"ties": ties, "holdings": holdings}, scope="planner")),
+        _section(heads["spotlight"], spotlight_text),
+        _section(heads["history"], "\n\n".join(x for x in (history, timeline, aims_text) if x)),
+    ]
+    return {"w": w, "names": names, "chapter": chapter, "total": total, "heads": heads, "tie": tie, "blocks": blocks}
+
+
+def _task_block(c: dict, method: str) -> list[str]:
+    """The lines of the task that both prompts open with: the collision (R4, in `method`'s wording) and what makes an aim (R4/R6)."""
+    w = c["w"]
     ex = tx.field("outline", "beats")["item_fields"]["aim"]["examples"]
     quote = lambda items, join="; ": join.join(f"“{i}”" for i in items)
+    return [w[method], w["aim_rules"].format(good=quote(ex["good"]), avoid=quote(ex["avoid"], " or "))]
+
+
+def build_brainstorm_prompt(request: dict, factor: float = 1.0) -> str:
+    """The brainstorm step's prompt: the same cards and history as the plan, with the earlier aims shown as the kinds already used, and a task
+    that asks for three chapters of different kinds. Free text out; nothing here asks for the plan's shape."""
+    c = _context(request, factor, kinds=True)
+    w, names, chapter, total = c["w"], c["names"], c["chapter"], c["total"]
+    role = w["brainstorm_role"].format(chapter=chapter, total=total) if total else w["brainstorm_role_unknown_total"].format(chapter=chapter)
+    task = _task_block(c, "brainstorm_method")
+    task.append(w["brainstorm_task"].format(other=other_end(request, names)))
+    task.append(w["brainstorm_people"])
+    if chapter == 1:
+        task.append(w["brainstorm_first"])
+    elif total and chapter >= total:
+        task.append(w["brainstorm_last"])
+    elif total and chapter >= math.ceil(total * 2 / 3):
+        task.append(f"{w['middle_chapter']} {w['late_chapter']}")
+    else:
+        task.append(w["middle_chapter"])
+    retry = request.get("retry")
+    if retry:
+        beat = retry.get("beat") or {}
+        problems = " ".join(r.sentence(p) for p in retry.get("problems") or [])
+        task.append(w["brainstorm_retry"].format(aim=r.sentence(r.s(beat.get("aim"))), problems=problems))
+    task.append(w["brainstorm_output"].format(language=language_name(request.get("language"))))
+    blocks = [role, *c["blocks"], _section(c["heads"]["task"], "\n\n".join(x for x in task if x))]
+    return "\n\n".join(b for b in blocks if b)
+
+
+def build_prompt(request: dict, factor: float = 1.0, extra: str = "", brainstorm: str = "") -> str:
+    """The plan step's prompt. `brainstorm` is the text of the brainstorm step: with it, the prompt carries it under its own heading and tells
+    the planner to choose from it; without it (no brainstorm, or one that could not be had) the prompt is the plan prompt on its own."""
+    c = _context(request, factor)
+    w, names, chapter, total, heads, tie = c["w"], c["names"], c["chapter"], c["total"], c["heads"], c["tie"]
     ends = [names.get(tie.get("tie_from"), ""), names.get(tie.get("tie_to"), "")] if tie else ["", ""]
-    task = [
-        w["method"],
-        w["aim_rules"].format(good=quote(ex["good"]), avoid=quote(ex["avoid"], " or ")),
+    task = _task_block(c, "method")
+    if brainstorm:
+        task.append(w["choose_from"])
+    task += [
         w["four_points"],
+        w["other_person"].format(other=other_end(request, names)),
         w["spotlight_names"].format(tie_from=ends[0], tie_to=ends[1]) if all(ends) else "",
         w["movement"].format(tie_from=ends[0] or "the person at the from end"),
         w["people_rule"],
@@ -160,18 +230,7 @@ def build_prompt(request: dict, factor: float = 1.0, extra: str = "") -> str:
     task.append(w["output"].format(language=language_name(request.get("language"))))
 
     role = w["role"].format(chapter=chapter, total=total) if total else w["role_unknown_total"].format(chapter=chapter)
-    setup = r.render_setup(request.get("setup") or {}, chapter, total or None, protagonist_name=protagonist_name(request, names))
-    blocks = [
-        role,
-        _section(heads["tone"], r.render_style(request.get("style") or {}, scope="planner")),
-        _section(heads["setup"], setup),
-        _section(heads["cast"], cast_text),
-        _section(heads["world"], world_text),
-        _section(heads["entanglements"], r.render_entanglements({"ties": ties, "holdings": holdings}, scope="planner")),
-        _section(heads["spotlight"], spotlight_text),
-        _section(heads["history"], "\n\n".join(x for x in (history, timeline, aims_text) if x)),
-        _section(heads["task"], "\n\n".join(x for x in task if x)),
-    ]
+    blocks = [role, *c["blocks"], _section(heads["brainstorm"], brainstorm.strip()), _section(heads["task"], "\n\n".join(x for x in task if x))]
     return "\n\n".join(b for b in blocks if b)
 
 
@@ -252,16 +311,50 @@ def plan_names(request: dict, value: Any) -> tuple[int, list[str]]:
 
 # ---- The flow -------------------------------------------------------------------------------------------------------------
 
+def _tidy_brainstorm(text: Any) -> str:
+    """The brainstorm as the plan prompt carries it: trimmed, and when the reply was cut off mid-sentence, cut back to the last full sentence
+    (when that keeps at least half of it)."""
+    text = r.s(text).strip()
+    if not text or text[-1] in ".!?…。！？\"”)」』":
+        return text
+    cut = max(text.rfind(m) for m in (".", "!", "?", "。", "！", "？"))
+    return text[:cut + 1] if cut >= len(text) // 2 else text
+
+
 class PlanFlow(Flow):
+    """brainstorm, plan, aim judge; and when `advance.ENFORCE` and the judge says the aim is the same kind as an earlier one: the plan once
+    more with the judge's line, then the judge once more. The brainstorm is free text that the plan prompt carries; if it cannot be had, the
+    plan goes ahead without it."""
+
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
-        self.notes: dict[str, Any] = {}         # for the run log: the aim judge's verdict word, whether its last resort stood in for it, and the walk-on counts (minor_names, minor_new)
+        self.notes: dict[str, Any] = {}         # for the run log: the aim judge's verdict word, whether a last resort stood in for a step, and the walk-on counts (minor_names, minor_new)
+        self.brainstorm = ""                    # the brainstorm's text once it has run ("" until then, and when it fell back)
 
     def _count_names(self, value: Any) -> list[str]:
         """Records the walk-on counts of the plan that stands (interface M1) in the notes, and returns the new names."""
         total, new = plan_names(self.request, value)
         self.notes["minor_names"], self.notes["minor_new"] = total, len(new)
         return new
+
+    # -- the brainstorm
+
+    @staticmethod
+    def _brainstorm_check(value: Any) -> str | None:
+        if len(r.s(value)) < BRAINSTORM_MIN_CHARS:
+            return common.load_text("plan")["problems"]["brainstorm_short"]
+        return None
+
+    def _brainstorm_step(self) -> Step:
+        """Free text, thinking sampling, no grammar. Its last resort is no brainstorm at all (never an error). The runner does not check its
+        language: it is the planner's own thinking, and the plan step that follows is the one whose language is checked."""
+        def none():
+            self.notes["brainstorm_fallback"] = True
+            return ""
+        return Step("brainstorm", lambda f: build_brainstorm_prompt(self.request, f), "text", BRAINSTORM_OUTPUT, None, self._brainstorm_check,
+                    "thinking", False, attempts=BRAINSTORM_ATTEMPTS, fallback=none)
+
+    # -- the plan
 
     def _check(self):
         """A check for one plan step instance. Every problem it returns is hard and refuses the attempt. A person on no card never does: the
@@ -277,9 +370,10 @@ class PlanFlow(Flow):
             return None
         return check
 
-    def _step(self, extra: str = "", fallback=None) -> Step:
-        return Step("plan", lambda f: build_prompt(self.request, f, extra), "json", MAX_OUTPUT, self.kit.grammar.plan_beat(), self._check(), "thinking", True,
-                    fallback=fallback)
+    def _step(self, extra: str = "", fallback=None, brainstorm: str | None = None) -> Step:
+        text = self.brainstorm if brainstorm is None else brainstorm
+        return Step("plan", lambda f: build_prompt(self.request, f, extra, text), "json", MAX_OUTPUT, self.kit.grammar.plan_beat(), self._check(),
+                    "thinking", True, fallback=fallback)
 
     def _judges(self) -> bool:
         """The aim judge runs from the second chapter on, when there is an earlier aim to be a kind of."""
@@ -293,7 +387,8 @@ class PlanFlow(Flow):
         return replace(advance.aim_step(self.request, aim), attempts=JUDGE_ATTEMPTS, fallback=neutral)
 
     def _resend_step(self, first: Any, line: str) -> Step:
-        """The plan step once more, with the judge's line. If this pass cannot be used either, the first plan stands (it was usable)."""
+        """The plan step once more, with the judge's line (and the same brainstorm). If this pass cannot be used either, the first plan stands
+        (it was usable)."""
         def keep_first():
             self.notes["aim_resend_fallback"] = True
             self._count_names(first)          # the plan that stands is the first one, so its counts are the ones to record
@@ -305,12 +400,19 @@ class PlanFlow(Flow):
         return r.s(beat.get("aim")) if isinstance(beat, dict) else ""
 
     def _final(self, results: list) -> Any:
-        """The plan the reply carries: the second pass when the plan was sent back, else the first."""
+        """The plan the reply carries: the second pass when the plan was sent back, else the first. `results` are the ones after the brainstorm."""
         return results[2] if len(results) >= 3 else results[0]
 
     def next(self, results):
-        """plan, judge; and when `advance.ENFORCE` and the judge says the aim is the same kind as an earlier one: the plan once more with the
-        judge's line, then the judge once more. A second bad verdict is accepted (noted). Never more than that one extra pass."""
+        if not results:
+            return self._brainstorm_step()
+        if len(results) == 1:
+            self.brainstorm = _tidy_brainstorm(results[0])
+        return self._after_brainstorm(results[1:])
+
+    def _after_brainstorm(self, results):
+        """plan, judge, and the one extra pass: the plan once more with the judge's line, then the judge once more. A second bad verdict is
+        accepted (noted). Never more than that one extra pass."""
         n = len(results)
         if n == 0:
             return self._step()
@@ -337,15 +439,16 @@ class PlanFlow(Flow):
         return None
 
     def worst_case(self):
-        steps = [self._step()]
+        """The brainstorm, then the plan carrying a brainstorm of the longest size, then the judge and the one extra pass."""
+        steps = [self._brainstorm_step(), self._step(brainstorm=BRAINSTORM_STAND_IN)]
         if self._judges():
             steps.append(self._aim_step(AIM_STAND_IN))
             if advance.ENFORCE:
-                steps += [self._step(RESEND_STAND_IN), self._aim_step(AIM_STAND_IN)]
+                steps += [self._step(RESEND_STAND_IN, brainstorm=BRAINSTORM_STAND_IN), self._aim_step(AIM_STAND_IN)]
         return steps
 
     def reply(self, results):
-        return {"beat": self._final(results)}
+        return {"beat": self._final(results[1:])}
 
 
 def build_flow(request, kit) -> Flow:
@@ -353,7 +456,7 @@ def build_flow(request, kit) -> Flow:
 
 
 def script(request: dict, kit: Any) -> list[str]:
-    """What a fake engine must return for a valid reply: a place, a concrete aim that differs per chapter, and a plan of four points."""
+    """What a fake engine must return for a valid reply: a brainstorm of three options, then a place, a concrete aim that differs per chapter and a plan of four points, then (from the second chapter) the aim judge's verdict."""
     import json
     names = names_of(request)
     tie = next(t for t in request["ties"] if t["id"] == request["spotlight"])
@@ -364,7 +467,10 @@ def script(request: dict, kit: Any) -> list[str]:
     aim = f"Get the {words[n % len(words)]} key from {b} before the {words[(n * 5) % len(words)]} bell rings in round {n}."
     plan = (f"Act 1: {a} and {b} meet at {place} at first light. Act 2: the aim runs into the tie between {a} and {b}, and a quarrel breaks out. "
             f"Act 3: a costly choice turns the scene when {a} gives something up. Act 4: the chapter ends with the tie and the aim in a new state.")
-    texts = [json.dumps({"where": place, "when_time": f"Day {n}, early morning", "aim": aim, "plan": plan})]
+    brainstorm = (f"Option 1: a refusal. {a} asks {b} for the {words[n % len(words)]} key and is turned down; {b} wants to be asked properly, and the two clash at the door. "
+                  f"It costs {a} a favour. Option 2: a trade. {a} offers {b} something in return, {b} wants more than was offered, and they clash over the price. "
+                  f"It costs {a} a secret. Option 3: a misunderstanding. {a} and {b} each think the other holds the key; they clash over who lied. It costs both their trust.")
+    texts = [brainstorm, json.dumps({"where": place, "when_time": f"Day {n}, early morning", "aim": aim, "plan": plan})]
     if advance.earlier_aims(request):          # the advancement judge runs from the second chapter on
         texts.append(json.dumps({"reason": "The aim is a different kind of errand from the earlier ones.", "kind": "new_kind"}))
     return texts

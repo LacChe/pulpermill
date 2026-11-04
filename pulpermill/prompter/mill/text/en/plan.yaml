@@ -13,6 +13,7 @@ headings:
   entanglements: "Ties and holdings"
   spotlight: "The tie in the spotlight"
   history: "The story so far"
+  brainstorm: "Three ideas for this chapter"
   task: "Your task"
 
 # One role and one task, stated first. The planner designs; it does not write the chapter.
@@ -28,6 +29,7 @@ aim_rules: "The aim is one thing the protagonist can try to get or do inside thi
 
 # R7. Four points per chapter, whatever the chapter count. The labels stay in English so a check can find them.
 four_points: "Write the plan as four points, in this order, each starting with its label exactly as written here (keep the labels in English whatever language the story is in). Act 1 is the starting point: who is there, where and when. Act 2 is where the central conflict emerges, as the aim meets the spotlight tie. Act 3 is the climax or turning point: the moment where something gives and a choice costs something. Act 4 is the end point: where the chapter leaves the people and the situation. Each point says what people do and choose, in concrete actions."
+other_person: "Act 2 says what {other} wants from this chapter and what {other} does about it, so that the tie is a person who acts and never a backdrop."
 spotlight_names: "Name both ends of the spotlight tie, {tie_from} and {tie_to}, in the plan, so that the writer knows whose tie the chapter is about."
 
 # R6. Both must move, distinctly.
@@ -46,6 +48,21 @@ last_chapter: "This is the last chapter. Act 3 is the climax of the whole story,
 aims_lead: "What the protagonist was after in the earlier chapters:"
 aims_item: "Chapter {chapter}: {aim}"
 
+# The brainstorm: a short free-text step before the plan. It thinks of three chapters that differ in kind; the plan step then chooses.
+# {other} is the person at the other end of the spotlight tie from the protagonist.
+brainstorm_role: "You are the planner of a story that is written one chapter at a time. Before the plan for chapter {chapter} of {total} is written, you think the chapter through: you propose three different ways it could go. You do not write the chapter and you do not choose yet."
+brainstorm_role_unknown_total: "You are the planner of a story that is written one chapter at a time. Before the plan for chapter {chapter} is written, you think the chapter through: you propose three different ways it could go. You do not write the chapter and you do not choose yet."
+brainstorm_first: "This is the first chapter, so each option opens from the ordinary life and the disruption described under the heading about who the story follows."
+brainstorm_last: "This is the last chapter, so each option settles what the story set in motion and brings the protagonist's aim and the spotlight tie to their final state."
+brainstorm_method: "The engine of a chapter is a collision. The protagonist goes after one concrete thing, and the tie in the spotlight meets them on the way: it blocks them, pulls them somewhere else, or names a price for what they want. Every option you propose has such a collision in it, and the meeting between the two is where its conflict lives."
+brainstorm_people: "Only the people on stage act, and every name in your options is a name from the cards. Anyone else an option needs, such as a guard or a clerk, appears by role (the guard, a clerk) with no name and never carries the plot. People on stage who are outside the spotlight tie are supporting: they can pull on the tie or react to it, and the chapter stays about the tie."
+kinds_lead: "The kinds of aim the story has already used. Each of your three options differs in kind from all of them: a different want, a different obstacle, a different person or a different stake, and never the same want with a new object or place."
+brainstorm_task: "Propose three chapters that differ in kind from each other, for example a refusal, a trade, a secret kept or told, or a misunderstanding. For each one, in two or three short sentences, say what the protagonist is after (one concrete thing), what {other} wants from this chapter, the line or moment where the two of them clash, and what it costs. Number the options 1 to 3."
+brainstorm_output: "Reply in plain prose, about 250 words in all, in {language}, and keep every name exactly as it is written above."
+brainstorm_retry: "An earlier plan for this chapter was refused. Its aim was: {aim} These problems need fixing: {problems} Propose options that fix them and differ from that aim."
+# The plan step, once a brainstorm exists: the text goes in under its own heading, and this line sends the planner to it.
+choose_from: "The three ideas above are your own earlier thinking. Choose one of them, or combine two, and build the plan on it. The aim you give is the aim of the idea you chose, in one sentence."
+
 # What to answer. The keys are the grammar's own (kit.grammar.plan_beat()).
 output: "Reply with a JSON object with four keys. where: the place where the chapter opens, one of the places in the world. when_time: the day and time of day at which the chapter opens, in a few words; the scene is already in motion at that moment. aim: what the protagonist is after in this chapter, in one sentence. plan: the four points, Act 1 to Act 4, in about 150 words. Write when_time, aim and plan in {language}, and keep every name exactly as it is written above."
 
@@ -55,6 +72,7 @@ retry_close: "Plan the chapter again and make sure the new plan fixes every one 
 
 # The check's lines. They are shown to the model on the second attempt, so each says what to do.
 problems:
+  brainstorm_short: "Propose three different chapters, each in two or three sentences: what the protagonist is after, what the other person wants, where the two clash and what it costs."
   unknown_person: "The plan names {names}, who is on no card. Use only the names from the cards, and refer to anyone else by role (the clerk, a neighbour)."
   missing_where: "Choose the place where the chapter opens, from the places in the world."
   missing_aim: "Give the protagonist's aim as one concrete thing to get or do inside this chapter."
