@@ -157,7 +157,7 @@ test("the welcome steps name the five cards and no longer mention anything remov
 
 // ---- Removed ideas ------------------------------------------------------------------------------------------
 
-const REMOVED = /pressure|knowledge|offstage|reveal|plant|payoff|goal|stakes|usage/i;
+const REMOVED = /knowledge|offstage|reveal|plant|payoff|goal|stakes|usage/i;
 
 test("no panel, style or page text refers to a removed idea (comments excepted)", () => {
   const found = [];

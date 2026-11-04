@@ -94,12 +94,12 @@ def test_setup_has_no_goal_or_stakes_and_warns_when_the_protagonist_has_no_tie()
 
 def test_beat_fields_and_who_fills_them():
     from pulpermill.schema.outline import Beat
-    assert list(fields_of(Beat)) == ["chapter", "stale", "where", "when_time", "cast", "spotlight", "aim", "plan", "planned_from"]
+    assert list(fields_of(Beat)) == ["chapter", "stale", "where", "when_time", "cast", "spotlight", "pressure", "aim", "plan", "planned_from"]
     filled = {n: f.json_schema_extra["filled_by"] for n, f in fields_of(Beat).items()}
     assert filled == {"chapter": "code", "stale": "code", "where": "planner", "when_time": "planner", "cast": "human",
-                      "spotlight": "code", "aim": "planner", "plan": "planner", "planned_from": "code"}
+                      "spotlight": "code", "pressure": "code", "aim": "planner", "plan": "planner", "planned_from": "code"}
     meta = {n: f.json_schema_extra for n, f in fields_of(Beat).items()}
-    assert meta["spotlight"]["ref"] == ["entanglements.ties"] and meta["where"]["ref"] == ["world.places"]
+    assert meta["pressure"]["ref"] == ["world.rules", "world.objects"] and meta["spotlight"]["ref"] == ["entanglements.ties"] and meta["where"]["ref"] == ["world.places"]
     assert meta["cast"]["ref"] == ["characters"] and meta["cast"]["max_selected"] == 5
     assert meta["aim"]["input"] == "text" and meta["plan"]["input"] == "textarea"
 

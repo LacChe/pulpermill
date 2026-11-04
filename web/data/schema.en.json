@@ -2196,8 +2196,7 @@
        "filled_by": "code",
        "placeholder": "Choose a rule or object",
        "why": "Keeps the world from being a backdrop: the chapter has to run into something the world holds.",
-       "no_options": "No rules or objects yet. Add some in World first.",
-       "empty": "None"
+       "no_options": "No rules or objects yet. Add some in World first."
       },
       {
        "key": "aim",
