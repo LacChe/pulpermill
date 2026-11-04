@@ -327,7 +327,10 @@ def test_the_writers_scene_begins_in_motion_and_the_planners_does_not():
     writer = render_scene(beat_in_words(), scope="writer")
     planner = render_scene(beat_in_words(), scope="planner")
     assert "already in motion" in writer and "already in motion" not in planner
-    assert "by role only" in writer and "by role only" in planner         # minor characters appear by role, with no names
+    for scope_text in (writer, planner):          # the one statement about people beyond the cast: the reason, the method and the scale
+        assert "The cast is fixed" in scope_text and "what they do or by one telling detail" in scope_text
+        assert "none of them has a name; only places, events and things do" in scope_text
+        assert scope_text.count("The cast is fixed") == 1
     assert planner in writer
 
 
@@ -353,7 +356,7 @@ def test_a_scene_takes_cast_cards_and_clips_what_is_over_its_cap():
     text = render_scene(beat_in_words(cast=cast, aim=long, plan=long * 3), scope="writer", report=report)
     assert "The people on stage are Suvi and Aino." in text and not leaked(text)
     assert {c.split(":")[0] for c in report.clips} == {"beat.aim", "beat.plan"}
-    assert len(text) < 2200
+    assert len(text) < 2400          # the aim and the plan are clipped: unclipped they alone are over 4,000 characters
 
 
 def test_a_scene_rejects_a_scope_it_does_not_know():

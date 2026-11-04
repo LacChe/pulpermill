@@ -22,6 +22,7 @@ from pulpermill.backend.engine import FakeEngine  # noqa: E402
 from pulpermill.backend.kit import Kit  # noqa: E402
 from pulpermill.prompter import load_prompter  # noqa: E402
 from pulpermill.prompter.mill import advance, plan  # noqa: E402
+from pulpermill.prompter.mill.common import load_text  # noqa: E402
 from pulpermill.prompts import budget, tokens  # noqa: E402
 from server_harness import post, running, wait_idle  # noqa: E402
 from story_sizes import inflate  # noqa: E402
@@ -74,8 +75,37 @@ def test_the_prompt_names_the_collision_the_four_points_and_the_spotlight():
     assert "Feel better about her father" in prompt and "is not yet an aim" in prompt         # and its avoid example, said positively
 
 
-def test_minor_characters_appear_by_role_and_never_carry_the_plot():
-    assert "by role" in plan.build_prompt(base()) and "never carries the plot" in plan.build_prompt(base())
+RULE = "The cast is fixed, so the plan names only people from the cards: a new name is a new character to keep track of."
+BRAINSTORM_RULE = "The cast is fixed, so your options name only people from the cards: a new name is a new character to track."
+OLD_WORDING = ("by role", "with no name", "Only the people on stage act", "such as a guard or a clerk", "stays in the background")
+
+
+def test_the_rule_about_people_beyond_the_cast_is_stated_once_in_the_plan_prompt_with_or_without_a_brainstorm():
+    for prompt in (plan.build_prompt(base()), plan.build_prompt(base(), brainstorm="1. An idea. 2. Another idea. 3. A third idea.")):
+        assert prompt.count(RULE) == 1 and BRAINSTORM_RULE not in prompt
+        assert "Anyone else appears by what they do or one telling detail" in prompt and "never carries the plot" in prompt
+        assert "Places, events and things may have proper names; no other person does." in prompt          # only people are limited to the card names
+        for gone in OLD_WORDING:
+            assert gone not in prompt, gone
+
+
+def test_the_brainstorm_prompt_states_the_same_rule_once_in_its_own_words():
+    prompt = plan.build_brainstorm_prompt(base())
+    assert prompt.count(BRAINSTORM_RULE) == 1 and RULE not in prompt
+    assert "by what they do or one telling detail and never carries the plot" in prompt and "no other person does" in prompt
+    for gone in OLD_WORDING:
+        assert gone not in prompt, gone
+
+
+def test_the_planner_rule_names_no_story_and_no_one_setting_and_is_prose():
+    w = load_text("plan")
+    for key in ("people_rule", "brainstorm_people"):
+        text = w[key]
+        assert "\n" not in text and not re.search(r"(^|\s)(-|\*|\d+\.)\s", text), key        # prose, no list
+        assert "supporting" in text and "never carries the plot" in text, key
+    assert w["people_rule"].count("(") == 1           # two short example phrases, in one parenthesis
+    examples = w["people_rule"].split("(")[1].split(")")[0]
+    assert "tech who logs the samples" in examples and "stallholder with cracked scales" in examples          # unrelated settings: a lab and a market
 
 
 def test_people_outside_the_spotlight_tie_are_told_they_are_supporting():
@@ -378,7 +408,7 @@ def test_the_brainstorm_prompt_asks_for_three_chapters_of_different_kinds_with_t
                    "Marit toward Suvi", "chapter 2 of 8", "in English"):
         assert needed in prompt, needed
     assert "Act 1" not in prompt and "JSON" not in prompt and "four points" not in prompt        # no plan shape is asked for here
-    assert "supporting" in prompt and "by role" in prompt
+    assert "supporting" in prompt and "by what they do or one telling detail" in prompt
 
 
 def test_the_brainstorm_prompt_shows_the_earlier_aims_as_the_kinds_already_used_and_the_plan_prompt_does_not():

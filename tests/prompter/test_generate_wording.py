@@ -22,6 +22,7 @@ from pulpermill.backend.engine import FakeEngine  # noqa: E402
 from pulpermill.backend.kit import Kit  # noqa: E402
 from pulpermill.prompter import load_prompter  # noqa: E402
 from pulpermill.prompter.mill import advance, generate as gen, plan as mill_plan  # noqa: E402
+from pulpermill.prompter.mill.common import load_text  # noqa: E402
 from pulpermill.prompts import budget, tokens  # noqa: E402
 from server_harness import post, running, wait_idle  # noqa: E402
 from story_sizes import chapter_text, inflate  # noqa: E402
@@ -88,9 +89,28 @@ def test_the_writer_prompt_holds_the_plan_the_voice_the_cast_the_ending_and_the_
     assert "1,800" not in prompt
 
 
-def test_minor_characters_appear_by_role_and_only_the_cast_act():
+RULE = "The cast is fixed, and a name for anyone else would be a new character the reader has to keep track of."
+
+
+def test_the_rule_about_people_beyond_the_cast_is_stated_once_in_the_plan_block_and_not_in_the_craft_paragraphs():
     prompt = gen.write_prompt(base())
-    assert "appears by role" in prompt and "never makes the decisions that carry the story" in prompt and "Only the people on stage act" in prompt
+    assert prompt.count(RULE) == 1 and prompt.count("none of them has a name") == 1
+    plan_block = prompt.split("## The plan for this chapter")[1].split("## ")[0]
+    assert RULE in plan_block and "by what they do or by one telling detail, in the narration and in what people say to them" in plan_block
+    assert "only places, events and things do" in plan_block               # only people are limited to the card names
+    craft = prompt.split("## How to write it")[1]
+    assert "cast is fixed" not in craft and "has a name" not in craft              # no second statement of it in the craft paragraphs
+    assert prompt.index(RULE) < prompt.index("## The people on stage")           # near the top, with the plan, not in the closing paragraphs
+    for gone in ("Only the people on stage act", "appears by role", "never makes the decisions that carry the story", "stays in the background"):
+        assert gone not in prompt, gone
+
+
+def test_the_writer_craft_has_three_paragraphs_and_a_change_paragraph_and_no_minor_character_paragraph():
+    w = load_text("generate")
+    assert "craft_people" not in w
+    prompt = gen.write_prompt(base())
+    craft = prompt.split("## How to write it")[1].split("Write only the text")[0].strip().split("\n\n")
+    assert len(craft) == 4 and craft[0].startswith("Make this a chapter") and craft[-1].startswith("By the end of the chapter")
 
 
 def test_the_prompt_holds_no_ids_and_no_raw_option_keys():
@@ -369,7 +389,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-9:" in load_prompter("mill").version
+    assert "+generate:generate-10:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------

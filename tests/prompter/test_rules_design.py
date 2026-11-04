@@ -197,20 +197,22 @@ def test_rule5_the_writer_prompt_lists_only_the_cast_as_people_on_stage(count):
         assert (name in listed) == (name in cast), name                                # a group, or a person not in the cast, is never on stage
 
 
-def test_rule5_the_writer_prompt_tells_the_model_that_everyone_else_appears_by_role_without_a_name():
+def test_rule5_the_writer_prompt_tells_the_model_once_to_refer_to_everyone_else_by_what_they_do_without_a_name():
     prompt = prompts("generate", gen_with())["write"]
     plan_section = sections(prompt)["The plan for this chapter"]
-    assert "Anyone else the scene needs appears by role only (a clerk, a neighbour), unnamed and in the background" in plan_section
+    assert "The cast is fixed, and a name for anyone else would be a new character the reader has to keep track of" in plan_section
+    assert "Refer to anyone else by what they do or by one telling detail, in the narration and in what people say to them" in plan_section
+    assert "none of them has a name; only places, events and things do" in plan_section
     craft = sections(prompt)["How to write it"]
-    assert "appears by role (the guard, a clerk) with no name" in craft and "never makes the decisions that carry the story" in craft
-    assert "Only the people on stage act in this chapter" in craft
+    assert "cast is fixed" not in craft and "by role" not in craft and "Only the people on stage act" not in craft           # said once, in the plan block
     assert "[offstage]" in sections(prompt)["Ties and holdings"]                          # people and groups outside the cast are marked as elsewhere
 
 
 def test_rule5_the_planner_prompt_gives_minor_characters_a_role_and_never_the_plot():
     task = sections(prompts("plan", plan_with())["plan"])["Your task"]
-    assert "appears by role (the guard, a clerk) with no name" in task and "never carries the plot" in task
-    assert "every decision that drives the chapter belongs to someone on stage" in task
+    assert "The cast is fixed, so the plan names only people from the cards" in task
+    assert "Anyone else appears by what they do or one telling detail" in task and "never carries the plot" in task
+    assert "by role" not in task
 
 
 # ---- the chapter's position (first, middle, last) and the plan are in the writer prompt ---------------------------------------------

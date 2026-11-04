@@ -35,8 +35,8 @@ spotlight_names: "Name both ends of the spotlight tie, {tie_from} and {tie_to}, 
 # R6. Both must move, distinctly.
 movement: "The end point must stand clearly apart from the starting point. By the end of the chapter, the edge of the spotlight tie (what drives {tie_from} in it) and the protagonist's aim must each have moved to a distinctly new state: the aim reached, lost or turned into a new one, the edge changed into something different from what it was. Say in Act 4 what each of the two has become."
 
-# R5. Minor characters by role only, and never the carriers of the plot.
-people_rule: "Only the people on stage act, and every name in the plan is a name from the cards. Anyone else the chapter needs, such as a guard or a clerk, appears by role (the guard, a clerk) with no name, stays in the background, and never carries the plot: every decision that drives the chapter belongs to someone on stage. People on stage who are outside the spotlight tie are supporting: they can pull on the tie or react to it, and the chapter stays about the tie."
+# R5. Minor characters: the reason, the method (what they do, one telling detail) and the scale (only people are limited), never the carriers of the plot.
+people_rule: "The cast is fixed, so the plan names only people from the cards: a new name is a new character to keep track of. Anyone else appears by what they do or one telling detail (the tech who logs the samples, the stallholder with cracked scales) and never carries the plot. Places, events and things may have proper names; no other person does. People on stage outside the spotlight tie are supporting: they pull on the tie or react to it, and the chapter stays about the tie."
 
 # R7. Where the chapter sits.
 first_chapter: "This is the first chapter. Act 1 opens from the ordinary life and the disruption described under the heading about who the story follows, and the conflict of Act 2 grows out of that disruption."
@@ -55,7 +55,7 @@ brainstorm_role_unknown_total: "You are the planner of a story that is written o
 brainstorm_first: "This is the first chapter, so each option opens from the ordinary life and the disruption described under the heading about who the story follows."
 brainstorm_last: "This is the last chapter, so each option settles what the story set in motion and brings the protagonist's aim and the spotlight tie to their final state."
 brainstorm_method: "The engine of a chapter is a collision. The protagonist goes after one concrete thing, and the tie in the spotlight meets them on the way: it blocks them, pulls them somewhere else, or names a price for what they want. Every option you propose has such a collision in it, and the meeting between the two is where its conflict lives."
-brainstorm_people: "Only the people on stage act, and every name in your options is a name from the cards. Anyone else an option needs, such as a guard or a clerk, appears by role (the guard, a clerk) with no name and never carries the plot. People on stage who are outside the spotlight tie are supporting: they can pull on the tie or react to it, and the chapter stays about the tie."
+brainstorm_people: "The cast is fixed, so your options name only people from the cards: a new name is a new character to track. Anyone else appears by what they do or one telling detail and never carries the plot. Places, events and things may have proper names; no other person does. People on stage outside the spotlight tie are supporting: they pull on it or react to it, and each option stays about the tie."
 kinds_lead: "The kinds of aim the story has already used. Each of your three options differs in kind from all of them: a different want, a different obstacle, a different person or a different stake, and never the same want with a new object or place."
 brainstorm_task: "Propose three chapters that differ in kind from each other, for example a refusal, a trade, a secret kept or told, or a misunderstanding. For each one, in two or three short sentences, say what the protagonist is after (one concrete thing), what {other} wants from this chapter, the line or moment where the two of them clash, and what it costs. Number the options 1 to 3."
 brainstorm_output: "Reply in plain prose, about 250 words in all, in {language}, and keep every name exactly as it is written above."
@@ -74,7 +74,7 @@ retry_close: "Plan the chapter again and make sure the new plan fixes every one 
 # The check's lines. They are shown to the model on the second attempt, so each says what to do.
 problems:
   brainstorm_short: "Propose three different chapters, each in two or three sentences: what the protagonist is after, what the other person wants, where the two clash and what it costs."
-  unknown_person: "The plan names {names}, who is on no card. Use only the names from the cards, and refer to anyone else by role (the clerk, a neighbour)."
+  unknown_person: "The plan uses {names}, capitalised words that are on no card. If one of them is a person, refer to that person by what they do or by one telling detail."
   missing_where: "Choose the place where the chapter opens, from the places in the world."
   missing_aim: "Give the protagonist's aim as one concrete thing to get or do inside this chapter."
   abstract_aim: "Make the aim something the protagonist can try to get or do and a reader can watch, such as getting a clerk to sign a permit before an auditor arrives, instead of a state of mind."

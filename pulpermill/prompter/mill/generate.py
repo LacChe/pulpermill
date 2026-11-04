@@ -21,7 +21,7 @@ from pulpermill.schema.shifts import shiftable_fields
 from . import advance, common
 from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-9"
+VERSION = "generate-10"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -89,7 +89,7 @@ def write_prompt(request: dict, factor: float = 1.0) -> str:
     history = r.render_history(events, chapter, scope="writer", keep_full=keep)
     ending = r.s(request.get("previous_ending"))
     last = bool(total) and chapter >= total
-    craft = [w["craft_interest"], w["craft_dialogue"], w["craft_turn"], w["craft_people"], w["craft_change_last" if last else "craft_change"]]
+    craft = [w["craft_interest"], w["craft_dialogue"], w["craft_turn"], w["craft_change_last" if last else "craft_change"]]
     style = r.render_style(request.get("style") or {}, scope="writer")
 
     role = w["role"].format(chapter=chapter, total=total, language=lang) if total else w["role_unknown_total"].format(chapter=chapter, language=lang)
