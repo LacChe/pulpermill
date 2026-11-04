@@ -184,7 +184,7 @@ def test_two_unusable_replies_are_bad_output():
 
 
 def test_a_call_that_cannot_fit_is_too_long_before_any_inference():
-    request = {**_fill(), "note": "word " * 60000}
+    request = {**_fill(), "note": "word " * 100000}
     engine = FakeEngine()
     with running(engine=engine, run=None) as (base, _):
         response = post(base, request)
@@ -202,14 +202,14 @@ def test_a_story_that_cannot_fit_is_too_long_before_the_chapter_is_written():
 
 
 def test_a_call_that_fits_only_when_squeezed_is_squeezed_and_answered():
-    request = {**_fill(), "note": "word " * 17000}              # about 17,000 tokens, one a word: over the 15,084 allowed as written, under it at 0.85
+    request = {**_fill(), "note": "word " * 26000}              # about 26,000 tokens, one a word: over the 23,276 allowed as written, under it at 0.85
     engine = FakeEngine()
     engine.script(script("fill", request, Kit(request))[0])
     with running(engine=engine, run=None) as (base, _):
         response = post(base, request)
         assert response.status_code == 200, response.text
         assert wait_idle(base)
-    assert len(engine.prompts[0]) < 17000 * 5 * 0.9                  # the prompt was clipped
+    assert len(engine.prompts[0]) < 26000 * 5 * 0.9                  # the prompt was clipped
 
 
 def test_a_judge_with_items_asks_per_rule_and_answers_with_the_ids_sent():

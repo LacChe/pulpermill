@@ -1,8 +1,8 @@
 # Token budgets. Everything is counted on the Gemma 3 tokenizer, with the chat template around the prompt.
 # n_ctx is the context the backend loads the model with; the launcher refuses to start if config.py differs.
-# Gemma 3 27B needs about 0.25 MB of cache per token, so 16,384 tokens is ~4 GB by that count. Change n_ctx here when the backend is
+# Gemma 3 27B needs about 0.25 MB of cache per token, so 24,576 tokens is ~6 GB by that count. Change n_ctx here when the backend is
 # tried on real hardware, and in backend/config.py on purpose.
-n_ctx: 16384
+n_ctx: 24576
 # Tokens kept free after the prompt and the reply: the template's own tokens, a changed tokenizer, a longer word list.
 margin: 300
 # What a step may write (max_output) is not here: it belongs to the step, so the prompter that writes the prompt sets it.
