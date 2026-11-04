@@ -28,13 +28,13 @@ story_older_lead: "Earlier chapters, in brief:"
 story_none: "This is the first chapter."
 chapter_of: "This is chapter {n} of {total}."
 chapter_of_unknown: "This is chapter {n}."
-chapter_last: "This is the last chapter. Bring the story to its close and settle what the story set in motion, then stop."
+chapter_last: "This is the last chapter. Bring the story to its close: settle the collision and what the story set in motion for good, open nothing new, then stop."
 chapter_one_normal: "Open the story where ordinary life was: {value}"
 chapter_one_break: "What just broke it: {value}"
 
 # ---- History (what happened and what changed) ----
 history_lead_writer: "The story so far:"
-history_lead_planner: "What has happened so far, and what each chapter changed:"
+history_lead_planner: "What has happened so far, and what each chapter changed. Each chapter's closing line says how its collision came out and where that left the protagonist's aim and the tie; begin from the latest one:"
 
 # ---- The spotlight tie ----
 spotlight_tie: "This chapter puts one tie in the spotlight: {tie_from} toward {tie_to}: {bond}"

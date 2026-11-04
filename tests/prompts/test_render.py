@@ -214,7 +214,7 @@ def test_chapter_one_carries_the_normal_and_the_break_and_later_chapters_do_not(
 
 def test_the_last_chapter_is_said_to_be_the_last():
     text = render_setup(generate_request()["setup"], 8, 8)
-    assert "last chapter" in text
+    assert "This is the last chapter" in text and "open nothing new" in text
 
 
 def test_older_chapters_shrink_to_their_changed_line():
@@ -421,7 +421,8 @@ def test_a_spotlight_with_empty_values_and_over_cap_values():
 def test_history_tells_what_happened_and_what_changed_and_shrinks_the_old():
     events = generate_request()["earlier_events"]
     planner = render_history(events, 5, scope="planner", keep_full=2)
-    assert planner.startswith("What has happened so far, and what each chapter changed:")
+    assert planner.startswith("What has happened so far, and what each chapter changed.")
+    assert "how its collision came out" in planner.split("\n", 1)[0]
     assert "Chapter 1: Suvi knows someone has been in the shop at night." in planner and "finds the shop's stock miscounted" not in planner
     assert "Chapter 4. Aino warns Suvi" in planner and "By its end: The cellar story is false" in planner
     writer = render_history(events, 5, scope="writer", keep_full=2)
