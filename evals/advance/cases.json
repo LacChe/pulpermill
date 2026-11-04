@@ -1,5 +1,5 @@
 {
- "about": "Labelled cases for the advancement judge (pulpermill/prompter/mill/advance.py). Rewords and same_kind cases come from the first test story; genuine moves are hand-written. Names are placeholders for the story's cards. The chain's first aim (bake sun loaves) is the chapter-1 baseline, so it is listed as new_kind; the other three aims from the story are same_kind against the chain before them.",
+ "about": "Labelled cases for the advancement judge (pulpermill/prompter/mill/advance.py). Rewords and same_kind cases come from the first test story; genuine moves are hand-written. Names are placeholders for the story's cards. The chain's first aim (bake sun loaves) is the chapter-1 baseline, so it is listed as new_kind; the other three aims from the story are same_kind against the chain before them. The pressure cases are for the pressure judge (observe-only): four where the element acts and four known-bad ones where it only appears, over unrelated settings; `source` says whether the text is a plan or a chapter's `happened`. Run them on the real model before trusting a run's pressure_effect counts.",
  "edge_pairs": [
   {
    "old_edge": "needs to prove her skill",
@@ -119,6 +119,160 @@
    "new_aim": "Hide the burnt batch from the inspector before the Guild arrives",
    "expected": "new_kind",
    "note": "hand-written: a deadline and a secret"
+  }
+ ],
+ "pressure_cases": [
+  {
+   "protagonist": "Ilsa",
+   "tie": {
+    "tie_from": "Ilsa",
+    "tie_to": "Dov",
+    "bond": "fellow engineers who distrust each other"
+   },
+   "pressure": {
+    "kind": "rule",
+    "statement": "An airlock opens only when two keys held by different people turn together.",
+    "cost": "A forced cycle floods the corridor and the crew pays for the damage.",
+    "when_broken": "The station council strips the offender's berth."
+   },
+   "aim": "Get the sealed cargo through the outer lock before the shuttle leaves",
+   "source": "plan",
+   "text": "Act 1: Ilsa reaches the outer lock with the cargo and finds the shuttle already boarding. Act 2: the lock will not open on her key alone, so she must ask Dov, who holds the second one and wants her logbook in return. Act 3: Ilsa gives up the logbook that proves her innocence to get his key. Act 4: the cargo is aboard, Ilsa has lost her proof, and Dov now holds what he wanted over her.",
+   "expected": "acts",
+   "note": "hand-written: the rule blocks a move and forces a costly choice"
+  },
+  {
+   "protagonist": "Kesh",
+   "tie": {
+    "tie_from": "Kesh",
+    "tie_to": "Rhun",
+    "bond": "caravan master and the guide she hired"
+   },
+   "pressure": {
+    "kind": "object",
+    "name": "The water map",
+    "description": "A hide chart marking every well on the salt road.",
+    "significance": "Whoever carries it decides where the caravan can go."
+   },
+   "aim": "Reach the second well before the sandstorm closes the road",
+   "source": "happened",
+   "text": "Kesh traded the water map to Rhun for a safe passage through the dunes. Without it the caravan could no longer find the second well, and the drivers turned back to the first camp.",
+   "expected": "acts",
+   "note": "hand-written: the object changes what the caravan can do"
+  },
+  {
+   "protagonist": "Tomas",
+   "tie": {
+    "tie_from": "Tomas",
+    "tie_to": "Brother Anselm",
+    "bond": "novice and the copyist who trains him"
+   },
+   "pressure": {
+    "kind": "rule",
+    "statement": "No novice may speak after the evening bell.",
+    "cost": "A broken silence seals the novice in his cell for a week.",
+    "when_broken": "The abbot hears the case in chapter."
+   },
+   "aim": "Warn Brother Anselm that the abbot has found the forged page",
+   "source": "happened",
+   "text": "Tomas broke the silence after the bell to warn Brother Anselm about the forged page. The abbot sealed him in his cell for a week, so Anselm had to finish the copying alone and could not ask Tomas to confess in his place.",
+   "expected": "acts",
+   "note": "hand-written: the rule costs the protagonist and changes who can do what"
+  },
+  {
+   "protagonist": "Maren",
+   "tie": {
+    "tie_from": "Maren",
+    "tie_to": "Joss",
+    "bond": "dock clerk and the harbour master she answers to"
+   },
+   "pressure": {
+    "kind": "object",
+    "name": "The harbour seal",
+    "description": "A brass stamp that makes any cargo order lawful.",
+    "significance": "Only the one who holds it can sign cargo out of the port."
+   },
+   "aim": "Clear the crates of lamp oil from the customs shed before dawn",
+   "source": "plan",
+   "text": "Act 1: Maren finds the crates stamped as held and the shed locked. Act 2: only the harbour seal can release them, and Joss keeps it on a chain at his belt. Act 3: Maren lifts the seal while Joss sleeps and signs the release, which leaves Joss unable to sign anything lawfully until he proves it was stolen. Act 4: the crates are gone and the harbour master's word no longer settles a dispute.",
+   "expected": "acts",
+   "note": "hand-written: the object decides who can sign and what happens to the one who loses it"
+  },
+  {
+   "protagonist": "Nell",
+   "tie": {
+    "tie_from": "Nell",
+    "tie_to": "Audra",
+    "bond": "sisters who share a ward room"
+   },
+   "pressure": {
+    "kind": "rule",
+    "statement": "Visitors leave the ward at nine.",
+    "cost": "Anyone who stays is escorted out by the night porter.",
+    "when_broken": "The visitor is barred for a month."
+   },
+   "aim": "Persuade Audra to lend her the money for the deposit",
+   "source": "plan",
+   "text": "Act 1: Nell sits by Audra's bed in the evening, and the nine o'clock bell is not far off. Act 2: Nell asks for the money and Audra says she must think about it. Act 3: they argue about their mother's debts and Audra agrees to lend half. Act 4: Nell leaves with the promise of the money and the two sisters have made peace.",
+   "expected": "decor",
+   "note": "known-bad: the rule is named in passing and nothing in the plan depends on it"
+  },
+  {
+   "protagonist": "Ana",
+   "tie": {
+    "tie_from": "Ana",
+    "tie_to": "Pell",
+    "bond": "neighbours on the same quay"
+   },
+   "pressure": {
+    "kind": "object",
+    "name": "The lighthouse lamp",
+    "description": "A great lamp that turns above the harbour all night.",
+    "significance": "Every boat steers by it."
+   },
+   "aim": "Get Pell to pay half of the cost of mending her hull",
+   "source": "happened",
+   "text": "Ana and Pell argued about the cost of mending her hull on the quay under the lighthouse lamp. Pell agreed to pay half once she showed him the carpenter's bill.",
+   "expected": "decor",
+   "note": "known-bad: the object is only the backdrop of the argument"
+  },
+  {
+   "protagonist": "Rik",
+   "tie": {
+    "tie_from": "Rik",
+    "tie_to": "Hale",
+    "bond": "two miners who share a shift"
+   },
+   "pressure": {
+    "kind": "rule",
+    "statement": "Open flame is forbidden below the third level.",
+    "cost": "A lit lamp below the line ends the shift for everyone in the gallery.",
+    "when_broken": "The foreman closes the gallery."
+   },
+   "aim": "Get Hale to cover his shift on Friday",
+   "source": "happened",
+   "text": "While walking to the cage Rik mentioned the ban on open flame below the third level and the new foreman who enforced it. Hale said he would cover the Friday shift if Rik did the next two.",
+   "expected": "decor",
+   "note": "known-bad: the rule is spoken of in dialogue with no consequence for anyone"
+  },
+  {
+   "protagonist": "Selene",
+   "tie": {
+    "tie_from": "Selene",
+    "tie_to": "Ward",
+    "bond": "a cousin and the steward who raised her"
+   },
+   "pressure": {
+    "kind": "object",
+    "name": "The heirloom clock",
+    "description": "A tall clock that has stood in the drawing room for six generations.",
+    "significance": "The family says it keeps the house's luck."
+   },
+   "aim": "Make Ward hand over the household accounts",
+   "source": "plan",
+   "text": "Act 1: Selene meets Ward in the drawing room, where the heirloom clock ticks on the wall. Act 2: she demands the accounts and he refuses. Act 3: she threatens to dismiss him and he gives them up. Act 4: Selene leaves with the accounts and Ward is left in the drawing room.",
+   "expected": "decor",
+   "note": "known-bad: the object is a piece of the furnishing"
   }
  ]
 }

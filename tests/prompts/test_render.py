@@ -6,6 +6,7 @@ from pathlib import Path
 
 from pulpermill.prompts import (Report, render_cast, render_entanglements, render_history, render_scene, render_setup, render_shift,
                                 render_spotlight, render_story_so_far, render_style, render_world)
+from pulpermill.prompts import render
 from pulpermill.prompts import textfiles as tx
 from pulpermill.prompts.render import clip, fill, groups_in_play
 
@@ -593,3 +594,53 @@ def test_the_beats_timeline_and_the_brief_take_values_with_or_without_stops():
     assert "Chapter 1: at The Docks, Friday night." in render_earlier_beats(beats)
     brief = render_person_brief({"name": "Suvi", "wants": [{"text": "Keep the shop."}, {"text": "Know why"}]})
     assert "Wants: Keep the shop; Know why." in brief
+
+
+# ---- the pressure (world-pressure-2) ------------------------------------------------------------------------------------------------
+
+RULE_PRESSURE = {"kind": "rule", "statement": "Debts are written, never spoken.", "cost": "A spoken debt is void.", "when_broken": "The board is shamed."}
+OBJECT_PRESSURE = {"kind": "object", "name": "The ledger", "description": "Green cloth cover.", "significance": "Names who owes the board."}
+
+
+def test_a_pressure_is_one_sentence_and_the_element_in_words_once():
+    rule = render.render_pressure(RULE_PRESSURE)
+    sentence, element = rule.split("\n")
+    assert sentence.count(".") == 1 and "make the rule below act on the aim or the tie" in sentence
+    assert element == "Debts are written, never spoken. Cost: A spoken debt is void." and "shamed" not in rule          # a rule by its statement and cost
+    thing = render.render_pressure(OBJECT_PRESSURE).split("\n")
+    assert "make the object below act" in thing[0] and thing[1] == "The ledger: Green cloth cover. Why it matters: Names who owes the board."
+
+
+def test_no_pressure_or_an_odd_one_renders_nothing():
+    for odd in (None, {}, "r0000001", {"kind": "place", "name": "x"}, {"kind": "rule"}):
+        assert render.render_pressure(odd) == ""
+
+
+def test_the_element_is_clipped_to_the_one_cap():
+    long = dict(RULE_PRESSURE, statement="Nobody may cross the river after dark, whatever their business. " * 10, cost="")
+    element = render.render_pressure(long).split("\n")[1]
+    assert len(element) <= tx.limits()["pressure"]["element"] and element.endswith(".")
+
+
+def test_the_world_leaves_out_the_pressure_element_once_and_only_that_one():
+    world = generate_request()["world"]
+    rule = world["rules"][0]
+    plain = render.render_world(world, scope="writer")
+    assert rule["statement"] in plain
+    cut = render.render_world(world, scope="writer", without={"kind": "rule", "statement": rule["statement"]})
+    assert rule["statement"] not in cut and all(r["statement"] in cut for r in world["rules"][1:])
+    thing = world["objects"][0]
+    cut = render.render_world(world, scope="planner", without={"kind": "object", "name": thing["name"]})
+    assert thing["description"] not in cut and all(o["description"] in cut for o in world["objects"][1:])
+    twice = {**world, "rules": [world["rules"][0], dict(world["rules"][0])]}                      # two items alike: only the first match goes
+    assert render.render_world(twice, scope="writer", without={"kind": "rule", "statement": rule["statement"]}).count(rule["statement"]) == 1
+    assert render.render_world(world, scope="writer", without=None) == plain
+    assert render.render_world(world, scope="writer", without={"kind": "object", "name": rule["statement"]}) == plain      # a name that is no item's leaves it be
+
+
+def test_the_scene_block_shows_the_pressure_next_to_the_beat():
+    beat = {"where": "The Archive", "when_time": "Dusk", "aim": "Get the ledger out.", "plan": "Suvi hides it.", "cast": []}
+    plain = render.render_scene(beat, scope="writer")
+    pressed = render.render_scene({**beat, "pressure": RULE_PRESSURE}, scope="writer")
+    assert pressed.startswith(plain.split("\n")[0]) and "Cost: A spoken debt is void." in pressed and "make the rule below" not in plain
+    assert render.render_scene({**beat, "pressure": "r0000001"}, scope="writer") == plain          # an id is not words: nothing is shown

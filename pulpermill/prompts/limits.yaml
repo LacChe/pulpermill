@@ -13,3 +13,7 @@ events:
   # How many of the latest chapters are told in full. Older chapters shrink to their "changed" line.
   full_chapters_writer: 3
   full_chapters_planner: 4
+pressure:
+  # The element a chapter's pressure shows (a rule's statement and cost, or an object's description and why it matters), clipped as one
+  # text. With the one sentence that introduces it, the whole addition stays near 60 words in a prompt.
+  element: 190

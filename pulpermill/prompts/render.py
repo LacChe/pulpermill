@@ -249,9 +249,11 @@ def _uses(item: dict) -> str:
 
 
 def render_world(world: dict, *, scope: str = "writer", place: str | None = None, in_play: set[str] | None = None,
-                 report: Report | None = None) -> str:
+                 report: Report | None = None, without: dict | None = None) -> str:
     """Writer: all of the World the page sent (hidden truths included), the beat's place in full, other places by name.
-    Planner: every place and object with its use count, and no history or terms."""
+    Planner: every place and object with its use count, and no history or terms. `without` is a pressure (in words): the rule or object it
+    names is left out of its list, because the pressure line shows it once."""
+    skip_rule, skip_object = _pressure_key(without, "rule"), _pressure_key(without, "object")
     c = tx.limits()["world"]
     fr = tx.prompt_text("frames")
     spec = tx.schema_text("world")["fields"]
@@ -290,6 +292,9 @@ def render_world(world: dict, *, scope: str = "writer", place: str | None = None
     # things
     things = []
     for o in world.get("objects") or []:
+        if skip_object is not None and s(o.get("name")) == skip_object:
+            skip_object = None                      # only the first match: a second item of the same name is a different thing
+            continue
         line = fill(spec["objects"]["item_template"], {
             "name": s(o.get("name")), "description": clip(o.get("description"), c["object_description"], "object", report),
             "significance": clip(o.get("significance"), c["object_significance"], "object", report)})
@@ -320,6 +325,9 @@ def render_world(world: dict, *, scope: str = "writer", place: str | None = None
     # rules
     rules = []
     for r in world.get("rules") or []:
+        if skip_rule is not None and s(r.get("statement")) == skip_rule:
+            skip_rule = None
+            continue
         rules.append(fill(spec["rules"]["item_template"], {
             "statement": clip(r.get("statement"), c["rule_statement"], "rule", report),
             "cost": clip(r.get("cost"), c["rule_cost"], "rule", report),
@@ -526,6 +534,46 @@ def _names_of(people) -> list[str]:
     return [n for n in out if n]
 
 
+def _pressure_key(pressure: dict | None, kind: str) -> str | None:
+    """What identifies a pressure of this `kind` among the world's items (a rule's statement, an object's name), or None for any other."""
+    if not isinstance(pressure, dict) or pressure.get("kind") != kind:
+        return None
+    return s(pressure.get("statement" if kind == "rule" else "name")) or None
+
+
+def pressure_element(pressure: dict | None, *, report: Report | None = None) -> str:
+    """The pressure's rule or object in words and nothing else: a rule by its statement and cost, an object by its name, what it is and why it
+    matters, clipped as one text. Empty when there is no pressure."""
+    if not isinstance(pressure, dict) or pressure.get("kind") not in ("rule", "object"):
+        return ""
+    fr = tx.prompt_text("frames")
+    w = tx.limits()["world"]
+    if pressure["kind"] == "rule":
+        element = fill(fr["pressure_rule"], {"statement": clip(pressure.get("statement"), w["rule_statement"], "pressure.statement", report),
+                                            "cost": clip(pressure.get("cost"), w["rule_cost"], "pressure.cost", report)}, drop_first=True)
+    else:
+        element = fill(fr["pressure_object"], {"name": s(pressure.get("name")),
+                                              "description": clip(pressure.get("description"), w["object_description"], "pressure.description", report),
+                                              "significance": clip(pressure.get("significance"), w["object_significance"], "pressure.significance", report)},
+                       drop_first=True)
+    return clip(element, tx.limits()["pressure"]["element"], "pressure", report)
+
+
+def pressure_kind(pressure: dict | None) -> str:
+    """\"rule\" or \"object\" as the prompts say it, or \"\" when there is no pressure."""
+    kind = pressure.get("kind") if isinstance(pressure, dict) else None
+    return tx.prompt_text("frames")[f"pressure_kind_{kind}"] if kind in ("rule", "object") else ""
+
+
+def render_pressure(pressure: dict | None, *, report: Report | None = None) -> str:
+    """The chapter's pressure: one sentence that asks the rule or object to act on the aim or the tie, then the element once, in words.
+    Empty when there is no pressure."""
+    element = pressure_element(pressure, report=report)
+    if not element:
+        return ""
+    return fill(tx.prompt_text("frames")["pressure_line"], {"kind": pressure_kind(pressure)}) + "\n" + sentence(element)
+
+
 def render_scene(beat: dict, *, scope: str, report: Report | None = None) -> str:
     """A beat in prose: the place, the time, who is on stage by name, the spotlight tie, the aim and the plan. Names, never ids:
     `cast` is a list of names (or of cards with a name) and `spotlight` is a sentence or a tie whose ends are names. The cast are the
@@ -547,7 +595,7 @@ def render_scene(beat: dict, *, scope: str, report: Report | None = None) -> str
         "aim": sentence(clip(beat.get("aim"), c["aim"], "beat.aim", report)),
         "plan": sentence(clip(beat.get("plan"), c["plan"], "beat.plan", report)),
     }
-    parts = [fill(tx.field("outline", "beats")["item_template"], tokens, drop_first=True)]
+    parts = [fill(tx.field("outline", "beats")["item_template"], tokens, drop_first=True), render_pressure(beat.get("pressure"), report=report)]
     if cast:
         parts.append(fr["scene_minor_roles"])
     if scope == "writer":

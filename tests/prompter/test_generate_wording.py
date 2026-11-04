@@ -389,7 +389,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-10:" in load_prompter("mill").version
+    assert "+generate:generate-11:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------
@@ -543,14 +543,14 @@ def test_the_two_steps_after_the_write_get_more_attempts_and_a_fallback_each():
 def test_an_events_step_that_fails_every_attempt_still_returns_the_chapter_with_a_fallback():
     reply, ctx, engine, good = _generate(0, "no json", "still no", "nope", "again no", 2)
     assert reply["chapter_text"] == good[0].strip() and reply["events"] == gen.events_fallback(good[0].strip())
-    assert reply["shifts"] and ctx.notes["flow"] == {"events_fallback": True, "shifts_fallback": False, "edge_move": "complicates", "minor_names": 0, "minor_new": 0}
+    assert reply["shifts"] and ctx.notes["flow"] == {"events_fallback": True, "shifts_fallback": False, "edge_move": "complicates", "minor_names": 0, "minor_new": 0, "pressure_on": False}
     events_pass = [p for p in ctx.notes["passes"] if p["step"] == "events"][0]
     assert len(events_pass["attempts"]) == 4 and events_pass["fallback"] is True and engine.calls == 7
 
 
 def test_a_first_events_attempt_that_fails_does_not_rerun_the_other_steps():
     reply, ctx, engine, good = _generate(0, "no json", 1, 2)
-    assert engine.calls == 5 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "complicates", "minor_names": 0, "minor_new": 0}
+    assert engine.calls == 5 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "complicates", "minor_names": 0, "minor_new": 0, "pressure_on": False}
     assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 2), ("shifts", 1), ("advance_edge", 1)]
     assert reply["events"]["happened"] == json.loads(good[1])["happened"]
 
@@ -558,7 +558,7 @@ def test_a_first_events_attempt_that_fails_does_not_rerun_the_other_steps():
 def test_a_shifts_step_that_fails_every_attempt_gives_an_empty_list_and_keeps_the_events():
     reply, ctx, engine, good = _generate(0, 1, "bad", "worse", "worst")
     assert reply["shifts"] == [] and reply["events"]["changed"] == json.loads(good[1])["changed"]
-    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": True, "minor_names": 0, "minor_new": 0} and engine.calls == 5
+    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": True, "minor_names": 0, "minor_new": 0, "pressure_on": False} and engine.calls == 5
 
 
 def test_the_write_step_keeps_its_own_two_attempts_and_no_fallback():
@@ -609,7 +609,7 @@ def test_with_the_flag_off_the_verdict_only_goes_to_the_notes_and_the_reply_is_t
     monkeypatch.setattr(advance, "ENFORCE", False)
     reply, ctx, engine, good = _generate(0, 1, 2, REWORDS)
     plain, _, _, _ = _generate(0, 1, 2)
-    assert reply == plain and engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords", "minor_names": 0, "minor_new": 0}
+    assert reply == plain and engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords", "minor_names": 0, "minor_new": 0, "pressure_on": False}
     assert [s.name for s in gen.build_flow(base(), Kit(base())).worst_case()][-1] == "advance_edge" and len(gen.build_flow(base(), Kit(base())).worst_case()) == 4
 
 
@@ -617,7 +617,7 @@ def test_a_reworded_edge_sends_only_the_shifts_back_once_with_the_judges_line_an
     reply, ctx, engine, good = _generate(0, 1, 2, REWORDS, 2)
     assert engine.calls == 6 and reply["chapter_text"] == good[0].strip()
     assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 1), ("shifts", 1), ("advance_edge", 1), ("shifts", 1), ("advance_edge", 1)]
-    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords", "edge_resent": True, "edge_move_after": "complicates", "minor_names": 0, "minor_new": 0}
+    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords", "edge_resent": True, "edge_move_after": "complicates", "minor_names": 0, "minor_new": 0, "pressure_on": False}
     assert "Your first list of changes was set aside." not in engine.prompts[2]
     assert "Your first list of changes was set aside. Same want, new words." in engine.prompts[4] and "Let the edge move" in engine.prompts[4]
     assert engine.prompts[4].rindex("Let the edge move") < engine.prompts[4].rindex("Reply with a JSON object with one key")                # the line sits ahead of the format rule
@@ -671,3 +671,102 @@ def test_the_prompter_version_changes_with_the_judge_wording(monkeypatch, tmp_pa
         handle.write("# one more word\n")
     changed = load_prompter("mill").version
     assert changed != first and changed.split("+advance:")[0] == first.split("+advance:")[0]
+
+
+# ---- the pressure (world-pressure-2): the writer's line, the judge, the notes -----------------------------------------------------------
+
+SENTENCE = "act on the aim or the tie"
+ACTS = json.dumps({"reason": "The rule costs her something.", "effect": "acts"})
+DECOR = json.dumps({"reason": "The rule is only mentioned.", "effect": "decor"})
+
+
+def pressed(kind="rule") -> dict:
+    """A generate request with a pressure in words (the page's W1 shape) and its id on the beat, as the page sends both."""
+    request = base()
+    world = request["world"]
+    if kind == "rule":
+        rule = world["rules"][0]
+        request["pressure"] = {"kind": "rule", "statement": rule["statement"], "cost": rule["cost"], "when_broken": rule["when_broken"]}
+        request["beat"]["pressure"] = rule["id"]
+    else:
+        thing = world["objects"][0]
+        request["pressure"] = {"kind": "object", "name": thing["name"], "description": thing["description"], "significance": thing["significance"]}
+        request["beat"]["pressure"] = thing["id"]
+    return request
+
+
+def _generate_pressed(request, *texts):
+    from pulpermill.backend import runner
+    from pulpermill.backend.engine.base import CancelFlag
+    from pulpermill.backend.pipelines import RunContext
+    kit = Kit(request)
+    engine = FakeEngine()
+    engine.script(*texts)
+    ctx = RunContext(engine, CancelFlag(), [].append, Config())
+    ctx.notes["call"] = "generate"
+    flow = gen.build_flow(request, kit)
+    return flow.reply(runner.run_flow(ctx, flow, "en")), ctx, engine
+
+
+@pytest.mark.parametrize("kind", ["rule", "object"])
+def test_the_writer_gets_the_pressure_line_and_the_element_once_in_the_scene_block_and_no_new_section(kind):
+    plain, request = base(), pressed(kind)
+    a, b = gen.write_prompt(plain), gen.write_prompt(request)
+    assert list(sections(a)) == list(sections(b)) and a.count(SENTENCE) == 0 and b.count(SENTENCE) == 1
+    phrase = request["pressure"]["statement"] if kind == "rule" else request["pressure"]["description"]
+    assert a.count(phrase) == 1 and b.count(phrase) == 1
+    scene = [body for body in sections(b).values() if SENTENCE in body][0]
+    assert phrase in scene and "Suvi hides the ledger" in scene                               # next to the plan, in the same block
+    assert request["beat"]["pressure"] not in b                                              # the id never reaches the prompt
+
+
+def test_with_no_pressure_the_writer_prompt_is_what_it_was_and_a_squeeze_drops_the_sentence_first():
+    plain = base()
+    assert gen.write_prompt(dict(plain, pressure=None)) == gen.write_prompt(plain) and SENTENCE not in gen.write_prompt(plain)
+    for kind in ("rule", "object"):
+        assert gen.write_prompt(pressed(kind), 0.99) == gen.write_prompt(plain, 0.99)
+        assert gen.write_prompt(pressed(kind), 0.7) == gen.write_prompt(plain, 0.7)
+
+
+def test_the_pressure_judge_runs_last_reads_what_happened_and_not_the_chapter_and_records_a_word():
+    request = pressed()
+    kit = Kit(request)
+    good = gen.script(request, kit)
+    assert len(good) == 5 and json.loads(good[4])["effect"] == "acts"
+    reply, ctx, engine = _generate_pressed(request, *good)
+    assert engine.calls == 5 and [p["step"] for p in ctx.notes["passes"]] == ["write", "events", "shifts", "advance_edge", "advance_pressure"]
+    judged = engine.prompts[4]
+    assert json.loads(good[1])["happened"] in judged and good[0].strip() not in judged and request["pressure"]["statement"] in judged
+    assert request["beat"]["pressure"] not in judged and request["beat"]["aim"] in judged
+    assert ctx.notes["flow"]["pressure_on"] is True and ctx.notes["flow"]["pressure_effect"] == "acts"
+    assert reply["events"]["happened"] == json.loads(good[1])["happened"] and reply["shifts"]
+
+
+def test_a_decor_verdict_or_a_failing_judge_changes_nothing_in_the_reply():
+    request = pressed()
+    good = gen.script(request, Kit(request))
+    reply_acts, _, _ = _generate_pressed(request, *good)
+    reply_decor, ctx, engine = _generate_pressed(request, *good[:4], DECOR)
+    assert reply_decor == reply_acts and engine.calls == 5 and ctx.notes["flow"]["pressure_effect"] == "decor"
+    reply_bad, ctx, engine = _generate_pressed(request, *good[:4], "no", "still no")
+    assert reply_bad == reply_acts and engine.calls == 6
+    assert ctx.notes["flow"]["pressure_effect"] == "unclear" and ctx.notes["flow"]["pressure_judge_fallback"] is True
+
+
+def test_the_reply_keeps_the_resent_shifts_when_a_pressure_judge_follows_them():
+    request = pressed()
+    good = gen.script(request, Kit(request))
+    reply, ctx, engine = _generate_pressed(request, good[0], good[1], good[2], REWORDS, good[2], good[3], ACTS)
+    assert engine.calls == 7 and [p["step"] for p in ctx.notes["passes"]][-3:] == ["shifts", "advance_edge", "advance_pressure"]
+    assert reply["shifts"] == json.loads(good[2])["shifts"] and ctx.notes["flow"]["pressure_effect"] == "acts"
+    assert ctx.notes["flow"]["edge_resent"] is True
+
+
+def test_the_pressure_judge_runs_when_no_edge_was_replaced_and_not_without_a_pressure():
+    request = pressed()
+    flow = gen.build_flow(request, Kit(request))
+    step = flow.next(["a chapter", {"happened": "The rule cost her.", "changed": "y"}, {"shifts": []}])
+    assert step.name == "advance_pressure" and "The rule cost her." in step.text(1.0)
+    assert flow.notes["pressure_on"] is True and [s.name for s in flow.worst_case()][-1] == "advance_pressure"
+    plain = gen.build_flow(base(), Kit(base()))
+    assert plain.notes["pressure_on"] is False and "advance_pressure" not in [s.name for s in plain.worst_case()] and len(gen.script(base(), Kit(base()))) == 4

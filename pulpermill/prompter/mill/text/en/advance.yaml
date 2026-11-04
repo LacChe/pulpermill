@@ -24,6 +24,16 @@ new_edge_line: "The edge after this chapter: {edge}"
 edge_moves: "Sort the change into one move. escalates: the same want, now stronger, costlier or more urgent, so that more is at stake. reverses: the want turns into its opposite, or turns against the other person. complicates: a second want or a fear joins the first, so that {tie_from} is pulled two ways. resolves: the want is met, given up, or no longer drives {tie_from}. rewords: the same underlying want said in other words, with nothing new at stake. Judge by what {tie_from} wants from {tie_to}, and let the choice of words fall away. When the want underneath is the same and nothing has been added to it, answer rewords."
 edge_answer: "Reply with a JSON object with two keys. reason: one short sentence that says what {tie_from} wanted before, what {tie_from} wants now, and why that is the move you chose. move: escalates, reverses, complicates, resolves or rewords. Write reason in English and keep every name exactly as it is written above."
 
+# ---- The pressure -----------------------------------------------------------------------------------------------------------
+# One rule or object of the world was asked to act on a chapter. This judge only records whether it did; no flow acts on the verdict.
+pressure_role: "You are a careful reader of a story that is written one chapter at a time. You decide whether one {kind} of the world did real work in a chapter, or was only there."
+pressure_element_line: "The {kind} in question: {element}"
+pressure_aim_line: "The protagonist's aim in the chapter: {aim}"
+pressure_plan_lead: "The plan for the chapter:"
+pressure_happened_lead: "What happened in the chapter:"
+pressure_effects: "Sort what you read into one verdict. acts: the {kind} changes what a character can do, forces a character to choose, or costs a character something. decor: the {kind} is only present: it is named in passing, used as a backdrop, or spoken of with no consequence for anyone. unclear: the text does not say enough to tell. Judge by what the {kind} does to the people in the story, and let how often it is named fall away. When the {kind} could be taken out and nothing in the text would change, answer decor."
+pressure_answer: "Reply with a JSON object with two keys. reason: one short sentence that says what the {kind} does in the text, or that it does nothing. effect: acts, decor or unclear. Write reason in English and keep every name exactly as it is written above."
+
 # ---- The lines a flow can show a model that has to try again ---------------------------------------------------------------
 # problem_line builds one line from the judge's own reason. The reason comes first, then what to do.
 problems:

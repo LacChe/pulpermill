@@ -102,7 +102,7 @@ def test_notes_hold_short_words_only():
 
 
 def test_the_flag_is_on_and_the_version_is_set():
-    assert advance.ENFORCE is True and advance.VERSION == "advance-2"
+    assert advance.ENFORCE is True and advance.VERSION == "advance-3"
 
 
 def test_a_resend_line_says_the_first_reply_was_set_aside_and_then_gives_the_problem_line():
@@ -126,3 +126,45 @@ def test_the_labelled_cases_use_only_known_words_and_build_prompts():
         assert c["expected"] in advance.AIM_KINDS
         beats = [{"chapter": i + 1, "aim": a} for i, a in enumerate(c["earlier_aims"])]
         assert c["new_aim"] in advance.aim_step(request(chapter=len(beats) + 1, earlier_beats=beats), c["new_aim"]).text(1.0)
+
+
+# ---- the pressure judge (world-pressure-2, observe-only) ----------------------------------------------------------------------------
+
+def pressure_request(case: dict) -> dict:
+    """A request that holds a labelled case's pressure, protagonist and tie, in the shape the judge reads."""
+    req = request()
+    req["cast"] = [{"id": "c1", "name": case["protagonist"]}, {"id": "c2", "name": case["tie"]["tie_to"]}]
+    req["protagonist"] = "c1"
+    req["ties"] = [{"id": "t1", "tie_from": "c1", "tie_to": "c2", "bond": case["tie"]["bond"], "edge": "to win"}]
+    req["spotlight"] = "t1"
+    req["pressure"] = case["pressure"]
+    return req
+
+
+def test_the_pressure_cases_are_labelled_for_both_kinds_and_both_texts():
+    cases = CASES["pressure_cases"]
+    assert len(cases) >= 8 and {c["expected"] for c in cases} == {"acts", "decor"}
+    for expected in ("acts", "decor"):
+        mine = [c for c in cases if c["expected"] == expected]
+        assert len(mine) >= 4 and {c["source"] for c in mine} == {"plan", "happened"} and {c["pressure"]["kind"] for c in mine} == {"rule", "object"}
+    assert len({c["protagonist"] for c in cases}) == len(cases) and all(c["note"] and c["text"] and c["aim"] for c in cases)
+
+
+def test_the_pressure_prompt_shows_the_element_the_aim_and_the_text_in_words_and_asks_for_one_word():
+    for case in CASES["pressure_cases"]:
+        req = pressure_request(case)
+        prompt = advance.pressure_prompt(req, case["text"], case["source"], case["aim"])
+        element = case["pressure"].get("statement") or case["pressure"].get("description")
+        assert element in prompt and case["aim"] in prompt and case["text"] in prompt and case["tie"]["tie_to"] in prompt
+        assert ("What happened in the chapter:" if case["source"] == "happened" else "The plan for the chapter:") in prompt
+        assert "effect: acts, decor or unclear" in prompt and not ids_in(prompt, req)
+        step = advance.pressure_step(req, case["text"], case["source"], case["aim"])
+        assert step.name == "advance_pressure" and step.grammar["properties"]["effect"]["enum"] == ["acts", "decor", "unclear"]
+
+
+def test_the_pressure_verdict_word_is_unclear_when_it_cannot_be_read_and_the_notes_carry_it():
+    assert advance.pressure_effect({"effect": "acts"}) == "acts" and advance.pressure_effect({"effect": "decor"}) == "decor"
+    for odd in (None, {}, {"effect": "loud"}, "acts", {"effect": 3}):
+        assert advance.pressure_effect(odd) == "unclear"
+    assert advance.notes(pressure_value={"effect": "decor"}) == {"pressure_effect": "decor"} and advance.notes() == {}
+    assert advance.notes(aim_value={"kind": "same_kind"}, pressure_value={}) == {"aim_kind": "same_kind", "pressure_effect": "unclear"}

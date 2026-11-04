@@ -16,12 +16,14 @@ from pulpermill.prompter.base import Step
 
 from . import common
 
-VERSION = "advance-2"
+VERSION = "advance-3"
 ENFORCE = True
 MAX_OUTPUT = 160            # one short sentence and one word, with room to spare
 
 AIM_KINDS = ("new_kind", "same_kind")
 EDGE_MOVES = ("escalates", "reverses", "complicates", "resolves", "rewords")
+PRESSURE_EFFECTS = ("acts", "decor", "unclear")
+TEXT_LIMIT = 1500            # the most characters of a plan or of a chapter's events the pressure judge reads
 
 
 # ---- The shape of a reply -----------------------------------------------------------------------------------------------------
@@ -39,6 +41,10 @@ def aim_grammar() -> dict:
 
 def edge_grammar() -> dict:
     return _grammar("move", EDGE_MOVES)
+
+
+def pressure_grammar() -> dict:
+    return _grammar("effect", PRESSURE_EFFECTS)
 
 
 # ---- What a prompt is made from -----------------------------------------------------------------------------------------------
@@ -157,6 +163,39 @@ def edge_step(request: dict, old_edge: str, new_edge: str) -> Step:
                 "structured", False)
 
 
+# ---- The pressure step ------------------------------------------------------------------------------------------------------------
+
+def pressure_prompt(request: dict, text: str, source: str, aim: str = "", factor: float = 1.0) -> str:
+    """`source` is \"plan\" (the text is the plan of the chapter) or \"happened\" (the text is what the chapter's events say happened)."""
+    w = common.load_text("advance")
+    names = names_of(request)
+    protagonist = names.get(request.get("protagonist") or "", "")
+    tie_from, tie_to, bond = _ends(request, names)
+    pressure = request.get("pressure")
+    kind = r.pressure_kind(pressure)
+    tie = ""
+    if tie_from and tie_to:
+        tie = (w["tie_line"] if bond else w["tie_line_plain"]).format(tie_from=tie_from, tie_to=tie_to, bond=r.bare(bond))
+    lead = w["pressure_happened_lead" if source == "happened" else "pressure_plan_lead"]
+    blocks = [
+        w["pressure_role"].format(kind=kind),
+        w["protagonist_line"].format(protagonist=protagonist) if protagonist else "",
+        tie,
+        w["pressure_element_line"].format(kind=kind, element=r.pressure_element(pressure)),
+        w["pressure_aim_line"].format(aim=r.s(aim)) if r.s(aim) else "",
+        lead + "\n" + r.clip(text, TEXT_LIMIT),
+        w["pressure_effects"].format(kind=kind),
+        w["pressure_answer"].format(kind=kind),
+    ]
+    return "\n\n".join(b for b in blocks if b)
+
+
+def pressure_step(request: dict, text: str, source: str, aim: str = "") -> Step:
+    """Did the chapter's pressure act on it, or was it only there? Reply {reason, effect}. Observe-only: nothing sends anything back for it."""
+    return Step("advance_pressure", lambda f: pressure_prompt(request, text, source, aim, f), "json", MAX_OUTPUT, pressure_grammar(), _reason_check,
+                "structured", False)
+
+
 # ---- Reading a verdict ------------------------------------------------------------------------------------------------------------
 
 def _word(value: Any, key: str, words: tuple[str, ...]) -> str:
@@ -172,6 +211,11 @@ def aim_ok(value: Any) -> bool:
 def edge_ok(value: Any) -> bool:
     """False only when the judge said the edge only rewords. Anything else, a missing verdict included, is fine."""
     return _word(value, "move", EDGE_MOVES) != "rewords"
+
+
+def pressure_effect(value: Any) -> str:
+    """The pressure verdict word. Anything that cannot be read is `unclear`, the judge's neutral last resort."""
+    return _word(value, "effect", PRESSURE_EFFECTS) or "unclear"
 
 
 def problem_line(kind: str, value: Any) -> str:
@@ -190,11 +234,14 @@ def resend_line(kind: str, value: Any) -> str:
     return f"{lead} {problem_line(kind, value)}"
 
 
-def notes(aim_value: Any = None, edge_value: Any = None) -> dict:
-    """Short words for `Flow.notes` (the run log): {"aim_kind": ..., "edge_move": ...}, each only when its verdict was read."""
+def notes(aim_value: Any = None, edge_value: Any = None, pressure_value: Any = None) -> dict:
+    """Short words for `Flow.notes` (the run log): {"aim_kind": ..., "edge_move": ..., "pressure_effect": ...}, each only when its verdict was read
+    (the pressure verdict is always a word: `unclear` when it could not be read, as long as the judge ran)."""
     out = {}
     if _word(aim_value, "kind", AIM_KINDS):
         out["aim_kind"] = aim_value["kind"]
     if _word(edge_value, "move", EDGE_MOVES):
         out["edge_move"] = edge_value["move"]
+    if pressure_value is not None:
+        out["pressure_effect"] = pressure_effect(pressure_value)
     return out

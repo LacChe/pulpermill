@@ -17,7 +17,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common
 
-VERSION = "plan-8"
+VERSION = "plan-9"
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
@@ -28,6 +28,7 @@ BRAINSTORM_STAND_IN = "word " * BRAINSTORM_OUTPUT       # the longest a brainsto
 JUDGE_ATTEMPTS = 2        # the advancement judge (observe-only): two tries, then a neutral verdict, so a judge can never fail a call
 RESEND_STAND_IN = "word " * 90        # the longest line the judge can send a plan back with (a 400-character reason and the advice), for the worst case
 AIM_STAND_IN = "word " * 60       # the longest an aim is shown to a model (300 characters), for the worst case
+PLAN_STAND_IN = "word " * 300      # the longest a plan is shown to the pressure judge (1,200 characters), for the worst case
 
 
 # ---- Shared helpers -------------------------------------------------------------------------------------------------------
@@ -42,6 +43,13 @@ def tiers(factor: float) -> tuple[float, float, float]:
     """The squeeze order, as three factors for one squeeze `factor`: oldest history is cut first (from 0.85 down), then world detail
     (below 0.85), then cast texture (below 0.7). The plan, the scene, the spotlight tie and the style rules are never cut."""
     return factor, (1.0 if factor >= 0.85 else factor), (1.0 if factor >= 0.7 else factor)
+
+
+def pressure_of(request: dict, factor: float = 1.0) -> dict | None:
+    """The pressure a prompt carries, in words: the request's `pressure`, unless a squeeze asks for room. The pressure sentence is the first
+    thing a squeeze drops (before any history, world or cast text), and the element then stands in its world list again."""
+    pressure = request.get("pressure")
+    return pressure if isinstance(pressure, dict) and pressure and factor >= 1.0 else None
 
 
 def names_of(request: dict) -> dict[str, str]:
@@ -143,9 +151,11 @@ def _context(request: dict, factor: float, kinds: bool = False) -> dict:
 
     with tx.squeeze(cast_f):
         cast_text = r.render_cast(cast, scope="planner")
+    pressure = pressure_of(request, factor)
     with tx.squeeze(world_f):
-        world_text = r.render_world(request.get("world") or {}, scope="planner")
+        world_text = r.render_world(request.get("world") or {}, scope="planner", without=pressure)
     spotlight_text = r.render_spotlight(tie_words, cast, scope="planner", names=names) if tie else ""
+    spotlight_text = "\n".join(x for x in (spotlight_text, r.render_pressure(pressure)) if x)       # one sentence inside the spotlight section
 
     events = cut_events(request.get("earlier_events"), chapter, history_ratio)
     keep = max(1, round(tx.limits()["events"]["full_chapters_planner"] * min(1.0, history_ratio)))
@@ -331,7 +341,8 @@ class PlanFlow(Flow):
 
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
-        self.notes: dict[str, Any] = {}         # for the run log: the aim judge's verdict word, whether a last resort stood in for a step, and the walk-on counts (minor_names, minor_new)
+        self.notes: dict[str, Any] = {"pressure_on": bool(pressure_of(request))}      # for the run log: whether a pressure was sent, the judges' verdict words, whether a last resort stood in for a step, and the walk-on counts (minor_names, minor_new)
+        self._pressure_at: int | None = None    # where the pressure judge's result sits among the results after the brainstorm, once that step has been asked for
         self.brainstorm = ""                    # the brainstorm's text once it has run ("" until then, and when it fell back)
 
     def _count_names(self, value: Any) -> list[str]:
@@ -400,6 +411,23 @@ class PlanFlow(Flow):
             return {}
         return replace(advance.aim_step(self.request, aim), attempts=JUDGE_ATTEMPTS, fallback=neutral)
 
+    def _pressure_step(self, beat: Any) -> Step:
+        """The judge of the chapter's pressure, a step of its own after the plan that stands. It reads the plan text. Observe-only: its last
+        resort is `unclear`, and nothing is ever sent back for its verdict."""
+        def unclear():
+            self.notes["pressure_judge_fallback"] = True
+            return {"effect": "unclear"}
+        beat = beat if isinstance(beat, dict) else {}
+        return replace(advance.pressure_step(self.request, r.s(beat.get("plan")), "plan", r.s(beat.get("aim"))), attempts=JUDGE_ATTEMPTS, fallback=unclear)
+
+    def _end(self, results):
+        """The chain of steps is over: the pressure judge is the one step left, and only when a pressure was sent. `results` are the ones after
+        the brainstorm."""
+        if not self.notes["pressure_on"]:
+            return None
+        self._pressure_at = len(results)
+        return self._pressure_step(self._final(results))
+
     def _resend_step(self, first: Any, line: str) -> Step:
         """The plan step once more, with the judge's line (and the same brainstorm). If this pass cannot be used either, the first plan stands
         (it was usable)."""
@@ -415,7 +443,7 @@ class PlanFlow(Flow):
 
     def _final(self, results: list) -> Any:
         """The plan the reply carries: the second pass when the plan was sent back, else the first. `results` are the ones after the brainstorm."""
-        return results[2] if len(results) >= 3 else results[0]
+        return results[2] if self.notes.get("aim_resent") else results[0]
 
     def next(self, results):
         if not results:
@@ -428,29 +456,32 @@ class PlanFlow(Flow):
         """plan, judge, and the one extra pass: the plan once more with the judge's line, then the judge once more. A second bad verdict is
         accepted (noted). Never more than that one extra pass."""
         n = len(results)
+        if self._pressure_at is not None and n == self._pressure_at + 1:      # the pressure judge has run: record its word and stop
+            self.notes.update(advance.notes(pressure_value=results[self._pressure_at]))
+            return None
         if n == 0:
             return self._step()
         if n == 1:
             aim = self._aim_of(results[0])
-            return self._aim_step(aim) if aim and self._judges() else None
+            return self._aim_step(aim) if aim and self._judges() else self._end(results)
         if n == 2:
             self.notes.update(advance.notes(aim_value=results[1]))
             if advance.ENFORCE and not advance.aim_ok(results[1]):
                 self.notes["aim_resent"] = True
                 return self._resend_step(results[0], advance.resend_line("aim", results[1]))
-            return None
+            return self._end(results)
         if n == 3:
             if self.notes.get("aim_resend_fallback"):       # the first plan stands, and it was judged already
                 self.notes["aim_accepted"] = True
-                return None
+                return self._end(results)
             aim = self._aim_of(results[2])
-            return self._aim_step(aim) if aim else None
+            return self._aim_step(aim) if aim else self._end(results)
         again = advance.notes(aim_value=results[3]).get("aim_kind")
         if again:
             self.notes["aim_kind_after"] = again
         if not advance.aim_ok(results[3]):
             self.notes["aim_accepted"] = True
-        return None
+        return self._end(results)
 
     def worst_case(self):
         """The brainstorm, then the plan carrying a brainstorm of the longest size, then the judge and the one extra pass."""
@@ -459,6 +490,8 @@ class PlanFlow(Flow):
             steps.append(self._aim_step(AIM_STAND_IN))
             if advance.ENFORCE:
                 steps += [self._step(RESEND_STAND_IN, brainstorm=BRAINSTORM_STAND_IN), self._aim_step(AIM_STAND_IN)]
+        if self.notes["pressure_on"]:
+            steps.append(self._pressure_step({"aim": AIM_STAND_IN, "plan": PLAN_STAND_IN}))
         return steps
 
     def reply(self, results):
@@ -487,7 +520,9 @@ def script(request: dict, kit: Any) -> list[str]:
     brainstorm = (f"Option 1: a refusal. {a} asks {b} for the {words[n % len(words)]} key and is turned down; {b} wants to be asked properly, and the two clash at the door. "
                   f"It costs {a} a favour. Option 2: a trade. {a} offers {b} something in return, {b} wants more than was offered, and they clash over the price. "
                   f"It costs {a} a secret. Option 3: a misunderstanding. {a} and {b} each think the other holds the key; they clash over who lied. It costs both their trust.")
-    texts = [brainstorm, json.dumps({"where": place, "when_time": f"Day {n}, early morning", "aim": aim, "plan": plan})]
+    texts = [brainstorm, json.dumps({"idea_use": f"I build on option 2, the trade, and take its price quarrel.", "where": place, "when_time": f"Day {n}, early morning", "aim": aim, "plan": plan})]
     if advance.earlier_aims(request):          # the advancement judge runs from the second chapter on
         texts.append(json.dumps({"reason": "The aim is a different kind of errand from the earlier ones.", "kind": "new_kind"}))
+    if request.get("pressure"):                # the pressure judge runs last, whenever a pressure was sent
+        texts.append(json.dumps({"reason": "The plan makes the element cost the protagonist something.", "effect": "acts"}))
     return texts

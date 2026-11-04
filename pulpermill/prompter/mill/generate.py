@@ -19,9 +19,9 @@ from pulpermill.prompter.base import Flow, Step
 from pulpermill.schema.shifts import shiftable_fields
 
 from . import advance, common
-from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
+from .plan import cut_events, in_names, names_of, pressure_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-10"
+VERSION = "generate-11"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -35,6 +35,7 @@ SHIFTS_TOKENS = 1600
 JUDGE_ATTEMPTS = 2        # the advancement judge (observe-only): two tries, then a neutral verdict, so a judge can never fail a call
 RESEND_STAND_IN = "word " * 90        # the longest line the judge can send the shifts back with (a 400-character reason and the advice), for the worst case
 EDGE_STAND_IN = "word " * 60       # the longest an edge is shown to a model (300 characters), for the worst case
+HAPPENED_STAND_IN = "word " * 100      # the longest a chapter's `happened` is shown to the pressure judge, for the worst case
 EVENTS_ATTEMPTS, SHIFTS_ATTEMPTS = 4, 3          # after the chapter is written, each of these steps is retried on its own and then falls back
 CHANGED_WORDS, HAPPENED_WORDS = 45, 60           # the most words `changed` keeps (one short sentence) and the fallback's `happened` keeps
 
@@ -76,14 +77,17 @@ def write_prompt(request: dict, factor: float = 1.0) -> str:
     candidates, identified = _spot(request, names)
     spot = spotlight_in_words(candidates[0], names) if identified and len(candidates) == 1 else None
 
-    scene_beat = {**{k: v for k, v in beat.items() if k != "spotlight"}, "cast": cast_names}     # the tie's id is never shown
+    pressure = pressure_of(request, factor)
+    scene_beat = {**{k: v for k, v in beat.items() if k not in ("spotlight", "pressure")}, "cast": cast_names}     # the tie's and the pressure's ids are never shown
+    if pressure:
+        scene_beat["pressure"] = pressure          # in words, from the request; the pressure sentence is the first thing a squeeze drops
     if spot:
         scene_beat["spotlight"] = spot
     with tx.squeeze(cast_f):
         cast_text = r.render_cast(cast, scope="writer")
     with tx.squeeze(world_f):
         world_text = r.render_world(request.get("world") or {}, scope="writer", place=r.s(beat.get("where")) or None,
-                                    in_play=r.groups_in_play({"ties": ties}))
+                                    in_play=r.groups_in_play({"ties": ties}), without=pressure)
     events = cut_events(request.get("earlier_events"), chapter, history_ratio)
     keep = max(1, round(tx.limits()["events"]["full_chapters_writer"] * min(1.0, history_ratio)))
     history = r.render_history(events, chapter, scope="writer", keep_full=keep)
@@ -346,7 +350,8 @@ class GenerateFlow(Flow):
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
         self.echo_accepted = False          # the write reply that was used carried an echo that the last attempt let through
-        self.notes = {"events_fallback": False, "shifts_fallback": False}      # for the run log: did a step's last resort stand in for it?
+        self.notes = {"events_fallback": False, "shifts_fallback": False, "pressure_on": bool(pressure_of(request))}      # for the run log: did a step's last resort stand in for it, and was a pressure sent?
+        self._pressure_at: int | None = None    # where the pressure judge's result sits in the results, once that step has been asked for
 
     def _write_check(self):
         """A check for one write step instance: strict on its first call, soft-tolerant on its second (the runner's last attempt). Only the
@@ -410,37 +415,57 @@ class GenerateFlow(Flow):
             return {}
         return replace(advance.edge_step(self.request, old, new), attempts=JUDGE_ATTEMPTS, fallback=neutral)
 
+    def _pressure_step(self, events: Any) -> Step:
+        """The judge of the chapter's pressure, a step of its own after the shifts. It reads what the chapter's events say happened, not the
+        chapter's text. Observe-only: its last resort is `unclear`, and nothing is ever sent back for its verdict."""
+        def unclear():
+            self.notes["pressure_judge_fallback"] = True
+            return {"effect": "unclear"}
+        happened = r.s(repair_events(events).get("happened"))
+        aim = r.s((self.request.get("beat") or {}).get("aim"))
+        return replace(advance.pressure_step(self.request, happened, "happened", aim), attempts=JUDGE_ATTEMPTS, fallback=unclear)
+
+    def _end(self, results: list):
+        """The chain of steps is over: the pressure judge is the one step left, and only when a pressure was sent."""
+        if not self.notes["pressure_on"]:
+            return None
+        self._pressure_at = len(results)
+        return self._pressure_step(results[1])
+
     def _shifts_of(self, results: list) -> Any:
         """The shifts the reply carries: the second pass when the shifts were sent back, else the first."""
-        return results[4] if len(results) >= 5 else results[2]
+        return results[4] if self.notes.get("edge_resent") else results[2]
 
     def next(self, results):
         """write, events, shifts, judge; and when `advance.ENFORCE` and the judge says the edge only rewords: the shifts step once more with the
         judge's line (never the write), then the judge once more. A second bad verdict is accepted (noted). Never more than that one extra pass."""
         n = len(results)
+        if self._pressure_at is not None and n == self._pressure_at + 1:      # the pressure judge has run: record its word and stop
+            self.notes.update(advance.notes(pressure_value=results[self._pressure_at]))
+            return None
         if n < 3:
             return self._step(n, results)
         if n == 3:
             edge = replaced_edge(self.request, self.kit, results[2])         # no edge replaced (the shifts fell back, say): nothing to judge
-            return self._edge_step(*edge) if edge else None
+            return self._edge_step(*edge) if edge else self._end(results)
         if n == 4:
             self.notes.update(advance.notes(edge_value=results[3]))
             if advance.ENFORCE and not advance.edge_ok(results[3]):
                 self.notes["edge_resent"] = True
                 return self._resend_step(results[0], results[2], advance.resend_line("edge", results[3]))
-            return None
+            return self._end(results)
         if self.notes.get("edge_resend_fallback"):                           # the first shifts stand, and they were judged already
             self.notes["edge_accepted"] = True
-            return None
+            return self._end(results)
         if n == 5:
             edge = replaced_edge(self.request, self.kit, results[4])
-            return self._edge_step(*edge) if edge else None
+            return self._edge_step(*edge) if edge else self._end(results)
         again = advance.notes(edge_value=results[5]).get("edge_move")
         if again:
             self.notes["edge_move_after"] = again
         if not advance.edge_ok(results[5]):
             self.notes["edge_accepted"] = True
-        return None
+        return self._end(results)
 
     def worst_case(self):
         chapter = "word " * WRITE_TOKENS
@@ -451,6 +476,8 @@ class GenerateFlow(Flow):
             steps.append(self._edge_step(old, EDGE_STAND_IN))
             if advance.ENFORCE:
                 steps += [self._shifts_step(chapter, RESEND_STAND_IN, None), self._edge_step(old, EDGE_STAND_IN)]
+        if self.notes["pressure_on"]:
+            steps.append(self._pressure_step({"happened": HAPPENED_STAND_IN}))
         return steps
 
     def reply(self, results):
@@ -481,5 +508,8 @@ def script(request: dict, kit: Any) -> list[str]:
                f"over {pick(['bread', 'timber', 'cloth', 'rope', 'candles'], 2)} had spread through the {pick(['market', 'quarry', 'meadow', 'tavern', 'furnace'], 5)} on round {n}. "
                f"A clerk waited by the {pick(['gate', 'stairs', 'counter', 'window', 'stove'], 4)}, saying nothing. Round {n} cost {pick(['coins', 'keys', 'sacks', 'letters', 'barrels'], 6)} to somebody. "
                f"What was said at the table cost something, and what was left unsaid cost more, until the last choice of the night changed the room.")
-    return [chapter, json.dumps({"happened": "The people met and quarrelled, and one of them gave something up.", "changed": "The tie and the aim now stand somewhere new."}),
-            json.dumps({"shifts": shifts})] + ([json.dumps({"reason": "The want is now a different kind of want.", "move": "complicates"})] if targets else [])
+    texts = [chapter, json.dumps({"happened": "The people met and quarrelled, and one of them gave something up.", "changed": "The tie and the aim now stand somewhere new."}),
+             json.dumps({"shifts": shifts})] + ([json.dumps({"reason": "The want is now a different kind of want.", "move": "complicates"})] if targets else [])
+    if request.get("pressure"):                # the pressure judge runs last, whenever a pressure was sent
+        texts.append(json.dumps({"reason": "The element cost one of them something.", "effect": "acts"}))
+    return texts

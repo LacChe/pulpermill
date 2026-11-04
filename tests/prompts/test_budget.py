@@ -3,6 +3,8 @@ The token tests need the Gemma tokenizer files (pulpermill/prompts/tokenizer/ or
 Run from the repository root: python -m pytest tests/prompts"""
 from pathlib import Path
 
+import copy
+
 import story_sizes as cases
 from test_render import generate_request
 
@@ -164,3 +166,22 @@ def test_fixed_fields_have_no_cap():
         for key, f in model.model_fields.items():
             meta = f.json_schema_extra or {}
             assert not (meta.get("fixed") and meta.get("cap")), (card, key)
+
+
+# ---- the pressure (world-pressure-2) ------------------------------------------------------------------------------------------------
+
+def test_a_pressure_adds_little_to_a_writer_prompt_and_the_worst_case_still_fits():
+    from pulpermill.prompter.mill import generate as gen
+    request = generate_request()
+    rule = request["world"]["rules"][0]
+    plain = gen.write_prompt(copy.deepcopy(request))
+    request["pressure"] = {"kind": "rule", "statement": "Nobody may cross the river after dark, whatever the business, whoever the patron. " * 4, "cost": "Anyone who does is struck from the registry of the guild. " * 4, "when_broken": ""}     # the longest element, cut to its cap
+    pressed = gen.write_prompt(request)
+    assert len(pressed.split()) - len(plain.split()) <= 70
+    if have_tokenizer():
+        assert tokens.count(pressed) - tokens.count(plain) <= 120
+        from pulpermill.backend.kit import Kit
+        flow = gen.build_flow(request, Kit(request))
+        steps = flow.worst_case()
+        assert steps[-1].name == "advance_pressure"                                           # the judge is counted in the worst case
+        assert all(budget.measure(budget.Sized(s.name, s.text(1.0), s.max_output)).ok for s in steps)
