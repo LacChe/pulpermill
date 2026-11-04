@@ -21,7 +21,7 @@ from pulpermill.backend.config import Config  # noqa: E402
 from pulpermill.backend.engine import FakeEngine  # noqa: E402
 from pulpermill.backend.kit import Kit  # noqa: E402
 from pulpermill.prompter import load_prompter  # noqa: E402
-from pulpermill.prompter.mill import plan  # noqa: E402
+from pulpermill.prompter.mill import advance, plan  # noqa: E402
 from pulpermill.prompts import budget, tokens  # noqa: E402
 from server_harness import post, running, wait_idle  # noqa: E402
 from story_sizes import inflate  # noqa: E402
@@ -146,7 +146,7 @@ def test_the_planner_fits_the_context_at_some_squeeze_for_a_large_story():
     flow = plan.build_flow(big(), Kit(big()))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert all(m.ok for m in measures) and factor <= 1.0
-    assert [s.name for s in flow.worst_case()] == ["plan"] and flow.worst_case()[0].max_output == plan.MAX_OUTPUT
+    assert [s.name for s in flow.worst_case()] == ["plan", "advance_aim"] and flow.worst_case()[0].max_output == plan.MAX_OUTPUT
 
 
 # ---- the check ------------------------------------------------------------------------------------------------------------
@@ -201,7 +201,7 @@ def test_the_step_is_one_json_step_with_the_planner_grammar_and_the_check_on_it(
     flow = plan.build_flow(request, kit)
     step = flow.next([])
     assert step.name == "plan" and step.kind == "json" and step.grammar == kit.grammar.plan_beat() and step.sampling == "thinking" and step.language
-    assert flow.next([good()]) is None and flow.reply([good()]) == {"beat": good()}
+    assert flow.reply([good()]) == {"beat": good()} and flow.next([good()]).name == "advance_aim"      # the earlier aims are there to be judged against
     assert step.check({**good(), "where": ""}) and step.check(good()) is None
     assert budget.input_limit(step.max_output) > 10000                     # the context keeps room for the prompt
 
@@ -219,19 +219,85 @@ def test_every_plan_vector_is_answered_through_the_real_server_on_the_mill_promp
         assert response.status_code == 200 and body["ok"] is True, body
         assert contract.parse_reply("plan", body).beat["where"]
         assert wait_idle(base_url)
-    assert engine.calls == 1 and "Act 1" in engine.prompts[0] and engine.params[0] is not None
+    assert engine.calls == 1 + bool(advance.earlier_aims(request)) and "Act 1" in engine.prompts[0] and engine.params[0] is not None
 
 
 def test_a_plan_that_fails_the_check_is_asked_for_again_with_the_line_and_then_used():
     request = base()
     engine = FakeEngine()
-    engine.script(json.dumps(with_(aim="Feel better about her mother")), plan.script(request, Kit(request))[0])
+    engine.script(json.dumps(with_(aim="Feel better about her mother")), *plan.script(request, Kit(request)))
     with running(config=Config(prompter="mill"), engine=engine, run=None) as (base_url, _):
         assert post(base_url, request).status_code == 200
         assert wait_idle(base_url)
-    assert engine.calls == 2 and "Your previous reply could not be used" in engine.prompts[1] and "state of mind" in engine.prompts[1]
+    assert engine.calls == 3 and "Your previous reply could not be used" in engine.prompts[1] and "state of mind" in engine.prompts[1]
     assert engine.constraints[0] is not None or engine.constraints[1] is not None
 
 
 def test_the_version_follows_the_wording():
-    assert "+plan:plan-3:" in load_prompter("mill").version
+    assert "+plan:plan-4:" in load_prompter("mill").version
+
+
+# ---- the aim judge after the plan (phase 3, observe-only) ---------------------------------------------------------------------------
+
+def run_plan(request, *texts, **config):
+    """The real plan flow on the fake engine, scripted with `texts`. Returns (reply, ctx, engine)."""
+    from pulpermill.backend import runner
+    from pulpermill.backend.engine.base import CancelFlag
+    from pulpermill.backend.pipelines import RunContext
+    kit = Kit(request)
+    engine = FakeEngine()
+    engine.script(*texts)
+    ctx = RunContext(engine, CancelFlag(), [].append, Config(**config))
+    ctx.notes["call"] = "plan"
+    flow = plan.build_flow(request, kit)
+    return flow.reply(runner.run_flow(ctx, flow, "en")), ctx, engine
+
+
+def test_the_aim_judge_is_a_step_of_its_own_after_the_plan_with_two_attempts_and_a_neutral_fallback():
+    request = base()
+    flow = plan.build_flow(request, Kit(request))
+    step = flow.next([good()])
+    assert step.name == "advance_aim" and step.attempts == 2 and callable(step.fallback) and good()["aim"] in step.text(1.0)
+    assert step.fallback() == {} and advance.aim_ok(step.fallback()) and flow.notes["aim_judge_fallback"] is True
+
+
+def test_no_aim_judge_runs_in_the_first_chapter():
+    request = base()
+    request.update(chapter=1, earlier_beats=[], earlier_events=[])
+    flow = plan.build_flow(request, Kit(request))
+    assert flow.next([good(request)]) is None and [s.name for s in flow.worst_case()] == ["plan"]
+    reply, ctx, engine = run_plan(request, *plan.script(request, Kit(request)))
+    assert engine.calls == 1 and "flow" not in ctx.notes and [p["step"] for p in ctx.notes["passes"]] == ["plan"]
+
+
+def test_the_verdict_goes_to_the_notes_and_the_reply_is_the_same_whatever_it_says():
+    request = base()
+    texts = plan.script(request, Kit(request))
+    same = json.dumps({"reason": "It is another errand to impress Orla.", "kind": "same_kind"})
+    new = json.dumps({"reason": "It is a different kind of aim.", "kind": "new_kind"})
+    bad_reply, bad_ctx, _ = run_plan(request, texts[0], same)
+    good_reply, good_ctx, _ = run_plan(request, texts[0], new)
+    assert bad_reply == good_reply == {"beat": json.loads(texts[0])}
+    assert bad_ctx.notes["flow"] == {"aim_kind": "same_kind"} and good_ctx.notes["flow"] == {"aim_kind": "new_kind"}
+    assert [p["step"] for p in bad_ctx.notes["passes"]] == ["plan", "advance_aim"]
+
+
+def test_a_judge_that_fails_every_attempt_never_fails_the_call_and_leaves_the_reply_alone():
+    request = base()
+    texts = plan.script(request, Kit(request))
+    reply, ctx, engine = run_plan(request, texts[0], "no json", "still none")
+    assert reply == {"beat": json.loads(texts[0])} and engine.calls == 3
+    assert ctx.notes["flow"] == {"aim_judge_fallback": True}
+    judge_pass = [p for p in ctx.notes["passes"] if p["step"] == "advance_aim"][0]
+    assert len(judge_pass["attempts"]) == 2 and judge_pass["fallback"] is True
+
+
+def test_the_flow_would_send_the_plan_back_only_when_the_flag_is_on_and_the_aim_is_the_same_kind(monkeypatch):
+    request = base()
+    flow = plan.build_flow(request, Kit(request))
+    verdict = {"reason": "Another errand to please the same person.", "kind": "same_kind"}
+    results = [good(), verdict]
+    assert flow.verdict_line(results) == ""                                  # the default: observe only
+    monkeypatch.setattr(advance, "ENFORCE", True)
+    assert flow.verdict_line(results) == advance.problem_line("aim", verdict) and "Another errand" in flow.verdict_line(results)
+    assert flow.verdict_line([good(), {"reason": "r", "kind": "new_kind"}]) == "" and flow.verdict_line([good()]) == ""

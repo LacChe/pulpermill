@@ -39,11 +39,11 @@ def test_mill_loads_by_name_with_a_version_and_the_default_is_still_the_stub():
         load_prompter("Mill")
 
 
-def test_the_version_is_the_base_plus_one_piece_per_call_with_its_own_wording():
+def test_the_version_is_the_base_plus_one_piece_per_call_with_its_own_wording_and_one_for_the_judge():
     # B1 and B2 give calls their own wording, so the version is no longer the bare base.
     version = load_prompter("mill").version
     assert version.startswith("mill-0.2")
-    assert all(piece.split(":")[0] in set(CALLS) for piece in version.split("+")[1:] if piece)
+    assert all(piece.split(":")[0] in set(CALLS) | {"advance"} for piece in version.split("+")[1:] if piece)        # the judge's wording is a piece of its own
 
 
 @pytest.mark.parametrize("vector", VALID, ids=lambda v: v["name"])

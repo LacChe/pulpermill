@@ -29,7 +29,7 @@ class MillPrompter(Prompter):
 
     @property
     def version(self) -> str:
-        """The base version plus one piece, `+<call>:<module VERSION>:<text digest>`, for each call with its own wording. The module's
+        """The base version plus one piece, `+<call>:<module VERSION>:<text digest>`, for each call with its own wording, then `+advance:<VERSION>:<digest>` for the advancement judge's. The module's
         VERSION is bumped by hand with any change to its code; the digest changes by itself with any change to `text/en/<call>.yaml`,
         so edited wording can never leave the version as it was. A call still on the stub's flow adds nothing."""
         pieces = []
@@ -40,6 +40,15 @@ class MillPrompter(Prompter):
                 continue
             digest = common.text_digest(call)
             pieces.append(f"+{call}:{own}" + (f":{digest}" if digest else ""))
+        # The advancement judge's wording belongs to no call of its own (plan and generate both run it), so it is a piece of its own: its
+        # digest changes with any edit to text/en/advance.yaml, and a run's record then says which judge wording the verdicts came from.
+        from . import advance
+        try:
+            digest = common.text_digest("advance")
+        except FileNotFoundError:           # a wording folder without the judge's file (a test's stand-in): the piece is left out
+            digest = None
+        if digest is not None:
+            pieces.append(f"+advance:{advance.VERSION}" + (f":{digest}" if digest else ""))
         return self.base_version + "".join(pieces)
 
     def flow(self, call: str, request: dict, kit: Any) -> Flow:

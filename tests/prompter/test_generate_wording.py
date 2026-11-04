@@ -21,7 +21,7 @@ from pulpermill.backend.config import Config  # noqa: E402
 from pulpermill.backend.engine import FakeEngine  # noqa: E402
 from pulpermill.backend.kit import Kit  # noqa: E402
 from pulpermill.prompter import load_prompter  # noqa: E402
-from pulpermill.prompter.mill import generate as gen, plan as mill_plan  # noqa: E402
+from pulpermill.prompter.mill import advance, generate as gen, plan as mill_plan  # noqa: E402
 from pulpermill.prompts import budget, tokens  # noqa: E402
 from server_harness import post, running, wait_idle  # noqa: E402
 from story_sizes import chapter_text, inflate  # noqa: E402
@@ -167,9 +167,9 @@ def test_every_step_at_its_heaviest_fits_the_context_at_some_squeeze(size):
     request = big() if size == "large" else base()
     flow = gen.build_flow(request, Kit(request))
     steps = flow.worst_case()
-    assert [s.name for s in steps] == ["write", "events", "shifts"]
+    assert [s.name for s in steps] == ["write", "events", "shifts", "advance_edge"]
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
-    assert all(m.ok for m in measures) and len(measures) == 3
+    assert all(m.ok for m in measures) and len(measures) == 4
     assert steps[0].max_output == gen.WRITE_TOKENS and budget.input_limit(gen.WRITE_TOKENS) > 8000    # the chapter has room to be written
 
 
@@ -200,7 +200,7 @@ def test_chapter_19_of_20_with_18_earlier_events_fits_and_cuts_the_oldest_histor
     assert len(request["earlier_events"]) == 18
     flow = gen.build_flow(request, Kit(request))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
-    assert all(m.ok for m in measures) and len(measures) == 3
+    assert all(m.ok for m in measures) and len(measures) == 4
     full, squeezed = sections(gen.write_prompt(request, 1.0)), sections(gen.write_prompt(request, 0.55))
     history = "The story so far"
     assert squeezed[history] != full[history] and "Chapter 18" in squeezed[history]
@@ -345,20 +345,20 @@ def test_every_generate_vector_is_answered_through_the_real_server_on_the_mill_p
         edges = [op for s in reply.shifts if s.card == "entanglements" for op in s.patch.get("ties", []) if op.op == "replace"]
         assert edges and edges[0].id == request["beat"]["spotlight"]                                # handles came back as the id the page sent, the spotlight's
         assert wait_idle(base_url)
-    assert engine.calls == 3 and "## The plan for this chapter" in engine.prompts[0] and engine.params[0] is not None
-    assert [c is None for c in engine.constraints] == [True, False, False]                          # prose is free; events and shifts are grammar-bound
+    assert engine.calls == 4 and "## The plan for this chapter" in engine.prompts[0] and engine.params[0] is not None
+    assert [c is None for c in engine.constraints] == [True, False, False, False]                          # prose is free; events and shifts are grammar-bound
 
 
 def test_a_shifts_reply_that_misses_the_edge_is_asked_for_again_with_the_line_and_then_used():
     request = one_tie()
     kit = Kit(request)
-    text, events, shifts = gen.script(request, kit)
+    text, events, shifts, judge = gen.script(request, kit)
     engine = FakeEngine()
-    engine.script(text, events, json.dumps({"shifts": []}), shifts)
+    engine.script(text, events, json.dumps({"shifts": []}), shifts, judge)
     with running(config=Config(prompter="mill"), engine=engine, run=None) as (base_url, _):
         assert post(base_url, request).status_code == 200
         assert wait_idle(base_url)
-    assert engine.calls == 4 and "replaces the edge of ties.1" in engine.prompts[3]
+    assert engine.calls == 5 and "replaces the edge of ties.1" in engine.prompts[3]
 
 
 def test_the_chapter_is_the_writers_text_and_nothing_else():
@@ -505,7 +505,7 @@ def _generate(*texts, **config):
     kit = Kit(request)
     good = gen.script(request, kit)
     engine = FakeEngine()
-    engine.script(*[good[i] if isinstance(i, int) else i for i in texts])      # an int stands for the module's own good text number i
+    engine.script(*[good[i] if isinstance(i, int) else i for i in texts], good[3])      # an int stands for the module's own good text number i; the edge judge's good reply comes last (it is unused when no edge was replaced)
     ctx = RunContext(engine, CancelFlag(), [].append, Config(**config))
     ctx.notes["call"] = "generate"
     flow = gen.build_flow(request, kit)
@@ -514,7 +514,7 @@ def _generate(*texts, **config):
 
 def test_the_two_steps_after_the_write_get_more_attempts_and_a_fallback_each():
     steps = gen.build_flow(base(), Kit(base())).worst_case()
-    write, events, shifts = steps
+    write, events, shifts, judge = steps
     assert (write.attempts, write.fallback) == (2, None)
     assert (events.attempts, shifts.attempts) == (4, 3) and callable(events.fallback) and callable(shifts.fallback)
     assert shifts.fallback() == {"shifts": []}
@@ -523,15 +523,15 @@ def test_the_two_steps_after_the_write_get_more_attempts_and_a_fallback_each():
 def test_an_events_step_that_fails_every_attempt_still_returns_the_chapter_with_a_fallback():
     reply, ctx, engine, good = _generate(0, "no json", "still no", "nope", "again no", 2)
     assert reply["chapter_text"] == good[0].strip() and reply["events"] == gen.events_fallback(good[0].strip())
-    assert reply["shifts"] and ctx.notes["flow"] == {"events_fallback": True, "shifts_fallback": False}
+    assert reply["shifts"] and ctx.notes["flow"] == {"events_fallback": True, "shifts_fallback": False, "edge_move": "complicates"}
     events_pass = [p for p in ctx.notes["passes"] if p["step"] == "events"][0]
-    assert len(events_pass["attempts"]) == 4 and events_pass["fallback"] is True and engine.calls == 6
+    assert len(events_pass["attempts"]) == 4 and events_pass["fallback"] is True and engine.calls == 7
 
 
 def test_a_first_events_attempt_that_fails_does_not_rerun_the_other_steps():
     reply, ctx, engine, good = _generate(0, "no json", 1, 2)
-    assert engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False}
-    assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 2), ("shifts", 1)]
+    assert engine.calls == 5 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "complicates"}
+    assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 2), ("shifts", 1), ("advance_edge", 1)]
     assert reply["events"]["happened"] == json.loads(good[1])["happened"]
 
 
@@ -551,7 +551,7 @@ def test_the_write_step_keeps_its_own_two_attempts_and_no_fallback():
 def test_an_events_reply_that_runs_on_is_repaired_not_retried():
     long = json.dumps({"happened": "The people met and quarrelled over the ledger.", "changed": "Suvi can hide no more. Marit knows everything now."})
     reply, ctx, engine, _ = _generate(0, long, 2)
-    assert engine.calls == 3 and reply["events"]["changed"] == "Suvi can hide no more."
+    assert engine.calls == 4 and reply["events"]["changed"] == "Suvi can hide no more."
 
 
 def test_every_fallback_is_a_line_in_the_trace(tmp_path):
@@ -561,3 +561,78 @@ def test_every_fallback_is_a_line_in_the_trace(tmp_path):
     events = [x for x in lines if x["step"] == "events"]
     assert [(x["attempt"], x["used"], x.get("fallback")) for x in events] == [(1, False, None), (2, False, None), (3, False, None), (4, False, None), (5, True, True)]
     assert events[-1]["reply"] == "" and events[-1]["problem"] is None
+
+
+# ---- the edge judge after the shifts (phase 3, observe-only) -------------------------------------------------------------------------
+
+def test_the_edge_judge_is_a_step_of_its_own_after_the_shifts_with_two_attempts_and_a_neutral_fallback():
+    request = base()
+    flow = gen.build_flow(request, Kit(request))
+    text, events, shifts, judge = gen.script(request, Kit(request))
+    step = flow.next([text, json.loads(events), json.loads(shifts)])
+    assert step.name == "advance_edge" and step.attempts == 2 and callable(step.fallback)
+    assert "to bring her daughter home" in step.text(1.0) and "to settle what this chapter opened" in step.text(1.0)
+    assert step.fallback() == {} and advance.edge_ok(step.fallback()) and flow.notes["edge_judge_fallback"] is True
+
+
+def test_no_edge_judge_runs_when_the_shifts_replaced_no_edge():
+    request = base()
+    flow = gen.build_flow(request, Kit(request))
+    assert flow.next(["a chapter", {"happened": "x", "changed": "y"}, {"shifts": []}]) is None
+    assert gen.replaced_edge(request, Kit(request), {"shifts": []}) is None
+
+
+def test_the_verdict_goes_to_the_notes_and_the_reply_is_the_same_whatever_it_says():
+    request = base()
+    kit = Kit(request)
+    text, events, shifts, judge = gen.script(request, kit)
+    results = [text, json.loads(events), json.loads(shifts)]
+    flow = gen.build_flow(request, kit)
+    flow.next(results)
+    verdict = {"reason": "The want is the same one in other words.", "move": "rewords"}
+    assert flow.next(results + [verdict]) is None and flow.notes["edge_move"] == "rewords"
+    plain = gen.build_flow(request, kit)
+    assert flow.reply(results + [verdict]) == plain.reply(results)
+
+
+def test_the_flow_would_send_the_shifts_back_only_when_the_flag_is_on_and_the_edge_only_rewords(monkeypatch):
+    request = base()
+    flow = gen.build_flow(request, Kit(request))
+    verdict = {"reason": "Same want, new words.", "move": "rewords"}
+    results = ["t", {}, {"shifts": []}, verdict]
+    assert flow.verdict_line(results) == ""                                  # the default: observe only
+    monkeypatch.setattr(advance, "ENFORCE", True)
+    assert flow.verdict_line(results) == advance.problem_line("edge", verdict) and "Same want" in flow.verdict_line(results)
+    assert flow.verdict_line(results[:3] + [{"reason": "r", "move": "escalates"}]) == "" and flow.verdict_line(results[:3]) == ""
+
+
+def test_a_judge_that_fails_every_attempt_never_fails_the_call_and_leaves_the_reply_alone():
+    reply, ctx, engine, good = _generate(0, 1, 2)
+    engine_bad = FakeEngine()
+    from pulpermill.backend import runner
+    from pulpermill.backend.engine.base import CancelFlag
+    from pulpermill.backend.pipelines import RunContext
+    request = base()
+    kit = Kit(request)
+    engine_bad.script(good[0], good[1], good[2], "no json", "still none")
+    ctx2 = RunContext(engine_bad, CancelFlag(), [].append, Config())
+    ctx2.notes["call"] = "generate"
+    flow = gen.build_flow(request, kit)
+    again = flow.reply(runner.run_flow(ctx2, flow, "en"))
+    assert again == reply and ctx2.notes["flow"]["edge_judge_fallback"] is True and "edge_move" not in ctx2.notes["flow"]
+    judge_pass = [p for p in ctx2.notes["passes"] if p["step"] == "advance_edge"][0]
+    assert len(judge_pass["attempts"]) == 2 and judge_pass["fallback"] is True
+
+
+def test_the_prompter_version_changes_with_the_judge_wording(monkeypatch, tmp_path):
+    import shutil
+    from pulpermill.prompter.mill import common
+    first = load_prompter("mill").version
+    assert f"+advance:{advance.VERSION}:" in first
+    shutil.copytree(common.TEXT, tmp_path / "text")
+    monkeypatch.setattr(common, "TEXT", tmp_path / "text")
+    assert load_prompter("mill").version == first                           # a copy of the same wording: the same version
+    with open(tmp_path / "text" / "en" / "advance.yaml", "a", encoding="utf-8") as handle:
+        handle.write("# one more word\n")
+    changed = load_prompter("mill").version
+    assert changed != first and changed.split("+advance:")[0] == first.split("+advance:")[0]

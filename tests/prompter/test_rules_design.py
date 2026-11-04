@@ -292,12 +292,12 @@ def test_rule7_a_plan_without_its_third_point_is_asked_for_again_with_the_line_a
     request = plan_with()
     good = good_plan(request)
     engine = FakeEngine()
-    engine.script(json.dumps({**good, "plan": without_point(good["plan"], 3)}), json.dumps(good))
+    engine.script(json.dumps({**good, "plan": without_point(good["plan"], 3)}), json.dumps(good), *mill_plan.script(request, Kit(request))[1:])
     with running(config=Config(prompter="mill"), engine=engine, run=None) as (base_url, _):
         response = post(base_url, request)
         assert response.status_code == 200 and response.json()["beat"]["plan"] == good["plan"]
         assert wait_idle(base_url)
-    assert engine.calls == 2 and "Your previous reply could not be used" in engine.prompts[1] and "Act 3" in engine.prompts[1]
+    assert engine.calls == 2 + len(mill_plan.script(request, Kit(request))[1:]) and "Your previous reply could not be used" in engine.prompts[1] and "Act 3" in engine.prompts[1]
 
 
 def test_rule4_an_abstract_aim_is_asked_for_again_with_the_line_and_then_used():
@@ -313,11 +313,11 @@ def test_rule4_an_abstract_aim_is_asked_for_again_with_the_line_and_then_used():
 
 def test_rule6_a_chapter_whose_shifts_leave_the_edge_unchanged_is_asked_for_again_with_the_line_and_then_used():
     request = gen_with()
-    text, events, shifts = gen.script(request, Kit(request))
+    text, events, shifts, judge = gen.script(request, Kit(request))
     engine = FakeEngine()
-    engine.script(text, events, json.dumps({"shifts": [edge_entry("ties.1", "to bring her daughter home")]}), shifts)
+    engine.script(text, events, json.dumps({"shifts": [edge_entry("ties.1", "to bring her daughter home")]}), shifts, judge)
     with running(config=Config(prompter="mill"), engine=engine, run=None) as (base_url, _):
         response = post(base_url, request)
         assert response.status_code == 200 and response.json()["ok"] is True
         assert wait_idle(base_url)
-    assert engine.calls == 4 and "replaces the edge of ties.1" in engine.prompts[3]
+    assert engine.calls == 5 and "replaces the edge of ties.1" in engine.prompts[3]

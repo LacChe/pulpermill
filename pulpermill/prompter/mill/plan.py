@@ -5,17 +5,20 @@ Wording lives in text/en/plan.yaml; this module assembles it from the renderers 
 Helpers at the top (names, ties in words, squeeze tiers, the spotlight) are shared with generate.py."""
 import math
 import re
+from dataclasses import replace
 from typing import Any
 
 from pulpermill.prompts import render as r
 from pulpermill.prompts import textfiles as tx
 from pulpermill.prompter.base import Flow, Step
 
-from . import common
+from . import advance, common
 
-VERSION = "plan-3"
+VERSION = "plan-4"
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
+JUDGE_ATTEMPTS = 2        # the advancement judge (observe-only): two tries, then a neutral verdict, so a judge can never fail a call
+AIM_STAND_IN = "word " * 60       # the longest an aim is shown to a model (300 characters), for the worst case
 
 
 # ---- Shared helpers -------------------------------------------------------------------------------------------------------
@@ -249,6 +252,7 @@ def plan_problem(request: dict, value: Any, tolerate_soft: bool = False) -> str 
 class PlanFlow(Flow):
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
+        self.notes: dict[str, Any] = {}         # for the run log: the aim judge's verdict word, and whether its last resort stood in for it
 
     def _check(self):
         """A check for one plan step instance: strict on its first call, soft-tolerant on its second (the runner's last attempt)."""
@@ -267,8 +271,39 @@ class PlanFlow(Flow):
     def _step(self) -> Step:
         return Step("plan", lambda f: build_prompt(self.request, f), "json", MAX_OUTPUT, self.kit.grammar.plan_beat(), self._check(), "thinking", True)
 
+    def _judges(self) -> bool:
+        """The aim judge runs from the second chapter on, when there is an earlier aim to be a kind of."""
+        return bool(advance.earlier_aims(self.request))
+
+    def _aim_step(self, aim: str) -> Step:
+        """The judge of the plan's aim, a step of its own after the plan. Its last resort is a neutral verdict (none), never an error."""
+        def neutral():
+            self.notes["aim_judge_fallback"] = True
+            return {}
+        return replace(advance.aim_step(self.request, aim), attempts=JUDGE_ATTEMPTS, fallback=neutral)
+
+    def verdict_line(self, results: list) -> str:
+        """What a flow that enforces the judge would add to the plan step's prompt when it sent the plan back: the judge's line when the aim
+        is the same kind as an earlier one. Empty when `advance.ENFORCE` is off, there is no verdict, or the aim is fine. Nothing calls it
+        yet (phase 4 does); the flow itself only observes."""
+        if not advance.ENFORCE or len(results) < 2 or advance.aim_ok(results[1]):
+            return ""
+        return advance.problem_line("aim", results[1])
+
     def next(self, results):
-        return None if results else self._step()
+        if not results:
+            return self._step()
+        if len(results) == 1:
+            aim = r.s(results[0].get("aim")) if isinstance(results[0], dict) else ""
+            return self._aim_step(aim) if aim and self._judges() else None
+        self.notes.update(advance.notes(aim_value=results[1]))
+        return None
+
+    def worst_case(self):
+        steps = [self._step()]
+        if self._judges():
+            steps.append(self._aim_step(AIM_STAND_IN))
+        return steps
 
     def reply(self, results):
         return {"beat": results[0]}
@@ -290,4 +325,7 @@ def script(request: dict, kit: Any) -> list[str]:
     aim = f"Get the {words[n % len(words)]} key from {b} before the {words[(n * 5) % len(words)]} bell rings in round {n}."
     plan = (f"Act 1: {a} and {b} meet at {place} at first light. Act 2: the aim runs into the tie between {a} and {b}, and a quarrel breaks out. "
             f"Act 3: a costly choice turns the scene when {a} gives something up. Act 4: the chapter ends with the tie and the aim in a new state.")
-    return [json.dumps({"where": place, "when_time": f"Day {n}, early morning", "aim": aim, "plan": plan})]
+    texts = [json.dumps({"where": place, "when_time": f"Day {n}, early morning", "aim": aim, "plan": plan})]
+    if advance.earlier_aims(request):          # the advancement judge runs from the second chapter on
+        texts.append(json.dumps({"reason": "The aim is a different kind of errand from the earlier ones.", "kind": "new_kind"}))
+    return texts

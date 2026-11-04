@@ -10,6 +10,7 @@ plan, so the tie is the one whose two ends the beat's plan names, and if none or
 satisfies the edge check. The id never reaches a prompt: the model sees the tie's names and its handle."""
 import json
 import re
+from dataclasses import replace
 from typing import Any
 
 from pulpermill.prompts import render as r
@@ -17,10 +18,10 @@ from pulpermill.prompts import textfiles as tx
 from pulpermill.prompter.base import Flow, Step
 from pulpermill.schema.shifts import shiftable_fields
 
-from . import common
+from . import advance, common
 from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-6"
+VERSION = "generate-7"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -31,6 +32,8 @@ OVERSHOOT_WORDS, OVERSHOOT_HAN = 1500, 3000      # the write check only speaks a
 WRITE_TOKENS = 2560
 EVENTS_TOKENS = 800
 SHIFTS_TOKENS = 1600
+JUDGE_ATTEMPTS = 2        # the advancement judge (observe-only): two tries, then a neutral verdict, so a judge can never fail a call
+EDGE_STAND_IN = "word " * 60       # the longest an edge is shown to a model (300 characters), for the worst case
 EVENTS_ATTEMPTS, SHIFTS_ATTEMPTS = 4, 3          # after the chapter is written, each of these steps is retried on its own and then falls back
 CHANGED_WORDS, HAPPENED_WORDS = 45, 60           # the most words `changed` keeps (one short sentence) and the fallback's `happened` keeps
 
@@ -314,6 +317,22 @@ def shifts_problem(request: dict, kit: Any, value: Any) -> str | None:
     return p["edge_not_moved_any"]
 
 
+def replaced_edge(request: dict, kit: Any, shifts: Any) -> tuple[str, str] | None:
+    """(the edge the spotlight tie had, the edge the shifts replaced it with) when the shifts replace the edge of a tie that must move, else
+    None. The same reading as the edge check's, so a reply that passed it has one."""
+    entries = shifts.get("shifts") if isinstance(shifts, dict) else None
+    targets = edge_targets(request, kit)
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict) or entry.get("card") != "entanglements":
+            continue
+        for op in (entry.get("patch") or {}).get("ties") or []:
+            for handle, tie in targets:
+                new = r.s((op.get("values") or {}).get("edge")) if isinstance(op, dict) else ""
+                if isinstance(op, dict) and op.get("op") == "replace" and op.get("id") == handle and new and _norm(new) != _norm(tie.get("edge")):
+                    return r.s(tie.get("edge")), new
+    return None
+
+
 # ---- the flow --------------------------------------------------------------------------------------------------------------
 
 class GenerateFlow(Flow):
@@ -359,12 +378,36 @@ class GenerateFlow(Flow):
                     g.obj({"shifts": g.shifts()}), lambda v: shifts_problem(self.request, self.kit, v), "structured", False,
                     SHIFTS_ATTEMPTS, noted("shifts_fallback", {"shifts": []}))
 
+    def _edge_step(self, old: str, new: str) -> Step:
+        """The judge of the spotlight tie's new edge, a step of its own after the shifts. Its last resort is a neutral verdict (none)."""
+        def neutral():
+            self.notes["edge_judge_fallback"] = True
+            return {}
+        return replace(advance.edge_step(self.request, old, new), attempts=JUDGE_ATTEMPTS, fallback=neutral)
+
+    def verdict_line(self, results: list) -> str:
+        """What a flow that enforces the judge would add to the shifts step's prompt when it sent the shifts back: the judge's line when the
+        edge only rewords. Empty when `advance.ENFORCE` is off, there is no verdict, or the edge moved. Nothing calls it yet (phase 4 does);
+        the flow itself only observes."""
+        if not advance.ENFORCE or len(results) < 4 or advance.edge_ok(results[3]):
+            return ""
+        return advance.problem_line("edge", results[3])
+
     def next(self, results):
-        return self._step(len(results), results) if len(results) < 3 else None
+        if len(results) < 3:
+            return self._step(len(results), results)
+        if len(results) == 3:
+            edge = replaced_edge(self.request, self.kit, results[2])         # no edge replaced (the shifts fell back, say): nothing to judge
+            return self._edge_step(*edge) if edge else None
+        self.notes.update(advance.notes(edge_value=results[3]))
+        return None
 
     def worst_case(self):
         chapter = "word " * WRITE_TOKENS
-        return [self._step(n, [chapter, {}]) for n in range(3)]
+        steps = [self._step(n, [chapter, {}]) for n in range(3)]
+        if edge_targets(self.request, self.kit):
+            steps.append(self._edge_step(max((r.s(t.get("edge")) for _, t in edge_targets(self.request, self.kit)), key=len), EDGE_STAND_IN))
+        return steps
 
     def reply(self, results):
         text = results[0].strip()
@@ -395,4 +438,4 @@ def script(request: dict, kit: Any) -> list[str]:
                f"A clerk waited by the {pick(['gate', 'stairs', 'counter', 'window', 'stove'], 4)}, saying nothing. Round {n} cost {pick(['coins', 'keys', 'sacks', 'letters', 'barrels'], 6)} to somebody. "
                f"What was said at the table cost something, and what was left unsaid cost more, until the last choice of the night changed the room.")
     return [chapter, json.dumps({"happened": "The people met and quarrelled, and one of them gave something up.", "changed": "The tie and the aim now stand somewhere new."}),
-            json.dumps({"shifts": shifts})]
+            json.dumps({"shifts": shifts})] + ([json.dumps({"reason": "The want is now a different kind of want.", "move": "complicates"})] if targets else [])
