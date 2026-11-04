@@ -148,7 +148,28 @@ def test_the_first_and_the_last_chapter_are_told_differently():
     assert "This is the last chapter" in p_last and "closes it" in p_last and "first chapter" not in p_last
     assert "Build on what the earlier chapters changed" in p_mid and "first chapter" not in p_mid and "last chapter" not in p_mid
     assert len({p_first, p_last, p_mid}) == 3
-    assert "tighten the pressure" in plan.build_prompt({**base(), "chapter": 7}) and "tighten the pressure" not in p_mid
+    assert "tighten the pressure" not in plan.build_prompt({**base(), "chapter": 7}) and "tighten the pressure" not in p_mid
+
+
+def test_every_middle_chapter_is_told_to_settle_its_collision_as_firmly_as_the_last_one_and_late_chapter_is_gone():
+    w = load_text("plan")
+    assert "late_chapter" not in w
+    early, late = (plan.build_prompt({**base(), "chapter": n}) for n in (3, 7))
+    assert plan._chapter_note(w, 3, 8) == plan._chapter_note(w, 7, 8) == w["middle_chapter"]
+    for prompt in (early, late):
+        assert "cannot be undone" in prompt and "Leave nothing of that collision hanging" in prompt
+    last = plan.build_prompt({**base(), "chapter": 8})
+    assert "open nothing new" in last and "open nothing new" not in early
+    assert "final state" in last and "distinctly new state" not in last and "what the protagonist wants now" not in last      # movement_last: no new state beside last_chapter's final one
+    assert "distinctly new state" in early and "final state" not in early
+
+
+def test_the_brainstorm_prompt_carries_the_middle_note_without_the_act_labels():
+    for n in (3, 7):
+        prompt = plan.build_brainstorm_prompt({**base(), "chapter": n})
+        assert "cannot be undone" in prompt and "Leave nothing of that collision hanging" in prompt
+        assert "Act 1" not in prompt and "four points" not in prompt
+        assert "how the clash is decided for good" in prompt
 
 
 def test_a_retry_carries_its_problems_and_the_refused_attempt_into_the_prompt():
@@ -434,7 +455,7 @@ def test_the_brainstorm_prompt_shows_the_earlier_aims_as_the_kinds_already_used_
 def test_the_brainstorm_prompt_is_told_the_chapters_place_and_carries_a_retry():
     last = plan.build_brainstorm_prompt({**base(), "chapter": 8})
     assert "This is the last chapter" in last and "chapter 8 of 8" in last
-    assert "tighten the pressure" in plan.build_brainstorm_prompt({**base(), "chapter": 7})
+    assert "tighten the pressure" not in plan.build_brainstorm_prompt({**base(), "chapter": 7})
     retry = next(v["data"] for v in PLANS if v["name"] == "a plan retry carries the first attempt and the rules' words")
     prompt = plan.build_brainstorm_prompt(retry)
     assert "An earlier plan for this chapter was refused" in prompt and "The aim is too like chapter 1's aim." in prompt
@@ -550,7 +571,7 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-9"
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-10"
 
 
 # ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------

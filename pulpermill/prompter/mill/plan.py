@@ -17,7 +17,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common
 
-VERSION = "plan-9"
+VERSION = "plan-10"
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
@@ -123,8 +123,7 @@ def _chapter_note(w: dict, chapter: int, total: int) -> str:
         return w["first_chapter"]
     if total and chapter >= total:
         return w["last_chapter"]
-    note = w["middle_chapter"]
-    return f"{note} {w['late_chapter']}" if total and chapter >= math.ceil(total * 2 / 3) else note
+    return w["middle_chapter"]
 
 
 def other_end(request: dict, names: dict[str, str]) -> str:
@@ -200,8 +199,6 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0) -> str:
         task.append(w["brainstorm_first"])
     elif total and chapter >= total:
         task.append(w["brainstorm_last"])
-    elif total and chapter >= math.ceil(total * 2 / 3):
-        task.append(f"{w['middle_chapter']} {w['late_chapter']}")
     else:
         task.append(w["middle_chapter"])
     retry = request.get("retry")
@@ -228,7 +225,7 @@ def build_prompt(request: dict, factor: float = 1.0, extra: str = "", brainstorm
         w["four_points"],
         w["other_person"].format(other=other_end(request, names)),
         w["spotlight_names"].format(tie_from=ends[0], tie_to=ends[1]) if all(ends) else "",
-        w["movement"].format(tie_from=ends[0] or "the person at the from end"),
+        w["movement_last" if total and chapter >= total else "movement"].format(tie_from=ends[0] or "the person at the from end"),
         w["people_rule"],
         _chapter_note(w, chapter, total),
     ]
