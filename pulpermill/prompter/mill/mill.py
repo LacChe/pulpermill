@@ -43,6 +43,8 @@ class MillPrompter(Prompter):
         # The advancement judge's wording belongs to no call of its own (plan and generate both run it), so it is a piece of its own: its
         # digest changes with any edit to text/en/advance.yaml, and a run's record then says which judge wording the verdicts came from.
         from . import advance
+        if not any(piece.startswith(("+plan:", "+generate:")) for piece in pieces):
+            return self.base_version + "".join(pieces)        # neither call runs the judge, so its wording is no part of this version
         try:
             digest = common.text_digest("advance")
         except FileNotFoundError:           # a wording folder without the judge's file (a test's stand-in): the piece is left out

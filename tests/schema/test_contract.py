@@ -152,9 +152,16 @@ def test_the_envelope_speaks_the_projects_schema_version():
             assert case["data"]["schema_version"] == SCHEMA_VERSION, case["name"]
 
 
-# The one valid story request the page never builds: it shows that the backend accepts a retry that is null. Every other valid
-# story request is built by the page (tests/web/logic.test.mjs) and so is golden, under a name.
-HAND_WRITTEN = {"a plan request with the retry left null"}
+# The valid story requests the page does not build as they stand: one that shows the backend accepts a retry that is null, and the
+# ones that show the edge trail (`spotlight_edges`) filled in and left out. Every other valid story request is built by the page
+# (tests/web/logic.test.mjs) and so is golden, under a name.
+HAND_WRITTEN = {
+    "a plan request carries the spotlight tie's earlier edges, oldest first",
+    "a plan request from a page that does not send the edge trail is still valid",
+    "a plan request with the retry left null",
+    "a generate request carries the spotlight tie's earlier edges, oldest first",
+    "a generate request from a page that does not send the edge trail is still valid",
+}
 
 
 def test_the_story_requests_the_page_builds_are_golden_and_the_others_keep_their_names():
@@ -170,9 +177,9 @@ def test_the_story_requests_the_page_builds_are_golden_and_the_others_keep_their
 
 def test_the_story_requests_carry_the_fields_the_spec_lists():
     plan = {"call", "schema_version", "language", "job_id", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
-            "holdings", "spotlight", "earlier_beats", "earlier_events", "retry"}
+            "holdings", "spotlight", "spotlight_edges", "earlier_beats", "earlier_events", "retry"}
     generate = {"call", "schema_version", "language", "job_id", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
-                "holdings", "earlier_events", "previous_ending", "beat"}
+                "holdings", "earlier_events", "previous_ending", "beat", "spotlight_edges"}
     assert set(PlanRequest.model_fields) == plan
     assert set(GenerateRequest.model_fields) == generate
     assert set(contract.PlanRetry.model_fields) == {"beat", "problems"}

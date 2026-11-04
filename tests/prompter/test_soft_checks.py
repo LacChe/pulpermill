@@ -207,10 +207,11 @@ def test_the_plan_uses_the_soft_reply_on_the_second_attempt_through_the_runner_a
     import json
     monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0: "Plan the chapter.")
     ctx, engine = context()
-    engine.script(json.dumps(named), json.dumps(named))
+    verdict = json.dumps({"reason": "It is after something new.", "kind": "new_kind"})        # the aim judge runs after the plan from chapter 2 on
+    engine.script(json.dumps(named), json.dumps(named), verdict)
     with caplog.at_level(logging.WARNING, logger="pulpermill"):
-        [value] = runner.run_flow(ctx, plan.PlanFlow(req, KIT), "en")
-    assert value == named and engine.calls == 2 and "Master Elmsworth" in engine.prompts[1]          # the retry line carried the problem
+        value = runner.run_flow(ctx, plan.PlanFlow(req, KIT), "en")[0]
+    assert value == named and engine.calls == 3 and "Master Elmsworth" in engine.prompts[1]          # the retry line carried the problem
     assert len([r for r in caplog.records if r.getMessage().startswith("call=plan step=plan soft problem accepted")]) == 1
 
 
@@ -239,7 +240,7 @@ def test_the_chapter_is_used_after_a_second_attempt_with_only_soft_problems_thro
 
 def test_the_versions_were_bumped():
     from pulpermill.prompter.mill import VERSION
-    assert VERSION == "mill-0.2" and plan.VERSION == "plan-3" and gen.VERSION == "generate-6"
+    assert VERSION == "mill-0.2" and plan.VERSION == "plan-4" and gen.VERSION == "generate-7"
 
 
 # ---- helpers ---------------------------------------------------------------------------------------------------------------
