@@ -5,7 +5,6 @@ if it cannot be had, the plan goes ahead without it. Wording lives in text/en/pl
 the reply.
 
 Helpers at the top (names, ties in words, squeeze tiers, the spotlight) are shared with generate.py."""
-import copy
 import math
 import re
 from dataclasses import replace
@@ -17,8 +16,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common
 
-VERSION = "plan-8"
-IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
+VERSION = "plan-7"
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
 BRAINSTORM_OUTPUT = 400       # about 350 tokens of free text, with a little room, so a cut-off tail is the exception
@@ -213,7 +211,6 @@ def build_prompt(request: dict, factor: float = 1.0, extra: str = "", brainstorm
     task = _task_block(c, "method")
     if brainstorm:
         task.append(w["choose_from"])
-        task.append(w["idea_use"])
     task += [
         w["four_points"],
         w["other_person"].format(other=other_end(request, names)),
@@ -373,20 +370,9 @@ class PlanFlow(Flow):
             return None
         return check
 
-    def _grammar(self, brainstorm: str) -> Any:
-        """The planner grammar. When the plan carries a brainstorm it also asks for `idea_use`, first, so the choice is made before the plan is.
-        The key is only for the trace; `reply` takes it out again."""
-        grammar = self.kit.grammar.plan_beat()
-        if not brainstorm or not isinstance(grammar, dict) or not isinstance(grammar.get("properties"), dict):
-            return grammar
-        grammar = copy.deepcopy(grammar)
-        grammar["properties"] = {IDEA_USE: {"type": "string"}, **grammar["properties"]}
-        grammar["required"] = [IDEA_USE, *grammar.get("required", [])]
-        return grammar
-
     def _step(self, extra: str = "", fallback=None, brainstorm: str | None = None) -> Step:
         text = self.brainstorm if brainstorm is None else brainstorm
-        return Step("plan", lambda f: build_prompt(self.request, f, extra, text), "json", MAX_OUTPUT, self._grammar(text), self._check(),
+        return Step("plan", lambda f: build_prompt(self.request, f, extra, text), "json", MAX_OUTPUT, self.kit.grammar.plan_beat(), self._check(),
                     "thinking", True, fallback=fallback)
 
     def _judges(self) -> bool:
@@ -462,10 +448,7 @@ class PlanFlow(Flow):
         return steps
 
     def reply(self, results):
-        beat = self._final(results[1:])
-        if isinstance(beat, dict) and IDEA_USE in beat:      # it stays in the trace's copy of the reply, and the page never sees it
-            beat = {k: v for k, v in beat.items() if k != IDEA_USE}
-        return {"beat": beat}
+        return {"beat": self._final(results[1:])}
 
 
 def build_flow(request, kit) -> Flow:

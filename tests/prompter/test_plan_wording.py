@@ -121,14 +121,6 @@ def test_a_retry_carries_its_problems_and_the_refused_attempt_into_the_prompt():
 
 # ---- the squeeze ----------------------------------------------------------------------------------------------------------
 
-def with_idea_use(grammar: dict) -> dict:
-    """The planner grammar as the plan step carries it when there is a brainstorm: `idea_use` first."""
-    grammar = copy.deepcopy(grammar)
-    grammar["properties"] = {"idea_use": {"type": "string"}, **grammar["properties"]}
-    grammar["required"] = ["idea_use", *grammar["required"]]
-    return grammar
-
-
 def big() -> dict:
     request = inflate(base(), cast=6, each=5, ties=6, chapters=9, chars=900)
     request["earlier_beats"] = [{"chapter": n, "where": "The Quay", "when": "Morning", "aim": f"Chase number {n} across the harbour", "plan": "x"} for n in range(1, 10)]
@@ -216,7 +208,7 @@ def test_the_plan_step_is_a_json_step_with_the_planner_grammar_and_the_check_on_
     flow = plan.build_flow(request, kit)
     assert flow.next([]).name == "brainstorm"
     step = flow.next([brain()])
-    assert step.name == "plan" and step.kind == "json" and step.grammar == with_idea_use(kit.grammar.plan_beat()) and step.sampling == "thinking" and step.language
+    assert step.name == "plan" and step.kind == "json" and step.grammar == kit.grammar.plan_beat() and step.sampling == "thinking" and step.language
     assert flow.reply([brain(), good()]) == {"beat": good()} and flow.next([brain(), good()]).name == "advance_aim"      # the earlier aims are there to be judged against
     assert step.check({**good(), "where": ""}) and step.check(good()) is None
     assert budget.input_limit(step.max_output) > 10000                     # the context keeps room for the prompt
@@ -436,7 +428,7 @@ def test_act_two_must_say_what_the_other_person_wants_and_does_with_or_without_a
 
 def test_the_plan_json_shape_did_not_change():
     request = base()
-    assert plan.build_flow(request, Kit(request)).next([brain()]).grammar == with_idea_use(Kit(request).grammar.plan_beat())
+    assert plan.build_flow(request, Kit(request)).next([brain()]).grammar == Kit(request).grammar.plan_beat()
     assert set(good()) == {"where", "when_time", "aim", "plan"}
 
 
@@ -510,37 +502,4 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-8"
-
-
-# ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------
-
-def test_the_plan_prompt_asks_for_idea_use_only_when_it_carries_a_brainstorm():
-    request = base()
-    assert "idea_use" in plan.build_prompt(request, brainstorm=brain(request)) and "idea_use" not in plan.build_prompt(request)
-    flow = plan.build_flow(request, Kit(request))
-    plain = Kit(request).grammar.plan_beat()
-    assert flow.next([brain(request)]).grammar["required"][0] == "idea_use" and list(flow.next([brain(request)]).grammar["properties"])[0] == "idea_use"
-    flow.brainstorm = ""                                                     # a brainstorm that fell back: the plan is asked for as before
-    assert flow._step().grammar == plain
-
-
-def test_idea_use_is_left_out_of_the_reply_but_does_not_make_the_check_refuse_a_plan():
-    request = base()
-    flow = plan.build_flow(request, Kit(request))
-    used = {"idea_use": "Idea 2, for the trade at the door.", **good(request)}
-    step = flow.next([brain(request)])
-    assert step.check(used) is None and step.check(good(request)) is None     # the key is optional to the check
-    assert flow.reply([brain(request), used]) == {"beat": good(request)}
-    assert flow.reply([brain(request), good(request)]) == {"beat": good(request)}
-
-
-def test_idea_use_reaches_the_trace_and_not_the_reply(tmp_path):
-    request = base()
-    used = {"idea_use": "Idea 1: the refusal, for the clash at the door.", **good(request)}
-    trace = tmp_path / "trace.jsonl"
-    reply, ctx, engine = run_plan(request, brain(request), json.dumps(used), json.dumps({"reason": "A new kind of errand.", "kind": "new_kind"}), trace_path=str(trace))
-    assert "idea_use" not in reply["beat"]
-    lines = [json.loads(x) for x in trace.read_text(encoding="utf-8").splitlines()]
-    assert any(l["step"] == "plan" and "Idea 1: the refusal" in l["reply"] for l in lines)
-    assert any(l["step"] == "brainstorm" and l["reply"] for l in lines)
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-7"
