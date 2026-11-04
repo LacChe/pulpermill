@@ -7,10 +7,10 @@ import { storyStarted, cardLocked } from "./gate.js";
 import { planChapter } from "./client.js";
 import {
   CAST_MAX, castKey, chapterInfo, beatForChapter, newBeat, requiredCast, spotlightTies, tiesInPlay, tieInWords, withSpotlight, castProblem,
-  planIsStale, commitPlan,
+  planIsStale, commitPlan, pressureOn, pressureOf,
 } from "./plan.js";
 import { effectiveProject } from "./effective.js";
-import { stageText, instanceName } from "./logic.js";
+import { stageText, instanceName, refOptions } from "./logic.js";
 import { section, fill, msg, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
@@ -19,6 +19,9 @@ import { STRINGS as RUN } from "./runall.js";
 export const STRINGS = section("plan");
 
 // The Outline rule whose wording explains each way a cast can be wrong (P1 wrote them; the panel does not word them again).
+const PRESSURE_LABEL_MAX = 90;           // the longest a rule's statement is in the pressure list before it is cut with an ellipsis
+const clipLabel = (text) => (text.length > PRESSURE_LABEL_MAX ? `${text.slice(0, PRESSURE_LABEL_MAX - 1).trimEnd()}…` : text);
+
 const CAST_RULES = { no_protagonist: "cast_has_protagonist", spotlight_pair: "spotlight_pair_in_cast" };
 
 function node(tag, props = {}, ...children) {
@@ -48,7 +51,7 @@ export function createPlanPanel(hooks) {
     return { beat: draft.beat, existing: null };
   }
 
-  const keyOf = (beat, stale) => `${beat.spotlight}|${castKey(beat.cast)}|${stale}`;
+  const keyOf = (beat, stale) => `${beat.spotlight}|${castKey(beat.cast)}|${stale}${pressureOn() ? `|${beat.pressure ?? ""}` : ""}`;
 
   // Run when the writer leaves a field: if the beat's Spotlight or Cast was changed in the Outline form, draws the panel again
   // (the panel only, so the form keeps its place).
@@ -164,6 +167,19 @@ export function createPlanPanel(hooks) {
       node("p", { className: "help", textContent: STRINGS.spotlightHelp }),
       node("p", { className: "plan-tie", textContent: spot ? tieInWords(hooks.schema, eff, spot).text : STRINGS.spotlightNone }),
       node("label", { className: "plan-pick", htmlFor: "plan-spotlight", textContent: STRINGS.spotlightChange }), picker));
+
+    // The pressure (only with `?pressure=on`): every rule and object of the world, and none, to change or clear the pick.
+    if (pressureOn()) {
+      const chosen = pressureOf(eff, beat) ?? "";
+      const options = refOptions(eff, ["world.rules", "world.objects"], STRINGS.unnamed);
+      const pressurePicker = node("select", { className: "text-control", id: "plan-pressure" },
+        node("option", { value: "", textContent: STRINGS.pressureNone, selected: !chosen }),
+        ...options.map((o) => node("option", { value: o.value, textContent: clipLabel(o.label), selected: o.value === chosen })));
+      pressurePicker.addEventListener("change", () => setBeat(project, chapter, { pressure: pressurePicker.value }));
+      panel.append(node("fieldset", { className: "plan-pressure-box" }, node("legend", { textContent: STRINGS.pressure }),
+        node("p", { className: "help", textContent: STRINGS.pressureHelp }),
+        node("label", { className: "plan-pick", htmlFor: "plan-pressure", textContent: STRINGS.pressureChange }), pressurePicker));
+    }
 
     // The cast: the required members are in and marked; the writer adds others up to CAST_MAX.
     const required = requiredCast(eff, beat.spotlight);

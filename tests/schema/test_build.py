@@ -75,3 +75,13 @@ def test_choices_rules_and_groups_are_complete(lang):
         for r in c["rules"]:
             assert set(r["fields"]) <= keys, r["id"]
             assert r["message"], r["id"]
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_the_beat_pressure_is_an_optional_code_filled_link_to_rules_and_objects(lang):
+    beats = next(f for f in build_schema.build(lang)["cards"]["outline"]["fields"] if f["key"] == "beats")
+    pressure = next(f for f in beats["item_fields"] if f["key"] == "pressure")
+    assert pressure["required"] is False and pressure["filled_by"] == "code"
+    assert pressure["ref"] == ["world.rules", "world.objects"]
+    keys = [f["key"] for f in beats["item_fields"]]
+    assert keys.index("pressure") == keys.index("spotlight") + 1

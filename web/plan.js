@@ -73,6 +73,50 @@ export function pickSpotlight(project, chapter) {
   return copyOf(ties[Math.floor(next() * ties.length)]);
 }
 
+// ---- The pressure -------------------------------------------------------------------
+// One rule or object of the world that a chapter is asked to put to work. Off unless the page address says `?pressure=on`; with
+// it off nothing below changes what the page sends or stores. The flag is read once, when the page loads.
+export function readPressureFlag(search = globalThis.location?.search ?? "") {
+  try { return new URLSearchParams(search).get("pressure") === "on"; } catch { return false; }
+}
+let pressureFlag = readPressureFlag();
+export const pressureOn = () => pressureFlag;
+export function setPressureFlag(on) { pressureFlag = Boolean(on); }     // for tests
+
+// Every rule and object of a project, rules first: [{id, kind}].
+export function pressureElements(project) {
+  const w = project.world ?? {};
+  return [...(w.rules ?? []).map((r) => ({ id: r.id, kind: "rule" })), ...(w.objects ?? []).map((o) => ({ id: o.id, kind: "object" }))];
+}
+
+// The element a new beat starts with: one of the rules and objects of the cards as they stand going into the chapter, drawn
+// uniformly at random from the project and the chapter, so asking again gives the same one. Nothing is remembered from other
+// chapters, so the same element may come up twice in a row. Null when the flag is off or the world has neither.
+export function pickPressure(project, chapter) {
+  if (!pressureOn()) return null;
+  const all = pressureElements(effectiveProject(project, chapter));
+  if (!all.length) return null;
+  const next = rng(projectSeed(project), chapter, "pressure");
+  return all[Math.floor(next() * all.length)].id;
+}
+
+// The beat's pressure id, or null: the flag is off, the beat has none, or it points at a rule or object that is gone.
+export function pressureOf(project, beat) {
+  if (!pressureOn() || !beat?.pressure) return null;
+  return pressureElements(project).some((e) => e.id === beat.pressure) ? beat.pressure : null;
+}
+
+// The beat's pressure in words, never an id (the contract's `pressure`), or null. `project` is an effective project.
+export function pressureInWords(project, beat) {
+  const id = pressureOf(project, beat);
+  if (!id) return null;
+  const w = project.world ?? {};
+  const rule = (w.rules ?? []).find((r) => r.id === id);
+  if (rule) return { kind: "rule", statement: rule.statement ?? "", cost: rule.cost ?? "", when_broken: rule.when_broken ?? "" };
+  const thing = (w.objects ?? []).find((o) => o.id === id);
+  return thing ? { kind: "object", name: thing.name ?? "", description: thing.description ?? "", significance: thing.significance ?? "" } : null;
+}
+
 // Who the chapter must have: the protagonist and the characters at the two ends of the spotlight tie (an end that is a group is
 // not cast). `project` should be the effective project when the tie may have come from a shift.
 export function requiredCast(project, spotlightId) {
@@ -135,7 +179,10 @@ export function newBeat(schema, project, chapter = chapterInfo(project).next) {
   const taken = beatsOf(project).map((b) => b.id);
   const eff = effectiveProject(project, chapter);
   const tie = pickSpotlight(project, chapter);
-  return { ...blankItem(BEAT_FIELD(schema), taken), chapter, stale: false, cast: fillCast(eff, requiredCast(eff, tie?.id)), spotlight: tie?.id ?? "", planned_from: null };
+  const beat = { ...blankItem(BEAT_FIELD(schema), taken), chapter, stale: false, cast: fillCast(eff, requiredCast(eff, tie?.id)), spotlight: tie?.id ?? "", planned_from: null };
+  const pressure = pickPressure(project, chapter);
+  if (pressure) beat.pressure = pressure; else delete beat.pressure;     // no pressure field at all unless one was picked
+  return beat;
 }
 
 // The unwritten beat for the next chapter, made and put in the Outline when there is none yet. Returns it.
@@ -209,8 +256,9 @@ export function eventsInWords(project, upTo = Infinity) {
 
 // What the cast, the world and their entanglements look like to the model: the effective cards (`project` is an effective
 // project) reduced to what the scene needs, with every list cut to at most PICK_MAX by seeded picks. Always kept: the cast's own
-// cards, the beat's `where`, and the places and objects held by the cast or the groups in play.   {cast, world, ties, holdings}
-export function scene(project, chapter, castIds, { where = null } = {}) {
+// cards, the beat's `where`, the places and objects held by the cast or the groups in play, and the pressure (an id, when the beat
+// has one): the cut never drops it.   {cast, world, ties, holdings}
+export function scene(project, chapter, castIds, { where = null, pressure = null } = {}) {
   const seed = projectSeed(project);
   const cast = asList(castIds);
   const holdings = holdingsInPlay(project, cast);
@@ -227,9 +275,9 @@ export function scene(project, chapter, castIds, { where = null } = {}) {
     world: {
       ...copyOf(w),
       places: pick("places", copyOf(w.places ?? []), [where, ...held]),
-      objects: pick("objects", copyOf(w.objects ?? []), held),
+      objects: pick("objects", copyOf(w.objects ?? []), pressure ? [...held, pressure] : held),
       powers: groupsInPlay(project, cast),
-      rules: pick("rules", copyOf(w.rules ?? [])),
+      rules: pick("rules", copyOf(w.rules ?? []), pressure ? [pressure] : []),
       terms: pick("terms", copyOf(w.terms ?? [])),
     },
     ties: tiesInPlay(project, cast),
@@ -249,7 +297,9 @@ export function hashText(text) {
 // lists are cut by the same seeded picks the request uses, without the place the plan itself chose).
 export function planInputsHash(project, beat) {
   const chapter = Number(beat.chapter);
-  return hashText(JSON.stringify([beat.spotlight ?? "", scene(effectiveProject(project, chapter), chapter, beat.cast)]));
+  const eff = effectiveProject(project, chapter);
+  const pressure = pressureOf(eff, beat);
+  return hashText(JSON.stringify([beat.spotlight ?? "", scene(eff, chapter, beat.cast, { pressure }), ...(pressure ? [pressure] : [])]));
 }
 
 // The plan was made from inputs that have changed since.
@@ -304,12 +354,14 @@ export function planRequest(schema, project, beat, { retry = null } = {}) {
     style: copyOf(eff.style ?? {}),
     setup: copyOf(eff.setup ?? {}),
     protagonist: eff.setup?.protagonist ?? "",
-    ...scene(eff, chapter, beat.cast),
+    ...scene(eff, chapter, beat.cast, { pressure: pressureOf(eff, beat) }),
     spotlight: beat.spotlight,
     earlier_beats: earlierBeats(eff, chapter),
     earlier_events: eventsInWords(eff, chapter - 1),
     spotlight_edges: spotlightEdges(project, beat.spotlight, chapter),
   };
+  const pressure = pressureInWords(eff, beat);
+  if (pressure) request.pressure = pressure;
   if (retry) request.retry = { beat: copyOf(retry.beat), problems: [...retry.problems] };
   return request;
 }

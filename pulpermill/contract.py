@@ -120,6 +120,22 @@ class PlanRetry(Strict):
     problems: list[str]
 
 
+class PressureRule(Strict):
+    """A world rule as the chapter's pressure, in words."""
+    kind: Literal["rule"]
+    statement: str
+    cost: str
+    when_broken: str
+
+
+class PressureObject(Strict):
+    """A world object as the chapter's pressure, in words."""
+    kind: Literal["object"]
+    name: str
+    description: str
+    significance: str
+
+
 class _StoryRequest(Envelope):
     """What `plan` and `generate` share: where we are, the voice, who is in the chapter and how they are tied."""
     chapter: int
@@ -135,6 +151,10 @@ class _StoryRequest(Envelope):
     # consecutive repeats collapsed, the current edge left out, blanks left out. Empty for chapter 1 and when the edge never
     # changed. A page that does not send it is read as sending [] (a later addition, so older requests stay valid).
     spotlight_edges: list[str] = Field(default_factory=list)
+    # The world element this chapter must put to work, in words, never an id: one rule or one object, or null/absent when the page's
+    # pressure flag is off or the world has neither (a later addition, so older requests stay valid). The same element is also
+    # inside `world.rules` or `world.objects`, however the page's cut of those lists fell.
+    pressure: PressureRule | PressureObject | None = None
 
 
 class PlanRequest(_StoryRequest):
