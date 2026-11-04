@@ -101,8 +101,18 @@ def test_notes_hold_short_words_only():
     assert advance.notes(None, {"move": "bogus"}) == {} and advance.notes() == {}
 
 
-def test_the_flag_is_off_and_the_version_is_set():
-    assert advance.ENFORCE is False and advance.VERSION == "advance-1"
+def test_the_flag_is_on_and_the_version_is_set():
+    assert advance.ENFORCE is True and advance.VERSION == "advance-2"
+
+
+def test_a_resend_line_says_the_first_reply_was_set_aside_and_then_gives_the_problem_line():
+    aim = {"reason": "It is still about Orla's approval", "kind": "same_kind"}
+    assert advance.resend_line("aim", aim) == "Your first plan was set aside. " + advance.problem_line("aim", aim)
+    edge = {"reason": "Same want.", "move": "rewords"}
+    assert advance.resend_line("edge", edge).startswith("Your first list of changes was set aside. Same want.")
+    assert advance.resend_line("aim", None).endswith(advance.problem_line("aim", None))
+    with pytest.raises(ValueError):
+        advance.resend_line("plan", None)
 
 
 def test_the_labelled_cases_use_only_known_words_and_build_prompts():

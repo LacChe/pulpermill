@@ -14,10 +14,11 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common
 
-VERSION = "plan-4"
+VERSION = "plan-5"
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
 JUDGE_ATTEMPTS = 2        # the advancement judge (observe-only): two tries, then a neutral verdict, so a judge can never fail a call
+RESEND_STAND_IN = "word " * 90        # the longest line the judge can send a plan back with (a 400-character reason and the advice), for the worst case
 AIM_STAND_IN = "word " * 60       # the longest an aim is shown to a model (300 characters), for the worst case
 
 
@@ -110,7 +111,7 @@ def _chapter_note(w: dict, chapter: int, total: int) -> str:
     return f"{note} {w['late_chapter']}" if total and chapter >= math.ceil(total * 2 / 3) else note
 
 
-def build_prompt(request: dict, factor: float = 1.0) -> str:
+def build_prompt(request: dict, factor: float = 1.0, extra: str = "") -> str:
     w = common.load_text("plan")
     names = names_of(request)
     chapter, total = int(request["chapter"]), int(request.get("chapter_count") or 0)
@@ -154,6 +155,8 @@ def build_prompt(request: dict, factor: float = 1.0) -> str:
         problems = " ".join(r.sentence(p) for p in retry.get("problems") or [])
         task.append(w["retry_lead"].format(aim=r.sentence(r.s(beat.get("aim"))), plan=r.sentence(r.s(beat.get("plan")))) + " " + problems)
         task.append(w["retry_close"])
+    if extra:                  # the advancement judge sent the plan back once: its line closes the task, ahead of the output rule
+        task.append(extra)
     task.append(w["output"].format(language=language_name(request.get("language"))))
 
     role = w["role"].format(chapter=chapter, total=total) if total else w["role_unknown_total"].format(chapter=chapter)
@@ -268,8 +271,9 @@ class PlanFlow(Flow):
             return None
         return check
 
-    def _step(self) -> Step:
-        return Step("plan", lambda f: build_prompt(self.request, f), "json", MAX_OUTPUT, self.kit.grammar.plan_beat(), self._check(), "thinking", True)
+    def _step(self, extra: str = "", fallback=None) -> Step:
+        return Step("plan", lambda f: build_prompt(self.request, f, extra), "json", MAX_OUTPUT, self.kit.grammar.plan_beat(), self._check(), "thinking", True,
+                    fallback=fallback)
 
     def _judges(self) -> bool:
         """The aim judge runs from the second chapter on, when there is an earlier aim to be a kind of."""
@@ -282,31 +286,59 @@ class PlanFlow(Flow):
             return {}
         return replace(advance.aim_step(self.request, aim), attempts=JUDGE_ATTEMPTS, fallback=neutral)
 
-    def verdict_line(self, results: list) -> str:
-        """What a flow that enforces the judge would add to the plan step's prompt when it sent the plan back: the judge's line when the aim
-        is the same kind as an earlier one. Empty when `advance.ENFORCE` is off, there is no verdict, or the aim is fine. Nothing calls it
-        yet (phase 4 does); the flow itself only observes."""
-        if not advance.ENFORCE or len(results) < 2 or advance.aim_ok(results[1]):
-            return ""
-        return advance.problem_line("aim", results[1])
+    def _resend_step(self, first: Any, line: str) -> Step:
+        """The plan step once more, with the judge's line. If this pass cannot be used either, the first plan stands (it was usable)."""
+        def keep_first():
+            self.notes["aim_resend_fallback"] = True
+            return first
+        return self._step(line, keep_first)
+
+    @staticmethod
+    def _aim_of(beat: Any) -> str:
+        return r.s(beat.get("aim")) if isinstance(beat, dict) else ""
+
+    def _final(self, results: list) -> Any:
+        """The plan the reply carries: the second pass when the plan was sent back, else the first."""
+        return results[2] if len(results) >= 3 else results[0]
 
     def next(self, results):
-        if not results:
+        """plan, judge; and when `advance.ENFORCE` and the judge says the aim is the same kind as an earlier one: the plan once more with the
+        judge's line, then the judge once more. A second bad verdict is accepted (noted). Never more than that one extra pass."""
+        n = len(results)
+        if n == 0:
             return self._step()
-        if len(results) == 1:
-            aim = r.s(results[0].get("aim")) if isinstance(results[0], dict) else ""
+        if n == 1:
+            aim = self._aim_of(results[0])
             return self._aim_step(aim) if aim and self._judges() else None
-        self.notes.update(advance.notes(aim_value=results[1]))
+        if n == 2:
+            self.notes.update(advance.notes(aim_value=results[1]))
+            if advance.ENFORCE and not advance.aim_ok(results[1]):
+                self.notes["aim_resent"] = True
+                return self._resend_step(results[0], advance.resend_line("aim", results[1]))
+            return None
+        if n == 3:
+            if self.notes.get("aim_resend_fallback"):       # the first plan stands, and it was judged already
+                self.notes["aim_accepted"] = True
+                return None
+            aim = self._aim_of(results[2])
+            return self._aim_step(aim) if aim else None
+        again = advance.notes(aim_value=results[3]).get("aim_kind")
+        if again:
+            self.notes["aim_kind_after"] = again
+        if not advance.aim_ok(results[3]):
+            self.notes["aim_accepted"] = True
         return None
 
     def worst_case(self):
         steps = [self._step()]
         if self._judges():
             steps.append(self._aim_step(AIM_STAND_IN))
+            if advance.ENFORCE:
+                steps += [self._step(RESEND_STAND_IN), self._aim_step(AIM_STAND_IN)]
         return steps
 
     def reply(self, results):
-        return {"beat": results[0]}
+        return {"beat": self._final(results)}
 
 
 def build_flow(request, kit) -> Flow:

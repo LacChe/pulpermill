@@ -146,7 +146,7 @@ def test_the_planner_fits_the_context_at_some_squeeze_for_a_large_story():
     flow = plan.build_flow(big(), Kit(big()))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert all(m.ok for m in measures) and factor <= 1.0
-    assert [s.name for s in flow.worst_case()] == ["plan", "advance_aim"] and flow.worst_case()[0].max_output == plan.MAX_OUTPUT
+    assert [s.name for s in flow.worst_case()] == ["plan", "advance_aim", "plan", "advance_aim"] and flow.worst_case()[0].max_output == plan.MAX_OUTPUT
 
 
 # ---- the check ------------------------------------------------------------------------------------------------------------
@@ -234,7 +234,7 @@ def test_a_plan_that_fails_the_check_is_asked_for_again_with_the_line_and_then_u
 
 
 def test_the_version_follows_the_wording():
-    assert "+plan:plan-4:" in load_prompter("mill").version
+    assert "+plan:plan-5:" in load_prompter("mill").version
 
 
 # ---- the aim judge after the plan (phase 3, observe-only) ---------------------------------------------------------------------------
@@ -270,16 +270,56 @@ def test_no_aim_judge_runs_in_the_first_chapter():
     assert engine.calls == 1 and "flow" not in ctx.notes and [p["step"] for p in ctx.notes["passes"]] == ["plan"]
 
 
-def test_the_verdict_goes_to_the_notes_and_the_reply_is_the_same_whatever_it_says():
+SAME = json.dumps({"reason": "It is another errand to impress Orla.", "kind": "same_kind"})
+NEW = json.dumps({"reason": "It is a different kind of aim.", "kind": "new_kind"})
+SECOND = {**good(), "aim": "Carry the spare lantern across the harbour before the tide turns"}
+
+
+def test_with_the_flag_off_the_verdict_only_goes_to_the_notes_and_the_reply_is_the_same_whatever_it_says(monkeypatch):
+    monkeypatch.setattr(advance, "ENFORCE", False)
     request = base()
     texts = plan.script(request, Kit(request))
-    same = json.dumps({"reason": "It is another errand to impress Orla.", "kind": "same_kind"})
-    new = json.dumps({"reason": "It is a different kind of aim.", "kind": "new_kind"})
-    bad_reply, bad_ctx, _ = run_plan(request, texts[0], same)
-    good_reply, good_ctx, _ = run_plan(request, texts[0], new)
-    assert bad_reply == good_reply == {"beat": json.loads(texts[0])}
+    bad_reply, bad_ctx, bad_engine = run_plan(request, texts[0], SAME)
+    good_reply, good_ctx, _ = run_plan(request, texts[0], NEW)
+    assert bad_reply == good_reply == {"beat": json.loads(texts[0])} and bad_engine.calls == 2
     assert bad_ctx.notes["flow"] == {"aim_kind": "same_kind"} and good_ctx.notes["flow"] == {"aim_kind": "new_kind"}
     assert [p["step"] for p in bad_ctx.notes["passes"]] == ["plan", "advance_aim"]
+    assert [s.name for s in plan.build_flow(request, Kit(request)).worst_case()] == ["plan", "advance_aim"]
+
+
+def test_a_same_kind_aim_sends_the_plan_back_once_with_the_judges_line_and_the_judge_runs_again():
+    request = base()
+    first = plan.script(request, Kit(request))[0]
+    reply, ctx, engine = run_plan(request, first, SAME, json.dumps(SECOND), NEW)
+    assert reply == {"beat": SECOND} and engine.calls == 4
+    assert [p["step"] for p in ctx.notes["passes"]] == ["plan", "advance_aim", "plan", "advance_aim"]
+    assert ctx.notes["flow"] == {"aim_kind": "same_kind", "aim_resent": True, "aim_kind_after": "new_kind"}
+    assert "Your first plan was set aside." not in engine.prompts[0]
+    assert "Your first plan was set aside. It is another errand to impress Orla." in engine.prompts[2] and "different kind" in engine.prompts[2]
+    assert engine.prompts[2].rindex("different kind") < engine.prompts[2].index("Reply with a JSON object with four keys")           # the line sits in the task, ahead of the output rule
+
+
+def test_a_second_same_kind_verdict_is_accepted_and_noted_and_nothing_runs_a_third_time():
+    request = base()
+    first = plan.script(request, Kit(request))[0]
+    reply, ctx, engine = run_plan(request, first, SAME, json.dumps(SECOND), SAME)
+    assert reply == {"beat": SECOND} and engine.calls == 4
+    assert ctx.notes["flow"] == {"aim_kind": "same_kind", "aim_resent": True, "aim_kind_after": "same_kind", "aim_accepted": True}
+
+
+def test_a_good_verdict_sends_nothing_back():
+    request = base()
+    texts = plan.script(request, Kit(request))
+    reply, ctx, engine = run_plan(request, *texts)
+    assert reply == {"beat": json.loads(texts[0])} and engine.calls == 2 and "aim_resent" not in ctx.notes["flow"]
+
+
+def test_a_plan_that_cannot_be_redone_keeps_the_first_one_and_the_call_still_succeeds():
+    request = base()
+    first = plan.script(request, Kit(request))[0]
+    reply, ctx, engine = run_plan(request, first, SAME, "no json", "still none")
+    assert reply == {"beat": json.loads(first)} and engine.calls == 4                         # no second judge: the plan that stands was judged
+    assert ctx.notes["flow"] == {"aim_kind": "same_kind", "aim_resent": True, "aim_resend_fallback": True, "aim_accepted": True}
 
 
 def test_a_judge_that_fails_every_attempt_never_fails_the_call_and_leaves_the_reply_alone():
@@ -287,17 +327,16 @@ def test_a_judge_that_fails_every_attempt_never_fails_the_call_and_leaves_the_re
     texts = plan.script(request, Kit(request))
     reply, ctx, engine = run_plan(request, texts[0], "no json", "still none")
     assert reply == {"beat": json.loads(texts[0])} and engine.calls == 3
-    assert ctx.notes["flow"] == {"aim_judge_fallback": True}
+    assert ctx.notes["flow"] == {"aim_judge_fallback": True}                                   # no verdict: nothing is sent back
     judge_pass = [p for p in ctx.notes["passes"] if p["step"] == "advance_aim"][0]
     assert len(judge_pass["attempts"]) == 2 and judge_pass["fallback"] is True
 
 
-def test_the_flow_would_send_the_plan_back_only_when_the_flag_is_on_and_the_aim_is_the_same_kind(monkeypatch):
+def test_the_resent_plan_step_is_the_plan_step_with_the_line_and_the_first_plan_as_its_last_resort():
     request = base()
     flow = plan.build_flow(request, Kit(request))
-    verdict = {"reason": "Another errand to please the same person.", "kind": "same_kind"}
-    results = [good(), verdict]
-    assert flow.verdict_line(results) == ""                                  # the default: observe only
-    monkeypatch.setattr(advance, "ENFORCE", True)
-    assert flow.verdict_line(results) == advance.problem_line("aim", verdict) and "Another errand" in flow.verdict_line(results)
-    assert flow.verdict_line([good(), {"reason": "r", "kind": "new_kind"}]) == "" and flow.verdict_line([good()]) == ""
+    first = good()
+    flow.next([first])
+    step = flow.next([first, {"reason": "Same errand.", "kind": "same_kind"}])
+    assert step.name == "plan" and step.attempts == 2 and step.fallback() == first
+    assert "Your first plan was set aside. Same errand." in step.text(1.0) and "Same errand." not in plan.build_prompt(request)

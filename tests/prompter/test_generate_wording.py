@@ -167,9 +167,9 @@ def test_every_step_at_its_heaviest_fits_the_context_at_some_squeeze(size):
     request = big() if size == "large" else base()
     flow = gen.build_flow(request, Kit(request))
     steps = flow.worst_case()
-    assert [s.name for s in steps] == ["write", "events", "shifts", "advance_edge"]
+    assert [s.name for s in steps] == ["write", "events", "shifts", "advance_edge", "shifts", "advance_edge"]
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
-    assert all(m.ok for m in measures) and len(measures) == 4
+    assert all(m.ok for m in measures) and len(measures) == 6
     assert steps[0].max_output == gen.WRITE_TOKENS and budget.input_limit(gen.WRITE_TOKENS) > 8000    # the chapter has room to be written
 
 
@@ -200,7 +200,7 @@ def test_chapter_19_of_20_with_18_earlier_events_fits_and_cuts_the_oldest_histor
     assert len(request["earlier_events"]) == 18
     flow = gen.build_flow(request, Kit(request))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
-    assert all(m.ok for m in measures) and len(measures) == 4
+    assert all(m.ok for m in measures) and len(measures) == 6
     full, squeezed = sections(gen.write_prompt(request, 1.0)), sections(gen.write_prompt(request, 0.55))
     history = "The story so far"
     assert squeezed[history] != full[history] and "Chapter 18" in squeezed[history]
@@ -514,7 +514,7 @@ def _generate(*texts, **config):
 
 def test_the_two_steps_after_the_write_get_more_attempts_and_a_fallback_each():
     steps = gen.build_flow(base(), Kit(base())).worst_case()
-    write, events, shifts, judge = steps
+    write, events, shifts, judge, *_ = steps
     assert (write.attempts, write.fallback) == (2, None)
     assert (events.attempts, shifts.attempts) == (4, 3) and callable(events.fallback) and callable(shifts.fallback)
     assert shifts.fallback() == {"shifts": []}
@@ -582,28 +582,43 @@ def test_no_edge_judge_runs_when_the_shifts_replaced_no_edge():
     assert gen.replaced_edge(request, Kit(request), {"shifts": []}) is None
 
 
-def test_the_verdict_goes_to_the_notes_and_the_reply_is_the_same_whatever_it_says():
-    request = base()
-    kit = Kit(request)
-    text, events, shifts, judge = gen.script(request, kit)
-    results = [text, json.loads(events), json.loads(shifts)]
-    flow = gen.build_flow(request, kit)
-    flow.next(results)
-    verdict = {"reason": "The want is the same one in other words.", "move": "rewords"}
-    assert flow.next(results + [verdict]) is None and flow.notes["edge_move"] == "rewords"
-    plain = gen.build_flow(request, kit)
-    assert flow.reply(results + [verdict]) == plain.reply(results)
+REWORDS = json.dumps({"reason": "Same want, new words.", "move": "rewords"})
 
 
-def test_the_flow_would_send_the_shifts_back_only_when_the_flag_is_on_and_the_edge_only_rewords(monkeypatch):
-    request = base()
-    flow = gen.build_flow(request, Kit(request))
-    verdict = {"reason": "Same want, new words.", "move": "rewords"}
-    results = ["t", {}, {"shifts": []}, verdict]
-    assert flow.verdict_line(results) == ""                                  # the default: observe only
-    monkeypatch.setattr(advance, "ENFORCE", True)
-    assert flow.verdict_line(results) == advance.problem_line("edge", verdict) and "Same want" in flow.verdict_line(results)
-    assert flow.verdict_line(results[:3] + [{"reason": "r", "move": "escalates"}]) == "" and flow.verdict_line(results[:3]) == ""
+def test_with_the_flag_off_the_verdict_only_goes_to_the_notes_and_the_reply_is_the_same_whatever_it_says(monkeypatch):
+    monkeypatch.setattr(advance, "ENFORCE", False)
+    reply, ctx, engine, good = _generate(0, 1, 2, REWORDS)
+    plain, _, _, _ = _generate(0, 1, 2)
+    assert reply == plain and engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords"}
+    assert [s.name for s in gen.build_flow(base(), Kit(base())).worst_case()][-1] == "advance_edge" and len(gen.build_flow(base(), Kit(base())).worst_case()) == 4
+
+
+def test_a_reworded_edge_sends_only_the_shifts_back_once_with_the_judges_line_and_the_judge_runs_again():
+    reply, ctx, engine, good = _generate(0, 1, 2, REWORDS, 2)
+    assert engine.calls == 6 and reply["chapter_text"] == good[0].strip()
+    assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 1), ("shifts", 1), ("advance_edge", 1), ("shifts", 1), ("advance_edge", 1)]
+    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords", "edge_resent": True, "edge_move_after": "complicates"}
+    assert "Your first list of changes was set aside." not in engine.prompts[2]
+    assert "Your first list of changes was set aside. Same want, new words." in engine.prompts[4] and "Let the edge move" in engine.prompts[4]
+    assert engine.prompts[4].rindex("Let the edge move") < engine.prompts[4].rindex("Reply with a JSON object with one key")                # the line sits ahead of the format rule
+    assert "Your first list" not in engine.prompts[0]                                                      # the write was never asked again
+
+
+def test_a_second_reworded_verdict_is_accepted_and_noted_and_nothing_runs_a_third_time():
+    reply, ctx, engine, good = _generate(0, 1, 2, REWORDS, 2, REWORDS)
+    assert engine.calls == 6 and reply["shifts"]
+    assert ctx.notes["flow"]["edge_resent"] is True and ctx.notes["flow"]["edge_move_after"] == "rewords" and ctx.notes["flow"]["edge_accepted"] is True
+
+
+def test_a_good_verdict_sends_nothing_back():
+    reply, ctx, engine, good = _generate(0, 1, 2)
+    assert engine.calls == 4 and "edge_resent" not in ctx.notes["flow"]
+
+
+def test_shifts_that_cannot_be_redone_keep_the_first_ones_and_the_call_still_succeeds():
+    reply, ctx, engine, good = _generate(0, 1, 2, REWORDS, "a", "b", "c")
+    assert engine.calls == 7 and reply["shifts"] == json.loads(good[2])["shifts"]                 # three refused attempts, then the first shifts stand
+    assert ctx.notes["flow"]["edge_resend_fallback"] is True and ctx.notes["flow"]["edge_accepted"] is True
 
 
 def test_a_judge_that_fails_every_attempt_never_fails_the_call_and_leaves_the_reply_alone():

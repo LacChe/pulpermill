@@ -21,7 +21,7 @@ from pulpermill.schema.shifts import shiftable_fields
 from . import advance, common
 from .plan import cut_events, in_names, names_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-7"
+VERSION = "generate-8"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -33,6 +33,7 @@ WRITE_TOKENS = 2560
 EVENTS_TOKENS = 800
 SHIFTS_TOKENS = 1600
 JUDGE_ATTEMPTS = 2        # the advancement judge (observe-only): two tries, then a neutral verdict, so a judge can never fail a call
+RESEND_STAND_IN = "word " * 90        # the longest line the judge can send the shifts back with (a 400-character reason and the advice), for the worst case
 EDGE_STAND_IN = "word " * 60       # the longest an edge is shown to a model (300 characters), for the worst case
 EVENTS_ATTEMPTS, SHIFTS_ATTEMPTS = 4, 3          # after the chapter is written, each of these steps is retried on its own and then falls back
 CHANGED_WORDS, HAPPENED_WORDS = 45, 60           # the most words `changed` keeps (one short sentence) and the fallback's `happened` keeps
@@ -270,7 +271,7 @@ def edge_targets(request: dict, kit: Any) -> list[tuple[str, dict]]:
     return [(scopes[0].of("ties", t["id"]), t) for t in candidates if t.get("id")]
 
 
-def shifts_prompt(request: dict, kit: Any, chapter_text: str, factor: float = 1.0) -> str:
+def shifts_prompt(request: dict, kit: Any, chapter_text: str, factor: float = 1.0, extra: str = "") -> str:
     w = common.load_text("generate")
     names = names_of(request)
     targets = edge_targets(request, kit)
@@ -288,7 +289,7 @@ def shifts_prompt(request: dict, kit: Any, chapter_text: str, factor: float = 1.
              w["shifts_cards_lead"] + "\n" + _reference(request, kit, names, factor),
              w["shifts_rules"],
              w["shifts_fields"].format(character=_shift_fields("characters"), world=_shift_fields("world"), entanglements=_shift_fields("entanglements")),
-             w["shifts_example"], edge, w["shifts_format"]]
+             w["shifts_example"], edge, extra, w["shifts_format"]]        # `extra`: the advancement judge sent the shifts back once, and this is its line
     return "\n\n".join(p for p in parts if p)
 
 
@@ -374,9 +375,21 @@ class GenerateFlow(Flow):
             return Step("events", lambda f: events_prompt(self.request, chapter, f), "json", EVENTS_TOKENS,
                         g.obj({"happened": g.text(), "changed": g.text()}), events_problem, "structured", True,
                         EVENTS_ATTEMPTS, noted("events_fallback", lambda: events_fallback(chapter)))
-        return Step("shifts", lambda f: shifts_prompt(self.request, self.kit, chapter, f), "json", SHIFTS_TOKENS,
+        return self._shifts_step(chapter, "", noted("shifts_fallback", {"shifts": []}))
+
+    def _shifts_step(self, chapter: str, extra: str, fallback) -> Step:
+        g = self.kit.grammar
+        return Step("shifts", lambda f: shifts_prompt(self.request, self.kit, chapter, f, extra), "json", SHIFTS_TOKENS,
                     g.obj({"shifts": g.shifts()}), lambda v: shifts_problem(self.request, self.kit, v), "structured", False,
-                    SHIFTS_ATTEMPTS, noted("shifts_fallback", {"shifts": []}))
+                    SHIFTS_ATTEMPTS, fallback)
+
+    def _resend_step(self, chapter: str, first: Any, line: str) -> Step:
+        """The shifts step once more, with the judge's line (the chapter is never written again). If this pass cannot be used either, the first
+        shifts stand (they were usable)."""
+        def keep_first():
+            self.notes["edge_resend_fallback"] = True
+            return first
+        return self._shifts_step(chapter, line, keep_first)
 
     def _edge_step(self, old: str, new: str) -> Step:
         """The judge of the spotlight tie's new edge, a step of its own after the shifts. Its last resort is a neutral verdict (none)."""
@@ -385,28 +398,47 @@ class GenerateFlow(Flow):
             return {}
         return replace(advance.edge_step(self.request, old, new), attempts=JUDGE_ATTEMPTS, fallback=neutral)
 
-    def verdict_line(self, results: list) -> str:
-        """What a flow that enforces the judge would add to the shifts step's prompt when it sent the shifts back: the judge's line when the
-        edge only rewords. Empty when `advance.ENFORCE` is off, there is no verdict, or the edge moved. Nothing calls it yet (phase 4 does);
-        the flow itself only observes."""
-        if not advance.ENFORCE or len(results) < 4 or advance.edge_ok(results[3]):
-            return ""
-        return advance.problem_line("edge", results[3])
+    def _shifts_of(self, results: list) -> Any:
+        """The shifts the reply carries: the second pass when the shifts were sent back, else the first."""
+        return results[4] if len(results) >= 5 else results[2]
 
     def next(self, results):
-        if len(results) < 3:
-            return self._step(len(results), results)
-        if len(results) == 3:
+        """write, events, shifts, judge; and when `advance.ENFORCE` and the judge says the edge only rewords: the shifts step once more with the
+        judge's line (never the write), then the judge once more. A second bad verdict is accepted (noted). Never more than that one extra pass."""
+        n = len(results)
+        if n < 3:
+            return self._step(n, results)
+        if n == 3:
             edge = replaced_edge(self.request, self.kit, results[2])         # no edge replaced (the shifts fell back, say): nothing to judge
             return self._edge_step(*edge) if edge else None
-        self.notes.update(advance.notes(edge_value=results[3]))
+        if n == 4:
+            self.notes.update(advance.notes(edge_value=results[3]))
+            if advance.ENFORCE and not advance.edge_ok(results[3]):
+                self.notes["edge_resent"] = True
+                return self._resend_step(results[0], results[2], advance.resend_line("edge", results[3]))
+            return None
+        if self.notes.get("edge_resend_fallback"):                           # the first shifts stand, and they were judged already
+            self.notes["edge_accepted"] = True
+            return None
+        if n == 5:
+            edge = replaced_edge(self.request, self.kit, results[4])
+            return self._edge_step(*edge) if edge else None
+        again = advance.notes(edge_value=results[5]).get("edge_move")
+        if again:
+            self.notes["edge_move_after"] = again
+        if not advance.edge_ok(results[5]):
+            self.notes["edge_accepted"] = True
         return None
 
     def worst_case(self):
         chapter = "word " * WRITE_TOKENS
         steps = [self._step(n, [chapter, {}]) for n in range(3)]
-        if edge_targets(self.request, self.kit):
-            steps.append(self._edge_step(max((r.s(t.get("edge")) for _, t in edge_targets(self.request, self.kit)), key=len), EDGE_STAND_IN))
+        targets = edge_targets(self.request, self.kit)
+        if targets:
+            old = max((r.s(t.get("edge")) for _, t in targets), key=len)
+            steps.append(self._edge_step(old, EDGE_STAND_IN))
+            if advance.ENFORCE:
+                steps += [self._shifts_step(chapter, RESEND_STAND_IN, None), self._edge_step(old, EDGE_STAND_IN)]
         return steps
 
     def reply(self, results):
@@ -415,7 +447,7 @@ class GenerateFlow(Flow):
             text, dropped = common.trim_echo(text, r.s(self.request.get("previous_ending")))
             if dropped:
                 common.note_soft("generate", "write", f"{dropped} repeated opening sentence(s) dropped", what="trimmed")
-        return {"chapter_text": text, "events": repair_events(results[1]), "shifts": results[2]["shifts"]}
+        return {"chapter_text": text, "events": repair_events(results[1]), "shifts": self._shifts_of(results)["shifts"]}
 
 
 def build_flow(request, kit) -> Flow:

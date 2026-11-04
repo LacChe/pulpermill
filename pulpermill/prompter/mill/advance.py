@@ -3,8 +3,8 @@ chapter into a new kind or the same kind as an earlier one; `edge_step` sorts th
 (escalates, reverses, complicates, resolves) or a rewording. A step is a classification, never a comparison of wording, and the reason
 comes first in the reply so that the verdict follows from it.
 
-Nothing here is wired into a flow (phase 3 does that). `ENFORCE` says whether a flow should act on a bad verdict; it stays False until
-phase 4. The verdict helpers are neutral on anything they cannot read: a missing or odd value is never a bad verdict, so a judge that
+The flows run these steps (plan.py, generate.py). `ENFORCE` says whether a flow acts on a bad verdict: it sends the judged step back once, with
+`resend_line`, and runs the judge once more. With it False the flows only record the verdicts. The verdict helpers are neutral on anything they cannot read: a missing or odd value is never a bad verdict, so a judge that
 failed can never cost a chapter.
 
 Inputs are read from a `plan` or `generate` request: earlier aims from `earlier_beats`, the edge trail from `spotlight_edges`, and the
@@ -16,8 +16,8 @@ from pulpermill.prompter.base import Step
 
 from . import common
 
-VERSION = "advance-1"
-ENFORCE = False
+VERSION = "advance-2"
+ENFORCE = True
 MAX_OUTPUT = 160            # one short sentence and one word, with room to spare
 
 AIM_KINDS = ("new_kind", "same_kind")
@@ -181,6 +181,13 @@ def problem_line(kind: str, value: Any) -> str:
     w = common.load_text("advance")["problems"]
     reason = r.sentence(r.s(value.get("reason"))) if isinstance(value, dict) else ""
     return w[kind].format(reason=reason) if reason else w[f"{kind}_bare"]
+
+
+def resend_line(kind: str, value: Any) -> str:
+    """The line a flow adds to the prompt of the judged step when it sends that step back once: it says the first reply was set aside, then
+    `problem_line`. `kind` is \"aim\" or \"edge\"."""
+    lead = common.load_text("advance")["resend"][kind] if kind in ("aim", "edge") else ""
+    return f"{lead} {problem_line(kind, value)}"
 
 
 def notes(aim_value: Any = None, edge_value: Any = None) -> dict:

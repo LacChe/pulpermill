@@ -31,3 +31,7 @@ problems:
   aim_bare: "The aim is the same kind as an earlier one. Choose an aim of a different kind: something else for the protagonist to get or do, with a different obstacle or a different stake in play."
   edge: "{reason} Let the edge move: show what the person now wants that is new, by making the want stronger, turning it around, adding a second want or a fear, or letting it be met or given up."
   edge_bare: "The edge only repeats what it was in other words. Let the edge move: show what the person now wants that is new, by making the want stronger, turning it around, adding a second want or a fear, or letting it be met or given up."
+# When a flow sends the judged step back once, this opens the line it adds (resend_line), ahead of the problem line above.
+resend:
+  aim: "Your first plan was set aside."
+  edge: "Your first list of changes was set aside."
