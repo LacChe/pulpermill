@@ -2183,6 +2183,23 @@
        "no_options": "No ties yet. Add some in Entanglements first."
       },
       {
+       "key": "pressure",
+       "label": "World pressure",
+       "help": "One rule or object of the world that this chapter has to put to work: it changes what someone can do, forces a choice, or costs someone something. The system picks one at random, and you can change it or clear it.",
+       "input": "select",
+       "kind": "note",
+       "required": false,
+       "ref": [
+        "world.rules",
+        "world.objects"
+       ],
+       "filled_by": "code",
+       "placeholder": "Choose a rule or object",
+       "why": "Keeps the world from being a backdrop: the chapter has to run into something the world holds.",
+       "no_options": "No rules or objects yet. Add some in World first.",
+       "empty": "None"
+      },
+      {
        "key": "aim",
        "label": "What the protagonist is after",
        "help": "What the protagonist is trying to get or do in this chapter. The planner writes it each chapter, so that it runs into the spotlight tie. The writer plays the meeting between the two.",

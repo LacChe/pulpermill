@@ -12,6 +12,7 @@ import { watch } from "./undo.js";
 import { msg, joinList } from "./text.js";
 import {
   chapterInfo, beatForChapter, beatBlockers, castProblem, planIsStale, planInputsHash, scene, beatInWords, eventsInWords, chapterOfBeat, spotlightEdges,
+  pressureOf, pressureInWords,
 } from "./plan.js";
 
 export const PREVIOUS_ENDING_CHARS = 1500;   // how much of the last chapter's end the model is shown
@@ -62,18 +63,21 @@ export function generateRequest(schema, project, beat) {
   const eff = effectiveProject(project, chapter);
   const setup = copyOf(eff.setup ?? {});
   if (chapter > 1) { delete setup.protagonist; delete setup.normal; delete setup.disruption; }
-  return {
+  const request = {
     ...envelope(schema, project, "generate"),
     chapter, chapter_count: chapterInfo(project).count,
     style: copyOf(eff.style ?? {}),
     setup,
     protagonist: eff.setup?.protagonist ?? "",
-    ...scene(eff, chapter, beat.cast, { where: beat.where }),
+    ...scene(eff, chapter, beat.cast, { where: beat.where, pressure: pressureOf(eff, beat) }),
     earlier_events: eventsInWords(eff, chapter - 1),
     spotlight_edges: spotlightEdges(project, beat.spotlight, chapter),
     previous_ending: chapter > 1 ? previousEnding(project, PREVIOUS_ENDING_CHARS, chapter) : null,
     beat: beatInWords(eff, beat),
   };
+  const pressure = pressureInWords(eff, beat);
+  if (pressure) request.pressure = pressure;
+  return request;
 }
 
 // What a result was made from. If it differs when the model answers, the writer edited something meanwhile, and the

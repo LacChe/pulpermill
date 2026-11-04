@@ -4,6 +4,7 @@
 
 outline.beats.chapter: "code-only: the chapter number is how the page orders beats; the model is told the chapter in the request's own `chapter` and `chapter_count`"
 outline.beats.stale: "code-only: the page marks a beat stale when an earlier chapter was regenerated; it never reaches a call"
+outline.beats.pressure: "code-only for now: the page picks one rule or object per beat and sends it in words as the request's `pressure`; wired in world-pressure-2"
 outline.beats.planned_from: "code-only: a hash the page keeps to tell whether a beat is stale; it never reaches a call"
 
 summary_events.entries.beat: "code-only: the link from an events entry to its chapter; the prompts get the chapter number and the entry's own text"

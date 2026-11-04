@@ -2,7 +2,7 @@
 (tests/shared/contract-vectors.json), against the schema it sits on, and against the page's own lists that P3 did not change.
 Reads web/*.js as text, so no JavaScript runs here. The page's lists of story calls and stages (web/logic.js STORY_CALLS and STAGES)
 still name the removed calls until P5a rewrites them, so they are not compared here; the contract's own lists are."""
-import json, re
+import copy, json, re
 from typing import get_args
 import pytest
 from pydantic import ValidationError
@@ -177,9 +177,9 @@ def test_the_story_requests_the_page_builds_are_golden_and_the_others_keep_their
 
 def test_the_story_requests_carry_the_fields_the_spec_lists():
     plan = {"call", "schema_version", "language", "job_id", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
-            "holdings", "spotlight", "spotlight_edges", "earlier_beats", "earlier_events", "retry"}
+            "holdings", "spotlight", "spotlight_edges", "pressure", "earlier_beats", "earlier_events", "retry"}
     generate = {"call", "schema_version", "language", "job_id", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
-                "holdings", "earlier_events", "previous_ending", "beat", "spotlight_edges"}
+                "holdings", "earlier_events", "previous_ending", "beat", "spotlight_edges", "pressure"}
     assert set(PlanRequest.model_fields) == plan
     assert set(GenerateRequest.model_fields) == generate
     assert set(contract.PlanRetry.model_fields) == {"beat", "problems"}
@@ -320,3 +320,58 @@ def test_the_contract_runs_no_model_and_starts_no_server():
     source = (REPO / "pulpermill" / "contract.py").read_text(encoding="utf-8")
     imports = re.findall(r"^(?:from|import)\s+(\S+)", source, re.M)
     assert set(imports) <= {"typing", "pydantic"}, imports
+
+
+# ---- The pressure (world-pressure-1): one world rule or object, in words, optional ----------------------------------------------------
+
+PRESSURE_RULE = {"kind": "rule", "statement": "Debts are written, never spoken.", "cost": "A spoken debt is void.", "when_broken": "The board is shamed."}
+PRESSURE_OBJECT = {"kind": "object", "name": "The ledger", "description": "Green cloth cover.", "significance": "Names who owes the board."}
+
+
+def a_valid_story_request(call):
+    case = next(c for c in VECTORS["requests"] if c["valid"] and c["data"].get("call") == call)
+    return copy.deepcopy(case["data"])
+
+
+@pytest.mark.parametrize("call", STORY_CALLS)
+def test_a_story_request_without_a_pressure_is_valid_and_has_none(call):
+    data = a_valid_story_request(call)
+    data.pop("pressure", None)
+    assert parse_request(data).pressure is None
+    data["pressure"] = None
+    assert parse_request(data).pressure is None
+
+
+@pytest.mark.parametrize("call", STORY_CALLS)
+@pytest.mark.parametrize("pressure", [PRESSURE_RULE, PRESSURE_OBJECT])
+def test_a_story_request_may_carry_one_rule_or_object_in_words(call, pressure):
+    data = a_valid_story_request(call)
+    data["pressure"] = copy.deepcopy(pressure)
+    assert parse_request(data).pressure.model_dump() == pressure
+
+
+@pytest.mark.parametrize("call", STORY_CALLS)
+@pytest.mark.parametrize("bad", [
+    {**PRESSURE_RULE, "id": "r0000001"},                                   # an extra key, such as an id
+    {**PRESSURE_OBJECT, "extra": "x"},
+    {"kind": "rule", "statement": "Debts are written.", "cost": "A spoken debt is void."},      # a missing key
+    {"kind": "object", "name": "The ledger"},
+    {**PRESSURE_RULE, "kind": "object"},                                   # the keys of the other kind
+    {**PRESSURE_OBJECT, "kind": "place"},                                  # an unknown kind
+    {**PRESSURE_RULE, "cost": 3},                                          # the wrong type
+    "r0000001",                                                            # an id, not words
+    [PRESSURE_RULE],                                                       # more than one
+])
+def test_a_pressure_of_the_wrong_shape_is_refused(call, bad):
+    data = a_valid_story_request(call)
+    data["pressure"] = copy.deepcopy(bad)
+    with pytest.raises(ValidationError):
+        parse_request(data)
+
+
+def test_the_beat_holds_its_pressure_as_an_optional_link_filled_by_code():
+    field = Beat.model_fields["pressure"]
+    assert not field.is_required()
+    meta = field.json_schema_extra
+    assert meta["ref"] == ["world.rules", "world.objects"] and meta["filled_by"] == "code" and meta["input"] == "select"
+    assert Beat.model_fields["pressure"].default is None
