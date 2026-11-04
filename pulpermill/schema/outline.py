@@ -30,7 +30,6 @@ class Beat(Item):
     cast: list[str] = spec("select-multiple", None, "note", ref=["characters"], max_selected=5, filled_by="human")      # the human picks it before Plan
 
     spotlight: str = spec("select", None, "note", ref=["entanglements.ties"], filled_by="code")      # the tie this chapter is about: code picks one at random, the human may change it
-    pressure: str | None = spec("select", None, "note", required=False, ref=["world.rules", "world.objects"], filled_by="code")      # one world rule or object for this chapter: code picks one at random when the page's pressure flag is on, the human may change or clear it
     aim: str = spec("text", None, "note", filled_by="planner")                 # what the protagonist is after in this chapter; it and the spotlight tie must collide
     plan: str = spec("textarea", None, "note", filled_by="planner")            # the planner's plan text; the writer sees it
     planned_from: str | None = spec("text", None, "note", required=False, filled_by="code")   # hash of what this beat was planned from (P5a redefines what is hashed)
