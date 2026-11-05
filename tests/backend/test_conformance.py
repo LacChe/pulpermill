@@ -95,6 +95,36 @@ def test_an_edge_trail_that_is_not_a_list_of_text_is_refused(call, bad):
         contract.parse_request({**request, "spotlight_edges": bad})
 
 
+def test_a_plan_request_that_asks_to_choose_is_accepted_and_answered_as_before():
+    """Stage 1 of combination-select: the backend takes `choose` and `pressure_options` and ignores them, so no reply carries `picked`."""
+    request = next(v["data"] for v in STORY_VALID if v["data"]["call"] == "plan")
+    options = [{"id": "r0000001", "kind": "rule", "statement": "Debts are written down.", "cost": "Pride.", "when_broken": "The board hears."},
+               {"id": "o0000001", "kind": "object", "name": "The ledger", "description": "Green cloth.", "significance": "Names who owes."}]
+    asked = {**request, "choose": True, "pressure_options": options}
+    assert [o.id for o in contract.parse_request(asked).pressure_options] == ["r0000001", "o0000001"]
+    answers = []
+    for sent in (request, asked):
+        engine = FakeEngine()
+        scripted(engine, sent)
+        with running(engine=engine, run=None) as (base, _):
+            body = post(base, sent).json()
+            assert body["ok"] is True, body
+            contract.parse_reply("plan", body)
+            assert wait_idle(base)
+        answers.append(body)
+    assert answers[0] == answers[1] and "picked" not in answers[1]
+
+
+def test_plan_options_with_the_same_id_or_no_id_are_refused():
+    from pydantic import ValidationError
+    request = next(v["data"] for v in STORY_VALID if v["data"]["call"] == "plan")
+    rule = {"id": "r1", "kind": "rule", "statement": "s", "cost": "c", "when_broken": "w"}
+    contract.parse_request({**request, "choose": True, "pressure_options": [rule]})
+    for bad in ([rule, {"id": "r1", "kind": "object", "name": "n", "description": "d", "significance": "g"}], [{k: v for k, v in rule.items() if k != "id"}]):
+        with pytest.raises(ValidationError):
+            contract.parse_request({**request, "choose": True, "pressure_options": bad})
+
+
 def _generate():
     return next(v["data"] for v in VALID if v["data"]["call"] == "generate")
 

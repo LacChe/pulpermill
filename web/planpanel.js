@@ -33,6 +33,7 @@ function node(tag, props = {}, ...children) {
 // hooks: {schema, client, getProject, backendWhere, changed(), redraw(), notice(text, kind, action), errorText(error)}
 export function createPlanPanel(hooks) {
   let draft = null;                     // {project, chapter, beat}: the beat for the next chapter until it is planned (nothing is added to the Outline before)
+  let choose = true;                    // the planner chooses the tie and the pressure: not saved, ticked again on a page reload
   let button = null;
   let stageLine = null;
   let mine = false;                     // this panel pressed the button and is waiting
@@ -89,7 +90,7 @@ export function createPlanPanel(hooks) {
     const { beat, existing } = working(project, chapter);
     if (existing?.plan && !(await ask(STRINGS.confirmReplan))) return;
     hooks.notice(STRINGS.working);
-    const call = planChapter(hooks.client, hooks.schema, project, beat);
+    const call = planChapter(hooks.client, hooks.schema, project, beat, { choose });
     mine = true;
     refresh();
     const result = await call.done;
@@ -157,8 +158,15 @@ export function createPlanPanel(hooks) {
     panel.append(node("p", { className: "plan-chapter", textContent: fill(info.count ? STRINGS.chapterOf : STRINGS.chapterOnly, { n: chapter, total: info.count }) }));
     if (stale) panel.append(node("p", { className: "plan-stale", textContent: STRINGS.stale }));
 
+    // Whether the planner chooses the tie and the pressure itself; while it does, the two pickers below are not used.
+    const chooseBox = node("input", { type: "checkbox", id: "plan-choose", checked: choose });
+    chooseBox.addEventListener("change", () => { choose = chooseBox.checked; panel.remove(); draw(container); });
+    panel.append(node("div", { className: "plan-choose" },
+      node("label", { htmlFor: "plan-choose" }, chooseBox, ` ${STRINGS.choose}`),
+      node("p", { className: "help", textContent: STRINGS.chooseHelp })));
+
     // The spotlight: the tie in words, and a list of every tie to pick another from.
-    const picker = node("select", { className: "text-control", id: "plan-spotlight" },
+    const picker = node("select", { className: "text-control", id: "plan-spotlight", disabled: choose },
       ...(allTies.some((t) => t.id === beat.spotlight) ? [] : [node("option", { value: "", textContent: STRINGS.spotlightPick, selected: true })]),
       ...allTies.map((t) => node("option", { value: t.id, textContent: tieInWords(hooks.schema, eff, t).text, selected: t.id === beat.spotlight })));
     picker.addEventListener("change", () => setBeat(project, chapter, withSpotlight(project, beat, picker.value)));
@@ -172,7 +180,7 @@ export function createPlanPanel(hooks) {
     {
       const chosen = pressureOf(eff, beat) ?? "";
       const options = refOptions(eff, ["world.rules", "world.objects"], STRINGS.unnamed);
-      const pressurePicker = node("select", { className: "text-control", id: "plan-pressure" },
+      const pressurePicker = node("select", { className: "text-control", id: "plan-pressure", disabled: choose },
         ...(chosen ? [] : [node("option", { value: "", textContent: STRINGS.pressureNone, selected: true })]),
         ...options.map((o) => node("option", { value: o.value, textContent: clipLabel(o.label), selected: o.value === chosen })));
       pressurePicker.addEventListener("change", () => setBeat(project, chapter, { pressure: pressurePicker.value }));

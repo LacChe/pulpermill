@@ -353,25 +353,27 @@ export function checkStyleFit(client, schema, project) {
 // Plan a chapter: think and fill the beat, and one more try when the Outline's own blocking rules refuse the first beat (the
 // second attempt is told what was wrong). `beat` is the chapter's beat as the writer left it (the cast and the spotlight tie).
 // Nothing is changed: it resolves to {ok: true, beat, unresolved, dropped, warnings, blockers, retried} and the page decides
-// what to land (placeBeat). A request the page cannot make resolves to {ok: false, reason} (see planGate); a failed call to its failure.
-export function planChapter(client, schema, project, beat) {
+// what to land (placeBeat). With `choose` the planner may pick the tie and the pressure; the beat then carries its pick. A request the page cannot make resolves to {ok: false, reason} (see planGate); a failed call to its failure.
+export function planChapter(client, schema, project, beat, { choose = false } = {}) {
   const gate = planGate(project, beat);
   if (!gate.ok) return refused(gate.reason === "cast" ? `cast_${gate.why}` : gate.reason);
   let current = null;
   let stopped = false;
   const call = (request) => { current = client.start(request); return current.done; };
   const done = (async () => {
-    let read = readPlanReply(await call(planRequest(schema, project, beat)));
+    let read = readPlanReply(await call(planRequest(schema, project, beat, { choose })));
     if (!read.ok) return read;
     let landed = landBeat(schema, project, beat, read);
     let blockers = beatBlockers(schema, project, landed.beat);
     let retried = false;
     if (blockers.length && !stopped) {
       retried = true;
-      const second = readPlanReply(await call(planRequest(schema, project, beat, { retry: { beat: read.beat, problems: blockers } })));
+      // The retry keeps the pair the first reply landed (the planner's choice, or the page's own) and chooses nothing again.
+      const kept = { ...beat, spotlight: landed.beat.spotlight, pressure: landed.beat.pressure };
+      const second = readPlanReply(await call(planRequest(schema, project, kept, { retry: { beat: read.beat, problems: blockers }, choose: false })));
       if (!second.ok) return second;
       read = second;
-      landed = landBeat(schema, project, beat, read);
+      landed = landBeat(schema, project, kept, read);
       blockers = beatBlockers(schema, project, landed.beat);
     }
     return { ok: true, beat: landed.beat, unresolved: landed.unresolved, dropped: landed.dropped, warnings: landed.warnings, blockers, retried };

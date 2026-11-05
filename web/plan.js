@@ -110,6 +110,12 @@ export function pressureInWords(project, beat) {
   return thing ? { kind: "object", name: thing.name ?? "", description: thing.description ?? "", significance: thing.significance ?? "" } : null;
 }
 
+// Every rule and object of a project in words with its id, rules first (the contract's `pressure_options`). `project` is an
+// effective project. The words are built by pressureInWords, so an option reads exactly like a beat's own pressure.
+export function pressureOptions(project) {
+  return pressureElements(project).map((e) => ({ id: e.id, ...pressureInWords(project, { pressure: e.id }) }));
+}
+
 // Who the chapter must have: the protagonist and the characters at the two ends of the spotlight tie (an end that is a group is
 // not cast). `project` should be the effective project when the tie may have come from a shift.
 export function requiredCast(project, spotlightId) {
@@ -337,8 +343,9 @@ export function spotlightEdges(project, spotlightId, chapter) {
 // ---- The plan request --------------------------------------------------------------------
 
 // Plan chapter `beat.chapter`. `beat` holds the spotlight and the cast (the page's own picks, which the writer may have changed).
-// `retry` is {beat, problems} when the first try was refused by the Outline's block rules.
-export function planRequest(schema, project, beat, { retry = null } = {}) {
+// `retry` is {beat, problems} when the first try was refused by the Outline's block rules. `choose` lets the planner pick the tie
+// and the pressure: the request then also carries every rule and object as `pressure_options`, and the beat's own pair is the default.
+export function planRequest(schema, project, beat, { retry = null, choose = false } = {}) {
   const chapter = Number(beat.chapter);
   const eff = effectiveProject(project, chapter);
   const request = {
@@ -356,6 +363,7 @@ export function planRequest(schema, project, beat, { retry = null } = {}) {
   const pressure = pressureInWords(eff, beat);
   if (pressure) request.pressure = pressure;
   if (retry) request.retry = { beat: copyOf(retry.beat), problems: [...retry.problems] };
+  if (choose) { request.choose = true; request.pressure_options = pressureOptions(eff); }
   return request;
 }
 
@@ -366,6 +374,8 @@ export function planRequest(schema, project, beat, { retry = null } = {}) {
 //               planned_from is the hash of what this plan was made from
 //   unresolved  links that matched nothing or two entries (left empty): [{field, key, words, why}]
 //   dropped     keys the model gave that were not usable (not a planner field, or text of the wrong kind)
+//   warnings    one entry when the reply's `picked` was not usable (it is then ignored and the beat keeps its own pair)
+// A valid `picked` sets the beat's spotlight and pressure before planned_from is worked out, so the plan is not stale at once.
 export function landBeat(schema, project, existing, reply) {
   const chapter = Number(existing.chapter);
   const eff = effectiveProject(project, chapter);
@@ -373,6 +383,18 @@ export function landBeat(schema, project, existing, reply) {
   const given = reply.beat ?? {};
   const beat = copyOf(existing);
   const unresolved = [];
+  const warnings = [];
+  const picked = reply.picked;
+  if (picked) {
+    const ties = spotlightTies(eff);
+    const cast = asList(existing.cast);
+    const tie = ties.find((t) => t.id === picked.spotlight && cast.includes(t.tie_from) && cast.includes(t.tie_to));
+    const element = picked.pressure ? pressureElements(eff).some((e) => e.id === picked.pressure) : true;
+    if (tie && element) {
+      beat.spotlight = tie.id;
+      if (picked.pressure) beat.pressure = picked.pressure; else delete beat.pressure;
+    } else warnings.push(msg("plan.pickedIgnored"));
+  }
   const dropped = Object.keys(given).filter((key) => !planner.some((f) => f.key === key));
   for (const def of planner) {
     if (!(def.key in given)) continue;
@@ -388,7 +410,7 @@ export function landBeat(schema, project, existing, reply) {
   }
   Object.assign(beat, { chapter, stale: false });
   beat.planned_from = planInputsHash(project, beat);
-  return { beat, unresolved, dropped, warnings: [] };
+  return { beat, unresolved, dropped, warnings };
 }
 
 // Puts the beat into the outline: replaces the beat with the same id, or adds it. Returns what it replaced.

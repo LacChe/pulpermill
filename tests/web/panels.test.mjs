@@ -175,3 +175,47 @@ test("no form label or help in the schema data refers to a removed field, except
   const allowed = /"id": "(object_has_stakes|power_no_current_goals)"/;
   assert.deepEqual(lines.filter((line) => !allowed.test(line)), []);
 });
+
+// ---- The plan panel's choose checkbox (combination-select, stage 1) ------------------------------
+// A small stand-in for the page's DOM: enough for the panel to draw itself, and to click its controls.
+
+class FakeNode {
+  constructor(tag) { this.tag = tag; this.children = []; this.parent = null; this.listeners = {}; this.dataset = {}; this.className = ""; this.textContent = ""; }
+  append(...kids) { for (const k of kids) { if (typeof k === "string") { this.textContent += k; continue; } k.parent = this; this.children.push(k); } }
+  remove() { if (this.parent) this.parent.children = this.parent.children.filter((c) => c !== this); this.parent = null; }
+  addEventListener(name, fn) { (this.listeners[name] ??= []).push(fn); }
+  dispatch(name) { for (const fn of this.listeners[name] ?? []) fn({ target: this }); }
+  find(test) { for (const c of this.children) { if (test(c)) return c; const deeper = c.find(test); if (deeper) return deeper; } return null; }
+  querySelector(selector) { return this.find(selector.startsWith(".") ? (n) => n.className.split(" ").includes(selector.slice(1)) : (n) => n.tag === selector); }
+}
+
+test("the plan panel has a ticked box for letting the planner choose; it disables the pickers and its state reaches the request", async () => {
+  globalThis.document = { createElement: (tag) => new FakeNode(tag) };
+  const { createPlanPanel } = await import("../../web/planpanel.js");
+  const p = lockStaticCards(story());
+  p.outline.beats[1].plan = "";          // nothing planned yet, so the button asks no confirmation
+  const sent = [];
+  const client = { state: { working: false, stage: null }, start: (request) => { sent.push(request); return { done: new Promise(() => {}), stop() {} }; } };
+  const hooks = { schema, client, getProject: () => p, backendWhere: () => "", changed() {}, redraw() {}, notice() {}, errorText: () => "" };
+  const panel = createPlanPanel(hooks);
+  const container = new FakeNode("div");
+  panel.draw(container);
+  const byId = (id) => container.find((n) => n.id === id);
+  assert.ok(byId("plan-choose"), "the checkbox is there");
+  assert.equal(byId("plan-choose").type, "checkbox");
+  assert.equal(byId("plan-choose").checked, true, "ticked by default");
+  assert.equal(byId("plan-spotlight").disabled, true);
+  assert.equal(byId("plan-pressure").disabled, true);
+  const draw = container.find((n) => n.tag === "button" && n.listeners.click);
+  draw.dispatch("click");
+  await new Promise((r) => setImmediate(r));
+  assert.equal(sent.at(-1)?.choose, true, "ticked: the request asks to choose");
+  const box = byId("plan-choose");
+  box.checked = false;
+  box.dispatch("change");
+  assert.equal(byId("plan-choose").checked, false);
+  assert.equal(byId("plan-spotlight").disabled, false, "unticked: the pickers are used again");
+  assert.equal(byId("plan-pressure").disabled, false);
+  assert.equal(container.querySelector(".plan-panel").parent, container, "the panel was drawn again, not added twice");
+  delete globalThis.document;
+});

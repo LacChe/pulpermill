@@ -650,3 +650,27 @@ test("status checks and the mock never carry a job id", async () => {
   await client.checkStatus();
   assert.equal("job_id" in seen[0], false);
 });
+
+test("the retry keeps the pair the first reply chose and chooses nothing again", async () => {
+  const p = await startedProject();
+  const beat = ensureBeat(schema, p);
+  const own = p.entanglements.ties.find((t) => t.id === beat.spotlight);
+  p.entanglements.ties.push({ id: "t9000001", tie_from: own.tie_from, tie_to: own.tie_to, bond: "friend", edge: "to stay close" });
+  const mock = countingMock();
+  const send = mock.send;
+  let first = true;
+  mock.send = async (request, extra) => {
+    const reply = await send(request, extra);
+    if (request.call === "plan" && first) { first = false; return { ...reply, beat: { ...reply.beat, aim: "" }, picked: { spotlight: "t9000001", pressure: null } }; }
+    return reply;
+  };
+  const result = await planChapter(mockClient(mock), schema, p, beat, { choose: true }).done;
+  assert.deepEqual(mock.seen.map((r) => r.call), ["plan", "plan"]);
+  assert.equal(mock.seen[0].choose, true);
+  assert.ok(Array.isArray(mock.seen[0].pressure_options));
+  assert.equal(mock.seen[1].spotlight, "t9000001", "the retry asks about the tie the first reply chose");
+  assert.equal("pressure" in mock.seen[1], false);
+  assert.equal("choose" in mock.seen[1] || "pressure_options" in mock.seen[1], false);
+  assert.equal(result.retried, true);
+  assert.equal(result.beat.spotlight, "t9000001", "the second reply lands on the first reply's pair");
+});

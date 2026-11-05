@@ -120,7 +120,13 @@ export function createMock(schema, options = {}) {
       plan: `Mock plan for chapter ${request.chapter}${tie ? `, about ${tie.bond}` : ""}.`,
     };
     if (place) beat.where = place;
-    return { ok: true, beat };
+    if (!request.choose) return { ok: true, beat };
+    // The planner may choose: another tie between two people of the cast when there is one, and the first rule or object.
+    const people = new Set((request.cast ?? []).map((c) => c.id));
+    const ties = (request.ties ?? []).filter((t) => people.has(t.tie_from) && people.has(t.tie_to));
+    const other = ties.find((t) => t.id !== request.spotlight) ?? tie;
+    const picked = { spotlight: other?.id ?? request.spotlight, pressure: (request.pressure_options ?? [])[0]?.id ?? null };
+    return { ok: true, beat, picked };
   };
 
   const generate = (request) => {

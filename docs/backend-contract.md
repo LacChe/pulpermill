@@ -174,6 +174,8 @@ Request: `chapter`, `chapter_count`, `style`, `setup`, `goal` (the goal the stor
 
 Reply: `{"ok": true, "thinking": "...", "beat": {"where": "The Salt Coast", "collision_goal": "..."}}`. `beat` holds the beat's planner fields by key (not the cast, the chapter number, the spotlight, the offstage move or the planned-from hash: those are the writer's or the page's). A `payoff` is a list of open plants' wording as it was sent. Keys the beat does not have are ignored.
 
+*Added 2026-11-05 (later additions, so older requests stay valid).* A plan request may also carry `choose` (boolean, default `false`) and `pressure_options` (default `[]`): every rule and object of the world in words with an `id` (`{id, kind: "rule", statement, cost, when_broken}` or `{id, kind: "object", name, description, significance}`; ids unique). The page sends options only when `choose` is true; `spotlight` and `pressure` are then the page's default pair, kept as a fallback. A reply may carry `picked`: `{"spotlight": "<a tie id from the request>", "pressure": "<an option id>" | null}`, and the page applies it to the beat only if both ids check out. Today the backend accepts these fields and ignores them, so no reply carries `picked` yet.
+
 ### `generate`: write a chapter
 
 One call, three passes: write the chapter, the Events pass (what the text shows happened) and the Shifts and Entanglements pass (who moved, and proposed changes to the live fields). Nothing is kept if any pass fails; the writer presses Generate again.

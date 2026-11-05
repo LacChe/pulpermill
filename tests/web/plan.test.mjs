@@ -339,3 +339,53 @@ test("working out the trail changes nothing in the project", () => {
   planRequest(schema, p, p.outline.beats.find((b) => b.id === "b0000004"));
   assert.equal(JSON.stringify(p), before);
 });
+
+// ---- The planner chooses the tie and the pressure (combination-select, stage 1) ----
+
+function twoTieStory() {
+  const p = story();
+  p.entanglements.ties.push({ id: "t1000003", tie_from: "c0000001", tie_to: "c0000002", bond: "friend", edge: "to stay close" });
+  return p;
+}
+const planned = { where: "The Archive", when_time: "Dusk", aim: "Suvi wants it.", plan: "A plan." };
+
+test("a plan request asks to choose only when told to, and then carries every rule and object with its id", () => {
+  const p = twoTieStory();
+  const beat = p.outline.beats[1];
+  const plain = planRequest(schema, p, beat);
+  assert.equal("choose" in plain || "pressure_options" in plain, false, "without choose the request is exactly as it was");
+  assert.deepEqual(planRequest(schema, p, beat, { choose: false }), plain);
+  const asked = planRequest(schema, p, beat, { choose: true });
+  assert.equal(asked.choose, true);
+  assert.deepEqual(asked.pressure_options.map((o) => [o.id, o.kind]), [["r0000001", "rule"], ["o0000001", "object"]]);
+  assert.equal(asked.pressure_options[1].name, "The ledger");
+  assert.equal(asked.spotlight, beat.spotlight, "the page's own pair stays as the fallback");
+  assert.deepEqual({ ...asked, choose: undefined, pressure_options: undefined }, { ...plain, choose: undefined, pressure_options: undefined });
+});
+
+test("a valid pick sets the beat's tie and pressure before the plan's hash is taken", () => {
+  const p = twoTieStory();
+  const beat = p.outline.beats[1];
+  const landed = landBeat(schema, p, beat, { ok: true, beat: planned, picked: { spotlight: "t1000003", pressure: "r0000001" } });
+  assert.deepEqual([landed.beat.spotlight, landed.beat.pressure], ["t1000003", "r0000001"]);
+  assert.deepEqual(landed.warnings, []);
+  assert.equal(landed.beat.planned_from, planInputsHash(p, landed.beat), "the plan does not look stale at once");
+  placeBeat(p, landed.beat);
+  assert.equal(planIsStale(p, landed.beat), false);
+  const none = landBeat(schema, p, { ...beat, pressure: "o0000001" }, { ok: true, beat: planned, picked: { spotlight: "t1000003", pressure: null } });
+  assert.equal("pressure" in none.beat, false, "a null pressure takes the pressure off the beat");
+  assert.equal(none.beat.spotlight, "t1000003");
+});
+
+test("a pick that is not in the story is ignored with one warning", () => {
+  const p = twoTieStory();
+  const beat = { ...p.outline.beats[1], pressure: "o0000001" };
+  for (const picked of [{ spotlight: "t1000002", pressure: null }, { spotlight: "nope", pressure: null }, { spotlight: "t1000003", pressure: "nope" }]) {
+    const landed = landBeat(schema, p, beat, { ok: true, beat: planned, picked });
+    assert.deepEqual([landed.beat.spotlight, landed.beat.pressure], [beat.spotlight, "o0000001"], JSON.stringify(picked));
+    assert.equal(landed.warnings.length, 1);
+    assert.equal(landed.beat.planned_from, planInputsHash(p, landed.beat));
+  }
+  const outside = landBeat(schema, p, { ...beat, cast: ["c0000001"] }, { ok: true, beat: planned, picked: { spotlight: "t1000003", pressure: null } });
+  assert.equal(outside.warnings.length, 1, "a tie with an end outside the cast is not taken");
+});

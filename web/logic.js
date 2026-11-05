@@ -684,7 +684,10 @@ export function flagsUsed(card) {
 //
 //   plan       Fill the beat's planner fields (where, when_time, aim, plan) for the spotlight tie. Request {chapter,
 //              chapter_count, style, setup, protagonist, cast, world, ties, holdings, spotlight, earlier_beats,
-//              earlier_events, retry?}. Reply {ok, beat}. The beat is by field key, links in words.
+//              earlier_events, retry?, choose?, pressure_options?}. Reply {ok, beat, picked?}. The beat is by field key, links
+//              in words. With `choose` the planner may pick the tie and the pressure itself from the ties sent and the
+//              `pressure_options` (every rule and object, in words with ids); `picked` {spotlight, pressure} names its choice
+//              by id, and `spotlight` and `pressure` are then only the page's default pair.
 //   generate   Write the chapter, say what happened, and propose the shifts. Request as plan, without the top-level spotlight
 //              and with previous_ending and the beat. The spotlight tie's id is sent inside the beat (beat.spotlight), one of the
 //              ties sent. Reply {ok, chapter_text, events, shifts}. All or nothing: the page
@@ -1049,9 +1052,15 @@ const OP_KINDS = ["add", "replace", "remove"];
 export function readPlanReply(reply) {
   const checked = readReply(reply);
   if (!checked.ok) return checked;
-  if (!onlyKeys(checked, ["ok", "beat"])) return bad("the plan has a field nobody knows.");
+  if (!onlyKeys(checked, ["ok", "beat", "picked"])) return bad("the plan has a field nobody knows.");
   if (!isObject(checked.beat)) return bad("the plan has no beat.");
-  return { ok: true, beat: checked.beat };
+  if (checked.picked === undefined || checked.picked === null) return { ok: true, beat: checked.beat };
+  // `picked` is the tie and the pressure the planner chose, as ids of the request: landBeat checks them against the project.
+  const { picked } = checked;
+  if (!isObject(picked) || !onlyKeys(picked, ["spotlight", "pressure"])) return bad("the plan's choice is not an object of spotlight and pressure.");
+  if (!isText(picked.spotlight) || !picked.spotlight) return bad("the plan's choice names no tie.");
+  if (picked.pressure !== undefined && picked.pressure !== null && (!isText(picked.pressure) || !picked.pressure)) return bad("the plan's pressure is not an id.");
+  return { ok: true, beat: checked.beat, picked: { spotlight: picked.spotlight, pressure: picked.pressure ?? null } };
 }
 
 // One operation on a list field, as the contract's ListOp says: add names no id and has values, replace names an id and has

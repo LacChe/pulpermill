@@ -136,6 +136,19 @@ class PressureObject(Strict):
     significance: str
 
 
+class PressureRuleChoice(PressureRule):
+    """A world rule the planner may choose as the chapter's pressure: its words and its id (added 2026-11-05)."""
+    id: str = Field(min_length=1)
+
+
+class PressureObjectChoice(PressureObject):
+    """A world object the planner may choose as the chapter's pressure: its words and its id (added 2026-11-05)."""
+    id: str = Field(min_length=1)
+
+
+PressureChoice = Union[PressureRuleChoice, PressureObjectChoice]
+
+
 class _StoryRequest(Envelope):
     """What `plan` and `generate` share: where we are, the voice, who is in the chapter and how they are tied."""
     chapter: int
@@ -164,6 +177,18 @@ class PlanRequest(_StoryRequest):
     earlier_beats: list[dict[str, Any]]     # earlier beats in words: chapter, where, when, aim, plan
     earlier_events: list[dict[str, Any]]    # earlier Events entries: chapter, happened, changed
     retry: PlanRetry | None = None
+    # The page lets the planner choose the tie and the pressure (a later addition, 2026-11-05, so older requests stay valid).
+    # `spotlight` and `pressure` are then the page's default pair, kept as a fallback.
+    choose: bool = False
+    # Every rule and object of the world in words with ids, sent only when `choose` is true (a later addition, 2026-11-05).
+    pressure_options: list[PressureChoice] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _pressure_option_ids_are_unique(self):
+        ids = [o.id for o in self.pressure_options]
+        if len(ids) != len(set(ids)):
+            raise ValueError("pressure_options ids must be unique")
+        return self
 
     @model_validator(mode="after")
     def _spotlight_is_one_of_the_ties(self):
@@ -267,11 +292,19 @@ class StyleFitReply(Strict):
     message: str = ""                       # when it does not fit: what to look at, in the writer's language
 
 
+class Picked(Strict):
+    """The tie and the pressure the planner chose (a later addition, 2026-11-05): a tie id of the request, and the id of one of
+    its `pressure_options`, or null for none."""
+    spotlight: str = Field(min_length=1)
+    pressure: str | None = None
+
+
 class PlanReply(Strict):
     """The beat's planner fields by key: where, when_time, aim and plan. A link is a word (a place's name). The plan text is
     part of the beat."""
     ok: Literal[True]
     beat: dict[str, Any]
+    picked: Picked | None = None            # only when the request asked to choose (a later addition, 2026-11-05)
 
 
 class EventsOut(Strict):

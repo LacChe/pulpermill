@@ -91,7 +91,10 @@ def _style_fit(draft: dict, handles: Handles) -> dict:
 
 
 def _plan(draft: dict, handles: Handles) -> dict:
-    return {"beat": _object(draft.get("beat"), "the beat")}
+    out = {"beat": _object(draft.get("beat"), "the beat")}
+    if draft.get("picked"):        # only a flow that was asked to choose leaves one; none does yet
+        out["picked"] = draft["picked"]
+    return out
 
 
 def _generate(draft: dict, handles: Handles) -> dict:
