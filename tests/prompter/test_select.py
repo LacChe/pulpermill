@@ -200,6 +200,18 @@ def test_a_select_that_cannot_be_used_leaves_todays_flow_on_the_pages_own_pair_a
     assert "## The tie in the spotlight" in engine.prompts[3] and "## The three combinations" not in engine.prompts[3]
 
 
+def test_the_earlier_chapters_tie_and_pressure_reach_all_three_prompts_and_only_the_select_prompt_asks_for_variety():
+    request = choose_request()
+    request["earlier_beats"][0].update(tie="Marit and Suvi", pressure="Debts are written, never spoken.")
+    flow, reply, ctx, engine = run_plan(request, *plan.script(request, Kit(request)))
+    select_prompt, brainstorm, planned = engine.prompts[:3]
+    for prompt in (select_prompt, brainstorm, planned):
+        assert "It was about Marit and Suvi." in prompt and "It put this to work: Debts are written, never spoken." in prompt
+    assert "the least lately" in select_prompt and "only when the story gives a reason to" in select_prompt
+    assert "the least lately" not in brainstorm and "the least lately" not in planned
+    assert "the least lately" in select.build_select_prompt(choose_request(options=False)), "the variant with no rules or objects asks for variety too"
+
+
 # ---- The trace and the run record --------------------------------------------------------------------------------------------------------
 
 def test_the_trace_has_a_row_for_the_select_step_and_the_plan_row_keeps_the_idea(tmp_path):

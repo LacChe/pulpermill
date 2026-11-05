@@ -17,7 +17,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common, select
 
-VERSION = "plan-12"
+VERSION = "plan-13"
 IDEA = "idea"            # in choose mode: the number (1 to 3) of the idea the plan builds on, which is also the number of its combination; the reply turns it into `picked`
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free

@@ -451,8 +451,16 @@ def render_history(events: list[dict], chapter: int, *, scope: str, keep_full: i
 
 def render_earlier_beats(beats: list[dict]) -> str:
     fr = tx.prompt_text("frames")
-    rows = [fr["planner_beat_item"].format(chapter=b.get("chapter"), where=bare(b.get("where")), when=bare(b.get("when_time")))
-            for b in sorted(beats or [], key=lambda b: int(b.get("chapter") or 0))]
+    def row(b: dict) -> str:
+        """One earlier chapter: where and when, then (when the beat has them) the tie and the rule or object it was about."""
+        parts = [fr["planner_beat_item"].format(chapter=b.get("chapter"), where=bare(b.get("where")), when=bare(b.get("when_time")))]
+        if bare(b.get("tie")):
+            parts.append(fr["planner_beat_tie"].format(tie=bare(b.get("tie"))))
+        if bare(b.get("pressure")):
+            parts.append(fr["planner_beat_pressure"].format(pressure=bare(b.get("pressure"))))
+        return " ".join(parts)
+
+    rows = [row(b) for b in sorted(beats or [], key=lambda b: int(b.get("chapter") or 0))]
     if not rows:
         return ""
     return fr["planner_beats_lead"] + "\n" + "\n".join(rows)

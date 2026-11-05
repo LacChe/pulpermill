@@ -239,10 +239,31 @@ export function beatInWords(project, beat) {
   return beat.spotlight ? { ...words, spotlight: beat.spotlight } : words;
 }
 
-// Earlier beats in words for the planner: chapter, where, when, aim and plan.
+// The two people at the ends of a beat's spotlight tie, by name ("Orla Fennick and Pim Tallowby"): no bond and no edge, since the edge
+// changes from chapter to chapter. Null when the beat has none, or the tie or one of its ends is gone.
+function tieEnds(project, beat) {
+  const tie = (project.entanglements?.ties ?? []).find((t) => t.id === beat.spotlight);
+  if (!tie) return null;
+  const words = tieWords(project, tie, "");          // an end that is gone comes back empty
+  return words.from && words.to ? msg("plan.tieEnds", { from: words.from, to: words.to }) : null;
+}
+
+// The beat's pressure in a few words: a rule's statement or an object's name. Null when it has none or it is gone.
+function pressureShort(project, beat) {
+  const words = pressureInWords(project, beat);
+  const text = words?.kind === "rule" ? words.statement : words?.name;
+  return typeof text === "string" && text.trim() ? text.trim() : null;
+}
+
+// Earlier beats in words for the planner: chapter, where, when, aim and plan, and the tie and the pressure the chapter was about when
+// it had them (left out otherwise), so that the planner can vary its choice.
 export function earlierBeats(project, chapter) {
   return beatsOf(project).filter((b) => Number(b.chapter) < chapter).sort((a, b) => a.chapter - b.chapter)
-    .map((b) => ({ chapter: Number(b.chapter), where: placeName(project, b.where), when: b.when_time ?? "", aim: b.aim ?? "", plan: b.plan ?? "" }));
+    .map((b) => {
+      const words = { chapter: Number(b.chapter), where: placeName(project, b.where), when: b.when_time ?? "", aim: b.aim ?? "", plan: b.plan ?? "" };
+      const tie = tieEnds(project, b), pressure = pressureShort(project, b);
+      return { ...words, ...(tie ? { tie } : {}), ...(pressure ? { pressure } : {}) };
+    });
 }
 
 // Earlier Events entries in words: chapter, what happened and what changed.

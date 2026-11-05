@@ -308,7 +308,8 @@
     "tiesSent": "Ties that will be sent",
     "tiesNone": "None: nobody in the cast has a tie to anyone else in it, or to a group.",
     "tieWords": "{from} and {to}: {bond} (edge: {edge})",
-    "tieWordsNoEdge": "{from} and {to}: {bond}"
+    "tieWordsNoEdge": "{from} and {to}: {bond}",
+    "tieEnds": "{from} and {to}"
   },
   "generate": {
     "title": "Write the chapter",

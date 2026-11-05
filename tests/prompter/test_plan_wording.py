@@ -572,7 +572,7 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-12"
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-13"
 
 
 # ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------

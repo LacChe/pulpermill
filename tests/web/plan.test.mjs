@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { story, opening, schema } from "./fixture.mjs";
 import {
   pickSpotlight, requiredCast, tiesInPlay, groupsInPlay, holdingsInPlay, newBeat, ensureBeat, castProblem, planGate, planRequest, scene,
-  landBeat, placeBeat, commitPlan, beatBlockers, planIsStale, planInputsHash, chapterInfo, beatForChapter, writtenBeatIds, castKey, staleBeatIds, spotlightEdges,
+  landBeat, placeBeat, commitPlan, beatBlockers, planIsStale, planInputsHash, chapterInfo, beatForChapter, writtenBeatIds, castKey, staleBeatIds, spotlightEdges, earlierBeats,
 } from "../../web/plan.js";
 
 const copy = (x) => JSON.parse(JSON.stringify(x));
@@ -388,4 +388,31 @@ test("a pick that is not in the story is ignored with one warning", () => {
   }
   const outside = landBeat(schema, p, { ...beat, cast: ["c0000001"] }, { ok: true, beat: planned, picked: { spotlight: "t1000003", pressure: null } });
   assert.equal(outside.warnings.length, 1, "a tie with an end outside the cast is not taken");
+});
+
+// ---- The planner sees what earlier chapters used (combination-select, stage 3) ----
+
+test("earlier beats carry the two people of the tie and the pressure in a few words, and leave out what is gone", () => {
+  const p = twoTieStory();
+  const [first] = p.outline.beats;
+  const tie = p.entanglements.ties.find((t) => t.id === "t1000001");
+  Object.assign(first, { spotlight: "t1000001", pressure: "r0000001" });
+  const [rule] = earlierBeats(p, 2);
+  assert.equal(rule.tie, "Marit and Suvi", "both names, joined with and");
+  assert.equal(rule.pressure, "Debts are written, never spoken.", "a rule by its statement");
+  assert.ok(!rule.tie.includes(tie.edge) && !rule.tie.includes(tie.bond), "no edge and no bond: the edge changes from chapter to chapter");
+  first.pressure = "o0000001";
+  assert.equal(earlierBeats(p, 2)[0].pressure, "The ledger", "an object by its name");
+  delete first.pressure;
+  assert.equal("pressure" in earlierBeats(p, 2)[0], false, "no pressure on the beat: no key");
+  first.pressure = "r9999999";
+  assert.equal("pressure" in earlierBeats(p, 2)[0], false, "a pressure that is gone: no key");
+  first.spotlight = "gone";
+  assert.equal("tie" in earlierBeats(p, 2)[0], false, "a tie that is gone: no key");
+  p.entanglements.ties.push({ id: "t9000001", tie_from: "c0000001", tie_to: "c9999999", bond: "friend", edge: "to stay close" });
+  first.spotlight = "t9000001";
+  assert.equal("tie" in earlierBeats(p, 2)[0], false, "a tie with an end that is gone: no key");
+  delete first.spotlight;
+  const bare = earlierBeats(p, 2)[0];
+  assert.deepEqual(Object.keys(bare), ["chapter", "where", "when", "aim", "plan"], "a beat with neither keeps today's shape");
 });
