@@ -99,3 +99,28 @@ test("with no character tie the beat has no spotlight, without an error", () => 
   assert.equal(beat.cast[0], "c1");
   assert.equal(planGate(p, beat).reason, "no_tie");   // the contract needs a spotlight among the ties sent, so the page does not send one
 });
+
+test("a beat's spotlight options show the ties as they stood going into its chapter", async () => {
+  const { pickerOptions } = await import("../../web/render.js");
+  const p = project();
+  p.entanglements.ties[0].edge = "A";
+  p.outline.beats = [
+    { id: "b1", chapter: 1, spotlight: "t1" },
+    { id: "b2", chapter: 2, spotlight: "t1" },
+    { id: "b3", chapter: null, spotlight: "t1" },
+  ];
+  p.shifts.entries = [{ id: "s1", beat: "b1", card: "entanglements", target: null,
+    patch: { ties: [{ op: "replace", id: "t1", values: { edge: "B" } }] } }];
+  const outline = (Array.isArray(schema.cards) ? schema.cards.find((c) => c.id === "outline") : schema.cards.outline);
+  const beats = outline.fields.find((f) => f.key === "beats");
+  const field = beats.item_fields.find((f) => f.key === "spotlight");
+  const scope = { fields: beats.item_fields };
+  const ctx = { project: p, card: outline };
+  const first = (beat) => pickerOptions(field, beat, scope, ctx).entries.find((o) => o.value === "t1");
+  const [b1, b2, b3] = p.outline.beats;
+  assert.match(first(b1).label, /\(edge: A\)/);
+  assert.match(first(b2).label, /\(edge: B\)/);
+  assert.match(first(b3).label, /\(edge: A\)/);
+  assert.equal(b1.spotlight, "t1");
+  assert.equal(b2.spotlight, "t1");
+});

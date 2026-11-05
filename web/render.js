@@ -6,6 +6,7 @@ import {
   problemPath, refOptions, removeItem, showsOptionalTag, shownProblems, validate,
 } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
+import { effectiveProject } from "./effective.js";
 import { ask } from "./dialog.js";
 import { stopwatch } from "./elapsed.js";
 import { foldedItems, remember } from "./folds.js";
@@ -160,11 +161,14 @@ function groupLabel(source, ctx) {
 }
 
 // Options for a link field, in the order of its sources, with a heading per source when there are several.
-function pickerOptions(field, values, scope, ctx) {
+export function pickerOptions(field, values, scope, ctx) {
   const sources = pickerSources(field, values, scope.fields, ctx.project, ctx.card);
   const chosen = values[field.key];
   const keep = Array.isArray(chosen) ? chosen : isFilled(chosen) ? [chosen] : [];
-  return { sources, entries: refOptions(ctx.project, sources, STRINGS.unnamed, { where: field.ref_where, keep, characterTiesOnly: field.key === "spotlight" }) };
+  // A spotlight tie shows the edge it had going into the beat's own chapter, not the base one.
+  const chapter = values.chapter;
+  const project = field.key === "spotlight" && typeof chapter === "number" && Number.isFinite(chapter) ? effectiveProject(ctx.project, chapter) : ctx.project;
+  return { sources, entries: refOptions(project, sources, STRINGS.unnamed, { where: field.ref_where, keep, characterTiesOnly: field.key === "spotlight" }) };
 }
 
 // A dropdown over entries of other cards. Rebuilds itself when a sibling changes.
