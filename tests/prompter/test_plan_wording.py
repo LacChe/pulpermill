@@ -427,18 +427,19 @@ def test_the_brainstorm_is_a_free_text_step_first_with_thinking_sampling_and_no_
     flow = plan.build_flow(request, Kit(request))
     step = flow.next([])
     assert step.name == "brainstorm" and step.kind == "text" and step.grammar is None and step.sampling == "thinking" and step.language is False
-    assert step.max_output == plan.BRAINSTORM_OUTPUT == 400 and step.attempts == 2
+    assert step.max_output == plan.BRAINSTORM_OUTPUT >= 1000 and step.attempts == 2
     assert step.check("Too short.") and step.check(brain()) is None
     assert step.fallback() == "" and flow.notes["brainstorm_fallback"] is True
 
 
 def test_the_brainstorm_prompt_asks_for_three_chapters_of_different_kinds_with_the_four_things_for_each():
     prompt = plan.build_brainstorm_prompt(base())
-    for needed in ("three chapters that differ in kind", "a refusal, a trade, a secret kept or told, or a misunderstanding",
+    for needed in ("three chapters that differ in kind", "three to five sentences", "what the protagonist stands to lose", "let them grow as the story goes on",
                    "what the protagonist is after", "what Marit wants from this chapter", "the line or moment where the two of them clash", "what it costs",
                    "Marit toward Suvi", "chapter 2 of 8", "in English"):
         assert needed in prompt, needed
     assert "Act 1" not in prompt and "JSON" not in prompt and "four points" not in prompt        # no plan shape is asked for here
+    assert not any(w in prompt for w in ("refusal", "a trade", "misunderstanding"))        # no example kinds: the model thinks them up
     assert "supporting" in prompt and "by what they do or one telling detail" in prompt
 
 
@@ -571,7 +572,7 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-10"
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-11"
 
 
 # ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------

@@ -17,11 +17,11 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common
 
-VERSION = "plan-10"
+VERSION = "plan-11"
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
-BRAINSTORM_OUTPUT = 400       # about 350 tokens of free text, with a little room, so a cut-off tail is the exception
+BRAINSTORM_OUTPUT = 1200      # three ideas of about 150 words each need roughly 700 tokens; the rest is room to spare, so a cut-off tail is the exception
 BRAINSTORM_ATTEMPTS = 2       # then the plan goes ahead without a brainstorm: it is a help to the plan, never a reason to fail a call
 BRAINSTORM_MIN_CHARS = 120    # three options cannot be told in less
 BRAINSTORM_STAND_IN = "word " * BRAINSTORM_OUTPUT       # the longest a brainstorm can be as the plan prompt carries it (a token a word), for the worst case
