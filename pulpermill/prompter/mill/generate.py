@@ -21,7 +21,7 @@ from pulpermill.schema.shifts import shiftable_fields
 from . import advance, common
 from .plan import cut_events, in_names, names_of, pressure_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-11"
+VERSION = "generate-12"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative

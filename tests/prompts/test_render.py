@@ -614,13 +614,21 @@ RULE_PRESSURE = {"kind": "rule", "statement": "Debts are written, never spoken."
 OBJECT_PRESSURE = {"kind": "object", "name": "The ledger", "description": "Green cloth cover.", "significance": "Names who owes the board."}
 
 
-def test_a_pressure_is_one_sentence_and_the_element_in_words_once():
+def test_a_pressure_is_one_kind_sentence_and_the_element_in_words_once():
     rule = render.render_pressure(RULE_PRESSURE)
     sentence, element = rule.split("\n")
-    assert sentence.count(".") == 1 and "make the rule below act on the aim or the tie" in sentence
-    assert element == "Debts are written, never spoken. Cost: A spoken debt is void." and "shamed" not in rule          # a rule by its statement and cost
+    assert "the rule below is a part of the collision" in sentence and "The rule itself stays as it is." in sentence and "object below" not in sentence
+    assert element == "Debts are written, never spoken. Cost: A spoken debt is void. When broken: The board is shamed."
     thing = render.render_pressure(OBJECT_PRESSURE).split("\n")
-    assert "make the object below act" in thing[0] and thing[1] == "The ledger: Green cloth cover. Why it matters: Names who owes the board."
+    assert "the object below is a part of the collision" in thing[0] and "rule below" not in thing[0]
+    assert thing[1] == "The ledger: Green cloth cover. Why it matters: Names who owes the board."
+
+
+def test_a_rules_element_shows_its_consequence_unless_it_is_empty():
+    assert "When broken: The board is shamed." in render.pressure_element(RULE_PRESSURE)
+    assert render.pressure_element(dict(RULE_PRESSURE, when_broken="")) == "Debts are written, never spoken. Cost: A spoken debt is void."
+    assert render.pressure_element(OBJECT_PRESSURE) == "The ledger: Green cloth cover. Why it matters: Names who owes the board."
+    assert render.pressure_element(None) == ""
 
 
 def test_no_pressure_or_an_odd_one_renders_nothing():

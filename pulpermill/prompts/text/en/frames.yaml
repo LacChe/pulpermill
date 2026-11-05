@@ -61,8 +61,9 @@ planner_beat_tie: "It was about {tie}."
 planner_beat_pressure: "It put this to work: {pressure}."
 
 # ---- The chapter's pressure (one world rule or object that must act on the aim or the tie) ----
-pressure_line: "This chapter, make the {kind} below act on the aim or the tie: it changes what someone can do, forces a choice, or costs someone something, and merely being in the scene does not count."
+pressure_line_rule: "This chapter, the rule below is a part of the collision, whether or not it has anything to do with the aim or the tie to begin with: it enters the conflict and pulls against what someone wants. By the climax it is decided in a way that costs someone something they feel: the rule is kept at its price, bent, or broken, and what follows its breaking happens. The rule itself stays as it is. Merely being in the scene does not count."
+pressure_line_object: "This chapter, the object below is a part of the collision, whether or not it has anything to do with the aim or the tie to begin with: it enters the conflict and pulls against what someone wants. If the story goes that way, it is used, damaged, lost or passes to someone else, in a way that changes what comes next; if not, it still changes what someone can do or costs someone something. Merely being in the scene does not count."
 pressure_kind_rule: "rule"
 pressure_kind_object: "object"
-pressure_rule: "{statement} Cost: {cost}"
+pressure_rule: "{statement} Cost: {cost} When broken: {when_broken}"
 pressure_object: "{name}: {description} Why it matters: {significance}"

@@ -62,3 +62,16 @@ test("foldAll applies every shift, and a project with none comes back the same",
   const bare = { characters: [{ id: "c1" }], outline: { beats: [] } };
   assert.deepEqual(foldAll(bare), bare);
 });
+
+test("a patch on a world rule is refused by validatePatch", () => {
+  assert.deepEqual(validatePatch(schema, "world", { rules: [{ op: "remove", id: "r1" }] }).map(({ code, field }) => ({ code, field })),
+    [{ code: "fixed_field", field: "rules" }]);
+});
+
+test("a saved project that already holds a shift on a rule still folds without crashing (effectiveProject does not validate)", () => {
+  const p = project();
+  p.world.rules = [{ id: "r1", statement: "No debts spoken.", cost: "void", when_broken: "shame" }];
+  p.shifts.entries.push({ id: "s3", beat: "b1", card: "world", target: null, patch: { rules: [{ op: "remove", id: "r1" }] } });
+  assert.doesNotThrow(() => foldAll(p));
+  assert.equal(effectiveProject(p, 1).world.rules.length, 1);
+});

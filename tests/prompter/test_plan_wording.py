@@ -572,7 +572,7 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-13"
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-14"
 
 
 # ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------
@@ -610,7 +610,7 @@ def test_idea_use_reaches_the_trace_and_not_the_reply(tmp_path):
 
 # ---- the pressure (world-pressure-2): the line, the judge, the notes ----------------------------------------------------------------
 
-SENTENCE = "act on the aim or the tie"
+SENTENCE = "a part of the collision, whether or not it has anything to do with the aim or the tie to begin with"
 ACTS = json.dumps({"reason": "The rule costs her something.", "effect": "acts"})
 DECOR = json.dumps({"reason": "The rule is only mentioned.", "effect": "decor"})
 
@@ -657,6 +657,13 @@ def test_with_no_pressure_the_prompts_are_what_they_were_and_a_squeeze_drops_the
         pressed = with_pressure(base(), kind)
         assert build(pressed, 0.99) == build(plain, 0.99)                         # the sentence goes at the first squeeze, and the element is back in its list
         assert build(pressed, 0.7) == build(plain, 0.7)
+
+
+@pytest.mark.parametrize("build", [plan.build_prompt, plan.build_brainstorm_prompt])
+def test_a_rule_pressure_shows_what_follows_its_breaking_in_the_planner_prompt(build):
+    request = with_pressure(kind="rule")
+    when_broken = request["pressure"]["when_broken"]
+    assert when_broken and "When broken: " + when_broken in build(request)
 
 
 def test_the_pressure_adds_about_sixty_words_at_most_to_a_planner_prompt():

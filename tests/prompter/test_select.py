@@ -114,6 +114,8 @@ def test_the_select_prompt_numbers_ties_and_rules_in_words_with_no_ids_and_no_si
     assert "3. " in prompt.split("The ties you may choose:")[1].split("The rules and objects")[0]
     rules = prompt.split("The rules and objects you may choose:")[1]
     assert "1. (rule) " in rules and "2. (object) " in rules and "The ledger" in rules
+    first_rule = next(o for o in options_of(request["world"]) if o["kind"] == "rule")
+    assert "When broken: " + first_rule["when_broken"] in rules, "a rule is listed with what follows its breaking"
     assert all(i not in prompt for i in ids_in(request)), "no id reaches a prompt"
     assert "## The tie in the spotlight" not in prompt and "## The combinations you may choose from" in prompt and "picks" in prompt
 
@@ -155,6 +157,8 @@ def test_the_brainstorm_and_the_plan_carry_the_three_combinations_instead_of_one
     for prompt in (brainstorm, planned):
         assert "## The three combinations" in prompt and "Combination 1" in prompt and "Combination 3" in prompt and "## The tie in the spotlight" not in prompt
         assert all(i not in prompt for i in ids_in(request))
+        assert "is a part of that chapter's collision, whether or not it has anything to do with the aim or the tie to begin with" in prompt
+        assert "is kept at its price, bent, or broken, with what follows its breaking" in prompt
     assert "one chapter for each of the three combinations" in brainstorm
     assert "Choose one idea and build the plan on it alone" in planned and "Begin your reply with idea" in planned and "combine two" not in planned
 

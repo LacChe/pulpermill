@@ -550,7 +550,7 @@ def _pressure_key(pressure: dict | None, kind: str) -> str | None:
 
 
 def pressure_element(pressure: dict | None, *, report: Report | None = None) -> str:
-    """The pressure's rule or object in words and nothing else: a rule by its statement and cost, an object by its name, what it is and why it
+    """The pressure's rule or object in words and nothing else: a rule by its statement, cost and what follows its breaking, an object by its name, what it is and why it
     matters, clipped as one text. Empty when there is no pressure."""
     if not isinstance(pressure, dict) or pressure.get("kind") not in ("rule", "object"):
         return ""
@@ -558,7 +558,8 @@ def pressure_element(pressure: dict | None, *, report: Report | None = None) -> 
     w = tx.limits()["world"]
     if pressure["kind"] == "rule":
         element = fill(fr["pressure_rule"], {"statement": clip(pressure.get("statement"), w["rule_statement"], "pressure.statement", report),
-                                            "cost": clip(pressure.get("cost"), w["rule_cost"], "pressure.cost", report)}, drop_first=True)
+                                            "cost": clip(pressure.get("cost"), w["rule_cost"], "pressure.cost", report),
+                                            "when_broken": clip(pressure.get("when_broken"), w["rule_when_broken"], "pressure.when_broken", report)}, drop_first=True)
     else:
         element = fill(fr["pressure_object"], {"name": s(pressure.get("name")),
                                               "description": clip(pressure.get("description"), w["object_description"], "pressure.description", report),
@@ -574,12 +575,12 @@ def pressure_kind(pressure: dict | None) -> str:
 
 
 def render_pressure(pressure: dict | None, *, report: Report | None = None) -> str:
-    """The chapter's pressure: one sentence that asks the rule or object to act on the aim or the tie, then the element once, in words.
+    """The chapter's pressure: one sentence that makes the rule or object a part of the collision (by its kind), then the element once, in words.
     Empty when there is no pressure."""
     element = pressure_element(pressure, report=report)
     if not element:
         return ""
-    return fill(tx.prompt_text("frames")["pressure_line"], {"kind": pressure_kind(pressure)}) + "\n" + sentence(element)
+    return tx.prompt_text("frames")[f"pressure_line_{pressure['kind']}"] + "\n" + sentence(element)
 
 
 def render_scene(beat: dict, *, scope: str, report: Report | None = None) -> str:

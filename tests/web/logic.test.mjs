@@ -968,7 +968,7 @@ test("a card says which of the fixed and live flags it uses", () => {
   assert.deepEqual(flagsUsed(style), { fixed: false, changes: false });
   assert.deepEqual(flagsUsed(characters), { fixed: true, changes: false });
   assert.deepEqual(flagsUsed(ent), { fixed: false, changes: false });   // no live fields now: ties change through shifts
-  assert.deepEqual(flagsUsed(world), { fixed: false, changes: false });
+  assert.deepEqual(flagsUsed(world), { fixed: true, changes: false });   // the world's rules never change
   assert.deepEqual(flagsUsed({ fields: [] }), { fixed: false, changes: false });
 });
 

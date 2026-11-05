@@ -74,7 +74,7 @@ class World(Item):
     powers: list[Power] = spec(None, "powers", "pairs", repeat=True)          # source doc: optional
 
     # Truths (labelled "Rules" in the UI)
-    rules: list[WorldRule] = spec(None, "truths", "pairs", repeat=True)
+    rules: list[WorldRule] = spec(None, "truths", "pairs", repeat=True, fixed=True)
 
     # Vocabulary
     terms: list[Term] = spec(None, "vocabulary", "pairs", repeat=True)        # source doc: optional

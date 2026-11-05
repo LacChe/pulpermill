@@ -181,7 +181,14 @@ def test_each_shiftable_field_says_scalar_or_list_and_lists_name_their_item_fiel
     assert ent["holdings"]["item_fields"] == ["held_by"] and ent["holdings"]["identity_fields"] == ["holdee"]
     world = {f["key"]: f for f in shiftable_fields("world")}
     assert world["places"]["item_fields"] == ["name", "description", "effect"]
-    assert world["rules"]["item_fields"] == ["statement", "cost", "when_broken"]
+    assert world["objects"]["item_fields"] and "rules" not in world            # a world rule never changes
+
+
+def test_a_world_rule_is_fixed_and_a_patch_on_it_is_refused():
+    assert "rules" not in {f["key"] for f in shiftable_fields("world")}
+    assert {"places", "objects", "powers", "terms"} <= {f["key"] for f in shiftable_fields("world")}
+    got = validate_patch("world", {"rules": [{"op": "remove", "id": "x"}]})
+    assert [(p.code, p.field) for p in got] == [("fixed_field", "rules")]
 
 
 def test_shiftable_fields_of_a_card_that_cannot_be_shifted_is_empty():

@@ -409,7 +409,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-11:" in load_prompter("mill").version
+    assert "+generate:generate-12:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------
@@ -695,7 +695,7 @@ def test_the_prompter_version_changes_with_the_judge_wording(monkeypatch, tmp_pa
 
 # ---- the pressure (world-pressure-2): the writer's line, the judge, the notes -----------------------------------------------------------
 
-SENTENCE = "act on the aim or the tie"
+SENTENCE = "a part of the collision, whether or not it has anything to do with the aim or the tie to begin with"
 ACTS = json.dumps({"reason": "The rule costs her something.", "effect": "acts"})
 DECOR = json.dumps({"reason": "The rule is only mentioned.", "effect": "decor"})
 
