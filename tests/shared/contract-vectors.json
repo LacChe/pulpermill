@@ -588,7 +588,8 @@
             "where": "The Quay",
             "when": "Morning",
             "aim": "Suvi wants to learn who took the ledger.",
-            "plan": "She asks around the quay."
+            "plan": "She asks around the quay.",
+            "tie": "Suvi and The Board"
           }
         ],
         "earlier_events": [
@@ -1677,7 +1678,9 @@
             "where": "The Quay",
             "when": "Morning",
             "aim": "Suvi wants to learn who took the ledger.",
-            "plan": "She asks around the quay."
+            "plan": "She asks around the quay.",
+            "tie": "Suvi and Marit",
+            "pressure": "Debts are written, never spoken."
           }
         ],
         "earlier_events": [
@@ -2324,7 +2327,8 @@
             "where": "The Quay",
             "when": "Morning",
             "aim": "Suvi wants to learn who took the ledger.",
-            "plan": "She asks around the quay."
+            "plan": "She asks around the quay.",
+            "tie": "Suvi and The Board"
           }
         ],
         "earlier_events": [

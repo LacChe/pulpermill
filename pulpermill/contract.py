@@ -174,7 +174,7 @@ class PlanRequest(_StoryRequest):
     """Fill the beat's planner fields: where, when_time, aim and plan."""
     call: Literal["plan"]
     spotlight: str                          # the id of the spotlight tie, one of `ties`
-    earlier_beats: list[dict[str, Any]]     # earlier beats in words: chapter, where, when, aim, plan
+    earlier_beats: list[dict[str, Any]]     # earlier beats in words: chapter, where, when, aim, plan, and tie and pressure when the beat had them
     earlier_events: list[dict[str, Any]]    # earlier Events entries: chapter, happened, changed
     retry: PlanRetry | None = None
     # The page lets the planner choose the tie and the pressure (a later addition, 2026-11-05, so older requests stay valid).

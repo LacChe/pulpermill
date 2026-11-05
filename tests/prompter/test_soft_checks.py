@@ -323,7 +323,7 @@ def test_an_echo_still_sends_the_chapter_back_once_through_the_runner(monkeypatc
 
 def test_the_versions_were_bumped():
     from pulpermill.prompter.mill import VERSION
-    assert VERSION == "mill-0.2" and plan.VERSION == "plan-12" and gen.VERSION == "generate-11"
+    assert VERSION == "mill-0.2" and plan.VERSION == "plan-13" and gen.VERSION == "generate-11"
 
 
 # ---- helpers ---------------------------------------------------------------------------------------------------------------

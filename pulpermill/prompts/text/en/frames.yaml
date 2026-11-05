@@ -57,6 +57,8 @@ shift_unknown_item: "an earlier entry"
 # ---- Earlier beats ----
 planner_beats_lead: "Earlier chapters' plans, as a timeline:"
 planner_beat_item: "Chapter {chapter}: at {where}, {when}."
+planner_beat_tie: "It was about {tie}."
+planner_beat_pressure: "It put this to work: {pressure}."
 
 # ---- The chapter's pressure (one world rule or object that must act on the aim or the tie) ----
 pressure_line: "This chapter, make the {kind} below act on the aim or the tie: it changes what someone can do, forces a choice, or costs someone something, and merely being in the scene does not count."

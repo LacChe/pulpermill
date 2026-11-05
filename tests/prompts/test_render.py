@@ -597,6 +597,17 @@ def test_the_beats_timeline_and_the_brief_take_values_with_or_without_stops():
     assert "Wants: Keep the shop; Know why." in brief
 
 
+def test_an_earlier_beat_shows_the_tie_and_the_pressure_it_was_about_and_without_them_reads_as_before():
+    plain = [{"chapter": 1, "where": "The Docks", "when_time": "Friday night"}]
+    old = render_earlier_beats(plain)
+    assert old.endswith("Chapter 1: at The Docks, Friday night.")
+    both = render_earlier_beats([{**plain[0], "tie": "Orla Fennick and Pim Tallowby", "pressure": "Debts are written, never spoken."}])
+    assert both.endswith("Chapter 1: at The Docks, Friday night. It was about Orla Fennick and Pim Tallowby. It put this to work: Debts are written, never spoken.")
+    assert render_earlier_beats([{**plain[0], "tie": "Orla Fennick and Pim Tallowby"}]).endswith("It was about Orla Fennick and Pim Tallowby.")
+    assert render_earlier_beats([{**plain[0], "pressure": "The ledger"}]).endswith("Friday night. It put this to work: The ledger.")
+    assert render_earlier_beats([{**plain[0], "tie": "", "pressure": None}]) == old, "an empty tie or pressure is as good as none"
+
+
 # ---- the pressure (world-pressure-2) ------------------------------------------------------------------------------------------------
 
 RULE_PRESSURE = {"kind": "rule", "statement": "Debts are written, never spoken.", "cost": "A spoken debt is void.", "when_broken": "The board is shamed."}
