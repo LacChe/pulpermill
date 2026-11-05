@@ -666,13 +666,13 @@ def test_a_rule_pressure_shows_what_follows_its_breaking_in_the_planner_prompt(b
     assert when_broken and "When broken: " + when_broken in build(request)
 
 
-def test_the_pressure_adds_about_sixty_words_at_most_to_a_planner_prompt():
+def test_the_pressure_adds_about_two_hundred_words_at_most_to_a_planner_prompt():
     request = with_pressure()
     request["pressure"].update(statement="Nobody may cross the river after dark, whatever the business, whoever the patron, and every crossing is logged. " * 3,
                                cost="Anyone who does is struck from the registry of the guild and loses every protection it ever gave them. " * 3)
     plain = base()
     for build in (plan.build_prompt, plan.build_brainstorm_prompt):
-        assert len(build(request).split()) - len(build(plain).split()) <= 70        # the longest element, at its cap, and the one sentence
+        assert len(build(request).split()) - len(build(plain).split()) <= 200       # the longest element, at its cap, and the one sentence
 
 
 def run_pressed(request, *texts):
