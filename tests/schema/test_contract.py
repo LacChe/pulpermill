@@ -153,12 +153,14 @@ def test_the_envelope_speaks_the_projects_schema_version():
 
 
 # The valid story requests the page does not build as they stand: one that shows the backend accepts a retry that is null, and the
-# ones that show the edge trail (`spotlight_edges`) filled in and left out. Every other valid story request is built by the page
+# ones that show the edge trail (`spotlight_edges`) filled in and left out, and the two that ask the planner to choose. Every other valid story request is built by the page
 # (tests/web/logic.test.mjs) and so is golden, under a name.
 HAND_WRITTEN = {
     "a plan request carries the spotlight tie's earlier edges, oldest first",
     "a plan request from a page that does not send the edge trail is still valid",
     "a plan request with the retry left null",
+    "a plan request that lets the planner choose, with the world's rules and objects as options",
+    "a plan request that lets the planner choose, with no options",
     "a generate request carries the spotlight tie's earlier edges, oldest first",
     "a generate request from a page that does not send the edge trail is still valid",
 }
@@ -177,7 +179,7 @@ def test_the_story_requests_the_page_builds_are_golden_and_the_others_keep_their
 
 def test_the_story_requests_carry_the_fields_the_spec_lists():
     plan = {"call", "schema_version", "language", "job_id", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
-            "holdings", "spotlight", "spotlight_edges", "pressure", "earlier_beats", "earlier_events", "retry"}
+            "holdings", "spotlight", "spotlight_edges", "pressure", "earlier_beats", "earlier_events", "retry", "choose", "pressure_options"}
     generate = {"call", "schema_version", "language", "job_id", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
                 "holdings", "earlier_events", "previous_ending", "beat", "spotlight_edges", "pressure"}
     assert set(PlanRequest.model_fields) == plan
@@ -186,7 +188,7 @@ def test_the_story_requests_carry_the_fields_the_spec_lists():
 
 
 def test_the_story_replies_carry_the_fields_the_spec_lists():
-    assert set(PlanReply.model_fields) == {"ok", "beat"}
+    assert set(PlanReply.model_fields) == {"ok", "beat", "picked"}
     assert set(GenerateReply.model_fields) == {"ok", "chapter_text", "events", "shifts"}
     assert set(EventsOut.model_fields) == {"happened", "changed"}
     assert set(ShiftOut.model_fields) == {"card", "target", "patch"}
