@@ -21,7 +21,7 @@ from pulpermill.backend.config import Config  # noqa: E402
 from pulpermill.backend.engine import FakeEngine  # noqa: E402
 from pulpermill.backend.kit import Kit  # noqa: E402
 from pulpermill.prompter import load_prompter  # noqa: E402
-from pulpermill.prompter.mill import advance, plan  # noqa: E402
+from pulpermill.prompter.mill import advance, plan, select  # noqa: E402
 from pulpermill.prompter.mill.common import load_text  # noqa: E402
 from pulpermill.prompts import budget, tokens  # noqa: E402
 from server_harness import post, running, wait_idle  # noqa: E402
@@ -284,6 +284,14 @@ def test_the_plan_step_is_a_json_step_with_the_planner_grammar_and_the_check_on_
 
 # ---- the whole call -------------------------------------------------------------------------------------------------------
 
+def expected_calls(request: dict) -> int:
+    """The model calls of a whole plan call: the brainstorm and the plan, plus the select step when the request chooses, the aim judge from the
+    second chapter on, and the pressure judge when a pressure is in play (the page's own, or any option in choose mode)."""
+    chosen = select.is_on(request)
+    pressure = bool(request.get("pressure_options")) if chosen else bool(request.get("pressure"))
+    return 2 + chosen + bool(advance.earlier_aims(request)) + pressure
+
+
 @pytest.mark.parametrize("vector", PLANS, ids=lambda v: v["name"])
 def test_every_plan_vector_is_answered_through_the_real_server_on_the_mill_prompter(vector):
     request = vector["data"]
@@ -295,7 +303,8 @@ def test_every_plan_vector_is_answered_through_the_real_server_on_the_mill_promp
         assert response.status_code == 200 and body["ok"] is True, body
         assert contract.parse_reply("plan", body).beat["where"]
         assert wait_idle(base_url)
-    assert engine.calls == 2 + bool(advance.earlier_aims(request)) and "Act 1" in engine.prompts[1] and engine.params[0] is not None
+    plan_at = 1 + select.is_on(request)            # the select step, when it runs, comes first and the brainstorm second
+    assert engine.calls == expected_calls(request) and "Act 1" in engine.prompts[plan_at] and engine.params[0] is not None
 
 
 def test_a_plan_that_fails_the_check_is_asked_for_again_with_the_line_and_then_used():
@@ -751,4 +760,6 @@ def test_every_plan_vector_with_a_pressure_is_answered_through_the_real_server(v
         assert response.status_code == 200 and body["ok"] is True, body
         assert contract.parse_reply("plan", body).beat["where"]
         assert wait_idle(base_url)
-    assert engine.calls == 3 + bool(advance.earlier_aims(request)) and SENTENCE in engine.prompts[1]
+    assert engine.calls == expected_calls(request)
+    # One pair: the plan prompt carries the pressure sentence. Choose mode: the brainstorm carries the combinations instead, and the sentence is not used.
+    assert ("Combination 1" in engine.prompts[1]) if select.is_on(request) else (SENTENCE in engine.prompts[1])
