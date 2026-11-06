@@ -26,8 +26,7 @@ role_unknown_total: "You are the planner of a story that is written one chapter 
 method: "The engine of a chapter is a collision. The protagonist goes after one concrete thing, and the tie in the spotlight meets them on the way: it blocks them, pulls them somewhere else, or names a price for what they want. Choose the protagonist's aim for this chapter so that it runs straight into the spotlight tie, and let the meeting between the two be where the conflict of the chapter lives. How the meeting goes is for the plan to decide, and the plan should decide it in a way that surprises a little and still follows from who these people are."
 
 # R4/R6. The aim: concrete, doable inside one chapter, different from earlier aims, built on what earlier chapters changed.
-# {good} and {avoid} are the Outline card's own examples (schema/text/en/outline.yaml, field aim).
-aim_rules: "The aim is one thing the protagonist can try to get or do inside this single chapter, something a reader could watch happen. It differs from the aims of the earlier chapters and builds on what those chapters changed. Good aims sound like this: {good}. A state of mind such as {avoid} is not yet an aim; turn it into something to get, reach or do, with a person, an object or a deadline in it."
+aim_rules: "The aim is one thing the protagonist can try to get or do inside this single chapter, something a reader could watch happen. It differs from the aims of the earlier chapters and builds on what those chapters changed. A state of mind or a feeling is not yet an aim; turn it into something to get, reach or do, with a person, an object or a deadline in it."
 
 # R7. Four points per chapter, whatever the chapter count. The labels stay in English so a check can find them.
 four_points: "Write the plan as four points, in this order, each starting with its label exactly as written here (keep the labels in English whatever language the story is in). Act 1 is the starting point: who is there, where and when. Act 2 is where the central conflict emerges, as the aim meets the spotlight tie. Act 3 is the climax or turning point: the moment where something gives, a choice costs something, and the collision of the chapter is decided for good. Act 4 is the end point: where the chapter leaves the people and the situation, with the outcome of the collision and the new state it produced. Each point says what people do and choose, in concrete actions."
@@ -39,7 +38,7 @@ movement: "The end point must stand clearly apart from the starting point, and i
 movement_last: "The end point must stand clearly apart from the starting point, and it must grow out of how the collision ended. By the end of the chapter, the edge of the spotlight tie (what drives {tie_from} in it) and the protagonist's aim must each have reached a final state: the aim reached, lost or given up, the edge met, broken or mended for good. Say in Act 4 how the aim and what drives {tie_from} in the tie stand at the end, with nothing left open."
 
 # R5. Minor characters: the reason, the method (what they do, one telling detail) and the scale (only people are limited), never the carriers of the plot.
-people_rule: "The cast is fixed, so the plan names only people from the cards: a new name is a new character to keep track of. Anyone else appears by what they do or one telling detail (the tech who logs the samples, the stallholder with cracked scales) and never carries the plot. Places, events and things may have proper names; no other person does. People on stage outside the spotlight tie are supporting: they pull on the tie or react to it, and the chapter stays about the tie."
+people_rule: "The cast is fixed, so the plan names only people from the cards: a new name is a new character to keep track of. Anyone else appears by what they do or one telling detail taken from this story's own world and never carries the plot. Places, events and things may have proper names; no other person does. People on stage outside the spotlight tie are supporting: they pull on the tie or react to it, and the chapter stays about the tie."
 
 # R7. Where the chapter sits.
 first_chapter: "This is the first chapter. Act 1 opens from the ordinary life and the disruption described under the heading about who the story follows, and the conflict of Act 2 grows out of that disruption. Like every chapter, it settles its own collision by its end, and the story goes on from the new state that outcome leaves."
@@ -103,7 +102,7 @@ problems:
   unknown_person: "The plan uses {names}, capitalised words that are on no card. If one of them is a person, refer to that person by what they do or by one telling detail."
   missing_where: "Choose the place where the chapter opens, from the places in the world."
   missing_aim: "Give the protagonist's aim as one concrete thing to get or do inside this chapter."
-  abstract_aim: "Make the aim something the protagonist can try to get or do and a reader can watch, such as getting a clerk to sign a permit before an auditor arrives, instead of a state of mind."
+  abstract_aim: "Make the aim something the protagonist can try to get or do and a reader can watch, instead of a state of mind."
   repeated_aim: "Aim at a different step than chapter {chapter}'s aim ({aim}), one that builds on what that chapter changed."
   same_as_retry: "Choose an aim that differs from the aim of the refused attempt ({aim})."
   missing_points: "Write the plan as four points labelled Act 1, Act 2, Act 3 and Act 4, in that order, each saying what happens; the plan is missing {missing}."

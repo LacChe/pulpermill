@@ -136,6 +136,6 @@ def test_the_item_fields_are_printed_under_their_list():
 def test_the_bond_reads_from_the_from_end_and_the_edge_is_what_the_from_end_wants():
     prompt = fill.build_prompt(request("entanglements"), Kit(request("entanglements")))
     assert "reads from the from end" in prompt and "what the from end is to the to end" in prompt
-    assert "a tie from a mother to her son has the bond \"mother\"" in prompt
+    assert "mother" not in prompt                         # the direction is carried by the rule, with no sample tie
     assert "What the from end wants in this tie" in prompt
     # code cannot tell which way a bond reads, so no check exists for direction: the wording carries it

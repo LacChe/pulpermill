@@ -44,7 +44,7 @@ spotlight_brief_lead: "The two people at its ends, in brief:"
 
 # ---- The scene (a beat in prose) ----
 scene_spotlight_line: "{tie_from} toward {tie_to}: {bond}"
-scene_minor_roles: "The cast is fixed, and a name for anyone else would be a new character the reader has to keep track of. Refer to anyone else by what they do or by one telling detail, in the narration and in what people say to them (the tech who logs the samples, the stallholder with cracked scales). The world is full of other people and none of them has a name; only places, events and things do."
+scene_minor_roles: "The cast is fixed, and a name for anyone else would be a new character the reader has to keep track of. Refer to anyone else by what they do or by one telling detail, in the narration and in what people say to them, taken from this story's own world. The world is full of other people and none of them has a name; only places, events and things do."
 scene_writer_note: "Begin with the scene already in motion, and tell the plan as a living scene that is free to find better moments than the plan lists."
 
 # ---- A change recorded for a card (one shift entry in prose) ----

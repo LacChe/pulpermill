@@ -186,9 +186,7 @@ def _context(request: dict, factor: float, kinds: bool = False, combos: list[dic
 def _task_block(c: dict, method: str) -> list[str]:
     """The lines of the task that both prompts open with: the collision (R4, in `method`'s wording) and what makes an aim (R4/R6)."""
     w = c["w"]
-    ex = tx.field("outline", "beats")["item_fields"]["aim"]["examples"]
-    quote = lambda items, join="; ": join.join(f"“{i}”" for i in items)
-    return [w[method], w["aim_rules"].format(good=quote(ex["good"]), avoid=quote(ex["avoid"], " or "))]
+    return [w[method], w["aim_rules"]]
 
 
 def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dict] | None = None) -> str:

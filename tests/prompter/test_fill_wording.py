@@ -138,13 +138,12 @@ def test_every_field_the_grammar_offers_has_a_meaning_sentence_and_nothing_is_or
             assert f"\n{key}: " in "\n" + text or text.startswith(f"What each field holds:\n\n{key}: "), (card, key)
 
 
-def test_a_choice_shows_its_answer_words_each_with_its_own_sentence_and_the_examples_are_marked_as_kind_only():
+def test_a_choice_shows_its_answer_words_each_with_its_own_sentence_and_no_example_text():
     style = fill.field_guidance("style", list(common.load_text("fill")["fields"]["style"]))
     assert "\"first\": Narrate in the first person" in style and "\"third\": Narrate in the third person" in style
     sex = fill.field_guidance("characters", ["sex"])
     assert "\"female\": the person is a woman" in sex.lower() and "{name}" not in sex
-    assert "never reuse their wording" in style
-    assert "Text like “a story about debt” is not yet right" in style
+    assert "never reuse their wording" not in style and "Text like “" not in style and "looks like “" not in style       # no schema example reaches the model
 
 
 # ---- the scope rules and the Tier 1 probes ---------------------------------------------------------------------------------------
@@ -192,7 +191,7 @@ def test_each_tier_1_probe_has_a_sentence_in_the_prompt_that_targets_its_temptin
 
 def test_the_object_has_no_owner_rule_is_in_the_world_prompt():
     text = prompt(req("world"))
-    assert "keep the barge and leave the owner and the location out" in text and "they are written later as holdings" in text
+    assert "keep the thing and leave the owner and the location out" in text and "they are written later as holdings" in text
     assert "what the group is planning or about to do" in text and "naming no individual" in text
 
 

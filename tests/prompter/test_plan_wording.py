@@ -80,8 +80,8 @@ def test_the_prompt_names_the_collision_the_four_points_and_the_spotlight():
     for needed in ("collision", "Act 1", "Act 2", "Act 3", "Act 4", "Marit toward Suvi", "What drives Marit in this tie", "distinctly new state",
                    "chapter 2 of 8", "Chapter 1: Suvi wants to learn who took the ledger.", "Suvi now knows the board is hunting her", "in English"):
         assert needed in prompt, needed
-    assert "Get the guild clerk to sign the permit before the auditor arrives" in prompt     # the outline text's own good example
-    assert "Feel better about her father" in prompt and "is not yet an aim" in prompt         # and its avoid example, said positively
+    assert "is not yet an aim" in prompt                                                      # the rule is stated in words
+    assert "Get the guild clerk to sign the permit before the auditor arrives" not in prompt and "Feel better about her father" not in prompt   # no example text
 
 
 RULE = "The cast is fixed, so the plan names only people from the cards: a new name is a new character to keep track of."
@@ -112,9 +112,8 @@ def test_the_planner_rule_names_no_story_and_no_one_setting_and_is_prose():
         text = w[key]
         assert "\n" not in text and not re.search(r"(^|\s)(-|\*|\d+\.)\s", text), key        # prose, no list
         assert "supporting" in text and "never carries the plot" in text, key
-    assert w["people_rule"].count("(") == 1           # two short example phrases, in one parenthesis
-    examples = w["people_rule"].split("(")[1].split(")")[0]
-    assert "tech who logs the samples" in examples and "stallholder with cracked scales" in examples          # unrelated settings: a lab and a market
+    assert "(" not in w["people_rule"]                # no parenthesised sample phrases: a model copies what it is shown
+    assert "tech" not in w["people_rule"] and "stallholder" not in w["people_rule"]
 
 
 def test_people_outside_the_spotlight_tie_are_told_they_are_supporting():

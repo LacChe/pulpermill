@@ -130,11 +130,8 @@ def field_guidance(card: str, keys: list[str]) -> str:
         items = (w.get("item_fields") or {}).get(card, {}).get(key)
         if items:
             line += "\n" + w["item_lead"] + "\n" + "\n".join(f"  {k}: {v}" for k, v in items.items())
-        examples = field.get("examples") or next((i["examples"] for i in (field.get("item_fields") or {}).values() if i.get("examples")), None) if isinstance(field.get("item_fields") or {}, dict) else field.get("examples")
-        if examples and examples.get("good") and examples.get("avoid"):
-            line += " " + w["examples_good"].format(good=examples["good"][0]) + " " + w["examples_avoid"].format(avoid=examples["avoid"][0])
         out.append(line)
-    return w["fields_lead"] + "\n\n" + "\n\n".join(out) + "\n\n" + w["examples_note"]
+    return w["fields_lead"] + "\n\n" + "\n\n".join(out)
 
 
 # ---- the prompt ---------------------------------------------------------------------------------------------------------------
