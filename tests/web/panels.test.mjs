@@ -176,7 +176,7 @@ test("no form label or help in the schema data refers to a removed field, except
   assert.deepEqual(lines.filter((line) => !allowed.test(line)), []);
 });
 
-// ---- The plan panel's choose checkbox (combination-select, stage 1) ------------------------------
+// ---- The plan panel always asks the planner to choose ------------------------------
 // A small stand-in for the page's DOM: enough for the panel to draw itself, and to click its controls.
 
 class FakeNode {
@@ -189,7 +189,7 @@ class FakeNode {
   querySelector(selector) { return this.find(selector.startsWith(".") ? (n) => n.className.split(" ").includes(selector.slice(1)) : (n) => n.tag === selector); }
 }
 
-test("the plan panel has a ticked box for letting the planner choose; it disables the pickers and its state reaches the request", async () => {
+test("the plan panel always asks the planner to choose: no checkbox, no pickers, and the request carries choose", async () => {
   globalThis.document = { createElement: (tag) => new FakeNode(tag) };
   const { createPlanPanel } = await import("../../web/planpanel.js");
   const p = lockStaticCards(story());
@@ -201,21 +201,13 @@ test("the plan panel has a ticked box for letting the planner choose; it disable
   const container = new FakeNode("div");
   panel.draw(container);
   const byId = (id) => container.find((n) => n.id === id);
-  assert.ok(byId("plan-choose"), "the checkbox is there");
-  assert.equal(byId("plan-choose").type, "checkbox");
-  assert.equal(byId("plan-choose").checked, true, "ticked by default");
-  assert.equal(byId("plan-spotlight").disabled, true);
-  assert.equal(byId("plan-pressure").disabled, true);
+  assert.equal(byId("plan-choose"), null, "no checkbox");
+  assert.equal(byId("plan-spotlight"), null, "no tie picker");
+  assert.equal(byId("plan-pressure"), null, "no pressure picker");
   const draw = container.find((n) => n.tag === "button" && n.listeners.click);
   draw.dispatch("click");
   await new Promise((r) => setImmediate(r));
-  assert.equal(sent.at(-1)?.choose, true, "ticked: the request asks to choose");
-  const box = byId("plan-choose");
-  box.checked = false;
-  box.dispatch("change");
-  assert.equal(byId("plan-choose").checked, false);
-  assert.equal(byId("plan-spotlight").disabled, false, "unticked: the pickers are used again");
-  assert.equal(byId("plan-pressure").disabled, false);
-  assert.equal(container.querySelector(".plan-panel").parent, container, "the panel was drawn again, not added twice");
+  assert.equal(sent.at(-1)?.choose, true, "the request asks to choose");
+  assert.ok(sent.at(-1)?.pressure_options, "and carries the rules and objects");
   delete globalThis.document;
 });

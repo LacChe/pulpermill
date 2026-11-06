@@ -77,6 +77,22 @@ test("a gate that refuses stops the run with its reason", async () => {
   assert.equal(log.notices.at(-1).kind, "notice-bad");
 });
 
+test("every chapter of a run is planned with choose and the rules and objects, and the picked pair lands on the beat", async () => {
+  const { project, mock, runAll } = await setup({ chapters: 2 });
+  const plans = [];
+  const send = mock.send.bind(mock);
+  mock.send = (request, options) => { if (request.call === "plan") plans.push(request); return send(request, options); };
+  const outcome = await runAll.start(project);
+  assert.equal(outcome.ok, true);
+  assert.equal(plans.length, 2);
+  for (const request of plans) {
+    assert.equal(request.choose, true, "Run all asks the planner to choose");
+    assert.ok(Array.isArray(request.pressure_options));
+  }
+  const first = project.outline.beats.find((b) => Number(b.chapter) === 1);
+  assert.ok(first.spotlight, "the picked tie is on the beat");
+});
+
 test("a beat the writer already planned is written as it is, not planned again", async () => {
   const { project, mock, runAll } = await setup({ chapters: 2 });
   const sent = [];

@@ -90,19 +90,50 @@ def test_the_candidates_are_the_ties_among_the_cast_and_the_options_the_page_sen
     assert select.is_on(request) is True
 
 
-def test_fewer_than_three_pairs_or_no_choose_leaves_todays_flow():
+def test_choose_runs_the_select_step_with_one_pair_and_only_no_tie_or_no_choose_leaves_todays_flow():
     few = base()
     few["choose"] = True
-    assert select.is_on(few) is False
+    assert len(select.candidates(few)[0]) == 1 and not select.candidates(few)[1]
+    assert select.is_on(few) is True, "one tie is enough: the picks may repeat the pair"
     flow = plan.build_flow(few, Kit(few))
-    assert flow.notes["select"] == "few" and [s.name for s in flow.worst_case()] == ["brainstorm", "plan", "advance_aim", "plan", "advance_aim"]
-    assert flow.next([]).name == "brainstorm"
+    assert "select" not in flow.notes and [s.name for s in flow.worst_case()][:2] == ["select", "brainstorm"]
+    assert flow.next([]).name == "select"
+    no_tie = base()
+    no_tie["choose"] = True
+    no_tie["ties"] = []
+    assert select.is_on(no_tie) is False and plan.build_flow(no_tie, Kit(no_tie)).notes["select"] == "few"
     plain = base()
     assert "select" not in plan.build_flow(plain, Kit(plain)).notes and select.is_on(plain) is False
     no_choose = choose_request()
     no_choose["choose"] = False
     assert select.is_on(no_choose) is False and plan.build_flow(no_choose, Kit(no_choose)).next([]).name == "brainstorm"
-    assert select.is_on(choose_request(options=False)) is True, "three ties are three pairs even with no rules or objects"
+    assert select.is_on(choose_request(options=False)) is True
+
+
+def test_the_check_accepts_repeats_when_pairs_are_scarce_and_refuses_them_when_three_distinct_pairs_exist():
+    def picks(*pairs, options=True):
+        return {"picks": [{"reason": "r", "tie": t, **({"pressure": o} if options else {})} for t, o in pairs]}
+    assert select.select_problem(picks((1, 1), (1, 1), (1, 1), options=False), 1, 0) is None, "one pair: all three may be it"
+    assert select.select_problem(picks((1, 1), (2, 1), (1, 1), options=False), 2, 0) is None, "two pairs: two different are enough"
+    assert select.select_problem(picks((1, 1), (1, 1), (1, 1), options=False), 2, 0), "two pairs exist: one is too few"
+    assert select.select_problem(picks((1, 1), (1, 2), (1, 1)), 1, 2) is None
+    assert "at least 2 different" in select.select_problem(picks((1, 1), (1, 1), (1, 1)), 1, 2)
+    assert select.select_problem(picks((1, 1), (2, 2), (1, 1)), 3, 2), "six pairs exist: three different are needed"
+    assert select.select_problem(picks((1, 1), (2, 2), (3, 1)), 3, 2) is None
+    assert select.grammar(1, 0)["properties"]["picks"]["minItems"] == 3 == select.grammar(1, 0)["properties"]["picks"]["maxItems"]
+
+
+def test_a_cast_of_two_with_one_tie_and_one_rule_runs_select_and_the_brainstorm_writes_three_ideas():
+    request = base()
+    request["choose"] = True
+    request["pressure_options"] = options_of(request["world"])[:1]
+    texts = plan.script(request, Kit(request))
+    assert len(json.loads(texts[0])["picks"]) == 3 and {(p["tie"], p["pressure"]) for p in json.loads(texts[0])["picks"]} == {(1, 1)}
+    flow, reply, ctx, engine = run_plan(request, *texts)
+    assert names_of_steps(ctx)[:3] == ["select", "brainstorm", "plan"]
+    assert "Option 3" in engine.prompts[2] or "Option 3" in texts[1]
+    assert "write two different chapters for it" in engine.prompts[1]
+    assert reply["picked"]["spotlight"] == select.candidates(request)[0][0]["id"]
 
 
 # ---- The prompt, the grammar and the check -------------------------------------------------------------------------------------------

@@ -1,16 +1,17 @@
-// The plan panel: shown at the top of the Outline card. The chapter is about one tie (the spotlight): code picks it at random, and
-// the writer may pick another. The cast always holds the protagonist and the characters at the two ends of that tie, and the writer
-// may add others up to CAST_MAX. The panel shows what will be sent (the spotlight and the ties among the cast), and one button asks
+// The plan panel: shown at the top of the Outline card. The chapter is about one tie (the spotlight) and one rule or object (the
+// pressure): the planner always chooses them (its select step), and the beat's own pair is only the stand-in the page keeps until then.
+// The cast always holds the protagonist and the characters at the two ends of the spotlight tie, and the writer
+// may add others up to CAST_MAX. The panel shows what will be sent (the ties among the cast), and one button asks
 // the model to plan the chapter; the beat lands in the Outline below, where it can be edited like any other. Nothing here calls the
 // model except that one button. The rules and the picks are worked out in plan.js; this file only draws them.
 import { storyStarted, cardLocked } from "./gate.js";
 import { planChapter } from "./client.js";
 import {
-  CAST_MAX, castKey, chapterInfo, beatForChapter, newBeat, requiredCast, spotlightTies, tiesInPlay, tieInWords, withSpotlight, castProblem,
-  planIsStale, commitPlan, pressureOf,
+  CAST_MAX, castKey, chapterInfo, beatForChapter, newBeat, requiredCast, tiesInPlay, tieInWords, castProblem,
+  planIsStale, commitPlan,
 } from "./plan.js";
 import { effectiveProject } from "./effective.js";
-import { stageText, instanceName, refOptions } from "./logic.js";
+import { stageText, instanceName } from "./logic.js";
 import { section, fill, msg, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
@@ -19,9 +20,6 @@ import { STRINGS as RUN } from "./runall.js";
 export const STRINGS = section("plan");
 
 // The Outline rule whose wording explains each way a cast can be wrong (P1 wrote them; the panel does not word them again).
-const PRESSURE_LABEL_MAX = 90;           // the longest a rule's statement is in the pressure list before it is cut with an ellipsis
-const clipLabel = (text) => (text.length > PRESSURE_LABEL_MAX ? `${text.slice(0, PRESSURE_LABEL_MAX - 1).trimEnd()}…` : text);
-
 const CAST_RULES = { no_protagonist: "cast_has_protagonist", spotlight_pair: "spotlight_pair_in_cast" };
 
 function node(tag, props = {}, ...children) {
@@ -33,7 +31,6 @@ function node(tag, props = {}, ...children) {
 // hooks: {schema, client, getProject, backendWhere, changed(), redraw(), notice(text, kind, action), errorText(error)}
 export function createPlanPanel(hooks) {
   let draft = null;                     // {project, chapter, beat}: the beat for the next chapter until it is planned (nothing is added to the Outline before)
-  let choose = true;                    // the planner chooses the tie and the pressure: not saved, ticked again on a page reload
   let button = null;
   let stageLine = null;
   let mine = false;                     // this panel pressed the button and is waiting
@@ -90,7 +87,7 @@ export function createPlanPanel(hooks) {
     const { beat, existing } = working(project, chapter);
     if (existing?.plan && !(await ask(STRINGS.confirmReplan))) return;
     hooks.notice(STRINGS.working);
-    const call = planChapter(hooks.client, hooks.schema, project, beat, { choose });
+    const call = planChapter(hooks.client, hooks.schema, project, beat);
     mine = true;
     refresh();
     const result = await call.done;
@@ -150,44 +147,10 @@ export function createPlanPanel(hooks) {
     if (!(eff.entanglements?.ties ?? []).length) { panel.append(node("p", { className: "help", textContent: STRINGS.noTies })); return; }
 
     const { beat, existing } = working(project, chapter);
-    // Only a tie between two characters is offered as the spotlight (a group is not in the cast). A beat that already holds
-    // another tie as its spotlight (saved before this rule) keeps showing it, so no saved choice is lost.
-    const allTies = (eff.entanglements?.ties ?? []).filter((t) => spotlightTies(eff).some((s) => s.id === t.id) || t.id === beat.spotlight);
     const stale = Boolean(existing && planIsStale(project, existing));
     shownKey = keyOf(beat, stale);
     panel.append(node("p", { className: "plan-chapter", textContent: fill(info.count ? STRINGS.chapterOf : STRINGS.chapterOnly, { n: chapter, total: info.count }) }));
     if (stale) panel.append(node("p", { className: "plan-stale", textContent: STRINGS.stale }));
-
-    // Whether the planner chooses the tie and the pressure itself; while it does, the two pickers below are not used.
-    const chooseBox = node("input", { type: "checkbox", id: "plan-choose", checked: choose });
-    chooseBox.addEventListener("change", () => { choose = chooseBox.checked; panel.remove(); draw(container); });
-    panel.append(node("div", { className: "plan-choose" },
-      node("label", { htmlFor: "plan-choose" }, chooseBox, ` ${STRINGS.choose}`),
-      node("p", { className: "help", textContent: STRINGS.chooseHelp })));
-
-    // The spotlight: the tie in words, and a list of every tie to pick another from.
-    const picker = node("select", { className: "text-control", id: "plan-spotlight", disabled: choose },
-      ...(allTies.some((t) => t.id === beat.spotlight) ? [] : [node("option", { value: "", textContent: STRINGS.spotlightPick, selected: true })]),
-      ...allTies.map((t) => node("option", { value: t.id, textContent: tieInWords(hooks.schema, eff, t).text, selected: t.id === beat.spotlight })));
-    picker.addEventListener("change", () => setBeat(project, chapter, withSpotlight(project, beat, picker.value)));
-    const spot = allTies.find((t) => t.id === beat.spotlight);
-    panel.append(node("fieldset", { className: "plan-spotlight-box" }, node("legend", { textContent: STRINGS.spotlight }),
-      node("p", { className: "help", textContent: STRINGS.spotlightHelp }),
-      node("p", { className: "plan-tie", textContent: spot ? tieInWords(hooks.schema, eff, spot).text : STRINGS.spotlightNone }),
-      node("label", { className: "plan-pick", htmlFor: "plan-spotlight", textContent: STRINGS.spotlightChange }), picker));
-
-    // The pressure: every rule and object of the world, to change the pick. A chapter always has one when the world holds any.
-    {
-      const chosen = pressureOf(eff, beat) ?? "";
-      const options = refOptions(eff, ["world.rules", "world.objects"], STRINGS.unnamed);
-      const pressurePicker = node("select", { className: "text-control", id: "plan-pressure", disabled: choose },
-        ...(chosen ? [] : [node("option", { value: "", textContent: STRINGS.pressureNone, selected: true })]),
-        ...options.map((o) => node("option", { value: o.value, textContent: clipLabel(o.label), selected: o.value === chosen })));
-      pressurePicker.addEventListener("change", () => setBeat(project, chapter, { pressure: pressurePicker.value }));
-      panel.append(node("fieldset", { className: "plan-pressure-box" }, node("legend", { textContent: STRINGS.pressure }),
-        node("p", { className: "help", textContent: STRINGS.pressureHelp }),
-        node("label", { className: "plan-pick", htmlFor: "plan-pressure", textContent: STRINGS.pressureChange }), pressurePicker));
-    }
 
     // The cast: the required members are in and marked; the writer adds others up to CAST_MAX.
     const required = requiredCast(eff, beat.spotlight);

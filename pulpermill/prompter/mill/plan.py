@@ -361,11 +361,11 @@ class PlanFlow(Flow):
         self._pressure_at: int | None = None    # where the pressure judge's result sits among the results after the brainstorm, once that step has been asked for
         self.brainstorm = ""                    # the brainstorm's text once it has run ("" until then, and when it fell back)
         self.combos: list[dict] | None = None   # choose mode: the three combinations the select step picked (None until then, and when it fell back)
-        self._select_on = select.is_on(request)   # the request asks to choose and there are at least three distinct pairs to choose from
+        self._select_on = select.is_on(request)   # the request asks to choose and has at least one tie to choose from
         if self._select_on:
             self.notes["pressure_on"] = bool(pressure_of(request) or request.get("pressure_options"))
         elif request.get("choose"):
-            self.notes["select"] = "few"        # too few pairs: the flow is today's single-pair one on the page's own pair
+            self.notes["select"] = "few"        # choose was asked but there is no tie between two people of the cast: the flow is the single-pair one on the page's own pair
 
     def _count_names(self, value: Any) -> list[str]:
         """Records the walk-on counts of the plan that stands (interface M1) in the notes, and returns the new names."""
@@ -597,7 +597,7 @@ def script(request: dict, kit: Any) -> list[str]:
         ties, options = select.candidates(request)
         pairs = sorted(((i, j) for i in range(len(ties)) for j in range(max(1, len(options)))), key=lambda p: (p[0] + p[1], p[0]))[:select.PICKS]
         picks = [{"reason": f"The tie and the rule or object of combination {n} pull against what the protagonist wants.", "tie": i + 1, **({"pressure": j + 1} if options else {})}
-                 for n, (i, j) in enumerate(pairs, 1)]
+                 for n, (i, j) in enumerate((pairs * select.PICKS)[:select.PICKS], 1)]
         tie = ties[pairs[0][0]]
     else:
         tie = next(t for t in request["ties"] if t["id"] == request["spotlight"])

@@ -31,11 +31,12 @@ def candidates(request: dict) -> tuple[list[dict], list[dict]]:
 
 
 def is_on(request: dict) -> bool:
-    """True when the request asks to choose and there are at least three distinct pairs to choose from; otherwise the flow is the single-pair one."""
+    """True when the request asks to choose and there is at least one tie to choose from. With fewer than three distinct pairs the picks may
+    repeat a pair (see `select_problem`)."""
     if not request.get("choose"):
         return False
-    ties, options = candidates(request)
-    return len(ties) * max(1, len(options)) >= PICKS
+    ties, _ = candidates(request)
+    return len(ties) >= 1
 
 
 def without_pair(request: dict) -> dict:
@@ -103,12 +104,14 @@ def _whole(value: Any) -> bool:
 
 def select_problem(value: Any, n_ties: int, n_options: int) -> str | None:
     """None when the three picks are usable, else one plain line saying what to fix: not three picks, a reason missing or too long, a number
-    outside its list, or two picks that are the same tie with the same rule or object."""
+    outside its list, or too few different combinations: the picks must hold at least min(3, the number of distinct pairs) different pairs (a tie
+    with a rule or object), and may repeat a pair beyond that."""
     p = common.load_text("plan")["problems"]
     picks = value.get("picks") if isinstance(value, dict) else None
     if not isinstance(picks, list) or len(picks) != PICKS or not all(isinstance(x, dict) for x in picks):
         return p["select_count"]
     seen: dict[tuple, int] = {}
+    repeat: tuple[int, int] | None = None          # the first two picks that are the same pair
     for n, pick in enumerate(picks, 1):
         reason = r.s(pick.get("reason"))
         if not reason or len(reason) > REASON_MAX:
@@ -120,8 +123,12 @@ def select_problem(value: Any, n_ties: int, n_options: int) -> str | None:
             return p["select_range"].format(n=n, n_ties=n_ties, rules=rules)
         key = (tie, rule if n_options else None)
         if key in seen:
-            return p["select_same"].format(a=seen[key], b=n)
-        seen[key] = n
+            repeat = repeat or (seen[key], n)
+        else:
+            seen[key] = n
+    need = min(PICKS, n_ties * max(1, n_options))
+    if len(seen) < need:
+        return p["select_same"].format(a=repeat[0], b=repeat[1], need=need)
     return None
 
 

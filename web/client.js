@@ -353,8 +353,8 @@ export function checkStyleFit(client, schema, project) {
 // Plan a chapter: think and fill the beat, and one more try when the Outline's own blocking rules refuse the first beat (the
 // second attempt is told what was wrong). `beat` is the chapter's beat as the writer left it (the cast and the spotlight tie).
 // Nothing is changed: it resolves to {ok: true, beat, unresolved, dropped, warnings, blockers, retried} and the page decides
-// what to land (placeBeat). With `choose` the planner may pick the tie and the pressure; the beat then carries its pick. A request the page cannot make resolves to {ok: false, reason} (see planGate); a failed call to its failure.
-export function planChapter(client, schema, project, beat, { choose = false } = {}) {
+// what to land (placeBeat). The planner always picks the tie and the pressure (`choose` defaults to true; the beat then carries its pick, and the page's own pair is the stand-in and the fallback). A request the page cannot make resolves to {ok: false, reason} (see planGate); a failed call to its failure.
+export function planChapter(client, schema, project, beat, { choose = true } = {}) {
   const gate = planGate(project, beat);
   if (!gate.ok) return refused(gate.reason === "cast" ? `cast_${gate.why}` : gate.reason);
   let current = null;

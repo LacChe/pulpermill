@@ -651,6 +651,15 @@ test("status checks and the mock never carry a job id", async () => {
   assert.equal("job_id" in seen[0], false);
 });
 
+test("planChapter asks the planner to choose by default", async () => {
+  const p = await startedProject();
+  const beat = ensureBeat(schema, p);
+  const mock = countingMock();
+  await planChapter(mockClient(mock), schema, p, beat).done;
+  assert.equal(mock.seen[0].choose, true);
+  assert.ok(Array.isArray(mock.seen[0].pressure_options));
+});
+
 test("the retry keeps the pair the first reply chose and chooses nothing again", async () => {
   const p = await startedProject();
   const beat = ensureBeat(schema, p);
