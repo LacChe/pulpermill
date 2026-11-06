@@ -165,7 +165,11 @@ def test_the_grammar_has_exactly_three_picks_and_the_right_integer_ranges_and_th
     assert "Pick 3" in select.select_problem(out, 3, 2) and shape_problems(out, grammar)
     assert select.select_problem({"picks": good["picks"][:2]}, 3, 2) and select.select_problem({}, 3, 2)
     assert select.select_problem({"picks": [{**p, "reason": ""} if n == 1 else p for n, p in enumerate(good["picks"])]}, 3, 2)
-    assert select.select_problem({"picks": [{**p, "reason": "x" * 401} if n == 0 else p for n, p in enumerate(good["picks"])]}, 3, 2)
+    with_reason = lambda text: {"picks": [{**p, "reason": text} if n == 0 else p for n, p in enumerate(good["picks"])]}
+    assert select.select_problem(with_reason("x" * 550), 3, 2) is None and select.select_problem(with_reason("x" * 700), 3, 2) is None
+    assert "at most 700 characters" in select.select_problem(with_reason("x" * 750), 3, 2) and select.select_problem(with_reason("x" * 701), 3, 2)
+    assert len(select.REASON_STAND_IN) == select.REASON_MAX == 700, "the worst case shown to the model is as long as a reason may be"
+    assert "at most 700 characters" in select.build_select_prompt(choose_request())
 
 
 # ---- The flow --------------------------------------------------------------------------------------------------------------------------

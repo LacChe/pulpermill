@@ -13,10 +13,10 @@ from pulpermill.prompter.base import Step
 from . import common
 
 PICKS = 3                  # combinations asked for, and ideas the brainstorm writes
-MAX_OUTPUT = 600           # three picks of one or two sentences each, with room to spare
+MAX_OUTPUT = 1200          # three picks with reasons of up to REASON_MAX characters (about 525 tokens in English, up to twice that in Chinese), plus the JSON
 ATTEMPTS = 2               # then the plan goes ahead on the page's own pair: choosing is a help, never a reason to fail a call
-REASON_MAX = 400           # the most characters of a reason
-REASON_STAND_IN = "word " * 90       # the longest a reason is shown to a model (400 characters), for the worst case
+REASON_MAX = 700           # the most characters of a reason (models write 400 to 550; a retry costs a whole generation)
+REASON_STAND_IN = "word " * 140      # the longest a reason is shown to a model (700 characters), for the worst case
 
 
 # ---- What may be chosen -------------------------------------------------------------------------------------------------------
