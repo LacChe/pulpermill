@@ -349,11 +349,12 @@ function offerRecovery(recovered) {
 const backendWhere = () => (client.state.setting.kind === "mock" ? STRINGS.whereMock : settingText(client.state.setting));
 
 function drawConnection() {
-  const { working, connection } = client.state;
-  stopButton.hidden = !working;
+  const { working, connection, stopping } = client.state;
+  stopButton.hidden = !(working || stopping || connection === "busy");     // also for a job this page no longer tracks
+  stopButton.disabled = stopping;
   importButton.disabled = working;     // one job at a time: a card is not brought in while the model is working
-  connectionNode.textContent = working ? STRINGS.working : STRINGS.connection[connection];
-  connectionNode.dataset.state = working ? "busy" : connection;
+  connectionNode.textContent = stopping ? STRINGS.stopping : working ? STRINGS.working : STRINGS.connection[connection];
+  connectionNode.dataset.state = working || stopping ? "busy" : connection;
 }
 
 function chooseBackend(text) {
@@ -376,7 +377,11 @@ tokenInput.addEventListener("change", () => {
   client.checkStatus();
 });
 document.getElementById("check").addEventListener("click", () => client.checkStatus());
-stopButton.addEventListener("click", () => client.stop());
+stopButton.addEventListener("click", async () => {
+  const { idle, cancelFailed } = await client.stop();
+  if (cancelFailed) showNotice(STRINGS.stopFailed, "notice-bad");
+  else if (!idle) showNotice(STRINGS.stopStillBusy, "notice-bad");
+});
 
 // ---- Filling a card ---------------------------------------------------------------
 // The writer presses the button; the model answers; nothing changes until the page has the whole answer. If the answer

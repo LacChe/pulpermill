@@ -3804,8 +3804,8 @@
       }
     },
     {
-      "name": "cancel with no job id",
-      "valid": false,
+      "name": "cancel with no job id stops whatever is running",
+      "valid": true,
       "data": {
         "call": "cancel"
       }

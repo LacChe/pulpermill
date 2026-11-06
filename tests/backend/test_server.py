@@ -300,6 +300,24 @@ def test_cancel_stops_a_named_call_and_its_stop_is_what_the_page_fetches():
         assert post(base, {"call": "job", "job_id": "job-dddd-0004"}).json()["error"]["kind"] == "stopped"
 
 
+def test_cancel_with_no_job_id_stops_the_running_call_named_or_not():
+    with running(engine=FakeEngine(seconds_per_token=0.2, tokens_per_call=200)) as (base, engine):
+        for request in (_named("generate", "job-eeee-0005"), _of("generate")):
+            before = engine.cancelled_calls
+            thread = threading.Thread(target=lambda r=request: post(base, r, timeout=30))
+            thread.start()
+            time.sleep(0.3)
+            assert post(base, {"call": "cancel"}).json() == {"ok": True, "state": "cancelled"}
+            assert wait_idle(base, seconds=10) and engine.cancelled_calls > before
+            thread.join(timeout=10)
+        assert post(base, _of("generate")).json()["ok"] is True      # the backend is ready again
+
+
+def test_cancel_with_no_job_id_and_nothing_running_is_unknown():
+    with running() as (base, _):
+        assert post(base, {"call": "cancel"}).json() == {"ok": True, "state": "unknown"}
+
+
 def test_only_the_newest_finished_jobs_are_kept():
     with running(Config(jobs_kept=2)) as (base, _):
         for n in range(4):

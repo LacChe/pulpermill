@@ -105,7 +105,7 @@ test("no answer in time is a timeout, and the page waits for the backend to be i
   mock.queue("timeout");
   const result = await fillCard(client, schema, project(), "world").done;
   assert.equal(result.error.kind, "timeout");
-  assert.deepEqual(client.state, { working: false, since: null, connection: "idle", setting: { kind: "mock" }, stage: null });
+  assert.deepEqual(client.state, { working: false, stopping: false, since: null, connection: "idle", setting: { kind: "mock" }, stage: null });
 });
 
 test("Stop ends the call with a stopped failure and the page is free again", async () => {
@@ -642,6 +642,60 @@ test("Stop tells the backend to cancel the named call", async () => {
   assert.equal(reply.error.kind, "stopped");
   const sent = seen.find((r) => r.call === "generate");
   assert.ok(seen.some((r) => r.call === "cancel" && r.job_id === sent.job_id));
+});
+
+// A backend that stays busy for `busyFor` status checks, and keeps what it was sent.
+function busyBackend({ busyFor = 0, cancel = { ok: true, state: "cancelled" } } = {}) {
+  const seen = [];
+  let checks = 0;
+  const fetchImpl = (url, init) => {
+    const request = jobOf(init);
+    seen.push(request);
+    if (request.call === "cancel") return Promise.resolve(json(cancel));
+    if (request.call === "status") return Promise.resolve(json({ ok: true, state: ++checks > busyFor ? "idle" : "busy" }));
+    return new Promise((resolve, reject) => init.signal?.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" }))));
+  };
+  return { seen, fetchImpl, checks: () => checks };
+}
+
+test("Stop with no call on this page cancels with no job id, then waits for idle", async () => {
+  const backend = busyBackend({ busyFor: 3 });
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl: backend.fetchImpl, sleep: noSleep });
+  const stopped = client.stop();
+  assert.equal(client.state.stopping, true);
+  assert.deepEqual(await stopped, { idle: true, cancelFailed: false });
+  assert.deepEqual(backend.seen[0], { call: "cancel" });
+  assert.equal(backend.checks(), 4, "it asked until the backend said idle");
+  assert.equal(client.state.stopping, false);
+  assert.equal(client.state.connection, "idle");
+});
+
+test("Stop does not give up after ten seconds, and says so when the backend stays busy", async () => {
+  const backend = busyBackend({ busyFor: Infinity });
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl: backend.fetchImpl, sleep: noSleep });
+  const result = await client.stop();
+  assert.deepEqual(result, { idle: false, cancelFailed: false });
+  assert.ok(backend.checks() > 20, "more than the old twenty checks");
+  assert.equal(client.state.connection, "busy");
+  assert.equal(client.state.stopping, false, "Stop can be pressed again");
+});
+
+test("a Stop that cannot reach the backend reports the failed cancel", async () => {
+  const backend = busyBackend({ cancel: { ok: false, error: { kind: "unauthorized" } } });
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl: backend.fetchImpl, sleep: noSleep });
+  assert.deepEqual(await client.stop(), { idle: false, cancelFailed: true });
+});
+
+test("Stop with a call going cancels it by name and the call's page stays locked until idle", async () => {
+  const backend = busyBackend({ busyFor: 2 });
+  const client = createClient({ setting: { kind: "url", url: "http://x" }, fetchImpl: backend.fetchImpl, sleep: noSleep });
+  const call = client.start(generateRequest);
+  const stopped = client.stop();
+  assert.equal((await call.done).error.kind, "stopped");
+  assert.deepEqual(await stopped, { idle: true, cancelFailed: false });
+  const sent = backend.seen.find((r) => r.call === "generate");
+  assert.ok(backend.seen.some((r) => r.call === "cancel" && r.job_id === sent.job_id));
+  assert.equal(client.state.connection, "idle");
 });
 
 test("status checks and the mock never carry a job id", async () => {

@@ -81,12 +81,17 @@ class Job:
     def __init__(self):
         self._lock = threading.Lock()
         self._stage: dict | None = None
+        self.cancel: CancelFlag | None = None       # the running call's flag, so a cancel needs no job_id
 
-    def try_begin(self) -> bool:
-        return self._lock.acquire(blocking=False)
+    def try_begin(self, cancel: CancelFlag | None = None) -> bool:
+        if not self._lock.acquire(blocking=False):
+            return False
+        self.cancel = cancel
+        return True
 
     def end(self) -> None:
         self._stage = None
+        self.cancel = None
         self._lock.release()
 
     @property
@@ -242,6 +247,13 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
                 return JSONResponse(body, headers=CORS)
             kind, value = record.outcome
             return JSONResponse(value, headers=CORS) if kind == "ok" else _fail(*value)
+        if model.call == "cancel" and model.job_id is None:
+            running = job.cancel
+            if running is None:
+                return JSONResponse({"ok": True, "state": "unknown"}, headers=CORS)
+            log.info("cancel: the running call is cancelled by the page (no job id)")
+            running.set()
+            return JSONResponse({"ok": True, "state": "cancelled"}, headers=CORS)
         if model.call == "cancel":
             record = jobs.get(model.job_id)
             if record is None or record.outcome is not None:
@@ -258,9 +270,9 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
                 return JSONResponse({"ok": True, "state": "running", **({"stage": job.stage} if job.stage else {})}, headers=CORS)
             kind, value = known.outcome
             return JSONResponse(value, headers=CORS) if kind == "ok" else _fail(*value)
-        if not job.try_begin():
-            return _fail("busy")
         cancel = CancelFlag()
+        if not job.try_begin(cancel):
+            return _fail("busy")
         record = JobRecord(job_id, model.call, cancel) if job_id else None
         if record:
             jobs.add(record)

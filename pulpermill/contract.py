@@ -61,9 +61,9 @@ class JobRequest(Strict):
 
 
 class CancelRequest(Strict):
-    """Stops the running call that carried this job_id. Nothing is changed by a stopped call."""
+    """Stops the running call that carried this job_id, or, with no job_id, whatever call is running. Nothing is changed by a stopped call."""
     call: Literal["cancel"]
-    job_id: str = _JOB_ID
+    job_id: str | None = Field(default=None, min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
 
 
 class FillRequest(Envelope):

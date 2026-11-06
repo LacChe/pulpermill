@@ -120,6 +120,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
   let since = null;                   // when that call began (ms), so a button can show how long it has run
   let connection = "unknown";         // unknown | idle | busy | unreachable
   let stage = null;                   // what the backend says it is doing, while a story call runs
+  let stopping = null;                // the Stop in progress (a promise), if any
   const listeners = new Set();
   const finishers = new Set();        // told each time a model call ends, with its reply
   const judgeCache = new Map();
@@ -160,13 +161,24 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
     return () => { alive = false; wake?.(); if (stage !== null) { stage = null; changed(); } };
   }
 
-  async function settle({ interval = 500, tries = 20 } = {}) {
-    for (let i = 0; i < tries; i++) {
-      if ((await client.checkStatus()) === "idle") return true;
-      await sleep(interval);
-    }
-    return false;
+  // Waits until the backend says idle: every `interval` ms, `tries` times (a minute by default, so a slow cancel is not given up
+  // on early). Resolves false if it never went idle. Callers that arrive while one wait is going share it.
+  let settling = null;
+  function settle({ interval = 500, tries = 120 } = {}) {
+    settling ??= (async () => {
+      for (let i = 0; i < tries; i++) {
+        if ((await client.checkStatus()) === "idle") return true;
+        await sleep(interval);
+      }
+      return false;
+    })().finally(() => { settling = null; });
+    return settling;
   }
+
+  // Asks the backend to stop what it is running: that call when its id is known, otherwise whatever it is running.
+  // Resolves to the backend's reply, or a failure the caller can show; it never throws.
+  const cancelOnBackend = (jobId) => post(fetchImpl, current.url, jobId ? { call: "cancel", job_id: jobId } : { call: "cancel" }, undefined, secret)
+    .catch((error) => failure("unreachable", error?.message));
 
   // A name for one call, sent with it so the backend keeps the call going if the connection drops and keeps its answer.
   const makeJobId = () => (globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`).replace(/[^A-Za-z0-9_-]/g, "");
@@ -210,12 +222,13 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
     // On the time limit the call is also cancelled by name, as Stop does, so the backend does not go on running a call the page gave up on.
     const timer = setTimeout(() => {
       why = "timeout"; controller.abort();
-      if (jobId) post(fetchImpl, current.url, { call: "cancel", job_id: jobId }, undefined, secret).catch(() => {});
+      if (jobId) cancelOnBackend(jobId);
     }, limits[call] ?? limits.fill);
     const handle = {
+      // Resolves to the backend's answer to the cancel (null when there was no call on a backend to cancel).
       stop() {
         why ??= "stopped"; controller.abort();
-        if (jobId) post(fetchImpl, current.url, { call: "cancel", job_id: jobId }, undefined, secret).catch(() => {});
+        return jobId ? cancelOnBackend(jobId) : Promise.resolve(null);
       },
     };
     if (!isStatus) { running = handle; since = Date.now(); changed(); }
@@ -261,15 +274,30 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
       setConnection(reply.ok ? reply.state : "unreachable");
       return connection;
     },
-    // End whatever call this page has going. Does nothing when there is none.
-    stop() { running?.stop(); },
+    // Stop whatever the backend is doing, whether or not this page has a call going: cancel it by name when the page knows
+    // it, otherwise without a name, then wait until the backend says idle. Resolves to {idle, cancelFailed}; `idle` is false
+    // when the wait ran out with the backend still busy. A second press while one Stop is going joins it.
+    stop() {
+      if (!stopping) {
+        stopping = (async () => {
+          const call = running;
+          let cancel = null;
+          if (call) cancel = await call.stop();
+          else if (current.kind === "url") cancel = await cancelOnBackend(null);
+          if (cancel?.ok === false) return { idle: false, cancelFailed: true };
+          return { idle: await settle(), cancelFailed: false };
+        })().finally(() => { stopping = null; changed(); });
+        changed();
+      }
+      return stopping;
+    },
     setSetting(next) { current = next; connection = "unknown"; judgeCache.clear(); changed(); },
     setToken(next) { secret = String(next ?? ""); connection = "unknown"; changed(); },
     onChange(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     // Called with the reply each time a model call ends (not status checks): the tab icon uses it to say done or failed.
     onFinish(listener) { finishers.add(listener); return () => finishers.delete(listener); },
     // What the page needs to draw: whether this page is waiting on a call, and what the backend last said.
-    get state() { return { working: Boolean(running), since, connection, setting: current, stage }; },
+    get state() { return { working: Boolean(running), stopping: Boolean(stopping), since, connection, setting: current, stage }; },
   };
   return client;
 }
