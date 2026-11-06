@@ -152,13 +152,16 @@ def link_names(characters: list[str], world: dict | None) -> dict[str, list[str]
 # ---- A card fill ----------------------------------------------------------------------------------------------------
 
 def fill(request: dict) -> Schema:
-    """The reply shape for a fill: the card's own fields all optional, but the fields of every list item it writes required as the schema says
-    (a tie always has both ends, a bond and an edge), no ids, links limited to the names of the related cards. A list may be empty."""
+    """The reply shape for a fill: every field of the card required (a re-fill is asked exactly as a blank card is), and the fields of every
+    list item it writes required as the schema says (a tie always has both ends, a bond and an edge), no ids, links limited to the names of
+    the related cards. A list may be empty."""
     related = request.get("related") or {}
     people = related.get("characters") or []
     people = [people] if isinstance(people, dict) else people
     refs = link_names([p.get(cards.label_key("characters")) for p in people if isinstance(p, dict)], related.get("world"))
-    return _exclusive(_clean(card_model_schema(request["card"]), refs, False, item_required=True), request["card"])
+    schema = _clean(card_model_schema(request["card"]), refs, False, item_required=True)
+    schema["required"] = list(schema["properties"])
+    return _exclusive(schema, request["card"])
 
 
 # ---- The planner's fields of a beat ---------------------------------------------------------------------------------

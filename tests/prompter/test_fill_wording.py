@@ -110,13 +110,13 @@ def test_the_story_language_is_named_and_names_are_kept(language, name):
     assert f"in {name}" in text and "Keep names exactly as the writer spelled them" in text and "沈青岚，二十八岁，女。" in text
 
 
-def test_the_current_values_stay_and_an_empty_card_says_so():
-    empty = prompt(req("world"))
-    assert "The card is still empty." in empty and "leave those fields out" not in empty
-    filled = prompt(req("world", values={"name": "Tern Station", "everyday_life": "Air is rationed and taxed."}))
-    assert "leave those fields out of your reply" in filled and "Air is rationed and taxed." in filled and "The card is still empty." not in filled
+def test_a_re_fill_is_asked_exactly_as_a_blank_card_is():
+    blank = prompt(req("world", values={}))
+    assert "The card is still empty." in blank and "leave those fields out" not in blank
+    held = {"name": "Tern Station", "everyday_life": "Air is rationed and taxed."}
+    assert prompt(req("world", values=held)) == blank, "the card's current values are not shown"
     setup = prompt(req("setup", values={"protagonist": "c0000001", "normal": "He dives at dawn.", "chapter_count": 7}))
-    assert "The protagonist is Imre." in setup and "The normal: He dives at dawn." in setup and "The story runs for 7 chapters." in setup
+    assert "He dives at dawn." not in setup and "The story runs for 7 chapters." not in setup and "The card is still empty." in setup
 
 
 def test_the_cards_a_card_reads_are_shown_as_prose_and_the_link_names_are_listed():
@@ -257,10 +257,12 @@ def test_the_check_refuses_what_the_grammar_cannot_see():
     assert problem("style", {"humor": "none", "edge": "clean"}) is None                       # an answer word such as none is a choice
     assert "Fill in the card" in problem("world", {})
     assert problem("entanglements", {}) is None                                                # nothing upstream can fill ties: empty is fine
-    assert problem("world", {}, values={"name": "Tern Station"}) is None                       # already filled: nothing to add
+    assert "Fill in the card" in problem("world", {}, values={"name": "Tern Station"})         # a re-fill is a blank fill: the old values count for nothing
+    assert "name field is empty" in problem("world", {"name": " ", "history": "A station built over a drowned city."})
+    assert "protagonist field is empty" in problem("setup", {"protagonist": "", "chapter_count": 9})
     assert "world card must name no character" in problem("world", {"history": "Imre left the station in a famine."})
     assert "at least two wants" in problem("characters", {"wants": [{"text": "to be left alone"}]})
-    assert problem("characters", {"wants": [{"text": "to be left alone"}]}, values={"id": "c0000009", "wants": [{"text": "to win"}]}) is None
+    assert "at least two wants" in problem("characters", {"wants": [{"text": "to be left alone"}]}, values={"id": "c0000009", "wants": [{"text": "to win"}]})
 
 
 def test_the_check_refuses_ties_and_holdings_that_break_the_scope_or_the_split_between_them():

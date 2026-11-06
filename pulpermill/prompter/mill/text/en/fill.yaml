@@ -18,7 +18,6 @@ chapter_gap: "[…]"
 
 language_line: "Write every text you produce in {language}. Keep names exactly as the writer spelled them, and keep the English answer words listed under the fields that offer a choice."
 
-filled_lead: "The card already holds the values below. They are the writer's own, so leave those fields out of your reply and fill the fields that are still empty."
 empty_card: "The card is still empty."
 related_lead: "The cards this card builds on already exist. Read them; they are not yours to change."
 names_lead: "Link only to these names, spelled exactly as listed:"
@@ -201,14 +200,15 @@ cards:
 # ---- the check's lines (shown to the model on its second attempt) ----
 problems:
   not_object: "Reply with a JSON object holding the card's fields."
-  nothing: "Fill in the card from the writer's text: give at least the fields the note or chapter speaks to."
+  nothing: "Fill in the card from the writer's text: give every field."
   bad_link: "{name} is not one of the names you may link to. Use only the names listed, spelled exactly as listed: {names}."
-  stand_in: "The {field} field holds a stand-in ({value}). Write real content for it, or leave the field out."
+  stand_in: "The {field} field holds a stand-in ({value}). Write real content for it."
   self_tie: "A tie joins two different people or groups; {name} appears at both ends of one."
   bond_is_edge: "Make the bond of the tie from {tie_from} to {tie_to} a standing label and its edge what the tie makes {tie_from} want; the two must say different things."
   ownership_tie: "Ownership is a holding, not a tie. Move \"{bond}\" ({tie_from} and {tie_to}) into holdings, or give the tie a bond that is not about owning."
   holding_pair: "A place can be held by a person or a group, not by another place: {holdee} cannot be held by {held_by}."
   unknown_person: "The normal and the disruption name {names}, who is on no card. Use only the names from the cards, and refer to anyone else by role alone."
+  empty_field: "The {field} field is empty. Write it: every field of the card needs content."
   empty_item_field: "Every item in {list} needs a {field}: write it for each item, or leave the item out."
   name_leak: "The world card must name no character; take {name} out of {where} and describe it without the person."
   one_want: "Give at least two wants that pull against each other."

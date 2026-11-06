@@ -49,9 +49,9 @@ def test_the_fill_grammar_requires_the_key_fields_of_every_list_item(card, key, 
 
 
 @pytest.mark.parametrize("card", ["style", "characters", "world", "entanglements", "setup"])
-def test_the_cards_own_fields_stay_optional_and_a_list_may_be_empty(card):
+def test_the_cards_own_fields_are_all_required_and_a_list_may_be_empty(card):
     schema = grammar.fill(request(card))
-    assert schema["required"] == []
+    assert schema["required"] == list(schema["properties"])
     for node in schema["properties"].values():
         assert "minItems" not in node
 

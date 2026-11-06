@@ -144,8 +144,9 @@ def test_the_fill_and_plan_grammars_limit_links_to_the_names_sent():
     beat = grammar.plan_beat(plan)
     assert set(beat["required"]) == {"where", "when_time", "aim", "plan"} and beat["properties"]["where"]["enum"] == ["The Archive", "The Quay"]
     fill = grammar.fill(request("fill"))
-    assert fill["properties"]["protagonist"]["enum"] == ["Suvi"] and fill["required"] == [] and shape.problems({}, fill) == []
+    assert fill["properties"]["protagonist"]["enum"] == ["Suvi"] and fill["required"] == list(fill["properties"]) and shape.problems(sample(fill), fill) == []
     assert shape.problems({"protagonist": "Marit"}, fill)
+    assert shape.problems({}, fill), "every field of the card is asked for"
     assert "id" not in json.dumps(grammar.fill({**request("fill"), "card": "characters", "instance": "c1"})["properties"]["wants"])
 
 

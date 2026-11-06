@@ -1094,6 +1094,18 @@ test("an empty answer never wipes what the writer wrote, and fields the model sk
   assert.equal(plan.next.disruption, "And me");
 });
 
+test("a re-fill writes every field the model returned; an empty answer or an unmatched link keeps the old value", () => {
+  const { project, suvi } = peopleProject();
+  const current = project.setup;
+  Object.assign(current, { protagonist: suvi.id, normal: "Old normal", disruption: "Old disruption", chapter_count: 6 });
+  const reply = { values: { protagonist: "Nobody Here", normal: "New normal", disruption: "", chapter_count: 9 } };
+  const plan = planFill(landSetup, current, reply, project);
+  assert.deepEqual([plan.filled, plan.replaced.sort(), plan.unchanged], [[], ["chapter_count", "normal"], []]);
+  assert.deepEqual([plan.next.normal, plan.next.chapter_count], ["New normal", 9]);
+  assert.deepEqual([plan.next.protagonist, plan.next.disruption], [suvi.id, "Old disruption"], "kept: unmatched link, empty answer");
+  assert.deepEqual(plan.unresolved.map((u) => u.words), ["Nobody Here"], "the unmatched words are still reported");
+});
+
 test("filled lists get fresh ids; the same list again changes nothing and keeps its ids", () => {
   const { project, suvi, ola } = peopleProject();
   const reply = { values: { ties: [{ tie_from: "Suvi", tie_to: "Ola", bond: "sisters", edge: "" }] } };

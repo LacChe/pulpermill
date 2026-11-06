@@ -1,9 +1,9 @@
-"""The `fill` call: one JSON step that fills one card from a note and/or an example chapter, given the card's current values and the cards it
-reads. Wording lives in text/en/fill.yaml (field meanings, scope rules, the probe-targeted guidance). Rules served: R1 (every card field has
+"""The `fill` call: one JSON step that fills one card from a note and/or an example chapter, given the cards it reads. The card's own
+current values are never shown: a card that already holds values is asked for exactly as a blank one is. Wording lives in text/en/fill.yaml (field meanings, scope rules, the probe-targeted guidance). Rules served: R1 (every card field has
 a meaning sentence, enforced by a test) and R2 (cards reach the model as prose; the only raw tokens are the answer words of a choice, each
 explained by its own sentence).
 
-The grammar (kit.grammar.fill()) makes every field optional and limits links to the names the request sent, so this module's job is wording
+The grammar (kit.grammar.fill()) requires every field and limits links to the names the request sent, so this module's job is wording
 and a small check for what the grammar cannot see."""
 import json
 import re
@@ -56,36 +56,6 @@ def _names_block(request: dict) -> str:
 def _ent_words(ent: dict, names: dict[str, str]) -> dict:
     return {"ties": r.in_words(ent.get("ties") or [], {"tie_from": {"ref": True}, "tie_to": {"ref": True}}, names),
             "holdings": r.in_words(ent.get("holdings") or [], {"holdee": {"ref": True}, "held_by": {"ref": True}}, names)}
-
-
-def has_content(card: str, values: dict) -> bool:
-    ignore = {"id"}
-    if card == "characters":
-        ignore.add("name")
-    return any(v not in (None, "", [], {}) for k, v in (values or {}).items() if k not in ignore)
-
-
-def _current(request: dict, names: dict[str, str]) -> str:
-    """What the card already holds, in prose (empty when nothing)."""
-    card, values = request["card"], request.get("values") or {}
-    w = common.load_text("fill")
-    if card == "style":
-        return r.render_style(values, scope="writer") if has_content(card, values) else ""
-    if card == "characters":
-        return r.render_person(values, scope="writer") if has_content(card, values) or r.s(values.get("name")) else ""
-    if card == "world":
-        return r.render_world(values, scope="writer") if has_content(card, values) else ""
-    if card == "entanglements":
-        return r.render_entanglements(_ent_words(values, names), scope="writer") if has_content(card, values) else ""
-    lines = []
-    if r.s(values.get("protagonist")):
-        lines.append(w["setup_protagonist"].format(value=names.get(values["protagonist"], r.s(values["protagonist"]))))
-    for key in ("normal", "disruption"):
-        if r.s(values.get(key)):
-            lines.append(w[f"setup_{key}"].format(value=r.s(values[key])))
-    if values.get("chapter_count"):
-        lines.append(w["setup_count"].format(value=values["chapter_count"]))
-    return " ".join(lines)
 
 
 def _related_text(request: dict, names: dict[str, str]) -> str:
@@ -147,7 +117,6 @@ def build_prompt(request: dict, kit: Any, factor: float = 1.0) -> str:
 
     with tx.squeeze(factor):
         related = _related_text(request, names)
-    current = _current(request, names)
     keys = list(kit.grammar.fill()["properties"])
 
     inputs = [w[mode]]
@@ -165,7 +134,7 @@ def build_prompt(request: dict, kit: Any, factor: float = 1.0) -> str:
         field_guidance(card, keys),
         (w["related_lead"] + "\n\n" + related) if related else "",
         _names_block(request),
-        (w["filled_lead"] + "\n\n" + current) if current else w["empty_card"],
+        w["empty_card"],            # a re-fill is asked exactly as a blank card is: the card's current values are never shown
         w["output"],
     ]
     return "\n\n".join(b for b in blocks if b)
@@ -245,6 +214,11 @@ def fill_problem(request: dict, value: Any) -> str | None:
     empty = empty_item_field(card, value)
     if empty:
         return empty
+    # Every field is asked for, as on a blank card, so a field the reply holds empty is a miss. (A protagonist has no name to take
+    # while the Characters card names nobody.)
+    for key, given in value.items():
+        if (given is None or (isinstance(given, str) and not given.strip())) and not (card == "setup" and key == "protagonist" and not people):
+            return pr["empty_field"].format(field=key)
 
     def linked(name, allowed, shown):
         return pr["bad_link"].format(name=name, names=", ".join(sorted(shown))) if name and name not in allowed else None
@@ -280,7 +254,7 @@ def fill_problem(request: dict, value: Any) -> str | None:
                     return pr["name_leak"].format(name=name, where=path.split(".")[0])
     if card == "characters":
         wants = value.get("wants")
-        if wants is not None and len(wants) < 2 and not (request.get("values") or {}).get("wants"):
+        if wants is not None and len(wants) < 2:
             return pr["one_want"]
     if card == "setup":
         # Rule 5: people beyond the Characters card are never named. The cards and the writer's own text (note, example chapter, values) are
@@ -292,9 +266,9 @@ def fill_problem(request: dict, value: Any) -> str | None:
         count = stated_chapter_count(r.s(request.get("note")))
         if count and "chapter_count" in value and int(value["chapter_count"]) != count:
             return pr["chapter_count"].format(count=count)
-        if count and "chapter_count" not in value and not (request.get("values") or {}).get("chapter_count"):
+        if count and "chapter_count" not in value:
             return pr["chapter_count_missing"].format(count=count)
-    if not value and card != "entanglements" and not has_content(card, request.get("values") or {}):
+    if not value and card != "entanglements":
         return pr["nothing"]
     return None
 
