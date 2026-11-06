@@ -73,15 +73,24 @@ def test_the_shifts_grammar_names_only_what_was_sent_and_every_kind_of_change():
     g = kit.grammar.shifts()
     text = json.dumps(g)
     assert "Suvi" in text and "Marit" in text and '"wants.1"' in text and '"ties.2"' in text and '"places.2"' in text
-    for op in ("add", "replace", "remove"):
-        assert f'"const": "{op}"' in text
+    assert '"const": "replace"' in text and '"const": "add"' not in text and '"const": "remove"' not in text
     assert g["maxItems"] <= 7
     ok = json.loads(script("generate", req, kit)[2])["shifts"]
     assert shape.problems(ok, g) == [] and kit.shifts_problem(ok) is None
     assert {s["card"] for s in ok} == {"characters", "world", "entanglements"}
     ops = {op["op"] for s in ok for v in s["patch"].values() if isinstance(v, list) for op in v}
-    assert ops == {"add", "replace", "remove"} and any(not isinstance(v, list) for s in ok for v in s["patch"].values())
+    assert ops == {"replace"} and any(not isinstance(v, list) for s in ok for v in s["patch"].values())
     assert any(s["card"] == "entanglements" and "ties" in s["patch"] for s in ok)
+
+
+def test_a_patch_has_no_property_for_a_list_with_no_items_but_still_offers_a_scalar():
+    from pulpermill.backend import grammar
+    req = request("generate")
+    req = {**req, "cast": [{**c, "wants": [], "behaviors": []} if isinstance(c, dict) else c for c in req.get("cast") or []]}
+    h = Handles(req)
+    scope = h.of_card("characters")[0]
+    props = grammar.patch("characters", scope, {})["properties"]
+    assert "wants" not in props and "sketch" in props
 
 
 def test_a_reply_that_points_at_something_not_sent_is_not_usable():
@@ -89,7 +98,7 @@ def test_a_reply_that_points_at_something_not_sent_is_not_usable():
     kit = Kit(req)
     good = json.loads(script("generate", req, kit)[2])["shifts"]
     bad_handle = json.loads(json.dumps(good))
-    bad_handle[0]["patch"]["wants"][1]["id"] = "wants.9"
+    bad_handle[0]["patch"]["wants"][0]["id"] = "wants.9"
     assert shape.problems(bad_handle, kit.grammar.shifts()) and kit.shifts_problem(bad_handle)
     nobody = json.loads(json.dumps(good))
     nobody[0]["target"] = "Nobody"
@@ -158,4 +167,5 @@ def test_every_schema_field_that_may_be_shifted_has_a_grammar():
     for card in SHIFT_CARDS:
         scope = handles.of_card(card)[0]
         p = grammar.patch(card, scope, grammar.link_names(["Suvi"], req["world"]))
-        assert set(p["properties"]) == {f["key"] for f in shiftable_fields(card)}
+        # a scalar always; a list only when the scope sent items to replace
+        assert set(p["properties"]) == {f["key"] for f in shiftable_fields(card) if f["type"] == "scalar" or scope.handles(f["key"])}

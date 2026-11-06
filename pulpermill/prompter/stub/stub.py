@@ -171,36 +171,25 @@ def script(call: str, request: dict, kit: Any) -> list[str]:
 
 
 def stub_shifts(kit: Any) -> list[dict]:
-    """Shifts of every kind the request allows: a scalar, and a list `add`, `replace` and `remove` for a character and the world, and a
-    tie `replace`, `remove` and `add`. A kind that needs an item the request did not send is left out."""
+    """Shifts of the kinds the grammar allows: a scalar, and a list `replace` for a character's wants, the world's places and the ties. A
+    `replace` is left out when the request did not send an item to point at."""
     out = []
-    people = [s.label for s in kit.handles.of_card("characters")]
     for scope in kit.handles.of_card("characters")[:1]:
-        patch: dict = {"sketch": "Changed in the stub chapter.", "wants": [{"op": "add", "values": {"text": "A new want."}}]}
+        patch: dict = {"sketch": "Changed in the stub chapter."}
         wants = scope.handles("wants")
         if wants:
-            patch["wants"].append({"op": "replace", "id": wants[0], "values": {"text": "A changed want."}})
-        behaviors = scope.handles("behaviors")
-        if behaviors:
-            patch["behaviors"] = [{"op": "remove", "id": behaviors[0]}]
+            patch["wants"] = [{"op": "replace", "id": wants[0], "values": {"text": "A changed want."}}]
         out.append({"card": "characters", "target": scope.label, "patch": patch})
     for scope in kit.handles.of_card("world"):
-        patch = {"history": "The stub world remembers.", "places": [{"op": "add", "values": {"name": "A New Place", "description": "Stone.", "effect": "Quiet."}}]}
+        patch = {"history": "The stub world remembers."}
         places = scope.handles("places")
         if places:
-            patch["places"].append({"op": "replace", "id": places[0], "values": {"effect": "Loud now."}})
+            patch["places"] = [{"op": "replace", "id": places[0], "values": {"effect": "Loud now."}}]
         out.append({"card": "world", "patch": patch})
     for scope in kit.handles.of_card("entanglements"):
         ties = scope.handles("ties")
-        ops: list[dict] = []
         if ties:
-            ops.append({"op": "replace", "id": ties[0], "values": {"edge": "to do something new"}})
-        if len(ties) > 1:
-            ops.append({"op": "remove", "id": ties[1]})
-        if len(people) > 1:
-            ops.append({"op": "add", "values": {"tie_from": people[0], "tie_to": people[1], "bond": "allies", "edge": "to stand together"}})
-        if ops:
-            out.append({"card": "entanglements", "patch": {"ties": ops}})
+            out.append({"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": ties[0], "values": {"edge": "to do something new"}}]}})
     return out
 
 

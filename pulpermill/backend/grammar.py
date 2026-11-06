@@ -180,8 +180,9 @@ def _item_props(card: str, key: str, names: list[str], refs: dict) -> Schema:
 
 
 def patch(card: str, scope, refs: dict) -> Schema:
-    """What one card's patch may hold: every shiftable field (P2), a scalar as its new value and a list as operations on the items
-    this scope sent (`add`, `replace` an item, `remove` an item)."""
+    """What one card's patch may hold: every shiftable field (P2), a scalar as its new value and a list as `replace` operations on the items
+    this scope sent. The model may only replace: `add` and `remove` are not generated (the schema and the overlay still accept them). A list
+    field the scope has no handles for has no valid operation, so it is left out."""
     model = card_model_schema(card)["properties"]
     props: dict[str, Schema] = {}
     for f in shiftable_fields(card):
@@ -189,15 +190,11 @@ def patch(card: str, scope, refs: dict) -> Schema:
         if f["type"] == "scalar":
             props[key] = _clean({"type": "object", "properties": {key: model[key]}}, refs, False)["properties"][key]
             continue
-        every = [k for k in model[key]["items"]["properties"] if k != "id"]
-        added = _item_props(card, key, every, refs)
-        required = [k for k in every if k in _required(card, key)]
-        ops = [obj({"op": {"const": "add"}, "values": obj(added, required)})]
         ids = scope.handles(key)
-        if ids:
-            ops.append(obj({"op": {"const": "replace"}, "id": one_of(ids), "values": obj(_item_props(card, key, f["item_fields"], refs), [])}))
-            ops.append(obj({"op": {"const": "remove"}, "id": one_of(ids)}))
-        props[key] = {"type": "array", "items": {"anyOf": ops} if len(ops) > 1 else ops[0], "minItems": 1, "maxItems": MAX_ITEMS}
+        if not ids:
+            continue
+        op = obj({"op": {"const": "replace"}, "id": one_of(ids), "values": obj(_item_props(card, key, f["item_fields"], refs), [])})
+        props[key] = {"type": "array", "items": op, "minItems": 1, "maxItems": MAX_ITEMS}
     return {"type": "object", "properties": props, "required": [], "additionalProperties": False}
 
 
