@@ -15,7 +15,7 @@ fields:
     item_fields:
       beat: {label: "Chapter", help: "Which chapter, shown as its number. Set by the system."}
       happened: {label: "What happened", help: "The chapter's events in order, one sentence per event (usually 4 to 8 sentences). An event changes who knows what, who holds what or where people stand. Blunt and compact, written for the model."}
-      changed: {label: "Changed line", help: "What is different for the protagonist, in one short sentence. Empty if nothing changed."}
+      changed: {label: "Changed line", help: "What is different for the protagonist at the end of the chapter, and where the protagonist's aim stands now, in one or two short sentences. Empty if nothing changed."}
 rules:
   events_beat_unique:
     message: "Two entries are for the same chapter."
@@ -24,6 +24,6 @@ rules:
     message: "This points to something that no longer exists."
     fix: "Remove the link."
   changed_is_one_sentence:
-    message: "The changed line is longer than one short sentence."
-    fix: "Shorten it to what is different for the protagonist."
-    judge_prompt: "Is this one short sentence saying what is different for the protagonist? Answer yes or no. If no, rewrite it as one short sentence."
+    message: "The changed line is longer than two short sentences."
+    fix: "Shorten it to what is different for the protagonist and where their aim stands now."
+    judge_prompt: "Is this one or two short sentences saying what is different for the protagonist and where their aim stands now? Answer yes or no. If no, rewrite it as one or two short sentences."

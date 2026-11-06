@@ -1,5 +1,5 @@
 {
- "about": "Labelled cases for the advancement judge (pulpermill/prompter/mill/advance.py). Rewords and same_kind cases come from the first test story; genuine moves are hand-written. Names are placeholders for the story's cards. The chain's first aim (bake sun loaves) is the chapter-1 baseline, so it is listed as new_kind; the other three aims from the story are same_kind against the chain before them. The pressure cases are for the pressure judge (observe-only): four where the element acts and four known-bad ones where it only appears, over unrelated settings; `source` says whether the text is a plan or a chapter's `happened`. Run them on the real model before trusting a run's pressure_effect counts.",
+ "about": "Labelled cases for the advancement judge (pulpermill/prompter/mill/advance.py). The edge pairs come from the first test story, with hand-written genuine moves. The aim chains are for the aim judge, which is observe-only: each gives the earlier chapters' aims and endings (the running aim), a new aim, and the expected answers, link (continues or drifts) and new_obstacle (yes or no). Chapter 1 has no chain, so the judge does not run there. The pressure cases are for the pressure judge (observe-only): four where the element acts and four known-bad ones where it only appears, over unrelated settings; `source` says whether the text is a plan or a chapter's `happened`. Run them on the real model before trusting a run's aim_link, aim_new or pressure_effect counts.",
  "edge_pairs": [
   {
    "old_edge": "needs to prove her skill",
@@ -47,78 +47,119 @@
  "aim_chains": [
   {
    "protagonist": "Pim",
-   "earlier_aims": [],
-   "new_aim": "Bake sun loaves to impress Orla",
-   "expected": "new_kind",
-   "note": "chapter 1 has no earlier aim"
-  },
-  {
-   "protagonist": "Pim",
-   "earlier_aims": [
-    "Bake sun loaves to impress Orla"
+   "earlier": [
+    {
+     "aim": "Bake sun loaves to impress Orla",
+     "changed": "The loaves burned, but Orla saw Pim start again. Pim now needs better wood to bake them properly."
+    }
    ],
-   "new_aim": "Get second-choice wood to experiment and impress Orla",
-   "expected": "same_kind",
-   "note": "first test story"
+   "new_aim": "Get second-choice wood from the lumber yard before Corbin buys it all",
+   "expected_link": "continues",
+   "expected_new_obstacle": "yes",
+   "note": "hand-written: the next step the ending names, with a new person and a deadline"
   },
   {
    "protagonist": "Pim",
-   "earlier_aims": [
-    "Bake sun loaves to impress Orla",
-    "Get second-choice wood to experiment and impress Orla"
+   "earlier": [
+    {
+     "aim": "Bake sun loaves to impress Orla",
+     "changed": "The loaves burned, but Orla saw Pim start again. Pim now needs better wood to bake them properly."
+    }
    ],
-   "new_aim": "Gather apples for a loaf to impress Orla and Corbin",
-   "expected": "same_kind",
-   "note": "first test story"
+   "new_aim": "Bake the sun loaves again with the same wood to impress Orla",
+   "expected_link": "continues",
+   "expected_new_obstacle": "no",
+   "note": "hand-written: the same step against the same obstacle"
   },
   {
    "protagonist": "Pim",
-   "earlier_aims": [
-    "Bake sun loaves to impress Orla",
-    "Get second-choice wood to experiment and impress Orla",
-    "Gather apples for a loaf to impress Orla and Corbin"
-   ],
-   "new_aim": "Win a market stall to impress Orla",
-   "expected": "same_kind",
-   "note": "first test story"
-  },
-  {
-   "protagonist": "Pim",
-   "earlier_aims": [
-    "Bake sun loaves to impress Orla"
-   ],
-   "new_aim": "Beat Corbin's rival loaf to the guild judge before the noon bell",
-   "expected": "new_kind",
-   "note": "hand-written: a rival and a deadline"
-  },
-  {
-   "protagonist": "Pim",
-   "earlier_aims": [
-    "Bake sun loaves to impress Orla",
-    "Beat Corbin's rival loaf to the guild judge before the noon bell"
+   "earlier": [
+    {
+     "aim": "Bake sun loaves to impress Orla",
+     "changed": "The loaves burned, but Orla saw Pim start again. Pim now needs better wood to bake them properly."
+    }
    ],
    "new_aim": "Find out who sold the oven's flue plans to the Guild",
-   "expected": "new_kind",
-   "note": "hand-written: an investigation"
+   "expected_link": "drifts",
+   "expected_new_obstacle": "yes",
+   "note": "hand-written: an investigation the ending does not open"
   },
   {
    "protagonist": "Pim",
-   "earlier_aims": [
-    "Win a market stall to impress Orla"
+   "earlier": [
+    {
+     "aim": "Bake sun loaves to impress Orla",
+     "changed": "The loaves burned, but Orla saw Pim start again. Pim now needs better wood to bake them properly."
+    },
+    {
+     "aim": "Get second-choice wood to experiment and impress Orla",
+     "changed": "Pim paid for the wood with his father's knife, and Orla asked why. Pim now wants to prove the wood was worth it with a test loaf at the market stall."
+    }
    ],
-   "new_aim": "Persuade Orla to give back the stall key she took",
-   "expected": "new_kind",
-   "note": "hand-written: a confrontation"
+   "new_aim": "Bake a test loaf at the market stall while Corbin watches",
+   "expected_link": "continues",
+   "expected_new_obstacle": "yes",
+   "note": "hand-written: the test loaf the last ending names, with a rival watching"
   },
   {
    "protagonist": "Pim",
-   "earlier_aims": [
-    "Bake sun loaves to impress Orla",
-    "Win a market stall to impress Orla"
+   "earlier": [
+    {
+     "aim": "Bake sun loaves to impress Orla",
+     "changed": "The loaves burned, but Orla saw Pim start again. Pim now needs better wood to bake them properly."
+    },
+    {
+     "aim": "Get second-choice wood to experiment and impress Orla",
+     "changed": "Pim paid for the wood with his father's knife, and Orla asked why. Pim now wants to prove the wood was worth it with a test loaf at the market stall."
+    }
+   ],
+   "new_aim": "Get second-choice wood from the lumber yard before Corbin buys it all",
+   "expected_link": "drifts",
+   "expected_new_obstacle": "no",
+   "note": "hand-written: goes back to a step the aim has already taken"
+  },
+  {
+   "protagonist": "Pim",
+   "earlier": [
+    {
+     "aim": "Bake sun loaves to impress Orla",
+     "changed": "The loaves burned, but Orla saw Pim start again. Pim now needs better wood to bake them properly."
+    },
+    {
+     "aim": "Get second-choice wood to experiment and impress Orla",
+     "changed": "Pim paid for the wood with his father's knife, and Orla asked why. Pim now wants to prove the wood was worth it with a test loaf at the market stall."
+    }
+   ],
+   "new_aim": "Learn to carve spoons from the spoon-maker on the quay",
+   "expected_link": "drifts",
+   "expected_new_obstacle": "yes",
+   "note": "hand-written: a different pursuit"
+  },
+  {
+   "protagonist": "Pim",
+   "earlier": [
+    {
+     "aim": "Persuade Orla to give back the stall key she took",
+     "changed": "Orla gave the key back but demanded the stall fee by Friday. Pim now needs coins to pay it."
+    }
+   ],
+   "new_aim": "Sell enough loaves at the noon market to pay Orla's stall fee before Friday",
+   "expected_link": "continues",
+   "expected_new_obstacle": "yes",
+   "note": "hand-written: the fee the ending names, with a deadline"
+  },
+  {
+   "protagonist": "Pim",
+   "earlier": [
+    {
+     "aim": "Persuade Orla to give back the stall key she took",
+     "changed": "Orla gave the key back but demanded the stall fee by Friday. Pim now needs coins to pay it."
+    }
    ],
    "new_aim": "Hide the burnt batch from the inspector before the Guild arrives",
-   "expected": "new_kind",
-   "note": "hand-written: a deadline and a secret"
+   "expected_link": "drifts",
+   "expected_new_obstacle": "yes",
+   "note": "hand-written: a deadline and a secret the ending does not open"
   }
  ],
  "pressure_cases": [

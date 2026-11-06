@@ -37,6 +37,6 @@ EVENTS_RULES = [
          when="a beat pointed to no longer exists",
          check="ref_exists", context=["beat_ids"]),
     Rule(id="changed_is_one_sentence", severity="warn", fields=["entries"],
-         when="the changed line is longer than one short sentence",
+         when="the changed line is longer than two short sentences",
          needs_model=True),
 ]

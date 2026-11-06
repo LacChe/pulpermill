@@ -81,8 +81,9 @@ def build_select_prompt(request: dict, factor: float = 1.0) -> str:
         lists.append(w["select_pressures_lead"] + "\n" + "\n".join(
             w["pressure_item"].format(n=n, kind=r.pressure_kind(_words_of(o)), element=_element(o)) for n, o in enumerate(options, 1)))
     language = plan.language_name(request.get("language"))
-    task = [w["select_task" if options else "select_task_no_pressure"], w["select_output" if options else "select_output_no_pressure"].format(language=language)]
-    blocks = [role, *c["blocks"], plan._section(heads["choices"], "\n\n".join(lists)), plan._section(heads["task"], "\n\n".join(task))]
+    task = [w["select_task" if options else "select_task_no_pressure"], w["select_chain"] if c["chain"] else "",
+            w["select_output" if options else "select_output_no_pressure"].format(language=language)]
+    blocks = [role, *c["blocks"], plan._section(heads["choices"], "\n\n".join(lists)), plan._section(heads["task"], "\n\n".join(x for x in task if x))]
     return "\n\n".join(b for b in blocks if b)
 
 

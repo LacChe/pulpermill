@@ -63,7 +63,7 @@ write_problems:
 events_task: "Below is chapter {chapter} of a story. Record what actually happened in it, from the text itself, in {language}."
 events_aim: "The chapter was meant to follow this: the protagonist was after {aim} {tie}"
 events_tie: "The tie in the spotlight was {tie_from} toward {tie_to}, and at the start its edge was: {edge}"
-events_format: "Reply with a JSON object with two keys. happened: plain sentences covering what occurred, in order: who did what, where, and how it turned out. Use the characters' names, and refer to anyone unnamed by their role. changed: one short sentence naming how the collision of the protagonist's aim and the tie in the spotlight ended, and what the protagonist wants and what drives the tie now as a result."
+events_format: "Reply with a JSON object with two keys. happened: plain sentences covering what occurred, in order: who did what, where, and how it turned out. Use the characters' names, and refer to anyone unnamed by their role. changed: one or two short sentences naming how the collision of the protagonist's aim and the tie in the spotlight ended, where the protagonist's aim stands now (what they are after as a result of how it ended), and what drives the tie now."
 events_chapter_lead: "The chapter:"
 events_problems:
   empty_happened: "Say in plain sentences what happened in the chapter."

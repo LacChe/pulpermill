@@ -1,5 +1,5 @@
-"""The `plan` call: a free-text brainstorm of three chapters that differ in kind, then one JSON step that designs the chapter from them, then the
-aim judge (advance.py). The planner collides the protagonist's aim with the spotlight tie (R4), designs the chapter in four points inside the
+"""The `plan` call: a free-text brainstorm of three ways to take the running aim its next step, then one JSON step that designs the chapter from
+them, then the aim judge (advance.py, observe-only). The planner collides the protagonist's aim with the spotlight tie (R4), designs the chapter in four points inside the
 `plan` text (R7), and ends in a state where both have moved (R6). Minor characters appear by role only (R5). The brainstorm only helps the plan:
 if it cannot be had, the plan goes ahead without it. Wording lives in text/en/plan.yaml; this module assembles it from the renderers and checks
 the reply.
@@ -17,7 +17,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common, select
 
-VERSION = "plan-14"
+VERSION = "plan-15"
 IDEA = "idea"            # in choose mode: the number (1 to 3) of the idea the plan builds on, which is also the number of its combination; the reply turns it into `picked`
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
@@ -27,7 +27,6 @@ BRAINSTORM_ATTEMPTS = 2       # then the plan goes ahead without a brainstorm: i
 BRAINSTORM_MIN_CHARS = 120    # three options cannot be told in less
 BRAINSTORM_STAND_IN = "word " * BRAINSTORM_OUTPUT       # the longest a brainstorm can be as the plan prompt carries it (a token a word), for the worst case
 JUDGE_ATTEMPTS = 2        # the advancement judge (observe-only): two tries, then a neutral verdict, so a judge can never fail a call
-RESEND_STAND_IN = "word " * 90        # the longest line the judge can send a plan back with (a 400-character reason and the advice), for the worst case
 AIM_STAND_IN = "word " * 60       # the longest an aim is shown to a model (300 characters), for the worst case
 PLAN_STAND_IN = "word " * 300      # the longest a plan is shown to the pressure judge (1,200 characters), for the worst case
 
@@ -135,9 +134,27 @@ def other_end(request: dict, names: dict[str, str]) -> str:
     return (a if me and me == b else b) or a or "the other person in the tie"
 
 
-def _context(request: dict, factor: float, kinds: bool = False, combos: list[dict] | None = None) -> dict:
+def chain_text(request: dict, w: dict, factor: float = 1.0) -> str:
+    """The running aim as the planner prompts carry it: each earlier chapter's aim and how that chapter ended (its `changed` line), oldest
+    first, with the latest chapter marked and its ending given last as where the aim stands now. Empty in chapter 1, which has no chain."""
+    links = advance.chain(request, factor)
+    if not links:
+        return ""
+    lines = []
+    for i, link in enumerate(links):
+        latest = i == len(links) - 1
+        line = w["chain_latest" if latest else "chain_item"].format(chapter=link["chapter"], aim=r.s(link["aim"]))
+        if link["changed"] and not latest:
+            line += w["chain_ended"].format(changed=link["changed"])
+        lines.append(line)
+    if links[-1]["changed"]:
+        lines.append(w["chain_now"].format(chapter=links[-1]["chapter"], changed=links[-1]["changed"]))
+    return w["chain_lead"] + "\n" + "\n".join(lines)
+
+
+def _context(request: dict, factor: float, combos: list[dict] | None = None) -> dict:
     """What the brainstorm prompt and the plan prompt share: the names, the tie, the chapter's place in the story, and every section that
-    comes before the task. `kinds` shows the earlier aims as the kinds already used (the brainstorm's wording) and not as plain aims. `combos`
+    comes before the task. The running aim (`chain_text`) closes the story so far. `combos`
     (choose mode) puts the three combinations in the place of the spotlight section; `request` is then one with no spotlight and no pressure."""
     w = common.load_text("plan")
     names = names_of(request)
@@ -166,9 +183,7 @@ def _context(request: dict, factor: float, kinds: bool = False, combos: list[dic
     history = r.render_history(events, chapter, scope="planner", keep_full=keep)
     beats = [{**b, "when_time": b.get("when_time") or b.get("when")} for b in request.get("earlier_beats") or []]
     timeline = r.render_earlier_beats(beats)
-    aims = [w["aims_item"].format(chapter=b["chapter"], aim=r.s(b.get("aim"))) for b in sorted(beats, key=lambda b: int(b["chapter"])) if r.s(b.get("aim"))]
-    lead = w["kinds_lead" if kinds else "aims_lead"]
-    aims_text = lead + "\n" + "\n".join(aims) if aims else ""
+    chain = chain_text(request, w, history_ratio)
 
     setup = r.render_setup(request.get("setup") or {}, chapter, total or None, protagonist_name=protagonist_name(request, names))
     blocks = [
@@ -178,9 +193,9 @@ def _context(request: dict, factor: float, kinds: bool = False, combos: list[dic
         _section(heads["world"], world_text),
         _section(heads["entanglements"], r.render_entanglements({"ties": ties, "holdings": holdings}, scope="planner")),
         _section(spotlight_head, spotlight_text),
-        _section(heads["history"], "\n\n".join(x for x in (history, timeline, aims_text) if x)),
+        _section(heads["history"], "\n\n".join(x for x in (history, timeline, chain) if x)),
     ]
-    return {"w": w, "names": names, "chapter": chapter, "total": total, "heads": heads, "tie": tie, "blocks": blocks}
+    return {"w": w, "names": names, "chain": chain, "chapter": chapter, "total": total, "heads": heads, "tie": tie, "blocks": blocks}
 
 
 def _task_block(c: dict, method: str) -> list[str]:
@@ -195,7 +210,7 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dic
     three chapters are one for each combination, and no single spotlight is shown."""
     if combos is not None:
         request = select.without_pair(request)
-    c = _context(request, factor, kinds=True, combos=combos)
+    c = _context(request, factor, combos=combos)
     w, names, chapter, total = c["w"], c["names"], c["chapter"], c["total"]
     role = w["brainstorm_role"].format(chapter=chapter, total=total) if total else w["brainstorm_role_unknown_total"].format(chapter=chapter)
     task = _task_block(c, "brainstorm_method")
@@ -219,7 +234,7 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dic
     return "\n\n".join(b for b in blocks if b)
 
 
-def build_prompt(request: dict, factor: float = 1.0, extra: str = "", brainstorm: str = "", combos: list[dict] | None = None) -> str:
+def build_prompt(request: dict, factor: float = 1.0, brainstorm: str = "", combos: list[dict] | None = None) -> str:
     """The plan step's prompt. `brainstorm` is the text of the brainstorm step: with it, the prompt carries it under its own heading and tells
     the planner to choose from it; without it (no brainstorm, or one that could not be had) the prompt is the plan prompt on its own. With `combos`
     (choose mode) the three combinations stand in the place of the spotlight, and the plan chooses one idea (or, with no brainstorm, one
@@ -233,10 +248,10 @@ def build_prompt(request: dict, factor: float = 1.0, extra: str = "", brainstorm
     if combos is not None:
         task.append(w["choose_one"] if brainstorm else w["choose_combo"])
         if brainstorm:
-            task.append(w["idea_number"])
+            task.append(w["idea_number_chain" if c["chain"] else "idea_number"])
     elif brainstorm:
         task.append(w["choose_from"])
-        task.append(w["idea_use"])
+        task.append(w["idea_use_chain" if c["chain"] else "idea_use"])
     task += [
         w["four_points"],
         w["other_person"].format(other=other_end(request, names)),
@@ -251,8 +266,6 @@ def build_prompt(request: dict, factor: float = 1.0, extra: str = "", brainstorm
         problems = " ".join(r.sentence(p) for p in retry.get("problems") or [])
         task.append(w["retry_lead"].format(aim=r.sentence(r.s(beat.get("aim"))), plan=r.sentence(r.s(beat.get("plan")))) + " " + problems)
         task.append(w["retry_close"])
-    if extra:                  # the advancement judge sent the plan back once: its line closes the task, ahead of the output rule
-        task.append(extra)
     task.append(w["output"].format(language=language_name(request.get("language"))))
 
     role = w["role"].format(chapter=chapter, total=total) if total else w["role_unknown_total"].format(chapter=chapter)
@@ -349,8 +362,7 @@ def _tidy_brainstorm(text: Any) -> str:
 
 class PlanFlow(Flow):
     """(In choose mode, `select` first: three combinations of a tie and a rule or object, and the brainstorm then writes one idea for each.)
-    brainstorm, plan, aim judge; and when `advance.ENFORCE` and the judge says the aim is the same kind as an earlier one: the plan once
-    more with the judge's line, then the judge once more. The brainstorm is free text that the plan prompt carries; if it cannot be had, the
+    brainstorm, plan, aim judge (observe-only: nothing is sent back for its verdict). The brainstorm is free text that the plan prompt carries; if it cannot be had, the
     plan goes ahead without it."""
 
     def __init__(self, request: dict, kit: Any):
@@ -425,11 +437,11 @@ class PlanFlow(Flow):
         grammar["required"] = [*extra, *grammar.get("required", [])]
         return grammar
 
-    def _step(self, extra: str = "", fallback=None, brainstorm: str | None = None, combos: list[dict] | None = None) -> Step:
+    def _step(self, brainstorm: str | None = None, combos: list[dict] | None = None) -> Step:
         text = self.brainstorm if brainstorm is None else brainstorm
         use = combos if combos is not None else self.combos
-        return Step("plan", lambda f: build_prompt(self.request, f, extra, text, use), "json", MAX_OUTPUT, self._grammar(text, use), self._check(),
-                    "thinking", True, fallback=fallback)
+        return Step("plan", lambda f: build_prompt(self.request, f, text, use), "json", MAX_OUTPUT, self._grammar(text, use), self._check(),
+                    "thinking", True)
 
     # -- choose mode
 
@@ -492,24 +504,11 @@ class PlanFlow(Flow):
         if not self.notes["pressure_on"]:
             return None
         self._pressure_at = len(results)
-        return self._pressure_step(self._final(results))
-
-    def _resend_step(self, first: Any, line: str) -> Step:
-        """The plan step once more, with the judge's line (and the same brainstorm). If this pass cannot be used either, the first plan stands
-        (it was usable)."""
-        def keep_first():
-            self.notes["aim_resend_fallback"] = True
-            self._count_names(first)          # the plan that stands is the first one, so its counts are the ones to record
-            return first
-        return self._step(line, keep_first)
+        return self._pressure_step(results[0])
 
     @staticmethod
     def _aim_of(beat: Any) -> str:
         return r.s(beat.get("aim")) if isinstance(beat, dict) else ""
-
-    def _final(self, results: list) -> Any:
-        """The plan the reply carries: the second pass when the plan was sent back, else the first. `results` are the ones after the brainstorm."""
-        return results[2] if self.notes.get("aim_resent") else results[0]
 
     def next(self, results):
         if self._select_on:                 # choose mode: the select result comes first; everything after it is today's flow, counted from its own start
@@ -524,8 +523,7 @@ class PlanFlow(Flow):
         return self._after_brainstorm(results[1:])
 
     def _after_brainstorm(self, results):
-        """plan, judge, and the one extra pass: the plan once more with the judge's line, then the judge once more. A second bad verdict is
-        accepted (noted). Never more than that one extra pass."""
+        """plan, the aim judge (observe-only: its verdict goes to the notes and nothing is sent back for it), then the pressure judge."""
         n = len(results)
         if self._pressure_at is not None and n == self._pressure_at + 1:      # the pressure judge has run: record its word and stop
             self.notes.update(advance.notes(pressure_value=results[self._pressure_at]))
@@ -535,34 +533,16 @@ class PlanFlow(Flow):
         if n == 1:
             aim = self._aim_of(results[0])
             return self._aim_step(aim, results[0]) if aim and self._judges() else self._end(results)
-        if n == 2:
-            self.notes.update(advance.notes(aim_value=results[1]))
-            if advance.ENFORCE and not advance.aim_ok(results[1]):
-                self.notes["aim_resent"] = True
-                return self._resend_step(results[0], advance.resend_line("aim", results[1]))
-            return self._end(results)
-        if n == 3:
-            if self.notes.get("aim_resend_fallback"):       # the first plan stands, and it was judged already
-                self.notes["aim_accepted"] = True
-                return self._end(results)
-            aim = self._aim_of(results[2])
-            return self._aim_step(aim, results[2]) if aim else self._end(results)
-        again = advance.notes(aim_value=results[3]).get("aim_kind")
-        if again:
-            self.notes["aim_kind_after"] = again
-        if not advance.aim_ok(results[3]):
-            self.notes["aim_accepted"] = True
+        self.notes.update(advance.notes(aim_value=results[1]))
         return self._end(results)
 
     def worst_case(self):
-        """The brainstorm, then the plan carrying a brainstorm of the longest size, then the judge and the one extra pass."""
+        """The brainstorm, then the plan carrying a brainstorm of the longest size, then the judges."""
         stand = select.stand_in(self.request) if self._select_on else None       # choose mode: the select step first, and the combinations as large as they can get
         steps = [self._select_step()] if self._select_on else []
         steps += [self._brainstorm_step(stand), self._step(brainstorm=BRAINSTORM_STAND_IN, combos=stand)]
         if self._judges():
             steps.append(self._aim_step(AIM_STAND_IN))
-            if advance.ENFORCE:
-                steps += [self._step(RESEND_STAND_IN, brainstorm=BRAINSTORM_STAND_IN, combos=stand), self._aim_step(AIM_STAND_IN)]
         if self.notes["pressure_on"]:
             steps.append(self._pressure_step({"aim": AIM_STAND_IN, "plan": PLAN_STAND_IN}))
         return steps
@@ -570,7 +550,7 @@ class PlanFlow(Flow):
     def reply(self, results):
         if self._select_on:
             results = results[1:]
-        beat = self._final(results[1:])
+        beat = results[1]
         out: dict[str, Any] = {}
         if isinstance(beat, dict) and self.combos is not None and isinstance(beat.get(IDEA), int) and 1 <= beat[IDEA] <= len(self.combos):
             combo = self.combos[beat[IDEA] - 1]       # the idea the plan chose is its combination's tie and pressure: the ids come from the request, never from the model
@@ -587,7 +567,7 @@ def build_flow(request, kit) -> Flow:
 
 def script(request: dict, kit: Any) -> list[str]:
     """What a fake engine must return for a valid reply: (in choose mode, first a select reply with three different picks, and the plan then builds
-    on idea 1, which is the first pick;) a brainstorm of three options, then a place, a concrete aim that differs per chapter and a plan of four points, then (from the second chapter) the aim judge's verdict."""
+    on idea 1, which is the first pick;) a brainstorm of three options, then a place, a concrete aim that differs per chapter and a plan of four points, then (from the second chapter) the aim judge's verdict (link and new_obstacle)."""
     import json
     names = names_of(request)
     choose = select.is_on(request)
@@ -613,7 +593,7 @@ def script(request: dict, kit: Any) -> list[str]:
     chosen = {"idea": 1} if choose else {}
     texts += [brainstorm, json.dumps({**chosen, "idea_use": f"I build on option 2, the trade, and take its price quarrel.", "where": place, "when_time": f"Day {n}, early morning", "aim": aim, "plan": plan})]
     if advance.earlier_aims(request):          # the advancement judge runs from the second chapter on
-        texts.append(json.dumps({"reason": "The aim is a different kind of errand from the earlier ones.", "kind": "new_kind"}))
+        texts.append(json.dumps({"reason": "The aim takes the running aim on from where the last chapter left it, against a new obstacle.", "link": "continues", "new_obstacle": "yes"}))
     if request.get("pressure") or (choose and request.get("pressure_options")):                # the pressure judge runs last, whenever a pressure was sent
         texts.append(json.dumps({"reason": "The plan makes the element cost the protagonist something.", "effect": "acts"}))
     return texts

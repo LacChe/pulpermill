@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pulpermill.prompter.mill import advance
+from pulpermill.prompter.mill import advance, common
 
 ROOT = Path(__file__).resolve().parents[2]
 VECTORS = json.loads((ROOT / "tests/shared/contract-vectors.json").read_text())["requests"]
@@ -33,10 +33,11 @@ def ids_in(text: str, req: dict) -> list[str]:
     return [i for i in found if i in text]
 
 
-def test_the_aim_step_is_a_json_step_with_reason_first_and_the_two_kinds():
+def test_the_aim_step_is_a_json_step_with_reason_first_then_link_and_new_obstacle():
     step = advance.aim_step(request(), "Win a stall.")
     assert step.name == "advance_aim" and step.kind == "json" and not step.language
-    assert list(step.grammar["properties"]) == ["reason", "kind"] and step.grammar["properties"]["kind"]["enum"] == ["new_kind", "same_kind"]
+    assert list(step.grammar["properties"]) == ["reason", "link", "new_obstacle"] and step.grammar["required"] == ["reason", "link", "new_obstacle"]
+    assert step.grammar["properties"]["link"]["enum"] == ["continues", "drifts"] and step.grammar["properties"]["new_obstacle"]["enum"] == ["yes", "no"]
     assert step.grammar["additionalProperties"] is False
 
 
@@ -46,12 +47,14 @@ def test_the_edge_step_has_the_five_moves():
     assert step.grammar["properties"]["move"]["enum"] == ["escalates", "reverses", "complicates", "resolves", "rewords"]
 
 
-def test_the_aim_prompt_shows_names_bond_earlier_aims_by_chapter_and_the_new_aim():
-    req = request()
+def test_the_aim_prompt_shows_the_chain_with_the_latest_marked_the_last_ending_and_the_new_aim():
+    req = request(earlier_events=[{"chapter": 1, "happened": "h", "changed": "Ending one."}, {"chapter": 2, "happened": "h", "changed": "Ending two."}])
     text = advance.aim_step(req, "Win a stall.").text(1.0)
-    for needed in ("Suvi", "Marit toward Suvi", "mother", "Chapter 1: Bake sun loaves.", "Chapter 2: Get wood.", "chapter 3: Win a stall.", "same_kind", "new_kind"):
+    for needed in ("Suvi", "Marit toward Suvi", "mother", "Chapter 1: aim: Bake sun loaves. It ended: Ending one.", "Chapter 2 (the latest): aim: Get wood.",
+                   "Where the aim stands now, at the end of chapter 2: Ending two.", "chapter 3: Win a stall.", "continues", "drifts", "new_obstacle"):
         assert needed in text, needed
-    assert text.index("Chapter 1") < text.index("Chapter 2") and not ids_in(text, req)
+    assert text.index("Chapter 1") < text.index("Chapter 2") < text.index("Win a stall.") and not ids_in(text, req)
+    assert "same_kind" not in text and "new_kind" not in text and "different kind" not in text
 
 
 def test_the_edge_prompt_shows_the_trail_oldest_first_and_both_edges():
@@ -66,7 +69,7 @@ def test_the_edge_prompt_shows_the_trail_oldest_first_and_both_edges():
 def test_a_request_without_a_trail_or_earlier_aims_still_builds():
     req = request(earlier_beats=[])
     req.pop("spotlight_edges", None)
-    assert "earlier chapters" not in advance.aim_step(req, "x").text(1.0)
+    assert "running aim, chapter by chapter" not in advance.aim_step(req, "x").text(1.0)
     assert "oldest first" not in advance.edge_step(req, "a", "b").text(1.0)
 
 
@@ -78,41 +81,42 @@ def test_a_squeeze_keeps_the_newest_entries():
 
 def test_the_reason_check_wants_a_reason():
     step = advance.aim_step(request(), "x")
-    assert step.check({"reason": "", "kind": "new_kind"}) and step.check({"reason": "It differs.", "kind": "new_kind"}) is None
-    assert step.check({"reason": "x " * 300, "kind": "new_kind"})
+    ok = {"link": "continues", "new_obstacle": "yes"}
+    assert step.check({"reason": "", **ok}) and step.check({"reason": "It goes on.", **ok}) is None
+    assert step.check({"reason": "x " * 300, **ok})
 
 
 def test_the_verdicts_are_bad_only_for_the_one_word_each():
-    assert advance.aim_ok({"reason": "r", "kind": "new_kind"}) and not advance.aim_ok({"reason": "r", "kind": "same_kind"})
     assert advance.edge_ok({"reason": "r", "move": "escalates"}) and not advance.edge_ok({"reason": "r", "move": "rewords"})
-    for odd in (None, {}, "same_kind", {"kind": "nonsense"}, 3):
-        assert advance.aim_ok(odd) and advance.edge_ok(odd)
+    for odd in (None, {}, "rewords", {"move": "nonsense"}, 3):
+        assert advance.edge_ok(odd)
+    assert not hasattr(advance, "aim_ok")          # the aim judge only observes: nothing acts on its verdict
 
 
 def test_problem_lines_start_from_the_reason_and_tell_the_model_what_to_do():
-    assert advance.problem_line("aim", {"reason": "It is still about Orla's approval", "kind": "same_kind"}).startswith("It is still about Orla's approval.")
-    assert "different kind" in advance.problem_line("aim", None) and "move" in advance.problem_line("edge", {"reason": "Same want.", "move": "rewords"})
-    with pytest.raises(ValueError):
-        advance.problem_line("plan", None)
+    assert advance.problem_line("edge", {"reason": "Same want.", "move": "rewords"}).startswith("Same want.") and "move" in advance.problem_line("edge", None)
+    for kind in ("aim", "plan"):
+        with pytest.raises(ValueError):
+            advance.problem_line(kind, None)
 
 
 def test_notes_hold_short_words_only():
-    assert advance.notes({"reason": "long text", "kind": "same_kind"}, {"reason": "x", "move": "escalates"}) == {"aim_kind": "same_kind", "edge_move": "escalates"}
+    assert advance.notes({"reason": "long text", "link": "drifts", "new_obstacle": "yes"}, {"reason": "x", "move": "escalates"}) == {"aim_link": "drifts", "aim_new": "yes", "edge_move": "escalates"}
+    assert advance.notes({"link": "continues"}) == {"aim_link": "continues"} and advance.notes({"link": "sideways", "new_obstacle": "maybe"}) == {}
     assert advance.notes(None, {"move": "bogus"}) == {} and advance.notes() == {}
 
 
 def test_the_flag_is_on_and_the_version_is_set():
-    assert advance.ENFORCE is True and advance.VERSION == "advance-3"
+    assert advance.ENFORCE is True and advance.VERSION == "advance-4"
 
 
-def test_a_resend_line_says_the_first_reply_was_set_aside_and_then_gives_the_problem_line():
-    aim = {"reason": "It is still about Orla's approval", "kind": "same_kind"}
-    assert advance.resend_line("aim", aim) == "Your first plan was set aside. " + advance.problem_line("aim", aim)
+def test_a_resend_line_exists_for_the_edge_only_and_says_the_first_reply_was_set_aside():
     edge = {"reason": "Same want.", "move": "rewords"}
     assert advance.resend_line("edge", edge).startswith("Your first list of changes was set aside. Same want.")
-    assert advance.resend_line("aim", None).endswith(advance.problem_line("aim", None))
-    with pytest.raises(ValueError):
-        advance.resend_line("plan", None)
+    assert "aim" not in common.load_text("advance")["resend"] and "aim" not in common.load_text("advance")["problems"]
+    for kind in ("aim", "plan"):
+        with pytest.raises((ValueError, KeyError)):
+            advance.resend_line(kind, None)
 
 
 def test_the_labelled_cases_use_only_known_words_and_build_prompts():
@@ -121,11 +125,14 @@ def test_the_labelled_cases_use_only_known_words_and_build_prompts():
         assert advance.edge_step(request(), pair["old_edge"], pair["new_edge"]).text(1.0)
     assert sum(p["expected"] == "rewords" for p in CASES["edge_pairs"]) >= 3 and sum(p["expected"] != "rewords" for p in CASES["edge_pairs"]) >= 4
     chains = CASES["aim_chains"]
-    assert sum(c["expected"] == "same_kind" for c in chains) >= 3 and sum(c["expected"] == "new_kind" for c in chains) >= 4
+    assert sum(c["expected_link"] == "drifts" for c in chains) >= 3 and sum(c["expected_link"] == "continues" for c in chains) >= 3
+    assert {c["expected_new_obstacle"] for c in chains} == {"yes", "no"} and all(c["earlier"] for c in chains)
     for c in chains:
-        assert c["expected"] in advance.AIM_KINDS
-        beats = [{"chapter": i + 1, "aim": a} for i, a in enumerate(c["earlier_aims"])]
-        assert c["new_aim"] in advance.aim_step(request(chapter=len(beats) + 1, earlier_beats=beats), c["new_aim"]).text(1.0)
+        assert c["expected_link"] in advance.AIM_LINKS and c["expected_new_obstacle"] in advance.YES_NO
+        beats = [{"chapter": i + 1, "aim": e["aim"]} for i, e in enumerate(c["earlier"])]
+        events = [{"chapter": i + 1, "happened": "h", "changed": e["changed"]} for i, e in enumerate(c["earlier"])]
+        text = advance.aim_step(request(chapter=len(beats) + 1, earlier_beats=beats, earlier_events=events), c["new_aim"]).text(1.0)
+        assert c["new_aim"] in text and c["earlier"][-1]["aim"] in text and "Where the aim stands now" in text and c["earlier"][-1]["changed"] in text
 
 
 # ---- the pressure judge (world-pressure-2, observe-only) ----------------------------------------------------------------------------
@@ -167,4 +174,4 @@ def test_the_pressure_verdict_word_is_unclear_when_it_cannot_be_read_and_the_not
     for odd in (None, {}, {"effect": "loud"}, "acts", {"effect": 3}):
         assert advance.pressure_effect(odd) == "unclear"
     assert advance.notes(pressure_value={"effect": "decor"}) == {"pressure_effect": "decor"} and advance.notes() == {}
-    assert advance.notes(aim_value={"kind": "same_kind"}, pressure_value={}) == {"aim_kind": "same_kind", "pressure_effect": "unclear"}
+    assert advance.notes(aim_value={"link": "drifts"}, pressure_value={}) == {"aim_link": "drifts", "pressure_effect": "unclear"}

@@ -1,18 +1,23 @@
 # Wording for the advancement judge (mill): two small JSON steps that ask whether a chapter really moved. One reads the protagonist's aim
-# for a chapter against the aims of the earlier chapters; the other reads the edge of the spotlight tie against the edge it had before.
+# for a chapter against the running aim (the chain of earlier aims and endings); the other reads the edge of the spotlight tie against the edge it had before.
 # Each is a classification, so the model sorts what it reads into one named kind and never compares wording. English always; the cards and
 # the aims may be written in any language and are read as they are. Names, never ids.
 
 # ---- The aim ----------------------------------------------------------------------------------------------------------------
-aim_role: "You are a careful reader of a story that is written one chapter at a time. You decide whether the protagonist's aim in the new chapter is a new kind of aim or the same kind of aim as one the story has already used."
+# The protagonist has one running aim that moves a step each chapter. This judge only observes: it records whether the new aim continues the
+# running aim and whether its obstacle or stake is new. No flow acts on its answers.
+aim_role: "You are a careful reader of a story that is written one chapter at a time. The protagonist has one running aim that moves a step each chapter. You decide whether the aim planned for the new chapter continues that running aim from where the last chapter left it, and whether the obstacle or stake in its way is new."
 protagonist_line: "The protagonist is {protagonist}."
 tie_line: "The tie in the spotlight is {tie_from} toward {tie_to}, bond: {bond}."
 tie_line_plain: "The tie in the spotlight is {tie_from} toward {tie_to}."
-aims_lead: "The aims of the earlier chapters, oldest first:"
-aims_item: "Chapter {chapter}: {aim}"
+chain_lead: "The protagonist's running aim, chapter by chapter, oldest first. Each line gives the chapter's aim and how that chapter ended:"
+chain_item: "Chapter {chapter}: aim: {aim}"
+chain_latest: "Chapter {chapter} (the latest): aim: {aim}"
+chain_ended: " It ended: {changed}"
+chain_now: "Where the aim stands now, at the end of chapter {chapter}: {changed}"
 new_aim_line: "The new aim, for chapter {chapter}: {aim}"
-aim_kinds: "Sort the new aim into one kind. Answer new_kind when the protagonist is after a different sort of thing than in every earlier aim: a different want, a different obstacle, a different person or a different stake in play. Answer same_kind when the protagonist is still after what an earlier aim already was after, with a different object, place or detail. Judge by what the protagonist is trying to get or do, and let the objects and settings fall away."
-aim_answer: "Reply with a JSON object with two keys. reason: one short sentence that says what the new aim is after and which earlier aim it matches or differs from. kind: new_kind or same_kind. Write reason in English and keep every name exactly as it is written above."
+aim_questions: "Answer two questions. First, link: continues when the new aim is the next step of the running aim, taken on from where the last chapter left it, so that the protagonist is still after the same thing and has moved a step closer, further off or onto what the last ending opened; drifts when the new aim goes back to an earlier step, starts a different pursuit, or ignores where the last chapter left the aim. Second, new_obstacle: yes when the obstacle, the person or the stake in the way of the new aim differs from those in the last chapter's aim; no when they are the same. The two answers are independent, so an aim may continue with a new obstacle, continue with the same one, or drift. Judge by what the protagonist is after and what stands in their way, and let objects and settings fall away."
+aim_answer: "Reply with a JSON object with three keys. reason: one short sentence that says how the new aim relates to where the last chapter left the aim and what, if anything, is new in its obstacle, person or stake. link: continues or drifts. new_obstacle: yes or no. Write reason in English and keep every name exactly as it is written above."
 
 # ---- The edge ---------------------------------------------------------------------------------------------------------------
 edge_role: "You are a careful reader of a story that is written one chapter at a time. You decide whether the edge of the spotlight tie moved in the chapter that just ended, or only came back in other words."
@@ -37,11 +42,8 @@ pressure_answer: "Reply with a JSON object with two keys. reason: one short sent
 # ---- The lines a flow can show a model that has to try again ---------------------------------------------------------------
 # problem_line builds one line from the judge's own reason. The reason comes first, then what to do.
 problems:
-  aim: "{reason} Choose an aim of a different kind: something else for the protagonist to get or do, with a different obstacle or a different stake in play."
-  aim_bare: "The aim is the same kind as an earlier one. Choose an aim of a different kind: something else for the protagonist to get or do, with a different obstacle or a different stake in play."
   edge: "{reason} Let the edge move: show what the person now wants that is new, by making the want stronger, turning it around, adding a second want or a fear, or letting it be met or given up."
   edge_bare: "The edge only repeats what it was in other words. Let the edge move: show what the person now wants that is new, by making the want stronger, turning it around, adding a second want or a fear, or letting it be met or given up."
-# When a flow sends the judged step back once, this opens the line it adds (resend_line), ahead of the problem line above.
+# When the edge flow sends the shifts back once, this opens the line it adds (resend_line), ahead of the problem line above.
 resend:
-  aim: "Your first plan was set aside."
   edge: "Your first list of changes was set aside."

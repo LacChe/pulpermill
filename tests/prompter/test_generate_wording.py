@@ -287,7 +287,7 @@ def test_the_write_step_carries_the_length_check_and_the_first_attempt_is_kept_w
 
 def test_the_events_prompt_holds_the_chapter_and_asks_for_happened_and_changed():
     prompt = gen.events_prompt(one_tie(), CHAPTER)
-    assert CHAPTER in prompt and "happened" in prompt and "changed" in prompt and "one short sentence" in prompt
+    assert CHAPTER in prompt and "happened" in prompt and "changed" in prompt and "one or two short sentences" in prompt and "where the protagonist's aim stands now" in prompt
     assert "at the start its edge was: to bring her daughter home" in prompt
 
 

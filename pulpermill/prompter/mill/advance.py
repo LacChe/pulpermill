@@ -1,13 +1,15 @@
-"""The advancement judge: two small JSON steps that ask a model whether a chapter really moved. `aim_step` sorts the protagonist's aim for a
-chapter into a new kind or the same kind as an earlier one; `edge_step` sorts the change of the spotlight tie's edge into one move
+"""The advancement judge: small JSON steps that ask a model whether a chapter really moved. `aim_step` reads the protagonist's aim for a
+chapter against the running aim (the chain of earlier aims and endings) and answers two questions: does it continue that aim from where the
+last chapter left it (continues or drifts), and is its obstacle, person or stake new (yes or no); `edge_step` sorts the change of the spotlight tie's edge into one move
 (escalates, reverses, complicates, resolves) or a rewording. A step is a classification, never a comparison of wording, and the reason
 comes first in the reply so that the verdict follows from it.
 
-The flows run these steps (plan.py, generate.py). `ENFORCE` says whether a flow acts on a bad verdict: it sends the judged step back once, with
-`resend_line`, and runs the judge once more. With it False the flows only record the verdicts. The verdict helpers are neutral on anything they cannot read: a missing or odd value is never a bad verdict, so a judge that
+The flows run these steps (plan.py, generate.py). `ENFORCE` says whether the edge flow acts on a bad edge verdict: it sends the shifts back once, with
+`resend_line`, and runs the judge once more. With it False the flow only records the verdict. The aim and pressure judges are observe-only:
+nothing is sent back for their verdicts. The verdict helpers are neutral on anything they cannot read: a missing or odd value is never a bad verdict, so a judge that
 failed can never cost a chapter.
 
-Inputs are read from a `plan` or `generate` request: earlier aims from `earlier_beats`, the edge trail from `spotlight_edges`, and the
+Inputs are read from a `plan` or `generate` request: the chain from `earlier_beats` and `earlier_events`, the edge trail from `spotlight_edges`, and the
 names from the cards. Names, never ids. Wording lives in text/en/advance.yaml."""
 from typing import Any
 
@@ -16,11 +18,12 @@ from pulpermill.prompter.base import Step
 
 from . import common
 
-VERSION = "advance-3"
+VERSION = "advance-4"
 ENFORCE = True
 MAX_OUTPUT = 160            # one short sentence and one word, with room to spare
 
-AIM_KINDS = ("new_kind", "same_kind")
+AIM_LINKS = ("continues", "drifts")
+YES_NO = ("yes", "no")
 EDGE_MOVES = ("escalates", "reverses", "complicates", "resolves", "rewords")
 PRESSURE_EFFECTS = ("acts", "decor", "unclear")
 TEXT_LIMIT = 1500            # the most characters of a plan or of a chapter's events the pressure judge reads
@@ -36,7 +39,10 @@ def _grammar(verdict: str, words: tuple[str, ...]) -> dict:
 
 
 def aim_grammar() -> dict:
-    return _grammar("kind", AIM_KINDS)
+    """{reason, link, new_obstacle}: the reason first, then the two verdicts."""
+    return {"type": "object", "properties": {"reason": {"type": "string"}, "link": {"type": "string", "enum": list(AIM_LINKS)},
+                                             "new_obstacle": {"type": "string", "enum": list(YES_NO)}},
+            "required": ["reason", "link", "new_obstacle"], "additionalProperties": False}
 
 
 def edge_grammar() -> dict:
@@ -89,6 +95,21 @@ def earlier_aims(request: dict) -> list[tuple[int, str]]:
     return sorted(rows)
 
 
+def chain(request: dict, factor: float = 1.0) -> list[dict]:
+    """The running aim's links, oldest first: for each chapter before this one that has an aim, {chapter, aim, changed}
+    (`changed` is an empty string where the chapter has no line; a chapter with a line but no aim is left out). The aim is the beat's, the `changed` line is the chapter's events entry. A squeeze drops the oldest
+    links (always keeping the newest). Chapter 1 has no earlier chapter, so no chain."""
+    chapter = int(request.get("chapter") or 0)
+    aims = dict(earlier_aims(request))
+    changed = {}
+    for e in request.get("earlier_events") or []:
+        n = int(e.get("chapter") or 0)
+        if n > 0 and (not chapter or n < chapter) and r.s(e.get("changed")):
+            changed[n] = r.s(e.get("changed"))
+    links = [{"chapter": n, "aim": aims[n], "changed": changed.get(n, "")} for n in sorted(aims)]
+    return _recent(links, factor)
+
+
 def edge_trail(request: dict) -> list[str]:
     """The spotlight tie's edges in earlier chapters, oldest first, from `spotlight_edges` (I3); an old request without it has none."""
     return [e for e in (r.s(x) for x in request.get("spotlight_edges") or []) if e]
@@ -96,13 +117,29 @@ def edge_trail(request: dict) -> list[str]:
 
 # ---- The aim step -----------------------------------------------------------------------------------------------------------------
 
+def chain_lines(request: dict, w: dict, factor: float = 1.0) -> str:
+    """The running aim as the judge reads it: each earlier chapter's aim and how it ended, oldest first, the latest marked, and its ending last
+    as where the aim stands now. Empty when there is no earlier chapter."""
+    links = chain(request, factor)
+    if not links:
+        return ""
+    lines = []
+    for i, link in enumerate(links):
+        latest = i == len(links) - 1
+        line = w["chain_latest" if latest else "chain_item"].format(chapter=link["chapter"], aim=r.s(link["aim"]))
+        if link["changed"] and not latest:
+            line += w["chain_ended"].format(changed=link["changed"])
+        lines.append(line)
+    if links[-1]["changed"]:
+        lines.append(w["chain_now"].format(chapter=links[-1]["chapter"], changed=links[-1]["changed"]))
+    return w["chain_lead"] + "\n" + "\n".join(lines)
+
+
 def aim_prompt(request: dict, aim: str, factor: float = 1.0) -> str:
     w = common.load_text("advance")
     names = names_of(request)
     protagonist = names.get(request.get("protagonist") or "", "")
     tie_from, tie_to, bond = _ends(request, names)
-    aims = _recent(earlier_aims(request), factor)
-    lines = [w["aims_item"].format(chapter=n, aim=r.s(text)) for n, text in aims]
     tie = ""
     if tie_from and tie_to:
         tie = (w["tie_line"] if bond else w["tie_line_plain"]).format(tie_from=tie_from, tie_to=tie_to, bond=r.bare(bond))
@@ -110,9 +147,9 @@ def aim_prompt(request: dict, aim: str, factor: float = 1.0) -> str:
         w["aim_role"],
         w["protagonist_line"].format(protagonist=protagonist) if protagonist else "",
         tie,
-        w["aims_lead"] + "\n" + "\n".join(lines) if lines else "",
+        chain_lines(request, w, factor),
         w["new_aim_line"].format(chapter=int(request.get("chapter") or 0), aim=r.s(aim)),
-        w["aim_kinds"],
+        w["aim_questions"],
         w["aim_answer"],
     ]
     return "\n\n".join(b for b in blocks if b)
@@ -126,7 +163,8 @@ def _reason_check(value: Any) -> str | None:
 
 
 def aim_step(request: dict, aim: str) -> Step:
-    """Is `aim`, the protagonist's aim for this chapter, a new kind of aim or the same kind as an earlier one? Reply {reason, kind}."""
+    """Does `aim`, the protagonist's aim for this chapter, continue the running aim from where the last chapter left it, and is its obstacle or
+    stake new? Reply {reason, link, new_obstacle}. Observe-only: nothing sends anything back for it."""
     return Step("advance_aim", lambda f: aim_prompt(request, aim, f), "json", MAX_OUTPUT, aim_grammar(), _reason_check, "structured", False)
 
 
@@ -203,11 +241,6 @@ def _word(value: Any, key: str, words: tuple[str, ...]) -> str:
     return word if word in words else ""
 
 
-def aim_ok(value: Any) -> bool:
-    """False only when the judge said the aim is the same kind as an earlier one. Anything else, a missing verdict included, is fine."""
-    return _word(value, "kind", AIM_KINDS) != "same_kind"
-
-
 def edge_ok(value: Any) -> bool:
     """False only when the judge said the edge only rewords. Anything else, a missing verdict included, is fine."""
     return _word(value, "move", EDGE_MOVES) != "rewords"
@@ -219,9 +252,9 @@ def pressure_effect(value: Any) -> str:
 
 
 def problem_line(kind: str, value: Any) -> str:
-    """One line a model can act on, built from the judge's reason: `kind` is "aim" or "edge"."""
-    if kind not in ("aim", "edge"):
-        raise ValueError(f"problem_line is for an aim or an edge, not {kind!r}")
+    """One line a model can act on, built from the judge's reason: `kind` is "edge" (only the edge is sent back)."""
+    if kind != "edge":
+        raise ValueError(f"problem_line is for an edge, not {kind!r}")
     w = common.load_text("advance")["problems"]
     reason = r.sentence(r.s(value.get("reason"))) if isinstance(value, dict) else ""
     return w[kind].format(reason=reason) if reason else w[f"{kind}_bare"]
@@ -229,17 +262,18 @@ def problem_line(kind: str, value: Any) -> str:
 
 def resend_line(kind: str, value: Any) -> str:
     """The line a flow adds to the prompt of the judged step when it sends that step back once: it says the first reply was set aside, then
-    `problem_line`. `kind` is \"aim\" or \"edge\"."""
-    lead = common.load_text("advance")["resend"][kind] if kind in ("aim", "edge") else ""
-    return f"{lead} {problem_line(kind, value)}"
+    `problem_line`. `kind` is \"edge\"."""
+    return f"{common.load_text('advance')['resend'][kind]} {problem_line(kind, value)}"
 
 
 def notes(aim_value: Any = None, edge_value: Any = None, pressure_value: Any = None) -> dict:
-    """Short words for `Flow.notes` (the run log): {"aim_kind": ..., "edge_move": ..., "pressure_effect": ...}, each only when its verdict was read
+    """Short words for `Flow.notes` (the run log): {"aim_link": ..., "aim_new": ..., "edge_move": ..., "pressure_effect": ...}, each only when its verdict was read
     (the pressure verdict is always a word: `unclear` when it could not be read, as long as the judge ran)."""
     out = {}
-    if _word(aim_value, "kind", AIM_KINDS):
-        out["aim_kind"] = aim_value["kind"]
+    if _word(aim_value, "link", AIM_LINKS):
+        out["aim_link"] = aim_value["link"]
+    if _word(aim_value, "new_obstacle", YES_NO):
+        out["aim_new"] = aim_value["new_obstacle"]
     if _word(edge_value, "move", EDGE_MOVES):
         out["edge_move"] = edge_value["move"]
     if pressure_value is not None:

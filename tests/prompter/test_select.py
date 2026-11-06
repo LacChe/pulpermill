@@ -176,7 +176,7 @@ def test_with_choose_on_the_steps_run_select_brainstorm_plan_judges_and_the_wors
     assert len(texts) == 5 and len(json.loads(texts[0])["picks"]) == 3 and json.loads(texts[2])["idea"] == 1
     flow, reply, ctx, engine = run_plan(request, *texts)
     assert names_of_steps(ctx) == ["select", "brainstorm", "plan", "advance_aim", "advance_pressure"] and engine.calls == 5
-    assert [s.name for s in flow.worst_case()] == ["select", "brainstorm", "plan", "advance_aim", "plan", "advance_aim", "advance_pressure"]
+    assert [s.name for s in flow.worst_case()] == ["select", "brainstorm", "plan", "advance_aim", "advance_pressure"]
     assert "select" not in [s.name for s in plan.build_flow(base(), Kit(base())).worst_case()]
 
 
@@ -280,3 +280,31 @@ def test_the_worst_case_of_the_choose_flow_fits_the_context_for_a_large_story():
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert all(m.ok for m in measures) and factor <= 1.0
     assert [s.name for s in flow.worst_case()][:3] == ["select", "brainstorm", "plan"]
+
+
+def test_the_select_prompt_carries_the_running_aim_and_asks_for_combinations_that_carry_its_next_step():
+    request = choose_request()
+    prompt = select.build_select_prompt(request)
+    assert "The protagonist's running aim, chapter by chapter" in prompt and "Chapter 1 (the latest): aim: Suvi wants to learn who took the ledger." in prompt
+    assert "Where the aim stands now, at the end of chapter 1: Suvi now knows the board is hunting her." in prompt
+    assert "Choose combinations whose tie and rule or object can carry the next step of that aim" in prompt and "In each reason, say how" in prompt
+    plain = select.build_select_prompt(choose_request(options=False))
+    assert "can carry the next step of that aim" in plain          # the same line with no rules or objects to choose
+    first = {**request, "chapter": 1, "earlier_beats": [], "earlier_events": []}
+    assert "running aim" not in select.build_select_prompt(first)
+
+
+@pytest.mark.skipif(not tokens.available(), reason="the tokenizer files are not installed")
+def test_the_chain_at_its_longest_still_fits_the_select_the_brainstorm_and_the_plan_prompts():
+    """Nine earlier chapters, each with an aim of 300 characters and an ending line of 600 (their caps): the chain block adds this much to every planner prompt."""
+    from story_sizes import inflate
+    request = inflate(base(), cast=6, each=5, ties=6, chapters=9, chars=900)
+    request["choose"] = True
+    request["pressure_options"] = options_of(request["world"])
+    request["earlier_beats"] = [{"chapter": n, "where": "The Quay", "when": "Morning", "aim": ("aim " * 75).strip(), "plan": "x"} for n in range(1, 10)]
+    for e in request["earlier_events"]:
+        e["changed"] = ("ending " * 85)[:600]
+    assert len(plan.chain_text(request, load_text("plan"))) > 9 * 900
+    flow = plan.build_flow(request, Kit(request))
+    made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
+    assert all(m.ok for m in measures) and factor <= 1.0 and [m.name for m in measures][:3] == ["select", "brainstorm", "plan"]
