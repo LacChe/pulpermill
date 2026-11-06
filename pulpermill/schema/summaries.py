@@ -22,7 +22,7 @@ EVENTS_RENDER_ORDER = [["entries"]]
 class EventsEntry(Item):
     beat: str = spec("select", None, "note", ref=["outline.beats"], filled_by="code")      # which chapter; its number lives on the beat
     happened: str = spec("textarea", None, "note", filled_by="extractor", cap=1100)
-    changed: str | None = spec("text", None, "note", required=False, filled_by="extractor", cap=250)      # empty if nothing changed
+    changed: str | None = spec("text", None, "note", required=False, filled_by="extractor", cap=600)      # empty if nothing changed
 
 
 class SummaryEvents(Item):

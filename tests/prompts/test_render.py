@@ -437,6 +437,14 @@ def test_history_leaves_out_the_current_and_later_chapters_and_an_empty_record_i
     assert render_history([{"happened": "No chapter number."}], 3, scope="writer", keep_full=2) == ""
 
 
+def test_a_changed_line_of_500_characters_is_shown_whole_for_latest_and_older_chapters():
+    line = ("The aim now stands at the stone and the tie to Marit is strained. " * 8).strip()[:499].rsplit(" ", 1)[0] + "."
+    events = [{"chapter": n, "happened": f"Event {n}.", "changed": line} for n in (1, 2, 3, 4)]
+    report = Report()
+    text = render_history(events, 5, scope="planner", keep_full=2, report=report)
+    assert text.count(line) == 4 and not report.clips and "…" not in text
+
+
 def test_history_with_empty_values_and_over_cap_values():
     report = Report()
     long = "Something happened in this chapter. " * 40

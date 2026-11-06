@@ -303,8 +303,10 @@ def test_the_events_check_refuses_only_an_empty_or_too_short_reply():
 def test_a_running_on_changed_is_repaired_to_its_first_sentence_and_the_word_cap():
     fixed = gen.repair_events({"happened": "H", "changed": "Suvi can hide no more. Marit knows everything now."})
     assert fixed == {"happened": "H", "changed": "Suvi can hide no more."}
-    long = gen.repair_events({"happened": "H", "changed": " ".join(["word"] * 80) + "."})
-    assert len(long["changed"].split()) == gen.CHANGED_WORDS and long["changed"].endswith(".")
+    kept = gen.repair_events({"happened": "H", "changed": " ".join(["word"] * 90) + "."})
+    assert len(kept["changed"].split()) == 90 and kept["changed"].endswith(".")        # a 90-word first sentence is kept whole
+    long = gen.repair_events({"happened": "H", "changed": " ".join(["word"] * 130) + "."})
+    assert gen.CHANGED_WORDS == 100 and len(long["changed"].split()) == 100 and long["changed"].endswith(".")
     assert gen.repair_events({"happened": "H", "changed": "No stop here"})["changed"] == "No stop here"
     assert gen.repair_events({"happened": "H", "changed": "她再也无法隐藏。马里特全都知道了。"})["changed"] == "她再也无法隐藏。"
 

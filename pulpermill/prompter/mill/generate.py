@@ -37,7 +37,7 @@ RESEND_STAND_IN = "word " * 90        # the longest line the judge can send the 
 EDGE_STAND_IN = "word " * 60       # the longest an edge is shown to a model (300 characters), for the worst case
 HAPPENED_STAND_IN = "word " * 100      # the longest a chapter's `happened` is shown to the pressure judge, for the worst case
 EVENTS_ATTEMPTS, SHIFTS_ATTEMPTS = 4, 3          # after the chapter is written, each of these steps is retried on its own and then falls back
-CHANGED_WORDS, HAPPENED_WORDS = 45, 60           # the most words `changed` keeps (one short sentence) and the fallback's `happened` keeps
+CHANGED_WORDS, HAPPENED_WORDS = 100, 60         # the most words `changed` keeps (its first sentence, which has room for the aim and the tie) and the fallback's `happened` keeps
 
 
 def _lang(request: dict) -> str:
@@ -211,7 +211,7 @@ def _words(text: str, limit: int) -> str:
 
 
 def repair_events(value: Any) -> dict:
-    """`changed` as one short sentence: its first sentence, cut to CHANGED_WORDS words. Everything else is left as it came."""
+    """`changed` as its first sentence only, cut to CHANGED_WORDS words. Everything else is left as it came."""
     out = dict(value or {})
     first = sentences(out.get("changed"))
     out["changed"] = _words(first[0], CHANGED_WORDS) if first else r.s(out.get("changed"))
