@@ -406,3 +406,11 @@ test("earlier beats carry the two people of the tie and the pressure in a few wo
   const bare = earlierBeats(p, 2)[0];
   assert.deepEqual(Object.keys(bare), ["chapter", "where", "when", "aim", "plan"], "a beat with neither keeps today's shape");
 });
+
+test("a plan request carries origin_history only when the page asks for it", () => {
+  const p = story();
+  const beat = p.outline.beats[1];
+  assert.equal("origin_history" in planRequest(schema, copy(p), copy(beat)), false);
+  assert.equal("origin_history" in planRequest(schema, copy(p), copy(beat), { originHistory: false }), false);
+  assert.equal(planRequest(schema, copy(p), copy(beat), { originHistory: true }).origin_history, true);
+});

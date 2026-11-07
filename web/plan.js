@@ -366,7 +366,7 @@ export function spotlightEdges(project, spotlightId, chapter) {
 // Plan chapter `beat.chapter`. `beat` holds the spotlight and the cast (the page's own picks, which the writer may have changed).
 // `retry` is {beat, problems} when the first try was refused by the Outline's block rules. `choose` lets the planner pick the tie
 // and the pressure: the request then also carries every rule and object as `pressure_options`, and the beat's own pair is the default.
-export function planRequest(schema, project, beat, { retry = null, choose = false } = {}) {
+export function planRequest(schema, project, beat, { retry = null, choose = false, originHistory = false } = {}) {
   const chapter = Number(beat.chapter);
   const eff = effectiveProject(project, chapter);
   const request = {
@@ -385,6 +385,7 @@ export function planRequest(schema, project, beat, { retry = null, choose = fals
   if (pressure) request.pressure = pressure;
   if (retry) request.retry = { beat: copyOf(retry.beat), problems: [...retry.problems] };
   if (choose) { request.choose = true; request.pressure_options = pressureOptions(eff); }
+  if (originHistory) request.origin_history = true;
   return request;
 }
 

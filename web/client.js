@@ -382,14 +382,14 @@ export function checkStyleFit(client, schema, project) {
 // second attempt is told what was wrong). `beat` is the chapter's beat as the writer left it (the cast and the spotlight tie).
 // Nothing is changed: it resolves to {ok: true, beat, unresolved, dropped, warnings, blockers, retried} and the page decides
 // what to land (placeBeat). The planner always picks the tie and the pressure (`choose` defaults to true; the beat then carries its pick, and the page's own pair is the stand-in and the fallback). A request the page cannot make resolves to {ok: false, reason} (see planGate); a failed call to its failure.
-export function planChapter(client, schema, project, beat, { choose = true } = {}) {
+export function planChapter(client, schema, project, beat, { choose = true, originHistory = false } = {}) {
   const gate = planGate(project, beat);
   if (!gate.ok) return refused(gate.reason === "cast" ? `cast_${gate.why}` : gate.reason);
   let current = null;
   let stopped = false;
   const call = (request) => { current = client.start(request); return current.done; };
   const done = (async () => {
-    let read = readPlanReply(await call(planRequest(schema, project, beat, { choose })));
+    let read = readPlanReply(await call(planRequest(schema, project, beat, { choose, originHistory })));
     if (!read.ok) return read;
     let landed = landBeat(schema, project, beat, read);
     let blockers = beatBlockers(schema, project, landed.beat);
@@ -398,7 +398,7 @@ export function planChapter(client, schema, project, beat, { choose = true } = {
       retried = true;
       // The retry keeps the pair the first reply landed (the planner's choice, or the page's own) and chooses nothing again.
       const kept = { ...beat, spotlight: landed.beat.spotlight, pressure: landed.beat.pressure };
-      const second = readPlanReply(await call(planRequest(schema, project, kept, { retry: { beat: read.beat, problems: blockers }, choose: false })));
+      const second = readPlanReply(await call(planRequest(schema, project, kept, { retry: { beat: read.beat, problems: blockers }, choose: false, originHistory })));
       if (!second.ok) return second;
       read = second;
       landed = landBeat(schema, project, kept, read);

@@ -352,7 +352,7 @@ def test_no_aim_judge_runs_in_the_first_chapter():
     flow = plan.build_flow(request, Kit(request))
     assert flow.next([brain(request), good(request)]) is None and [s.name for s in flow.worst_case()] == ["brainstorm", "plan"]
     reply, ctx, engine = run_plan(request, *plan.script(request, Kit(request)))
-    assert engine.calls == 2 and ctx.notes["flow"] == {"minor_names": 0, "minor_new": 0, "pressure_on": False} and [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan"]
+    assert engine.calls == 2 and ctx.notes["flow"] == {"minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": False} and [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan"]
 
 
 SAME = json.dumps({"reason": "It goes back to an earlier step of the aim.", "link": "drifts", "new_obstacle": "no"})
@@ -365,8 +365,8 @@ def test_a_verdict_of_drifts_sends_nothing_back_and_only_goes_to_the_notes_so_no
     bad_reply, bad_ctx, bad_engine = run_plan(request, texts[0], texts[1], SAME)
     good_reply, good_ctx, good_engine = run_plan(request, texts[0], texts[1], NEW)
     assert bad_reply == good_reply == {"beat": plain(texts[1])} and bad_engine.calls == good_engine.calls == 3          # three model calls whatever the judge says
-    assert bad_ctx.notes["flow"] == {"aim_link": "drifts", "aim_new": "no", "minor_names": 0, "minor_new": 0, "pressure_on": False}
-    assert good_ctx.notes["flow"] == {"aim_link": "continues", "aim_new": "yes", "minor_names": 0, "minor_new": 0, "pressure_on": False}
+    assert bad_ctx.notes["flow"] == {"aim_link": "drifts", "aim_new": "no", "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": False}
+    assert good_ctx.notes["flow"] == {"aim_link": "continues", "aim_new": "yes", "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": False}
     assert [p["step"] for p in bad_ctx.notes["passes"]] == ["brainstorm", "plan", "advance_aim"]
     assert not any("set aside" in prompt or "different kind" in prompt for prompt in bad_engine.prompts)
     for gone in ("aim_resent", "aim_accepted", "aim_resend_fallback", "aim_kind_after"):
@@ -384,7 +384,7 @@ def test_a_judge_that_fails_every_attempt_never_fails_the_call_and_leaves_the_re
     texts = plan.script(request, Kit(request))
     reply, ctx, engine = run_plan(request, texts[0], texts[1], "no json", "still none")
     assert reply == {"beat": plain(texts[1])} and engine.calls == 4
-    assert ctx.notes["flow"] == {"aim_judge_fallback": True, "minor_names": 0, "minor_new": 0, "pressure_on": False}                                   # no verdict: nothing is sent back
+    assert ctx.notes["flow"] == {"aim_judge_fallback": True, "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": False}                                   # no verdict: nothing is sent back
     judge_pass = [p for p in ctx.notes["passes"] if p["step"] == "advance_aim"][0]
     assert len(judge_pass["attempts"]) == 2 and judge_pass["fallback"] is True
 
@@ -539,7 +539,7 @@ def test_a_brainstorm_that_fails_every_attempt_never_fails_the_call_and_the_plan
     texts = plan.script(request, Kit(request))
     reply, ctx, engine = run_plan(request, "no", "still no", json.dumps(plain(texts[1])), texts[2])        # no brainstorm: the plan grammar has no `idea_use`
     assert reply == {"beat": plain(texts[1])} and engine.calls == 4
-    assert ctx.notes["flow"] == {"brainstorm_fallback": True, "aim_link": "continues", "aim_new": "yes", "minor_names": 0, "minor_new": 0, "pressure_on": False}
+    assert ctx.notes["flow"] == {"brainstorm_fallback": True, "aim_link": "continues", "aim_new": "yes", "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": False}
     assert "Three ideas for this chapter" not in engine.prompts[2] and "Choose one of them" not in engine.prompts[2]
     brainstorm_pass = [p for p in ctx.notes["passes"] if p["step"] == "brainstorm"][0]
     assert len(brainstorm_pass["attempts"]) == 2 and brainstorm_pass["fallback"] is True
@@ -690,7 +690,7 @@ def test_the_pressure_judge_runs_once_after_the_plan_and_the_aim_judge_and_reads
     reply, ctx, engine = run_pressed(request, *texts)
     assert reply == {"beat": plain(texts[1])} and engine.calls == 4
     assert [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan", "advance_aim", "advance_pressure"]
-    assert ctx.notes["flow"] == {"pressure_on": True, "aim_link": "continues", "aim_new": "yes", "pressure_effect": "acts", "minor_names": 0, "minor_new": 0}
+    assert ctx.notes["flow"] == {"pressure_on": True, "origin_history": False, "aim_link": "continues", "aim_new": "yes", "pressure_effect": "acts", "minor_names": 0, "minor_new": 0}
     judged = engine.prompts[3]
     assert plain(texts[1])["plan"] in judged and element_of(request) in judged and "Act 1" in judged
     assert "effect: acts, decor or unclear" in judged and not (set(re.findall(r"\b[a-z]\d{7}\b", judged)))
