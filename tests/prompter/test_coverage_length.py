@@ -1,6 +1,6 @@
 """C1 item 6 (from A7): the length of a chapter and the range of a story. The writer prompt's last line states the 1,200-word cap; the `write`
 step leaves room for 1,200 English words and 2,400 Chinese characters, measured with the real tokenizer; the overshoot check passes a chapter at the
-cap and refuses one far over it; the Setup fill tells the model to choose 10 to 20 chapters when the note names no number and to keep a stated one;
+cap and refuses one far over it; the Setup fill tells the model to choose 5 to 10 chapters when the note names no number and to keep a stated one;
 every trial story holds a chapter count from 10 to 20. No model, no network."""
 import json
 import re
@@ -72,11 +72,11 @@ def setup_prompt(note: str) -> str:
     return prompts("fill", {**fill_request("setup", {"protagonist": PID}, {"characters": [SUVI, MARIT]}), "note": note})["fill"]
 
 
-def test_the_setup_fill_chooses_ten_to_twenty_when_the_note_states_no_number_and_keeps_a_stated_one():
+def test_the_setup_fill_chooses_five_to_ten_when_the_note_states_no_number_and_keeps_a_stated_one():
     for note in ("A quiet story about a lighthouse keeper.", "Make it eight chapters.", "7 chaps"):
         prompt = setup_prompt(note)
-        assert "choose a whole number from 10 to 20" in prompt and "chapter_count is exactly that number" in prompt, note
-        assert "5 to 10" not in prompt and "from 5 to 10" not in prompt
+        assert "choose a whole number from 5 to 10" in prompt and "chapter_count is exactly that number" in prompt, note
+        assert "10 to 20" not in prompt
         assert note in prompt
     schema = fill_request("setup", {"protagonist": PID}, {"characters": [SUVI, MARIT]})
     flow, kit = flow_for("fill", schema)

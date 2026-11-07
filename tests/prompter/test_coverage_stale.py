@@ -1,5 +1,5 @@
-"""C1 item 7: no stale numbers. After the 3 Nov decisions (10 to 20 chapters; at most 1,200 words a chapter), no prompt text, wording file, trials file,
-README or tool under `pulpermill/prompter/`, `pulpermill/prompts/`, `evals/trials/` or `tools/` still says "5 to 10" chapters or "1,800" words.
+"""C1 item 7: no stale numbers. After the decisions on story length (5 to 10 chapters, which replaced 10 to 20; at most 1,200 words a chapter), no prompt text, wording file, trials file,
+README or tool under `pulpermill/prompter/`, `pulpermill/prompts/`, `evals/trials/` or `tools/` still says "10 to 20" chapters or "1,800" words.
 The one place that may still say them is the decision record's own history line, which says what the numbers were *before* (marked "before:")."""
 import re
 from pathlib import Path
@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FOLDERS = ("pulpermill/prompter", "pulpermill/prompts", "evals/trials", "tools")
 SUFFIXES = {".py", ".yaml", ".yml", ".md", ".json", ".mjs", ".js", ".txt", ".csv", ".toml"}
 SKIP = {"tokenizer.json", "tokenizer_config.json", "special_tokens_map.json", "added_tokens.json"}
-STALE = [("5 to 10 chapters", r"\b(?:5|five)\s*(?:to|-|–|—|and)\s*(?:10|ten)\b"),
+STALE = [("10 to 20 chapters", r"\b(?:10|ten)\s*(?:to|-|–|—|and)\s*(?:20|twenty)\s*chapters?\b"),
          ("1,800 words", r"\b1[,.]?800[- ]?words?\b|\babout 1[,.]?800\b|\b1[,.]?800 to 2[,.]?400 words\b")]
 # These may say the old numbers on a line that says it is history ("before:", "was", "old"): the decision record, and one comment in the trial
 # checks that explains why its minimum word count was raised. Nothing else may.
@@ -43,9 +43,9 @@ def test_the_scan_reads_the_folders_the_brief_names():
 
 
 def test_the_patterns_catch_the_old_numbers_in_their_usual_clothes():
-    for old in ("a story of 5 to 10 chapters", "five to ten chapters", "5-10 chapters", "about 1,800 words", "1800 words", "a 1,800-word chapter"):
+    for old in ("a story of 10 to 20 chapters", "ten to twenty chapters", "10-20 chapters", "about 1,800 words", "1800 words", "a 1,800-word chapter"):
         assert any(re.search(p, old, flags=re.I) for _, p in STALE), old
-    for fine in ("10 to 20 chapters", "at most 1,200 words", "1,800 to 2,400 Chinese characters", "chapters 5 to 10 of the story"[:0] or "chapter 5"):
+    for fine in ("5 to 10 chapters", "at most 1,200 words", "1,800 to 2,400 Chinese characters", "chapters 5 to 10 of the story"[:0] or "chapter 5"):
         assert not any(re.search(p, fine, flags=re.I) for _, p in STALE), fine
 
 

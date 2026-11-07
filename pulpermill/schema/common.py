@@ -23,7 +23,7 @@ InputType = Literal["text", "textarea", "number", "select", "select-multiple", "
 Kind = Literal["rule", "axis", "note", "free", "items", "pairs", "snapshot", "card", "patch"]
 
 
-# Every repeating list holds at most this many items (stories run 10 to 20 chapters, so list
+# Every repeating list holds at most this many items (stories run 5 to 10 chapters, so list
 # types can rotate between chapters). Beyond the cap the value is rejected.
 MAX_ITEMS = 5
 
