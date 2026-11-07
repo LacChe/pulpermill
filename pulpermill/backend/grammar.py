@@ -201,12 +201,6 @@ def patch(card: str, scope, refs: dict) -> Schema:
     return {"type": "object", "properties": props, "required": [], "additionalProperties": False}
 
 
-def _required(card: str, key: str) -> list[str]:
-    from typing import get_args
-    item = get_args(CARDS[card][0].model_fields[key].annotation)[0]
-    return [k for k, f in item.model_fields.items() if k != "id" and f.is_required()]
-
-
 def edge_patch(scope, refs: dict) -> Schema:
     """What a chapter's patch of the Entanglements may hold: `replace` operations on the ties this scope sent, each with a new `edge` and nothing
     else. A bond, a tie's ends and the holdings do not change in a chapter."""

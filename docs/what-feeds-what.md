@@ -4,7 +4,7 @@
 
 ## Legend
 
-**Calls:** **W** chapter writer · **P** planner (think, then fill the beat) · **O** offstage pass · **X1** Events extractor · **X2** Shifts and Entanglements extractor · **F** card fill · **E** end-of-story update · **J** model-judged rules · **S** style-fit check · **C** code only.
+**Calls:** **W** chapter writer · **P** planner (think, then fill the beat) · **O** offstage pass · **X1** Events extractor · **X2** shifts of ties extractor · **F** card fill · **E** end-of-story `finish` call · **J** model-judged rules · **S** style-fit check · **C** code only.
 
 **Channels (how data reaches a call):**
 
@@ -104,14 +104,15 @@
 | Events: planted, paid\_off | P, C | X1 fills them by checking the chapter against the beat's `plant` and `payoff`. C computes the status: planned, open, resolved. |
 | Events: reveals\_landed, behaviors\_seen, things\_seen | C (counts, available reveals), P | `reveals_landed` is checked against the beat's reveal. |
 | Events: goal\_landed (new) | C | Says whether the beat's goal change happened. |
-| Shifts | W (latest value per field per cast member, shown after the cards and marked as overriding), P, E | Fields: believes, fears, wants, refuses, decided. `hides` is dropped. |
+| Shifts of ties (a chapter's own) | W, P (each tie's latest `edge`, shown with the ties and marked as overriding) | Only the `edge` of a tie changes in a chapter. Characters and World are the base cards in every chapter. |
+| Shifts of characters (once, after the last chapter) | Written by E from the Events summaries and the base Characters cards; folded into the after-story copy | At most one entry per character, on the last beat. Never sent to W or P. |
 | Entanglements history | C (restore for regenerate) | Never sent to a model. |
 | Example chapter, card notes | F |  |
 | Model notes (`plan_notes`, `chapter_notes`, `end_note`) | human only | What the model said and what the page showed, kept so H can read it after reopening the file. Display only: never sent to a model, never read by the pipeline. Each is replaced when its beat, chapter or after-story copy is made again, and goes with it. The end note also holds `made_from`, a fingerprint of the chapters and records the copy was made from, so the page can say the copy is out of date. |
 | after\_story | export, a new story |  |
 | Language | W (target language line) | Model-facing text stays English; only the human-facing text is translated. The judge prompts are English too. |
 
-**Precedence.** Where Characters, Entanglements and the summaries disagree, Shifts and Events win. The writer's prompt orders the cards first, then Entanglements, then a 'where they stand now' block (the latest value per field per character) marked as overriding. A human edit to a live field made after a chapter counts as newer than that chapter's shift.
+**Precedence.** Where Entanglements and the summaries disagree, the latest edge shifts and Events win. The writer's prompt orders the cards first (Characters and World as they were before the story), then Entanglements with each tie's latest edge, marked as overriding. A human edit to a live field made after a chapter counts as newer than that chapter's shift.
 
 **Counts.** Place and character use counts are tallied from planned beats, a deliberate exception to 'planned is not done': the beat chose them for the chapter. Behavior and thing counts come from landed Events entries.
 
@@ -125,8 +126,8 @@
 4. **Offstage changes (settled).** The spotlight always involves someone in the cast, so agents outside the cast are never moved offstage. The offstage pass only changes background groups and places, and P never needs their cards.
 5. **One-sided links (settled).** See the rule under Entanglements.
 6. **Setup's normal and disruption (intended).** Used only for chapter 1.
-7. **Entanglements and Shifts overlap (settled).** `edge` is a concrete aim between two people. Shifts `wants` are abstract, and nothing concrete or relational sits on a character. Knowledge is measured against canon, which cannot be wrong. `believes` is a personal conviction that can be proven wrong; a belief about a canon fact goes in Knowledge instead. `hides` is dropped from Shifts.
-8. **Static card against Shifts (settled).** Shifts and Events take precedence (see Precedence).
+7. **Entanglements and Shifts overlap (settled).** `edge` is a concrete aim between two people. A character's `wants` are abstract, and nothing concrete or relational sits on a character. Knowledge is measured against canon, which cannot be wrong; a belief about a canon fact goes in Knowledge instead.
+8. **Static card against shifts (settled).** Edge shifts and Events take precedence (see Precedence). Characters and World never change during the story.
 
 ## Decided and still open
 
@@ -138,7 +139,6 @@
 
 - New optional `Beat.plant` and `Beat.payoff`; `Beat.cast` filled by the human.
 - New `Events.goal_landed`.
-- Drop `Shifts.hides` and update the `shift_not_empty` field list.
 - Rewrite `reveal_not_repeated` to count landed reveals.
 - Give `goal_now` the same warnings as Setup's goal.
 - Hint text: `edge` is concrete between two people, `wants` abstract, `believes` a conviction not tracked as Knowledge.
