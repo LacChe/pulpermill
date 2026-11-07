@@ -47,11 +47,11 @@ class Step:      name, text(squeeze) -> str, kind "text"|"json", max_output, gra
   `scope.of(key, item_id)` gives the handle of an item to show next to it, `scope.label` is the name the model uses for a character.
   Only what the request sent has a handle, and the model cannot point at anything else.
 * `kit.grammar`: grammars that follow from the cards alone: `fill()` (the card's fields, all optional, links limited to the names the
-  related cards sent), `plan_beat()` (the planner's fields of a beat), `shifts()` (a list of `{card, target, patch}`, one entry per card the
-  request sent, a patch built from `shiftable_fields`: a scalar is its new value, a list is `add` / `replace` / `remove` operations on
-  handles). The small pieces for any other shape: `text()`, `maybe(s)`, `one_of(names)`, `list_of(names, limit)`, `obj(props, required)`.
-* `kit.shifts_problem(entries)`: `None`, or one line saying why the shifts cannot be turned into valid entries. Use it as the `check`
-  of the step that writes shifts.
+  related cards sent), `plan_beat()` (the planner's fields of a beat), `shifts()` (a chapter's shifts: at most one `{card: "entanglements", patch}` entry whose
+  patch replaces the `edge` of ties, named by handle), `finish()` (the end-of-story shifts: one `{card: "characters", target, patch}` entry per
+  character, a patch built from `shiftable_fields`: a scalar is its new value, a list is `replace` operations on handles). The small pieces for any other shape: `text()`, `maybe(s)`, `one_of(names)`, `list_of(names, limit)`, `obj(props, required)`.
+* `kit.shifts_problem(entries)` and `kit.finish_problem(entries)`: `None`, or one line saying why a chapter's shifts, or the end-of-story
+  shifts, cannot be turned into valid entries. Use them as the `check` of the step that writes them.
 
 ## Draft replies (what `Flow.reply` returns)
 
@@ -63,7 +63,7 @@ The contract's reply without `ok`, with handles where the contract has ids:
 | `judge` | `{"results": [{"rule": id, "hits": [{"field": key, "item": handle or None, "key": None}]}]}`, one result per rule asked (none for a rule with nothing to look at: give it no hits) |
 | `style_fit` | `{"fits": bool, "message": str}` |
 | `plan` | `{"beat": {field: value}}` |
-| `generate` | `{"chapter_text": str, "events": {"happened", "changed"}, "shifts": [{"card", "target": a character's label or None, "patch": {...}}]}`; list operations name items by handle |
+| `generate` | `{"chapter_text": str, "events": {"happened", "changed"}, "shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": a tie's handle, "values": {"edge"}}]}}]}`: a chapter changes only the edge of ties |
 | `finish` | `{"shifts": [{"card": "characters", "target": a character's label, "patch": {...}}]}`, at most one per character; list operations name items by handle |
 
 The runner refuses a draft that names a handle or card the request did not send (`bad_output`), drops a shift whose patch holds nothing,

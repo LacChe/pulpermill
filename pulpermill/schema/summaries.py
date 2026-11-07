@@ -2,7 +2,7 @@
 Hidden from the user and never edited by hand. One entry per chapter, found through the chapter's beat (a beat link,
 never a stored chapter number); regenerating a chapter replaces its entry as a whole, keeping its id. One card:
   summary_events        what happened (the outer story), plus the changed line
-What changed for the cards (characters, world, ties) is the shifts record, see shifts.py."""
+What changed for the cards (the edge of ties in each chapter, the characters once at the end) is the shifts record, see shifts.py."""
 from .common import spec, Rule, Item
 
 # ---------------------------------------------------------------- Events

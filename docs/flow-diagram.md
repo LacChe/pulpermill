@@ -58,7 +58,7 @@ flowchart TD
     G2["C · snapshot Entanglements,<br/>assemble context, token check"]:::code
     G3["M · write the chapter<br/>(free text)"]:::model
     G4["M · Events pass:<br/>chapter + the beat's plan,<br/>what landed"]:::model
-    G5["M · Shifts and Entanglements pass:<br/>proposed changes"]:::model
+    G5["M · Shifts pass:<br/>new edge of the ties that moved"]:::model
     G6["C · map names, block rules, apply changes,<br/>tally counts, build diffs"]:::code
     G7{"locked values touched?"}:::code
     G8["H · confirm unlock and overwrite"]:::human
@@ -87,7 +87,7 @@ flowchart TD
 
   subgraph S5["5 · End of story"]
     E1["H · press end of story"]:::human
-    E2["M · update Characters and World<br/>from the Events and Shifts summaries"]:::model
+    E2["M · finish: one notable change per character<br/>from the Events summaries"]:::model
     E3["C · force fixed fields back,<br/>save as the after-story copy"]:::code
     E4["H · review, edit"]:::human
     E5["H · export story, cards,<br/>project file"]:::human

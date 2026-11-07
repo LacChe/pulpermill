@@ -1,6 +1,6 @@
 # Pulpermill pipeline: who does what
 
-*Draft for the rewrite, 2026-10-20.* **Actors:** **H** human, **C** code, **M** model. **Model calls:** **W** chapter writer, **P** planner, **O** offstage pass, **X1** Events extractor, **X2** Shifts and Entanglements extractor, **F** card fill, **E** end-of-story update, **J** model-judged rules, **S** style-fit check.
+*Draft for the rewrite, 2026-10-20.* **Actors:** **H** human, **C** code, **M** model. **Model calls:** **W** chapter writer, **P** planner, **O** offstage pass, **X1** Events extractor, **X2** shifts of ties extractor, **F** card fill, **E** end-of-story `finish` call, **J** model-judged rules, **S** style-fit check.
 
 ## Ground rules
 
@@ -13,7 +13,7 @@
 - Validation uses change tracking: C keeps a hash of each card and field as of its last successful check and rechecks only what differs. Model-judged warnings are cached by value hash.
 - Planned is not done: a reveal, plant, payoff or goal change counts only once X1 confirms it landed in the text.
 - Counts: place and character use counts come from planned beats, a deliberate exception to the rule above, because the beat chose them for the chapter. Behavior and thing counts come from landed Events entries.
-- Precedence: Shifts and Events win over the cards. The writer sees the cards first, then Entanglements, then a 'where they stand now' block of the latest Shifts values. A human edit made after a chapter counts as newer than that chapter's shift.
+- Precedence: tie-edge shifts and Events win over the cards. The writer sees Characters and World as they were before the story (they do not change per chapter), then Entanglements with each tie's latest edge. A human edit made after a chapter counts as newer than that chapter's shift.
 - Canon and secrets: the writer sees all of World, including Hidden and Myth rules and their truths. They are hidden only from characters, through Knowledge, and a hidden truth reaches the page only through the beat's reveal.
 - The data-flow doc holds the per-field detail: who reads what, and through which channel.
 
@@ -62,11 +62,11 @@ The fill needs an example chapter or a note for that card. There is no revise-ca
 | --- | --- | --- | --- |
 | Gate: validate what changed, beat valid | C |  |  |
 | Snapshot Entanglements as seen (history) | C | what was sent | history entry |
-| Assemble context: cards rendered to prose with names and only the chosen cast, then Entanglements, then 'where they stand now' (latest Shifts values, overriding), earlier Events summaries, the current goal, the language line | C |  |  |
+| Assemble context: cards rendered to prose with names and only the chosen cast, then Entanglements, then each tie's latest edge (overriding), earlier Events summaries, the current goal, the language line | C |  |  |
 | Token count check against the context size | C |  | clear error if too long |
 | Write the chapter | M (free text) | context plus the beat | chapter text |
 | Events pass | M (grammar) | chapter text plus the beat's planned reveal, plant, payoff and goal change | happened, changed, planted, paid off, reveals landed, behaviors seen, things seen, goal landed; each planned item marked landed or not |
-| Shifts and Entanglements pass | M (grammar) | chapter, Characters, Entanglements | per-character shifts (believes, fears, wants, refuses, decided); proposed changes to live fields, including knowledge status |
+| Shifts pass | M (grammar) | chapter, the ties | one shift that replaces the `edge` of the ties the chapter moved; nothing else changes in a chapter |
 | Map names to ids; check block rules (for example no more than two open plants) | C |  |  |
 | Apply X2's proposed changes to live fields; warn if a reveal landed but nobody's knowledge changed; list any locked values the changes would overwrite and ask H to confirm; compute diffs; tally counts | C, H |  | new Entanglements |
 | Commit chapter, records, history and new Entanglements as one unit | C |  | project file, plus a display note of what the page showed (the changes applied, what it noticed, and the earlier text of a rewritten chapter) |
@@ -86,7 +86,7 @@ Any failure leaves nothing committed. Shape failures retry up to the same two at
 | Step | Actor | Notes |
 | --- | --- | --- |
 | Press the button after the last chapter | H |  |
-| Update Characters and World | M (grammar) | Always reads the Events and Shifts summaries (one sentence per event, so they stay small), never the full chapters, plus the current cards. Works like card creation. |
+| Write the end-of-story shifts (`finish`) | M (grammar) | Reads the Events summaries (one sentence per event, so they stay small), never the full chapters, plus the base Characters cards and the Setup. Writes at most one change per character, none for a character the story did not move. The World does not change. |
 | Force fixed fields (name, age, sex, appearance) back to their original values; keep ids | C |  |
 | Store as the after-story copy; originals untouched | C |  |
 | Edit the after-story copy by hand (the card forms, no model) | H | C keeps the copy and its review in step on leaving a field |
@@ -101,7 +101,6 @@ H exports the story as markdown (required), the cards as a zip, and the project 
 
 - `Beat.cast` is filled by the human (code suggests a default), not the planner.
 - New optional `Beat.plant` and `Beat.payoff`; new `Events.goal_landed`.
-- `Shifts.hides` is dropped.
 - A small project-file field for the hash a beat was planned from.
 - The resume-point rule is no longer needed because commits are atomic.
 - Knowledge changes are proposed by X2, so they need no new fields. X2 may also propose new Knowledge lines (a person and a rule or fact with no line yet). The page checks and adds them, lists them in the chapter's review, asks first when a lock covers the list, and Undo takes them out with the chapter.
