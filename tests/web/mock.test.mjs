@@ -184,7 +184,7 @@ test("with only one person there is nobody to tie them to, so the sample leaves 
 
 import { readPlanReply, readGenerateReply } from "../../web/logic.js";
 
-const storyBase = { schema_version: 3, language: "en" };
+const storyBase = { schema_version: 4, language: "en" };
 
 test("the mock answers the plan and generate calls in a shape the page reads", async () => {
   const mock = quick();
@@ -197,11 +197,12 @@ test("the mock answers the plan and generate calls in a shape the page reads", a
   assert.equal(plan.beat.where, "The Salt Coast");
   assert.match(plan.beat.plan, /chapter 2.*mother/);
   for (const key of ["cast", "chapter", "spotlight", "planned_from", "stale"]) assert.equal(key in plan.beat, false, key);
-  const chapter = readGenerateReply(await mock.send({ call: "generate", ...storyBase, chapter: 2, chapter_count: 8, cast, beat: plan.beat }));
+  const chapter = readGenerateReply(await mock.send({ call: "generate", ...storyBase, chapter: 2, chapter_count: 8, cast, ties: [{ id: "t1", bond: "mother" }], beat: { ...plan.beat, spotlight: "t1" } }));
   assert.equal(chapter.ok, true);
   assert.match(chapter.chapter_text, /Mock chapter 2 of 8/);
-  assert.deepEqual(chapter.shifts.map((s) => [s.card, s.target]), [["characters", "c1"]]);
-  assert.equal(readGenerateReply(await mock.send({ call: "generate", ...storyBase, chapter: 1, chapter_count: 1, cast: [], beat: {} })).shifts.length, 0, "no cast, nothing to shift");
+  assert.deepEqual(chapter.shifts.map((s) => [s.card, s.target]), [["entanglements", null]]);
+  assert.deepEqual(chapter.shifts[0].patch, { ties: [{ op: "replace", id: "t1", values: { edge: "Mock edge after chapter 2" } }] });
+  assert.equal(readGenerateReply(await mock.send({ call: "generate", ...storyBase, chapter: 1, chapter_count: 1, cast: [], beat: {} })).shifts.length, 0, "no ties, nothing to shift");
 });
 
 test("the mock's aims differ from chapter to chapter, so the repetition rule does not fire on them", async () => {

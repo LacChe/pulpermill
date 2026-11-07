@@ -1281,11 +1281,14 @@ test("a stage is put in words: a known name by its label, an unknown one generic
 test("a chapter reply is tidied: text kept, events trimmed, the shifts read as they are", () => {
   const read = vectorsApi.readGenerateReply({
     ok: true, chapter_text: "Text.", events: { happened: " Happened. ", changed: "  " },
-    shifts: [{ card: "characters", target: "c1", patch: { fear: "fire", wants: [{ op: "add", values: { text: "x" } }] } }, { card: "world", patch: { history: "h" } }],
+    shifts: [{ card: "entanglements", patch: { ties: [{ op: "replace", id: "t1", values: { edge: "to forgive" } }] } }],
   });
   assert.equal(read.ok, true);
   assert.deepEqual(read.events, { happened: "Happened.", changed: null });
-  assert.deepEqual(read.shifts.map((s) => [s.card, s.target]), [["characters", "c1"], ["world", null]]);
+  assert.deepEqual(read.shifts.map((s) => [s.card, s.target]), [["entanglements", null]]);
+  const people = (card, target) => vectorsApi.readGenerateReply({ ok: true, chapter_text: "Text.", events: { happened: "H" }, shifts: [{ card, target, patch: { fear: "x" } }] });
+  assert.equal(people("characters", "c1").error.kind, "bad_output", "a chapter does not change people");
+  assert.equal(people("world", null).error.kind, "bad_output", "nor the world");
   assert.equal(vectorsApi.readGenerateReply({ ok: true, chapter_text: "Text.", events: {}, shifts: [] }).error.kind, "bad_output");
   assert.equal(vectorsApi.readGenerateReply({ ok: true, chapter_text: "Text.", events: { happened: "H" }, shifts: [], extra: 1 }).ok, false);
 });

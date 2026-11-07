@@ -79,7 +79,7 @@ def test_a_run_against_the_fake_backend_writes_chapters_summary_and_meta(tmp_pat
     saved = json.loads((out / "t4-hollow-court-zh-run2.json").read_text(encoding="utf-8"))
     assert len(saved["project"]["chapters"]) == 3 and len(saved["project"]["summary_events"]["entries"]) == 3
     meta = json.loads((out / "meta.json").read_text(encoding="utf-8"))
-    assert meta["schema_version"] == 3 and meta["runs"] == 2 and meta["chapters"] == 3 and meta["failures"] == 0
+    assert meta["schema_version"] == 4 and meta["runs"] == 2 and meta["chapters"] == 3 and meta["failures"] == 0
 
 
 def test_a_run_against_the_stub_prompter_completes_eight_chapters_of_two_trials_and_records_the_prompter(tmp_path):

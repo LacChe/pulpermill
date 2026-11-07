@@ -18,7 +18,7 @@ WORLD = {"name": "Millbrook", "places": [{"name": "The Millpond"}], "objects": [
 
 def request(card, **over):
     related = {"characters": CHARS, "world": WORLD} if card == "entanglements" else {"characters": CHARS} if card == "world" else {}
-    r = {"call": "fill", "schema_version": 3, "language": "en", "card": card, "instance": None, "note": "A note.", "example_chapter": None,
+    r = {"call": "fill", "schema_version": 4, "language": "en", "card": card, "instance": None, "note": "A note.", "example_chapter": None,
          "values": {}, "related": related}
     r.update(over)
     return r

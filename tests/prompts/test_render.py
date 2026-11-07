@@ -466,9 +466,7 @@ def test_a_shift_entry_reads_as_prose_with_names_and_no_ids():
     assert "an earlier entry becomes Keep the key hidden." in text and "w0000009" not in text and "c0000001" not in text
 
 
-def test_a_shift_for_the_world_has_no_target_and_an_empty_patch_has_nothing_to_say():
-    text = render_shift({"beat": 2, "card": "world", "patch": {"everyday_life": "Quiet now."}})
-    assert text == "In chapter 2, the world changed: everyday life is now Quiet now."
+def test_an_empty_patch_has_nothing_to_say():
     assert render_shift({"beat": 2, "card": "entanglements", "patch": {}}) == "In chapter 2, the ties and holdings changed:"
 
 

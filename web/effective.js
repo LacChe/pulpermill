@@ -9,7 +9,7 @@
 
 import { msg } from "./text.js";
 
-export const SHIFT_CARDS = ["characters", "world", "entanglements"];
+export const SHIFT_CARDS = ["characters", "entanglements"];
 export const OPS = ["add", "replace", "remove"];
 
 const copyOf = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
@@ -46,7 +46,7 @@ export function applyPatch(card, patch) {
 
 const chapterMap = (beats) => (beats instanceof Map ? beats : new Map(Array.isArray(beats) ? beats.map((b) => [b.id, Number(b.chapter)]) : Object.entries(beats ?? {})));
 
-// `base` holds some of {characters: [..], world, entanglements}; the result holds the same ones, with the entries of
+// `base` holds some of {characters: [..], entanglements}; the result holds the same ones, with the entries of
 // every chapter before `chapter` applied: in chapter order, then in the order the entries are listed. `beats` says each
 // beat's chapter: a Map or object of beat id -> number, or the project's list of beats. An entry whose beat is unknown is
 // never applied.
@@ -62,14 +62,14 @@ export function applyShifts(base, entries, beats, chapter) {
     if (entry.card === "characters") {
       if (!Array.isArray(out.characters)) continue;
       out.characters = out.characters.map((c) => (c.id === entry.target ? applyPatch(c, entry.patch) : c));
-    } else if (entry.card === "world" || entry.card === "entanglements") {
-      if (isObject(out[entry.card])) out[entry.card] = applyPatch(out[entry.card], entry.patch);
+    } else if (entry.card === "entanglements") {
+      if (isObject(out.entanglements)) out.entanglements = applyPatch(out.entanglements, entry.patch);
     }
   }
   return out;
 }
 
-// A copy of the project whose Characters, World and Entanglements are what they were going INTO chapter `beforeChapter`.
+// A copy of the project whose Characters and Entanglements are what they were going INTO chapter `beforeChapter`.
 export function effectiveProject(project, beforeChapter) {
   const copy = copyOf(project);
   const base = {};

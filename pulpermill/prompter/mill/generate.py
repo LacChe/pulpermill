@@ -1,5 +1,4 @@
-"""The `generate` call, three steps: `write` (the chapter as prose), `events` (what happened, what changed) and `shifts` (what changed on the
-cards). Wording lives in text/en/generate.yaml, where the reasoning behind the writer prompt is recorded.
+"""The `generate` call, three steps: `write` (the chapter as prose), `events` (what happened, what changed) and `shifts` (the new edge of ties). Wording lives in text/en/generate.yaml, where the reasoning behind the writer prompt is recorded.
 
 Rules served: R3 (an interesting story, craft guidance in prose), R5 (minor characters by role, never the plot), R6 (the spotlight tie's edge
 and the protagonist's aim end in a new state; the shifts check demands the edge), R7 (the chapter follows the plan's four points unlabelled).
@@ -16,7 +15,6 @@ from typing import Any
 from pulpermill.prompts import render as r
 from pulpermill.prompts import textfiles as tx
 from pulpermill.prompter.base import Flow, Step
-from pulpermill.schema.shifts import shiftable_fields
 
 from . import advance, common
 from .plan import cut_events, in_names, names_of, pressure_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
@@ -229,46 +227,15 @@ def events_fallback(chapter_text: str) -> dict:
 
 # ---- shifts ----------------------------------------------------------------------------------------------------------------
 
-def _item_line(item: dict, factor: float) -> str:
-    parts = [r.s(v) for k, v in item.items() if k != "id" and isinstance(v, (str, int, float)) and r.s(v)]
-    return common.clip(" — ".join(parts), factor)
-
-
 def _reference(request: dict, kit: Any, names: dict[str, str], factor: float) -> str:
-    """Every card the model may change, with the handle of each list item, so that it points at items without seeing an id."""
-    out = []
-    people = {p.get("id"): p for p in request.get("cast") or []}
-    for scope in kit.handles.of_card("characters"):
-        person = people.get(scope.target) or {}
-        lines = [f"{scope.label}: " + common.clip(r.s(person.get("sketch")), factor)]
-        for key in scope.lists:
-            for item in person.get(key) or []:
-                if item.get("id"):
-                    lines.append(common.labelled(scope, key, item["id"], _item_line(item, factor)))
-        out.append("\n".join(lines))
-    for scope in kit.handles.of_card("world"):
-        world = request.get("world") or {}
-        lines = [f"The world, {r.s(world.get('name'))}:"]
-        for key in scope.lists:
-            for item in world.get(key) or []:
-                if item.get("id"):
-                    lines.append(common.labelled(scope, key, item["id"], _item_line(item, factor)))
-        out.append("\n".join(lines))
+    """The ties the model may change, with the handle of each, so that it points at them without seeing an id."""
+    lines = []
     for scope in kit.handles.of_card("entanglements"):
-        lines = ["The ties and holdings:"]
         for item in in_names(request.get("ties") or [], ("tie_from", "tie_to"), names):
             if item.get("id"):
                 text = f"{item['tie_from']} toward {item['tie_to']}: {r.bare(item.get('bond'))}. Edge: {r.s(item.get('edge'))}"
                 lines.append(common.labelled(scope, "ties", item["id"], common.clip(text, factor)))
-        for item in in_names(request.get("holdings") or [], ("holdee", "held_by"), names):
-            if item.get("id"):
-                lines.append(common.labelled(scope, "holdings", item["id"], f"{item['held_by']} holds {item['holdee']}"))
-        out.append("\n".join(lines))
-    return "\n\n".join(out)
-
-
-def _shift_fields(card: str) -> str:
-    return ", ".join(f["key"] for f in shiftable_fields(card))
+    return "\n".join(lines)
 
 
 def edge_targets(request: dict, kit: Any) -> list[tuple[str, dict]]:
@@ -298,7 +265,6 @@ def shifts_prompt(request: dict, kit: Any, chapter_text: str, factor: float = 1.
              w["shifts_chapter_lead"] + "\n" + chapter_text.strip(),
              w["shifts_cards_lead"] + "\n" + _reference(request, kit, names, factor),
              w["shifts_rules"],
-             w["shifts_fields"].format(character=_shift_fields("characters"), world=_shift_fields("world"), entanglements=_shift_fields("entanglements")),
              w["shifts_example"], edge, extra, w["shifts_format"]]        # `extra`: the advancement judge sent the shifts back once, and this is its line
     return "\n\n".join(p for p in parts if p)
 
@@ -496,8 +462,6 @@ def build_flow(request, kit) -> Flow:
 def script(request: dict, kit: Any) -> list[str]:
     """What a fake engine must return for a valid reply: a chapter, events, and shifts that replace the spotlight tie's edge."""
     shifts = []
-    for scope in kit.handles.of_card("characters")[:1]:
-        shifts.append({"card": "characters", "target": scope.label, "patch": {"sketch": "Changed by what happened in this chapter."}})
     targets = edge_targets(request, kit)
     if targets:
         handle, tie = targets[0]

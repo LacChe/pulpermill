@@ -18,7 +18,6 @@ import {
 export const PREVIOUS_ENDING_CHARS = 1500;   // how much of the last chapter's end the model is shown
 
 const copyOf = (value) => JSON.parse(JSON.stringify(value));
-const asList = (value) => (Array.isArray(value) ? value : isFilled(value) ? [value] : []);
 
 // The parts of the project a chapter and its records live in: what an Undo of Generate or Write again puts back.
 const CHAPTER_PARTS = ["chapters", "summary_events", "shifts"];
@@ -129,32 +128,22 @@ function mapValues(schema, project, card, key, values) {
 }
 
 // The shifts the model proposed, as the entries to store. `project` is the effective project going into the chapter.
-// Returns {entries, warnings, changes}: entries are {id, beat, card, target, patch} in order Characters, World, Entanglements;
-// changes are the lines the chapter note shows, {label, before, after}.
+// Only the Entanglements may change in a chapter, so there is at most one entry. Returns {entries, warnings, changes}: entries are
+// {id, beat, card, target, patch}; changes are the lines the chapter note shows, {label, before, after}.
 export function landShifts(schema, project, beat, proposed, taken = usedIds(project)) {
   const eff = effectiveProject(project, Number(beat.chapter));
   let working = { characters: copyOf(eff.characters ?? []), world: copyOf(eff.world ?? {}), entanglements: copyOf(eff.entanglements ?? {}) };
-  const cast = asList(beat.cast);
   const warnings = [];
   const entries = [];
   const changes = [];
   const seen = new Set();
-  const max = schema.max_shifts_per_chapter ?? 7;
-  const order = { characters: 0, world: 1, entanglements: 2 };
-  const nameOf = (id) => (eff.characters ?? []).find((c) => c.id === id)?.name ?? id;
-  const sorted = proposed.map((s, i) => ({ s, i })).sort((a, b) => order[a.s.card] - order[b.s.card] || a.i - b.i).map((x) => x.s);
-  for (const shift of sorted) {
-    const what = shift.card === "characters" ? nameOf(shift.target) : schema.cards[shift.card].label;
+  for (const shift of proposed) {
+    const what = schema.cards[shift.card].label;
     const leave = (why) => warnings.push({ kind: "shift", text: msg("records.shiftLeftOut", { what, why }) });
-    const key = `${shift.card}|${shift.target ?? ""}`;
-    if (shift.card === "characters") {
-      if (!(working.characters ?? []).some((c) => c.id === shift.target)) { leave(msg("records.whyNoCharacter")); continue; }
-      if (!cast.includes(shift.target)) { warnings.push({ kind: "shift", text: msg("records.notInChapter", { name: what }) }); continue; }
-    }
+    const key = shift.card;
     if (seen.has(key)) { warnings.push({ kind: "shift", text: msg("records.shiftTwice", { what }) }); continue; }
-    if (entries.length >= max) { warnings.push({ kind: "shift", text: msg("records.shiftsTooMany", { max }) }); break; }
     // Turn the words into ids and give each addition its id; an operation that cannot be made is left out.
-    const card = shift.card === "characters" ? working.characters.find((c) => c.id === shift.target) : working[shift.card];
+    const card = working.entanglements;
     const patch = {};
     const lost = [];
     for (const [field, value] of Object.entries(shift.patch)) {
@@ -176,13 +165,13 @@ export function landShifts(schema, project, beat, proposed, taken = usedIds(proj
     if (problems.length) { leave(problems[0].message); continue; }
     for (const why of new Set(lost)) warnings.push({ kind: "shift", text: msg("records.shiftPartLeftOut", { what, why }) });
     seen.add(key);
-    entries.push({ id: newId([...taken]), beat: beat.id, card: shift.card, target: shift.target ?? null, patch });
+    entries.push({ id: newId([...taken]), beat: beat.id, card: shift.card, target: null, patch });
     taken.add(entries.at(-1).id);
     // The lines the chapter note shows: what each field was and what it is now.
     const defs = schema.cards[shift.card].fields;
     for (const [field, value] of Object.entries(patch)) {
       const def = defs.find((d) => d.key === field);
-      const label = shift.card === "characters" ? `${what}: ${def.label}` : `${schema.cards[shift.card].label}: ${def.label}`;
+      const label = `${what}: ${def.label}`;
       if (!Array.isArray(value)) { changes.push({ label, before: show(project, def, card[field]), after: show(project, def, value) }); continue; }
       const subs = def.item_fields ?? [];
       for (const op of value) {
@@ -195,9 +184,7 @@ export function landShifts(schema, project, beat, proposed, taken = usedIds(proj
         }
       }
     }
-    // Later entries see what this one made (a place added to the World can be held in the same chapter).
-    if (shift.card === "characters") working.characters = working.characters.map((c) => (c.id === shift.target ? applyPatch(c, patch) : c));
-    else working[shift.card] = applyPatch(working[shift.card], patch);
+    working.entanglements = applyPatch(working.entanglements, patch);
   }
   return { entries, warnings, changes };
 }

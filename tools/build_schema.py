@@ -27,7 +27,6 @@ sys.path.insert(0, str(REPO))
 from pulpermill.schema import CARDS  # noqa: E402
 from pulpermill.schema.common import MAX_ITEMS  # noqa: E402
 from pulpermill.schema.project import SCHEMA_VERSION  # noqa: E402
-from pulpermill.schema.shifts import MAX_SHIFTS_PER_CHAPTER  # noqa: E402
 
 TEXT_DIR = REPO / "pulpermill" / "schema" / "text"
 OUT_DIR = REPO / "web" / "data"
@@ -139,7 +138,6 @@ def build(lang):
         "schema_version": SCHEMA_VERSION,
         "lang": lang,
         "max_items": MAX_ITEMS,
-        "max_shifts_per_chapter": MAX_SHIFTS_PER_CHAPTER,       # one entry per card that appeared in a chapter (P0 A14)
         "common": common,                                      # messages for the built-in reject and block rules
         "order": visible,                                      # the chain, in the order the cards are filled in
         "cards": {cid: build_card(cid, lang_text, common) for cid in visible},

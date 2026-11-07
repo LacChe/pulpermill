@@ -74,7 +74,7 @@ def test_the_ending_lead_asks_for_a_new_first_sentence_in_positive_words():
 # ---- names in the setup fill ------------------------------------------------------------------------------------------------
 
 def setup_request(note="Pim bakes bread in the village.", characters=("Pim", "Orla"), world=None, **over):
-    request = {"call": "fill", "schema_version": 3, "language": "en", "card": "setup", "instance": None, "note": note, "example_chapter": None,
+    request = {"call": "fill", "schema_version": 4, "language": "en", "card": "setup", "instance": None, "note": note, "example_chapter": None,
                "values": {}, "related": {"characters": [{"name": n} for n in characters],
                                          "world": world or {"name": "Millbrook", "places": [{"name": "The Millpond"}], "powers": [{"name": "The Parish Council"}]}}}
     request.update(over)

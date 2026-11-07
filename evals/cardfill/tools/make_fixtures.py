@@ -8,7 +8,7 @@ import json, pathlib, re
 KIT = pathlib.Path(__file__).resolve().parent.parent
 OUT = KIT / "fixtures"
 CHAIN = ["style", "characters", "world", "entanglements", "setup"]
-SCHEMA_VERSION = 3   # must equal pulpermill.schema.project.SCHEMA_VERSION (tests/evals checks it); older files are refused (P0 A4)
+SCHEMA_VERSION = 4   # must equal pulpermill.schema.project.SCHEMA_VERSION (tests/evals checks it); older files are refused (P0 A4)
 
 # ---- which card a probe fills, and which fixed upstream cards its project holds
 CARD_OF = {"S": "style", "C": "characters", "W": "world", "E": "entanglements", "U": "setup"}

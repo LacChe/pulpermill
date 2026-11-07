@@ -1,7 +1,7 @@
 {
   "id": "t1-salt-coast",
   "title": "The Salt Coast",
-  "schema_version": 3,
+  "schema_version": 4,
   "output_language": "en",
   "example_chapter": null,
   "card_notes": [],

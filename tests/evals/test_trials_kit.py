@@ -1,7 +1,7 @@
 """A4: the chapter-trials kit (evals/trials).
 
 The stories, the projects built from them, the manifest, the scoring sheet and the README agree; every trial is a valid project under
-schema version 3 that the page's start gate accepts; the kit covers what the brief asks (6 to 8 trials, different genres, tones, cast
+schema version 4 that the page's start gate accepts; the kit covers what the brief asks (6 to 8 trials, different genres, tones, cast
 sizes of 2 to 5, first and last chapters, a protagonist with and without ties, one Simplified Chinese story)."""
 import csv
 import json
@@ -63,11 +63,11 @@ def test_the_readme_names_every_trial_and_every_file():
 
 # ---- every trial is a valid project ----------------------------------------------------------------------------------
 @pytest.mark.parametrize("path", PROJECTS, ids=lambda p: p.stem)
-def test_trial_is_a_valid_project_under_schema_version_3(path):
+def test_trial_is_a_valid_project_under_schema_version_4(path):
     data = load(path)
     assert unknown_keys(Project, data) == []
     Project.model_validate(data)
-    assert data["schema_version"] == SCHEMA_VERSION == 3
+    assert data["schema_version"] == SCHEMA_VERSION == 4
     assert data["chapters"] == [] and data["outline"]["beats"] == [] and data["summary_events"]["entries"] == [] and data["shifts"]["entries"] == []
     assert 10 <= data["setup"]["chapter_count"] <= 20
     assert data["output_language"] in ("en", "zh")

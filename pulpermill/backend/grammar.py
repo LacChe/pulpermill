@@ -3,7 +3,7 @@ what a free-written reply is checked against (shape.py). Only the keywords llama
 enum, const, items, properties, required, anyOf, minItems, maxItems, additionalProperties.
 
 Three grammars come ready made, because they follow from the cards alone: a card fill (`fill`), the planner's fields of a beat
-(`plan_beat`) and the shifts of a chapter (`shifts`, a patch per card built from shiftable_fields). The shape of any other reply (a
+(`plan_beat`) and the shifts of a chapter (`shifts`, the new edge of ties). The shape of any other reply (a
 judge's answer, an extractor's) is the prompter's, built from the small pieces at the top. Link fields are limited to the names the
 request sent (the `ref` of the field says which names); where a request sent none, a link is plain text."""
 from copy import deepcopy
@@ -11,7 +11,7 @@ from typing import Any
 
 from pulpermill.schema import CARDS
 from pulpermill.schema.common import MAX_ITEMS
-from pulpermill.schema.shifts import MAX_SHIFTS_PER_CHAPTER, SHIFT_CARDS, shiftable_fields
+from pulpermill.schema.shifts import CHAPTER_SHIFT_CARDS, MAX_SHIFTS_PER_CHAPTER, shiftable_fields
 
 from . import cards
 from .handles import Handles
@@ -207,20 +207,20 @@ def _required(card: str, key: str) -> list[str]:
     return [k for k, f in item.model_fields.items() if k != "id" and f.is_required()]
 
 
+def edge_patch(scope, refs: dict) -> Schema:
+    """What a chapter's patch of the Entanglements may hold: `replace` operations on the ties this scope sent, each with a new `edge` and nothing
+    else. A bond, a tie's ends and the holdings do not change in a chapter."""
+    ids = scope.handles("ties")
+    op = obj({"op": {"const": "replace"}, "id": one_of(ids), "values": obj(_item_props("entanglements", "ties", ["edge"], refs), ["edge"])})
+    return obj({"ties": {"type": "array", "items": op, "minItems": 1, "maxItems": MAX_ITEMS}})
+
+
 def shifts(request: dict, handles: Handles) -> Schema:
-    """The `shifts` list of a chapter: at most one entry per card that was sent (a character, the world, the ties and holdings), each
-    `{card, target, patch}` as the contract's ShiftOut, with a character named by its label and an item by its handle."""
-    people = [s.label for s in handles.of_card("characters")]
-    refs = link_names(people, request.get("world"))
-    variants = []
-    for scope in handles.scopes:
-        if scope.card not in SHIFT_CARDS:
-            continue
-        head: dict[str, Schema] = {"card": {"const": scope.card}}
-        if scope.card == "characters":
-            head["target"] = {"const": scope.label}
-        variants.append(obj({**head, "patch": patch(scope.card, scope, refs)}))
+    """The `shifts` list of a chapter: at most one entry, for the Entanglements (`CHAPTER_SHIFT_CARDS`), replacing the edge of ties, as the
+    contract's ShiftOut with an item named by its handle. With no tie sent there is nothing to shift and the list is empty."""
+    refs = link_names([s.label for s in handles.of_card("characters")], request.get("world"))
+    variants = [obj({"card": {"const": scope.card}, "patch": edge_patch(scope, refs)})
+                for scope in handles.scopes if scope.card in CHAPTER_SHIFT_CARDS and scope.handles("ties")]
     if not variants:
         return {"type": "array", "items": text(), "maxItems": 0}
-    return {"type": "array", "items": {"anyOf": variants} if len(variants) > 1 else variants[0],
-            "maxItems": min(len(variants), MAX_SHIFTS_PER_CHAPTER)}
+    return {"type": "array", "items": variants[0], "maxItems": 1}

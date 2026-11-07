@@ -43,7 +43,7 @@ NOTE = "Imre is the lead. The Authority posts a notice closing Dock 9. Make it n
 
 
 def req(card="setup", note=NOTE, chapter=None, **over) -> dict:
-    r = {"call": "fill", "schema_version": 3, "language": "en", "card": card, "instance": "c0000009" if card == "characters" else None, "note": note,
+    r = {"call": "fill", "schema_version": 4, "language": "en", "card": card, "instance": "c0000009" if card == "characters" else None, "note": note,
          "example_chapter": chapter, "values": copy.deepcopy(VALUES[card]), "related": copy.deepcopy(RELATED[card])}
     r.update(over)
     return r

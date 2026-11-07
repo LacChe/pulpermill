@@ -26,7 +26,7 @@ FITS = [v for v in VECTORS if v["valid"] and v["data"]["call"] == "style_fit"]
 
 
 def request(**over) -> dict:
-    r = {"call": "style_fit", "schema_version": 3, "language": "en",
+    r = {"call": "style_fit", "schema_version": 4, "language": "en",
          "style": {"person": "first", "tense": "past", "distance": "deep", "diction": "ornate", "humor": "dry"},
          "protagonist": {"id": "c0000001", "name": "Suvi", "sex": "female", "sketch": "A clerk who never says what she feels.", "fear": "being seen",
                          "flaw": "believes silence is safety", "speech": "clipped, never finishes a thought",

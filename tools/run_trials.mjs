@@ -109,7 +109,7 @@ for (const entry of wanted) {
       const placed = project.outline.beats.find((b) => b.id === beat.id);
       const earlier = (project.chapters ?? []).map((c) => c.text);
       const checks = checkChapter({ language: source.output_language, style: eff.style ?? source.style, text: outcome.chapter.text, eff, cast: placed.cast,
-        spotlight: placed.spotlight, earlier, events: outcome.events, shifts: outcome.shifts, proposed: written.read.shifts.length, maxShifts: schema.max_shifts_per_chapter ?? 7 });
+        spotlight: placed.spotlight, earlier, events: outcome.events, shifts: outcome.shifts, proposed: written.read.shifts.length, maxShifts: 1 });
       commitChapter(project, outcome);
       const seconds = ((Date.now() - t0) / 1000).toFixed(1);
       const warnings = outcome.warnings.map((w) => w.text).join(" | ");

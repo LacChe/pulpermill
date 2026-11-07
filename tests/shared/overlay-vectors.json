@@ -3,7 +3,7 @@
  "overlay_rules": [
   "A case gives base cards, shift entries, a map from each beat id to its chapter number, and the chapter the state is wanted for.",
   "The wanted state is the one going INTO that chapter: an entry for chapter N is applied only when the wanted chapter is greater than N.",
-  "Entries are applied in chapter order, then in the order they are listed (recorded). An entry applies to the card of its kind: `characters` to the base character whose id is its target, `world` and `entanglements` to that card.",
+  "Entries are applied in chapter order, then in the order they are listed (recorded). An entry applies to the card of its kind: `characters` to the base character whose id is its target, `entanglements` to that card.",
   "A scalar field in a patch replaces the value. A list field holds operations, applied in order: `add` appends {id, ...values} at the end; `replace` merges its values into the item with that id, keeping the item's other keys and its place; `remove` deletes the item with that id.",
   "A `replace` or `remove` of an id that is not in the list (never added, or already removed) changes nothing, and neither does it stop the rest of the patch. An `add` of an id that is already there is not defined here and is not tested.",
   "Base cards are abbreviated: they hold only the fields a case uses (every list item keeps its id). The expected cards are in the same abbreviated form, for every card the case gives as base, with keys in the same order. A card with no shifts is returned as it was."
@@ -512,80 +512,6 @@
       ]
      }
     ]
-   }
-  },
-  {
-   "name": "replace_changes_only_the_keys_it_carries",
-   "why": "A replace with one key leaves the item's other keys and its place in the list alone.",
-   "beats": {
-    "b0000001": 1,
-    "b0000002": 2,
-    "b0000003": 3,
-    "b0000004": 4,
-    "b0000005": 5
-   },
-   "base": {
-    "world": {
-     "name": "The Harbour",
-     "history": "Rebuilt after the flood.",
-     "places": [
-      {
-       "id": "p0000001",
-       "name": "The Quay",
-       "description": "Wet planks and gulls.",
-       "effect": "Everyone whispers."
-      }
-     ],
-     "objects": [
-      {
-       "id": "o0000001",
-       "name": "The ledger",
-       "description": "Water-stained.",
-       "significance": "Names every debt."
-      }
-     ]
-    }
-   },
-   "shifts": [
-    {
-     "beat": "b0000001",
-     "card": "world",
-     "target": null,
-     "patch": {
-      "places": [
-       {
-        "op": "replace",
-        "id": "p0000001",
-        "values": {
-         "effect": "Everyone lowers their voice."
-        }
-       }
-      ]
-     }
-    }
-   ],
-   "chapter": 2,
-   "expected": {
-    "world": {
-     "name": "The Harbour",
-     "history": "Rebuilt after the flood.",
-     "places": [
-      {
-       "id": "p0000001",
-       "name": "The Quay",
-       "description": "Wet planks and gulls.",
-       "effect": "Everyone lowers their voice."
-      }
-     ],
-     "objects": [
-      {
-       "id": "o0000001",
-       "name": "The ledger",
-       "description": "Water-stained.",
-       "significance": "Names every debt."
-      }
-     ]
-    }
    }
   },
   {
@@ -1952,72 +1878,6 @@
    }
   },
   {
-   "name": "world_scalar_shift_has_no_target",
-   "why": "A World entry has no target and sets a scalar field of the World card.",
-   "beats": {
-    "b0000001": 1,
-    "b0000002": 2,
-    "b0000003": 3,
-    "b0000004": 4,
-    "b0000005": 5
-   },
-   "base": {
-    "world": {
-     "name": "The Harbour",
-     "history": "Rebuilt after the flood.",
-     "places": [
-      {
-       "id": "p0000001",
-       "name": "The Quay",
-       "description": "Wet planks and gulls.",
-       "effect": "Everyone whispers."
-      }
-     ],
-     "objects": [
-      {
-       "id": "o0000001",
-       "name": "The ledger",
-       "description": "Water-stained.",
-       "significance": "Names every debt."
-      }
-     ]
-    }
-   },
-   "shifts": [
-    {
-     "beat": "b0000001",
-     "card": "world",
-     "target": null,
-     "patch": {
-      "history": "Rebuilt after the flood, then burned."
-     }
-    }
-   ],
-   "chapter": 2,
-   "expected": {
-    "world": {
-     "name": "The Harbour",
-     "history": "Rebuilt after the flood, then burned.",
-     "places": [
-      {
-       "id": "p0000001",
-       "name": "The Quay",
-       "description": "Wet planks and gulls.",
-       "effect": "Everyone whispers."
-      }
-     ],
-     "objects": [
-      {
-       "id": "o0000001",
-       "name": "The ledger",
-       "description": "Water-stained.",
-       "significance": "Names every debt."
-      }
-     ]
-    }
-   }
-  },
-  {
    "name": "entries_are_applied_in_chapter_order_even_when_recorded_out_of_order",
    "why": "Applied in chapter order, then in the order recorded: the chapter 2 entry is listed first but chapter 3's value wins.",
    "beats": {
@@ -2258,48 +2118,6 @@
    "problems": []
   },
   {
-   "name": "scalar_on_the_world",
-   "card": "world",
-   "patch": {
-    "history": "Rebuilt after the flood, then burned."
-   },
-   "problems": []
-  },
-  {
-   "name": "replace_one_key_of_a_place",
-   "card": "world",
-   "patch": {
-    "places": [
-     {
-      "op": "replace",
-      "id": "p0000001",
-      "values": {
-       "effect": "Everyone lowers their voice."
-      }
-     }
-    ]
-   },
-   "problems": []
-  },
-  {
-   "name": "add_a_place_with_every_key",
-   "card": "world",
-   "patch": {
-    "places": [
-     {
-      "op": "add",
-      "id": "p0000002",
-      "values": {
-       "name": "The Mill",
-       "description": "Cold and loud.",
-       "effect": "Nobody can talk."
-      }
-     }
-    ]
-   },
-   "problems": []
-  },
-  {
    "name": "tie_edge_replace",
    "card": "entanglements",
    "patch": {
@@ -2421,32 +2239,6 @@
    ]
   },
   {
-   "name": "the_system_id_is_not_a_field_to_shift",
-   "card": "world",
-   "patch": {
-    "id": "w0000001"
-   },
-   "problems": [
-    {
-     "code": "unknown_field",
-     "field": "id"
-    }
-   ]
-  },
-  {
-   "name": "a_field_of_another_card",
-   "card": "world",
-   "patch": {
-    "fear": "fire"
-   },
-   "problems": [
-    {
-     "code": "unknown_field",
-     "field": "fear"
-    }
-   ]
-  },
-  {
    "name": "identity_field_changed_tie_from",
    "card": "entanglements",
    "patch": {
@@ -2524,22 +2316,6 @@
    ]
   },
   {
-   "name": "wrong_type_scalar_list",
-   "card": "world",
-   "patch": {
-    "history": [
-     "a",
-     "b"
-    ]
-   },
-   "problems": [
-    {
-     "code": "bad_type",
-     "field": "history"
-    }
-   ]
-  },
-  {
    "name": "wrong_type_list_field_holds_text",
    "card": "characters",
    "patch": {
@@ -2610,23 +2386,6 @@
     {
      "code": "missing_id",
      "field": "wants"
-    }
-   ]
-  },
-  {
-   "name": "remove_without_an_id",
-   "card": "world",
-   "patch": {
-    "places": [
-     {
-      "op": "remove"
-     }
-    ]
-   },
-   "problems": [
-    {
-     "code": "missing_id",
-     "field": "places"
     }
    ]
   },
@@ -2757,17 +2516,6 @@
    ]
   },
   {
-   "name": "empty_patch_for_the_world",
-   "card": "world",
-   "patch": {},
-   "problems": [
-    {
-     "code": "empty_patch",
-     "field": ""
-    }
-   ]
-  },
-  {
    "name": "patch_is_not_an_object",
    "card": "entanglements",
    "patch": [
@@ -2776,6 +2524,19 @@
    "problems": [
     {
      "code": "bad_type",
+     "field": ""
+    }
+   ]
+  },
+  {
+   "name": "the_world_cannot_be_shifted",
+   "card": "world",
+   "patch": {
+    "history": "Burned."
+   },
+   "problems": [
+    {
+     "code": "unknown_card",
      "field": ""
     }
    ]

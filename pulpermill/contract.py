@@ -348,14 +348,14 @@ PatchValue = Union[list[ListOp], str, int, float, bool, None]
 class ShiftOut(Strict):
     """What changed for one card, as a sparse copy of that card (P0, A1 to A3). The page stores it as a shift and checks the
     patch against the card (validate_patch in pulpermill/schema/shifts.py); the contract carries its shape only."""
-    card: Literal["characters", "world", "entanglements"]
-    target: str | None = None               # the character id as sent, for Characters; null for World and Entanglements
+    card: Literal["characters", "entanglements"]
+    target: str | None = None               # the character id as sent, for Characters; null for Entanglements
     patch: dict[str, PatchValue]            # a partial card: a scalar is its new value, a list field is a list of ListOp
 
     @model_validator(mode="after")
     def _target_matches_card(self):
         if (self.card == "characters") != (self.target is not None):
-            raise ValueError("target is the character id for Characters, and null for World and Entanglements")
+            raise ValueError("target is the character id for Characters, and null for Entanglements")
         if not self.patch:
             raise ValueError("a patch holds nothing")
         return self
@@ -365,7 +365,13 @@ class GenerateReply(Strict):
     ok: Literal[True]
     chapter_text: str
     events: EventsOut
-    shifts: list[ShiftOut]
+    shifts: list[ShiftOut]               # only the Entanglements: a chapter changes the edge of ties and nothing else
+
+    @model_validator(mode="after")
+    def _ties_only(self):
+        if any(s.card != "entanglements" for s in self.shifts):
+            raise ValueError("a chapter's shifts are for the Entanglements only")
+        return self
 
 
 REPLIES: dict[str, type[Strict]] = {

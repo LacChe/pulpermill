@@ -140,11 +140,10 @@ def test_generate_carries_shifts_with_ids_the_page_sent():
     with running(engine=engine, run=None) as (base, _):
         body = post(base, request).json()
     shifts = body["shifts"]
-    assert {s["card"] for s in shifts} == {"characters", "world", "entanglements"}
-    sent = {i["id"] for p in request["cast"] for k in ("wants", "behaviors") for i in p.get(k, [])} | {t["id"] for t in request["ties"]} | {pl["id"] for pl in request["world"]["places"]}
+    assert {s["card"] for s in shifts} == {"entanglements"}
+    sent = {t["id"] for t in request["ties"]}
     used = {op["id"] for s in shifts for ops in s["patch"].values() if isinstance(ops, list) for op in ops if "id" in op}
     assert used and used <= sent
-    assert next(s for s in shifts if s["card"] == "characters")["target"] in {p["id"] for p in request["cast"]}
 
 
 def test_a_status_call_while_busy_reports_the_stage_as_an_object():

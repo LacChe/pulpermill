@@ -47,8 +47,10 @@ test("the after-story copy goes out as its own set of files", async () => {
   const files = cardFiles(schema, project);
   assert.equal(files.length, 8);
   assert.ok(files.slice(4).every((f) => f.name.includes("after-story") && f.label.startsWith("After the story")));
-  const fear = JSON.parse(files.find((f) => f.name.includes("after-story-character-1")).text).values.fear;
-  assert.match(fear, /Mock fear after chapter 1/, "the shifts are folded into the copy");
+  const fearOf = (file) => JSON.parse(file.text).values.fear;
+  const before = files.find((f) => f.name.includes("character-1") && !f.name.includes("after-story"));
+  const after = files.find((f) => f.name.includes("after-story-character-1"));
+  assert.equal(fearOf(after), fearOf(before), "a chapter's shifts change ties, not people, so the copy of a character is the card as it was");
 });
 
 test("a card file reads back as the same card", async () => {

@@ -14,7 +14,7 @@ from .outline import Outline
 from .summaries import SummaryEvents
 from .shifts import Shifts
 
-SCHEMA_VERSION = 3          # bump when the file format changes, so older files can be recognised and migrated
+SCHEMA_VERSION = 4          # bump when the file format changes, so older files can be recognised and migrated
 
 # Which project field holds each registered card (checked by a test so a new card cannot be forgotten).
 CARD_FIELDS = {

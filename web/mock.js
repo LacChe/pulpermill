@@ -131,12 +131,12 @@ export function createMock(schema, options = {}) {
 
   const generate = (request) => {
     const beat = request.beat ?? {};
-    const who = (request.cast ?? [])[0];
+    const tie = (request.ties ?? []).find((t) => t.id === beat.spotlight) ?? (request.ties ?? [])[0];
     return {
       ok: true,
       chapter_text: `Mock chapter ${request.chapter} of ${request.chapter_count}. ${beat.aim ?? ""}`.trim(),
       events: { happened: `Mock events of chapter ${request.chapter}.`, changed: "Mock change." },
-      shifts: who ? [{ card: "characters", target: who.id, patch: { fear: `Mock fear after chapter ${request.chapter}` } }] : [],
+      shifts: tie ? [{ card: "entanglements", target: null, patch: { ties: [{ op: "replace", id: tie.id, values: { edge: `Mock edge after chapter ${request.chapter}` } }] } }] : [],
     };
   };
 

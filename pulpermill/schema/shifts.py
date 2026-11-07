@@ -1,7 +1,9 @@
-"""Shifts record: what changed for one card in one chapter, kept as a sparse copy of that card (P0 A1 to A3, A13, A14).
-Hidden from the user and never edited by hand (a chapter is regenerated instead). One entry per card that appeared in a
-chapter (the Characters in its cast, the World, the Entanglements), found through the chapter's beat; regenerating a
+"""Shifts record: what changed for one card, kept as a sparse copy of that card (P0 A1 to A3, A13, A14). Hidden from the user and
+never edited by hand (a chapter is regenerated instead). An entry belongs to a chapter, found through its beat; regenerating a
 chapter drops its entries and every later one.
+
+A chapter's own shifts change only the edge of ties (the Entanglements card). Characters change once, after the last chapter, with
+at most one entry per character on the last beat. The World never changes.
 
 The cards themselves are locked once the story starts, so shifts are what change them. The page computes the effective
 state (base card plus the shifts of earlier chapters) and sends it in every request; the overlay is written once, in the
@@ -21,13 +23,13 @@ from typing import Any, Literal, NamedTuple
 from pydantic import TypeAdapter, ValidationError
 from .common import spec, Rule, Item
 
-# One entry per card that appeared in the chapter: up to 5 cast characters, the World and the Entanglements (P0 A14).
+# The most entries one beat may hold (P0 A14). A chapter writes one, for the Entanglements; the entries after the last chapter are Characters.
 MAX_SHIFTS_PER_CHAPTER = 7
 
 CARD = {
     "id": "shifts",
     "type": "record",
-    "reads": ["chapter_text", "characters", "world", "entanglements"],
+    "reads": ["chapter_text", "entanglements"],
     "portable": False,
     "between_chapters": "per_chapter",
     "hidden": True,
@@ -36,9 +38,10 @@ CARD = {
 GROUPS = [{"id": "entries", "collapsed": False}]
 RENDER_ORDER = [["entries"]]
 
-# The cards whose fields can be shifted. Anything else on a card list (Style, Setup, Outline) is not.
-ShiftCard = Literal["characters", "world", "entanglements"]
-SHIFT_CARDS = ["characters", "world", "entanglements"]
+# The cards whose fields can be shifted. Anything else on a card list (World, Style, Setup, Outline) is not.
+ShiftCard = Literal["characters", "entanglements"]
+SHIFT_CARDS = ["characters", "entanglements"]
+CHAPTER_SHIFT_CARDS = ["entanglements"]            # what a chapter's own shifts may change: the edge of ties
 
 
 class ShiftEntry(Item):
@@ -58,7 +61,7 @@ RULES = [
          when="two entries are for the same chapter (the same beat), card and target",
          check="unique_across_items", params={"fields": ["beat", "card", "target"]}),
     Rule(id="shifts_per_chapter_max", severity="block", fields=["entries"],
-         when=f"more than {MAX_SHIFTS_PER_CHAPTER} entries are recorded for one chapter (up to 5 characters, the world and the entanglements)",
+         when=f"more than {MAX_SHIFTS_PER_CHAPTER} entries are recorded for one chapter",
          check="max_per_group", params={"group_by": "beat", "max": MAX_SHIFTS_PER_CHAPTER}),
     Rule(id="shift_target_in_cast", severity="block", fields=["entries"],
          when="a Characters entry names a character who is not in that chapter's cast, or has no character, or another card's entry names one",

@@ -146,7 +146,7 @@ def test_no_removed_name_remains_in_the_contract_or_the_vectors():
 
 
 def test_the_envelope_speaks_the_projects_schema_version():
-    assert SCHEMA_VERSION == 3
+    assert SCHEMA_VERSION == 4
     for case in VECTORS["requests"]:
         if case["valid"] and case["data"].get("call") not in ("status", "job", "cancel"):
             assert case["data"]["schema_version"] == SCHEMA_VERSION, case["name"]
@@ -230,7 +230,7 @@ def test_every_valid_shift_in_the_vectors_has_a_patch_the_schema_accepts_apart_f
             blocking = [p for p in problems if p.code not in ("bad_option",)]
             assert not blocking, (case["name"], blocking)
             seen += 1
-    assert seen >= 6
+    assert seen >= 5
 
 
 @pytest.mark.parametrize("op,id,values,ok", [
@@ -254,13 +254,13 @@ def test_list_operations_and_shifts_are_strict():
     with pytest.raises(ValidationError):
         ListOp(op="remove", id="i1", field="name")
     with pytest.raises(ValidationError):
-        ShiftOut(card="world", target=None, patch={"name": "x"}, chapter=2)
+        ShiftOut(card="entanglements", target=None, patch={"name": "x"}, chapter=2)
     with pytest.raises(ValidationError):
         ListOp.model_validate({"op": 1, "values": {"a": "b"}})           # strict: 1 is not an op
 
 
 @pytest.mark.parametrize("card,target,ok", [
-    ("characters", "c0000001", True), ("characters", None, False), ("world", None, True), ("world", "c0000001", False),
+    ("characters", "c0000001", True), ("characters", None, False), ("world", None, False), ("world", "c0000001", False),
     ("entanglements", None, True), ("entanglements", "c0000001", False), ("setup", None, False), ("style", None, False), ("outline", None, False),
 ])
 def test_a_shift_names_a_target_for_characters_and_for_nothing_else(card, target, ok):
@@ -273,13 +273,13 @@ def test_a_shift_names_a_target_for_characters_and_for_nothing_else(card, target
 
 
 def test_a_patch_can_carry_a_scalar_or_a_list_of_operations_and_nothing_else():
-    ShiftOut(card="world", patch={"history": "Gaslight arrived.", "places": [{"op": "remove", "id": "p1"}]})
+    ShiftOut(card="entanglements", patch={"note": "Gaslight arrived.", "ties": [{"op": "remove", "id": "t1"}]})
     with pytest.raises(ValidationError):
-        ShiftOut(card="world", patch={"places": [{"op": "remove"}]})
+        ShiftOut(card="entanglements", patch={"ties": [{"op": "remove"}]})
     with pytest.raises(ValidationError):
-        ShiftOut(card="world", patch={"places": {"op": "remove", "id": "p1"}})
+        ShiftOut(card="entanglements", patch={"ties": {"op": "remove", "id": "t1"}})
     with pytest.raises(ValidationError):
-        ShiftOut(card="world", patch={})
+        ShiftOut(card="entanglements", patch={})
 
 
 def test_a_fill_of_entanglements_concerns_ties_and_holdings_only():
@@ -377,3 +377,12 @@ def test_the_beat_holds_its_pressure_as_an_optional_link_filled_by_code():
     meta = field.json_schema_extra
     assert meta["ref"] == ["world.rules", "world.objects"] and meta["filled_by"] == "code" and meta["input"] == "select"
     assert Beat.model_fields["pressure"].default is None
+
+
+def test_a_chapters_shifts_are_for_the_entanglements_only():
+    base = {"ok": True, "chapter_text": "x", "events": {"happened": "y", "changed": None}}
+    edge = {"card": "entanglements", "target": None, "patch": {"ties": [{"op": "replace", "id": "t1", "values": {"edge": "z"}}]}}
+    parse_reply("generate", {**base, "shifts": [edge]})
+    for card, target in (("characters", "c0000001"), ("world", None)):
+        with pytest.raises(ValidationError):
+            parse_reply("generate", {**base, "shifts": [{"card": card, "target": target, "patch": {"x": "y"}}]})

@@ -293,7 +293,7 @@ test("stop() ends the call this page has going, and does nothing when there is n
 // ---- Story calls: progress and a lost connection ----
 
 const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const generateRequest = { call: "generate", schema_version: 3, language: "en", chapter: 1, chapter_count: 3, beat: {}, cast: [] };
+const generateRequest = { call: "generate", schema_version: 4, language: "en", chapter: 1, chapter_count: 3, beat: {}, cast: [] };
 
 test("while a story call runs the page asks status and shows the stage the backend names, then clears it", async () => {
   const mock = createMock(schema, { delay: 120 });
@@ -312,7 +312,7 @@ test("a plan that is retried names the retry stage", async () => {
   const client = createClient({ setting: { kind: "mock" }, mock, sleep: realSleep, pollEvery: 5 });
   const seen = new Set();
   client.onChange((state) => { if (state.stage) seen.add(state.stage.name); });
-  await client.start({ call: "plan", schema_version: 3, language: "en", chapter: 1, chapter_count: 3, retry: { beat: {}, problems: ["y"] } }).done;
+  await client.start({ call: "plan", schema_version: 4, language: "en", chapter: 1, chapter_count: 3, retry: { beat: {}, problems: ["y"] } }).done;
   assert.ok(seen.has("retry"));
 });
 
@@ -536,7 +536,7 @@ test("the end of the story needs no model call", async () => {
   const done = makeAfterStory(p);
   assert.equal(done.ok, true);
   assert.equal(mock.seen.length, 0);
-  assert.equal(done.after.characters[0].fear, "Mock fear after chapter 1");
+  assert.ok(done.after.entanglements.ties.some((t) => t.edge === "Mock edge after chapter 1"), "the chapter's edge is folded in");
 });
 
 test("every request to a real backend skips the ngrok warning, and carries the token only when one is set", async () => {

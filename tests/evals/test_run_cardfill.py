@@ -78,7 +78,7 @@ def test_a_run_against_the_fake_backend_writes_results_and_summary(tmp_path):
         saved = json.loads((out / f"case-3-run{n}.json").read_text(encoding="utf-8"))
         assert len(saved["project"]["characters"]) == 3
         assert all(note["character"] for note in saved["project"]["card_notes"] if note["card"] == "characters")
-    assert json.loads((out / "meta.json").read_text())["schema_version"] == 3
+    assert json.loads((out / "meta.json").read_text())["schema_version"] == 4
 
 
 def test_a_run_against_the_stub_prompter_records_the_rules_the_judge_and_the_prompter(tmp_path):

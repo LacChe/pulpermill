@@ -1,7 +1,7 @@
 {
   "id": "t3-star-ferry",
   "title": "The Ferry That Was Always Late",
-  "schema_version": 3,
+  "schema_version": 4,
   "output_language": "en",
   "example_chapter": null,
   "card_notes": [],

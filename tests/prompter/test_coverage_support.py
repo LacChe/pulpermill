@@ -185,12 +185,12 @@ def generate_request(mutate=None, chapter_one: bool = False) -> dict:
 
 
 def fill_request(card: str, values: dict, related: dict | None = None, instance: str | None = None) -> dict:
-    return {"call": "fill", "schema_version": 3, "language": "en", "card": card, "instance": instance, "note": "A short note.",
+    return {"call": "fill", "schema_version": 4, "language": "en", "card": card, "instance": instance, "note": "A short note.",
             "example_chapter": None, "values": values, "related": related or {}}
 
 
 def fit_request(style: dict, protagonist: dict) -> dict:
-    return {"call": "style_fit", "schema_version": 3, "language": "en", "style": style, "protagonist": protagonist}
+    return {"call": "style_fit", "schema_version": 4, "language": "en", "style": style, "protagonist": protagonist}
 
 
 def judge_requests(card: str, values: dict, related: dict, key: str, instance: str | None = None) -> list[dict]:
@@ -202,7 +202,7 @@ def judge_requests(card: str, values: dict, related: dict, key: str, instance: s
             rules.append({"id": rule.id, "fields": [key]})
     if not rules:
         return []
-    return [{"call": "judge", "schema_version": 3, "language": "en", "card": card, "instance": instance, "rules": rules, "values": values,
+    return [{"call": "judge", "schema_version": 4, "language": "en", "card": card, "instance": instance, "rules": rules, "values": values,
              "related": related}]
 
 

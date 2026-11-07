@@ -12,7 +12,7 @@ from pulpermill.schema.shifts import validate_patch, shiftable_fields, MAX_SHIFT
 VECTORS = json.loads((REPO / "tests" / "shared" / "overlay-vectors.json").read_text(encoding="utf-8"))
 OVERLAY = VECTORS["overlay"]
 VALIDATION = VECTORS["patch_validation"]
-KINDS = {"characters", "world", "entanglements"}
+KINDS = {"characters", "entanglements"}
 
 
 def codes(card_id, patch):
@@ -30,7 +30,7 @@ def test_every_overlay_case_is_well_formed():
     assert len(names) == len(set(names))
     for c in OVERLAY:
         assert set(c) == {"name", "why", "beats", "base", "shifts", "chapter", "expected"}, c["name"]
-        assert set(c["base"]) <= KINDS and set(c["expected"]) == set(c["base"]), c["name"]
+        assert set(c["base"]) <= KINDS | {"world"} and set(c["expected"]) == set(c["base"]), c["name"]
         assert isinstance(c["chapter"], int) and c["chapter"] >= 1, c["name"]
         for e in c["shifts"]:
             assert set(e) == {"beat", "card", "target", "patch"}, c["name"]
@@ -50,7 +50,7 @@ def test_every_patch_in_the_overlay_cases_is_valid():
 def test_the_overlay_cases_cover_what_the_spec_lists():
     names = {c["name"] for c in OVERLAY}
     for wanted in ("scalar_set_then_set_again_later_wins", "list_add_then_replace_the_added_item", "list_remove_the_added_item",
-                   "replace_changes_only_the_keys_it_carries", "an_entry_for_chapter_3_is_not_seen_for_chapter_3",
+                   "an_entry_for_chapter_3_is_not_seen_for_chapter_3",
                    "an_entry_for_chapter_3_is_seen_for_chapter_4", "replace_of_an_id_that_does_not_exist_changes_nothing",
                    "remove_of_an_id_that_does_not_exist_changes_nothing", "two_characters_with_different_targets_do_not_affect_each_other",
                    "no_shifts_returns_the_base_cards_unchanged", "tie_edge_change", "holding_holder_change"):
@@ -81,7 +81,7 @@ def test_patch_validation_covers_every_case_the_spec_lists():
     seen = {p["code"] for c in VALIDATION for p in c["problems"]}
     # no shiftable field has a fixed set of options yet, so bad_option is tested on a synthetic card below
     assert seen == {"fixed_field", "unknown_field", "identity_field", "bad_type", "missing_id", "empty_patch",
-                    "missing_value", "unknown_item_field", "bad_operation", "empty_values", "empty_list"}
+                    "missing_value", "unknown_item_field", "bad_operation", "empty_values", "empty_list", "unknown_card"}
 
 
 # ---------------------------------------------------------------- validate_patch
@@ -124,7 +124,7 @@ def test_the_item_id_is_not_an_item_field():
 
 def test_a_missing_id_is_reported_for_a_blank_or_non_text_id():
     for bad in ("", "  ", None, 5):
-        assert codes("world", {"places": [{"op": "remove", "id": bad}]}) == [("missing_id", "places")]
+        assert codes("characters", {"wants": [{"op": "remove", "id": bad}]}) == [("missing_id", "wants")]
 
 
 def test_a_wrong_option_is_refused_and_a_field_added_to_a_card_later_is_shiftable(monkeypatch):
@@ -179,16 +179,12 @@ def test_each_shiftable_field_says_scalar_or_list_and_lists_name_their_item_fiel
     ent = {f["key"]: f for f in shiftable_fields("entanglements")}
     assert ent["ties"]["item_fields"] == ["bond", "edge"] and ent["ties"]["identity_fields"] == ["tie_from", "tie_to"]
     assert ent["holdings"]["item_fields"] == ["held_by"] and ent["holdings"]["identity_fields"] == ["holdee"]
-    world = {f["key"]: f for f in shiftable_fields("world")}
-    assert world["places"]["item_fields"] == ["name", "description", "effect"]
-    assert world["objects"]["item_fields"] and "rules" not in world            # a world rule never changes
 
 
-def test_a_world_rule_is_fixed_and_a_patch_on_it_is_refused():
-    assert "rules" not in {f["key"] for f in shiftable_fields("world")}
-    assert {"places", "objects", "powers", "terms"} <= {f["key"] for f in shiftable_fields("world")}
-    got = validate_patch("world", {"rules": [{"op": "remove", "id": "x"}]})
-    assert [(p.code, p.field) for p in got] == [("fixed_field", "rules")]
+def test_the_world_cannot_be_shifted():
+    assert shiftable_fields("world") == []
+    got = validate_patch("world", {"places": [{"op": "remove", "id": "x"}]})
+    assert [(p.code, p.field) for p in got] == [("unknown_card", "")]
 
 
 def test_shiftable_fields_of_a_card_that_cannot_be_shifted_is_empty():
@@ -214,8 +210,8 @@ def test_the_cap_is_seven_and_the_rule_uses_it():
     assert rule.params["max"] == MAX_SHIFTS_PER_CHAPTER and rule.params["group_by"] == "beat"
 
 
-def test_shifts_hold_no_pairs_beyond_the_three_cards():
-    assert shifts.SHIFT_CARDS == ["characters", "world", "entanglements"]
+def test_shifts_hold_no_pairs_beyond_the_two_cards():
+    assert shifts.SHIFT_CARDS == ["characters", "entanglements"]
     assert set(options_of(fields_of(shifts.ShiftEntry)["card"])) == set(shifts.SHIFT_CARDS)
 
 

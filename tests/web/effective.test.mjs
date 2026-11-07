@@ -38,12 +38,12 @@ test("applyPatch ignores an add of an id that is already there and keeps the res
 
 const project = () => ({
   characters: [{ id: "c1", name: "Ines", fear: "the dark" }],
-  world: { name: "W", places: [{ id: "p1", name: "Quay" }] },
+  world: { name: "W", places: [{ id: "p1", name: "Quay" }], rules: [{ id: "r1", statement: "No debts spoken." }] },
   entanglements: { ties: [{ id: "t1", tie_from: "c1", tie_to: "g1", bond: "clerk", edge: "to hide it" }], holdings: [] },
   outline: { beats: [{ id: "b1", chapter: 1 }, { id: "b2", chapter: 2 }] },
   shifts: { entries: [
     { id: "s1", beat: "b1", card: "characters", target: "c1", patch: { fear: "fire" } },
-    { id: "s2", beat: "b2", card: "world", target: null, patch: { places: [{ op: "add", id: "p2", values: { name: "Mill" } }] } },
+    { id: "s2", beat: "b2", card: "entanglements", target: null, patch: { ties: [{ op: "replace", id: "t1", values: { edge: "to tell it" } }] } },
   ] },
 });
 
@@ -52,26 +52,22 @@ test("effectiveProject is the state going into a chapter and leaves the project 
   const was = JSON.stringify(p);
   assert.equal(effectiveProject(p, 1).characters[0].fear, "the dark");
   assert.equal(effectiveProject(p, 2).characters[0].fear, "fire");
-  assert.equal(effectiveProject(p, 2).world.places.length, 1);
-  assert.equal(effectiveProject(p, 3).world.places.length, 2);
+  assert.equal(effectiveProject(p, 2).entanglements.ties[0].edge, "to hide it");
+  assert.equal(effectiveProject(p, 3).entanglements.ties[0].edge, "to tell it");
   assert.equal(JSON.stringify(p), was);
 });
 
 test("foldAll applies every shift, and a project with none comes back the same", () => {
-  assert.equal(foldAll(project()).world.places.length, 2);
+  assert.equal(foldAll(project()).entanglements.ties[0].edge, "to tell it");
   const bare = { characters: [{ id: "c1" }], outline: { beats: [] } };
   assert.deepEqual(foldAll(bare), bare);
 });
 
-test("a patch on a world rule is refused by validatePatch", () => {
+test("the world cannot be shifted: validatePatch refuses it, and a saved shift on it is not applied", () => {
   assert.deepEqual(validatePatch(schema, "world", { rules: [{ op: "remove", id: "r1" }] }).map(({ code, field }) => ({ code, field })),
-    [{ code: "fixed_field", field: "rules" }]);
-});
-
-test("a saved project that already holds a shift on a rule still folds without crashing (effectiveProject does not validate)", () => {
+    [{ code: "unknown_card", field: "" }]);
   const p = project();
-  p.world.rules = [{ id: "r1", statement: "No debts spoken.", cost: "void", when_broken: "shame" }];
   p.shifts.entries.push({ id: "s3", beat: "b1", card: "world", target: null, patch: { rules: [{ op: "remove", id: "r1" }] } });
   assert.doesNotThrow(() => foldAll(p));
-  assert.equal(effectiveProject(p, 1).world.rules.length, 1);
+  assert.equal(effectiveProject(p, 2).world.rules.length, 1);
 });

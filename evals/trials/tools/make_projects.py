@@ -14,7 +14,7 @@ import sys
 import yaml
 
 KIT = pathlib.Path(__file__).resolve().parents[1]
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 # Every Style axis a story does not name. The stories name the ones that make them what they are.
 DEFAULT_STYLE = {"distance": "close", "humor": "none", "pacing": "balanced", "rhythm": "varied", "diction": "plain", "formality": "casual",

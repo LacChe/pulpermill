@@ -67,20 +67,19 @@ def test_two_characters_with_one_name_are_told_apart():
     assert Handles(req).scope("characters", "Ana (2)").target == "a2"
 
 
-def test_the_shifts_grammar_names_only_what_was_sent_and_every_kind_of_change():
+def test_the_shifts_grammar_names_only_the_ties_that_were_sent_and_their_edge():
     req = request("generate")
     kit = Kit(req)
     g = kit.grammar.shifts()
     text = json.dumps(g)
-    assert "Suvi" in text and "Marit" in text and '"wants.1"' in text and '"ties.2"' in text and '"places.2"' in text
+    assert "Marit" not in text and '"ties.2"' in text and "wants" not in text and "places" not in text and "holdings" not in text
     assert '"const": "replace"' in text and '"const": "add"' not in text and '"const": "remove"' not in text
-    assert g["maxItems"] <= 7
+    assert g["maxItems"] == 1
     ok = json.loads(script("generate", req, kit)[2])["shifts"]
     assert shape.problems(ok, g) == [] and kit.shifts_problem(ok) is None
-    assert {s["card"] for s in ok} == {"characters", "world", "entanglements"}
-    ops = {op["op"] for s in ok for v in s["patch"].values() if isinstance(v, list) for op in v}
-    assert ops == {"replace"} and any(not isinstance(v, list) for s in ok for v in s["patch"].values())
-    assert any(s["card"] == "entanglements" and "ties" in s["patch"] for s in ok)
+    assert [s["card"] for s in ok] == ["entanglements"]
+    ops = [op for s in ok for v in s["patch"].values() for op in v]
+    assert {op["op"] for op in ops} == {"replace"} and all(set(op["values"]) == {"edge"} for op in ops)
 
 
 def test_a_patch_has_no_property_for_a_list_with_no_items_but_still_offers_a_scalar():
@@ -98,17 +97,18 @@ def test_a_reply_that_points_at_something_not_sent_is_not_usable():
     kit = Kit(req)
     good = json.loads(script("generate", req, kit)[2])["shifts"]
     bad_handle = json.loads(json.dumps(good))
-    bad_handle[0]["patch"]["wants"][0]["id"] = "wants.9"
+    bad_handle[0]["patch"]["ties"][0]["id"] = "ties.9"
     assert shape.problems(bad_handle, kit.grammar.shifts()) and kit.shifts_problem(bad_handle)
-    nobody = json.loads(json.dumps(good))
-    nobody[0]["target"] = "Nobody"
-    assert shape.problems(nobody, kit.grammar.shifts()) and kit.shifts_problem(nobody)
     twice = good + [good[0]]
     assert "two entries" in kit.shifts_problem(twice)
-    fixed = [{"card": "characters", "target": "Suvi", "patch": {"name": "Other"}}]
-    assert kit.shifts_problem(fixed)                                 # a fixed field is never shifted
-    assert kit.shifts_problem([{"card": "world", "patch": {}}]) is None          # nothing changed: no entry
-    assert assemble.shifts([{"card": "world", "patch": {}}], kit.handles) == []
+    people = [{"card": "characters", "target": "Suvi", "patch": {"fear": "fire"}}]
+    assert shape.problems(people, kit.grammar.shifts()) and kit.shifts_problem(people)      # a chapter does not change people
+    world = [{"card": "world", "patch": {"history": "A flood."}}]
+    assert shape.problems(world, kit.grammar.shifts()) and kit.shifts_problem(world)         # nor the world
+    bond = [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": {"bond": "x"}}]}}]
+    assert shape.problems(bond, kit.grammar.shifts()) and kit.shifts_problem(bond)           # a tie changes only its edge
+    assert kit.shifts_problem([{"card": "entanglements", "patch": {}}]) is None               # nothing changed: no entry
+    assert assemble.shifts([{"card": "entanglements", "patch": {}}], kit.handles) == []
 
 
 def test_assembled_shifts_carry_the_ids_the_page_sent_and_pass_the_contract():
@@ -119,9 +119,8 @@ def test_assembled_shifts_carry_the_ids_the_page_sent_and_pass_the_contract():
     contract.parse_reply("generate", out)
     assert out["events"] == {"happened": "Happened.", "changed": None}
     ids = {op["id"] for s in out["shifts"] for v in s["patch"].values() if isinstance(v, list) for op in v if "id" in op}
-    assert ids <= {"w0000001", "h0000001", "t1000001", "t1000002", "p0000001", "p0000002"} and "t1000001" in ids
-    assert next(s for s in out["shifts"] if s["card"] == "characters")["target"] == "c0000001"
-    assert all(s["target"] is None for s in out["shifts"] if s["card"] != "characters")
+    assert ids <= {"t1000001", "t1000002"} and "t1000001" in ids
+    assert all(s["card"] == "entanglements" and s["target"] is None for s in out["shifts"])
 
 
 def test_a_judge_hit_names_the_item_id_and_a_handle_that_was_not_sent_is_refused():

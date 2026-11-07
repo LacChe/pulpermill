@@ -1045,7 +1045,7 @@ export function readStyleFitReply(reply) {
 const isText = (value) => typeof value === "string";
 const bad = (detail) => failure("bad_output", detail);
 const onlyKeys = (object, keys) => Object.keys(object).every((k) => keys.includes(k));
-const SHIFT_CARD_IDS = ["characters", "world", "entanglements"];
+const CHAPTER_SHIFT_CARD_IDS = ["entanglements"];      // what a chapter's own shifts may change: the edge of ties
 const OP_KINDS = ["add", "replace", "remove"];
 
 // The plan's reply: the beat's planner fields by key (where, when_time, aim, plan). Links are words; landBeat turns them into ids.
@@ -1093,9 +1093,9 @@ export function readGenerateReply(reply) {
   const shifts = [];
   for (const shift of checked.shifts) {
     if (!isObject(shift) || !onlyKeys(shift, ["card", "target", "patch"])) return bad("A shift is not a card, a target and a patch.");
-    if (!SHIFT_CARD_IDS.includes(shift.card)) return bad("A shift is for a card that cannot be shifted.");
+    if (!CHAPTER_SHIFT_CARD_IDS.includes(shift.card)) return bad("A chapter's shift is for a card that a chapter cannot shift.");
     const target = shift.target ?? null;
-    if ((shift.card === "characters") !== (typeof target === "string" && target !== "")) return bad("A shift names a character only for Characters.");
+    if (target !== null) return bad("A chapter's shift names no character.");
     if (!isObject(shift.patch) || !Object.keys(shift.patch).length) return bad("A shift's patch holds nothing.");
     for (const value of Object.values(shift.patch)) {
       if (Array.isArray(value)) {

@@ -171,21 +171,8 @@ def script(call: str, request: dict, kit: Any) -> list[str]:
 
 
 def stub_shifts(kit: Any) -> list[dict]:
-    """Shifts of the kinds the grammar allows: a scalar, and a list `replace` for a character's wants, the world's places and the ties. A
-    `replace` is left out when the request did not send an item to point at."""
+    """The shifts a chapter may carry: a `replace` of the edge of the first tie the request sent. Nothing when it sent none."""
     out = []
-    for scope in kit.handles.of_card("characters")[:1]:
-        patch: dict = {"sketch": "Changed in the stub chapter."}
-        wants = scope.handles("wants")
-        if wants:
-            patch["wants"] = [{"op": "replace", "id": wants[0], "values": {"text": "A changed want."}}]
-        out.append({"card": "characters", "target": scope.label, "patch": patch})
-    for scope in kit.handles.of_card("world"):
-        patch = {"history": "The stub world remembers."}
-        places = scope.handles("places")
-        if places:
-            patch["places"] = [{"op": "replace", "id": places[0], "values": {"effect": "Loud now."}}]
-        out.append({"card": "world", "patch": patch})
     for scope in kit.handles.of_card("entanglements"):
         ties = scope.handles("ties")
         if ties:

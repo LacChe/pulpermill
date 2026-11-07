@@ -151,7 +151,7 @@ def test_events_keep_what_happened_and_what_changed_only():
 
 def test_the_plan_is_on_the_beat_and_the_project_keeps_no_plan_notes():
     from pulpermill.schema import project
-    assert project.SCHEMA_VERSION == 3
+    assert project.SCHEMA_VERSION == 4
     assert not hasattr(project, "PlanNote") and "plan_notes" not in project.Project.model_fields
     assert "plan_note_unique" not in {r.id for r in project.PROJECT_RULES}
 
@@ -210,10 +210,10 @@ def test_a_shift_entry_has_a_beat_a_card_a_target_and_a_patch():
     assert list(fields_of(ShiftEntry)) == ["beat", "card", "target", "patch"]
     meta = {n: f.json_schema_extra for n, f in fields_of(ShiftEntry).items()}
     assert meta["beat"]["ref"] == ["outline.beats"] and meta["beat"]["filled_by"] == "code"
-    assert set(options_of(fields_of(ShiftEntry)["card"])) == {"characters", "world", "entanglements"}
+    assert set(options_of(fields_of(ShiftEntry)["card"])) == {"characters", "entanglements"}
     assert meta["target"]["ref"] == ["characters"] and not fields_of(ShiftEntry)["target"].is_required()
     assert meta["patch"]["kind"] == "patch" and fields_of(ShiftEntry)["patch"].is_required()
-    e = ShiftEntry(beat="b1", card="world", patch={"history": "x"})
+    e = ShiftEntry(beat="b1", card="entanglements", patch={"ties": [{"op": "remove", "id": "t1"}]})
     assert e.target is None and len(e.id) == 8
 
 

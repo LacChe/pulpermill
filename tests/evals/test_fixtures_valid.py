@@ -113,7 +113,7 @@ def test_entanglements_and_setup_probes_start_from_upstream_cards():
 
 
 def test_generator_writes_the_current_schema_version():
-    assert SCHEMA_VERSION == 3, "the project schema version changed: re-read P0 A4 and regenerate the fixtures"
+    assert SCHEMA_VERSION == 4, "the project schema version changed: re-read P0 A4 and regenerate the fixtures"
     versions = {load(p)["schema_version"] for p in FIXTURE_FILES}
     assert versions == {SCHEMA_VERSION}
 

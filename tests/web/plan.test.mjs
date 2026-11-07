@@ -226,13 +226,6 @@ test("landing a plan: the words become ids, the code fields stay, and what did n
   assert.deepEqual(landBeat(schema, p, beat, { ok: true, beat: { aim: 5 } }).dropped, ["aim"]);
 });
 
-test("a place the story added in an earlier chapter can be the beat's place", () => {
-  const p = story();
-  p.shifts.entries.push({ id: "s1", beat: "b0000001", card: "world", target: null, patch: { places: [{ op: "add", id: "p9", values: { name: "The Mill", description: "d", effect: "e" } }] } });
-  const landed = landBeat(schema, p, p.outline.beats[1], { ok: true, beat: { where: "The Mill" } });
-  assert.equal(landed.beat.where, "p9");
-});
-
 test("placing a beat replaces the one with its id, or adds it", () => {
   const p = story();
   const was = placeBeat(p, { ...p.outline.beats[1], aim: "New" });
@@ -251,10 +244,7 @@ test("the Outline's block rules judge the beat against the cards going into its 
   const same = beatBlockers(schema, p, { ...good, aim: p.outline.beats[0].aim });
   assert.ok(Array.isArray(same));
   assert.equal(p.outline.beats.length, 2, "checking leaves the project alone");
-  const withMill = story();
-  withMill.shifts.entries.push({ id: "s1", beat: "b0000001", card: "world", target: null, patch: { places: [{ op: "add", id: "p9", values: { name: "The Mill", description: "d", effect: "e" } }] } });
-  assert.deepEqual(beatBlockers(schema, withMill, { ...good, where: "p9" }), [], "a place the story added is a place");
-  assert.ok(beatBlockers(schema, story(), { ...good, where: "p9" }).length > 0, "and without the shift it is not");
+  assert.ok(beatBlockers(schema, story(), { ...good, where: "p9" }).length > 0, "a place that is not in the World is not a place");
 });
 
 test("the first chapter's plan has no earlier beats or events", () => {

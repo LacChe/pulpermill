@@ -1,4 +1,4 @@
-# Wording for the generate call (mill): three steps, write (prose), events (JSON) and shifts (JSON). Read through common.load_text("generate").
+# Wording for the generate call (mill): three steps, write (prose), events (JSON) and shifts (JSON: the new edge of ties). Read through common.load_text("generate").
 # English always; the story's language is named inside the prompts. Wording is positive. R3 to R7 mark the design rule a block serves.
 #
 # WHY THE WRITER PROMPT IS BUILT THIS WAY (Gemma 3 27B, instruction-tuned, 16k context, abliterated):
@@ -70,11 +70,10 @@ events_problems:
   empty_changed: "Add one short sentence naming what is different at the end of the chapter."
 
 # ---- shifts step ----
-shifts_task: "Below is chapter {chapter} of a story and the cards it was written from. Record only what changed in this chapter: what is different at its end compared with its start."
+shifts_task: "Below is chapter {chapter} of a story and the ties it was written from. Record how the edge of the ties changed in this chapter: what now drives the person at the from end of a tie, compared with the start of the chapter."
 shifts_chapter_lead: "The chapter:"
-shifts_cards_lead: "The cards as they stood before the chapter, with the handles you can point at:"
-shifts_rules: "Write at most seven entries: one for each person on stage whose wants, fears, beliefs or ways of acting changed, one for the world if something in it changed, and one for the ties and holdings if any changed. A card that did not change gets no entry. Each entry names its card (characters, world or entanglements), names the person when the card is a character, and holds a patch with only the values that changed. In a patch a single-value field takes its new value, and a list field takes a list of replace operations, each with the handle of the item and only the values that changed. Point at items only by the handles shown."
-shifts_fields: "The fields that may change are, for a character: {character}; for the world: {world}; for the ties and holdings: {entanglements}."
+shifts_cards_lead: "The ties as they stood before the chapter, with the handles you can point at:"
+shifts_rules: "Write one entry for the ties: it names the card (entanglements) and holds a patch with a ties list of replace operations, each with the handle of a tie and its new edge. Change only the edge of a tie, and only for ties the chapter moved. Nothing else on any card changes. Point at ties only by the handles shown."
 shifts_example: "An entanglements entry that replaces the edge of a tie looks like this: {\"card\": \"entanglements\", \"patch\": {\"ties\": [{\"op\": \"replace\", \"id\": \"ties.1\", \"values\": {\"edge\": \"to <what now drives the person at the from end>\"}}]}}"
 # R6. The spotlight tie's edge must be replaced.
 shifts_edge: "The tie in the spotlight is {tie_from} toward {tie_to} ({handle}); its edge was: {edge}. Replace that edge in the entanglements entry with its new state, written the way the old one is written: what now drives {tie_from} in this tie, as the chapter left it. The new edge must differ from the old one and must grow out of how the collision of the chapter ended."

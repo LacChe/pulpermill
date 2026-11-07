@@ -13,7 +13,7 @@
 //   edge_in_shifts the spotlight tie's edge appears in this chapter's committed shifts: an Entanglements entry whose ties operation
 //                  replaces or removes that tie and, when it replaces, carries an edge that differs from the old one.
 //   changed_empty  the events' "changed" line is empty.
-//   shift_count    shifts kept; shifts_proposed is what the model sent; flagged above `max` (the schema's cap).
+//   shift_count    shifts kept; shifts_proposed is what the model sent; flagged above `max` (one entry a chapter).
 //   unknown_names  capitalised words in the narration that are not at the start of a sentence and are not a cast member, a place, an
 //                  object, a group or a term from the cards (or an ordinary calendar word). English only. offstage_names are names of
 //                  characters who are in the story but not in this chapter's cast. Both list names and count them.

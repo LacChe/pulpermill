@@ -15,7 +15,7 @@
       "valid": true,
       "data": {
         "call": "fill",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "setup",
         "instance": null,
@@ -43,7 +43,7 @@
       "valid": true,
       "data": {
         "call": "fill",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "characters",
         "instance": "c0000001",
@@ -62,7 +62,7 @@
       "valid": true,
       "data": {
         "call": "judge",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "world",
         "instance": null,
@@ -87,7 +87,7 @@
       "valid": true,
       "data": {
         "call": "style_fit",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "style": {
           "person": "first"
@@ -102,7 +102,7 @@
       "name": "no call named",
       "valid": false,
       "data": {
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en"
       }
     },
@@ -126,7 +126,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "setup",
         "instance": null,
@@ -153,7 +153,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "setup",
         "instance": null,
@@ -180,7 +180,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "characters",
         "instance": null,
@@ -198,7 +198,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "setup",
         "instance": "c0000001",
@@ -225,7 +225,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "outline",
         "instance": null,
@@ -252,7 +252,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 3,
+        "schema_version": 4,
         "card": "setup",
         "instance": null,
         "note": "Suvi must find the ledger.",
@@ -304,7 +304,7 @@
       "valid": false,
       "data": {
         "call": "fill",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "setup",
         "instance": null,
@@ -332,7 +332,7 @@
       "valid": false,
       "data": {
         "call": "judge",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "nope",
         "instance": null,
@@ -356,7 +356,7 @@
       "valid": false,
       "data": {
         "call": "judge",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "world",
         "instance": null,
@@ -377,7 +377,7 @@
       "valid": false,
       "data": {
         "call": "style_fit",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "style": {
           "person": "first"
@@ -422,7 +422,7 @@
       "valid": true,
       "data": {
         "call": "fill",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "card": "entanglements",
         "instance": null,
@@ -452,7 +452,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -608,7 +608,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -766,7 +766,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -919,7 +919,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -1073,7 +1073,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -1232,7 +1232,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -1387,7 +1387,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -1542,7 +1542,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -1716,7 +1716,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -1872,7 +1872,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -2035,7 +2035,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -2191,7 +2191,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -2358,7 +2358,7 @@
       "valid": true,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 1,
         "chapter_count": 8,
@@ -2498,7 +2498,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -2650,7 +2650,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -2802,7 +2802,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -2955,7 +2955,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -3092,7 +3092,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -3238,7 +3238,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -3352,7 +3352,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -3496,7 +3496,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -3655,7 +3655,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": "2",
         "chapter_count": 8,
@@ -3824,7 +3824,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -3978,7 +3978,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -4136,7 +4136,7 @@
       "valid": false,
       "data": {
         "call": "plan",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -4447,7 +4447,7 @@
       "valid": true,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -4597,7 +4597,7 @@
       "valid": true,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -4750,7 +4750,7 @@
       "valid": true,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -4898,7 +4898,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -5047,7 +5047,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -5200,7 +5200,7 @@
       "valid": true,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 1,
         "chapter_count": 8,
@@ -5347,7 +5347,7 @@
       "valid": true,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -5503,7 +5503,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -5644,7 +5644,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -5786,7 +5786,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -5932,7 +5932,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -6063,7 +6063,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -6203,7 +6203,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -6343,7 +6343,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -6491,7 +6491,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -6639,7 +6639,7 @@
       "valid": false,
       "data": {
         "call": "generate",
-        "schema_version": 3,
+        "schema_version": 4,
         "language": "en",
         "chapter": 2,
         "chapter_count": 8,
@@ -7585,7 +7585,7 @@
       }
     },
     {
-      "name": "a chapter with its events and one scalar shift",
+      "name": "a chapter with its events and one shift",
       "call": "generate",
       "valid": true,
       "data": {
@@ -7597,10 +7597,18 @@
         },
         "shifts": [
           {
-            "card": "characters",
-            "target": "c0000001",
+            "card": "entanglements",
+            "target": null,
             "patch": {
-              "fear": "That her mother will see what she has become"
+              "ties": [
+                {
+                  "op": "replace",
+                  "id": "t1000001",
+                  "values": {
+                    "edge": "to make peace with letting her daughter go"
+                  }
+                }
+              ]
             }
           }
         ]
@@ -7633,10 +7641,18 @@
         },
         "shifts": [
           {
-            "card": "characters",
-            "target": "c0000001",
+            "card": "entanglements",
+            "target": null,
             "patch": {
-              "fear": "That her mother will see what she has become"
+              "ties": [
+                {
+                  "op": "replace",
+                  "id": "t1000001",
+                  "values": {
+                    "edge": "to make peace with letting her daughter go"
+                  }
+                }
+              ]
             }
           }
         ]
@@ -7654,10 +7670,18 @@
         },
         "shifts": [
           {
-            "card": "characters",
-            "target": "c0000001",
+            "card": "entanglements",
+            "target": null,
             "patch": {
-              "fear": "That her mother will see what she has become"
+              "ties": [
+                {
+                  "op": "replace",
+                  "id": "t1000001",
+                  "values": {
+                    "edge": "to make peace with letting her daughter go"
+                  }
+                }
+              ]
             }
           }
         ]
@@ -7727,9 +7751,9 @@
       }
     },
     {
-      "name": "a chapter with a remove operation",
+      "name": "a chapter with a shift for the world",
       "call": "generate",
-      "valid": true,
+      "valid": false,
       "data": {
         "ok": true,
         "chapter_text": "Dusk came early to the Archive...",
@@ -7754,9 +7778,9 @@
       }
     },
     {
-      "name": "a chapter with a scalar and list operations in one patch",
+      "name": "a chapter with a shift for a character",
       "call": "generate",
-      "valid": true,
+      "valid": false,
       "data": {
         "ok": true,
         "chapter_text": "Dusk came early to the Archive...",
@@ -7789,7 +7813,7 @@
       }
     },
     {
-      "name": "a chapter with a shift for every kind of card",
+      "name": "a chapter with replace operations on two ties",
       "call": "generate",
       "valid": true,
       "data": {
@@ -7801,20 +7825,6 @@
         },
         "shifts": [
           {
-            "card": "characters",
-            "target": "c0000001",
-            "patch": {
-              "fear": "That her mother will see what she has become"
-            }
-          },
-          {
-            "card": "world",
-            "target": null,
-            "patch": {
-              "era_and_technology": "Gaslight arrived."
-            }
-          },
-          {
             "card": "entanglements",
             "target": null,
             "patch": {
@@ -7824,6 +7834,13 @@
                   "id": "t1000001",
                   "values": {
                     "edge": "to make peace with letting her daughter go"
+                  }
+                },
+                {
+                  "op": "replace",
+                  "id": "t1000002",
+                  "values": {
+                    "edge": "to be forgiven by the board"
                   }
                 }
               ]
@@ -7845,10 +7862,18 @@
         },
         "shifts": [
           {
-            "card": "characters",
-            "target": "c0000001",
+            "card": "entanglements",
+            "target": null,
             "patch": {
-              "fear": "That her mother will see what she has become"
+              "ties": [
+                {
+                  "op": "replace",
+                  "id": "t1000001",
+                  "values": {
+                    "edge": "to make peace with letting her daughter go"
+                  }
+                }
+              ]
             }
           }
         ],
@@ -7904,10 +7929,18 @@
         },
         "shifts": [
           {
-            "card": "characters",
-            "target": "c0000001",
+            "card": "entanglements",
+            "target": null,
             "patch": {
-              "fear": "That her mother will see what she has become"
+              "ties": [
+                {
+                  "op": "replace",
+                  "id": "t1000001",
+                  "values": {
+                    "edge": "to make peace with letting her daughter go"
+                  }
+                }
+              ]
             }
           }
         ]
@@ -7925,10 +7958,18 @@
         },
         "shifts": [
           {
-            "card": "characters",
-            "target": "c0000001",
+            "card": "entanglements",
+            "target": null,
             "patch": {
-              "fear": "That her mother will see what she has become"
+              "ties": [
+                {
+                  "op": "replace",
+                  "id": "t1000001",
+                  "values": {
+                    "edge": "to make peace with letting her daughter go"
+                  }
+                }
+              ]
             }
           }
         ]
@@ -7957,7 +7998,7 @@
       }
     },
     {
-      "name": "a Characters shift with no target",
+      "name": "a chapter shift for Characters with no target",
       "call": "generate",
       "valid": false,
       "data": {
@@ -7979,7 +8020,7 @@
       }
     },
     {
-      "name": "a World shift that names a target",
+      "name": "an Entanglements shift that names a target",
       "call": "generate",
       "valid": false,
       "data": {
@@ -7991,10 +8032,18 @@
         },
         "shifts": [
           {
-            "card": "world",
+            "card": "entanglements",
             "target": "c0000001",
             "patch": {
-              "era_and_technology": "x"
+              "ties": [
+                {
+                  "op": "replace",
+                  "id": "t1000001",
+                  "values": {
+                    "edge": "x"
+                  }
+                }
+              ]
             }
           }
         ]
@@ -8013,7 +8062,7 @@
         },
         "shifts": [
           {
-            "card": "world",
+            "card": "entanglements",
             "target": null
           }
         ]
@@ -8032,7 +8081,7 @@
         },
         "shifts": [
           {
-            "card": "world",
+            "card": "entanglements",
             "target": null,
             "patch": {}
           }

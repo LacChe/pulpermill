@@ -329,9 +329,10 @@ def entry(handle: str, edge: str) -> dict:
 def test_the_shifts_prompt_shows_handles_and_names_the_edge_to_replace():
     request = one_tie()
     prompt = gen.shifts_prompt(request, Kit(request), CHAPTER)
-    assert "ties.1: Marit toward Suvi: mother. Edge: to bring her daughter home" in prompt and "wants.1: To be left alone with the records" in prompt
+    assert "ties.1: Marit toward Suvi: mother. Edge: to bring her daughter home" in prompt
+    assert "wants.1" not in prompt and "places." not in prompt and "holdings." not in prompt        # only the ties are shown: nothing else changes in a chapter
     assert "The tie in the spotlight is Marit toward Suvi (ties.1); its edge was: to bring her daughter home" in prompt
-    assert "at most seven entries" in prompt and "t1000001" not in prompt and "c0000001" not in prompt
+    assert "one entry for the ties" in prompt and "only the edge of a tie" in prompt and "t1000001" not in prompt and "c0000001" not in prompt
     ambiguous = gen.shifts_prompt(legacy(base()), Kit(base()), CHAPTER)
     assert "is one of these: ties.1" in ambiguous and "ties.2" in ambiguous
 
@@ -342,12 +343,14 @@ def test_the_shifts_check_wants_the_spotlight_edge_replaced_with_something_new()
     ok = {"shifts": [entry("ties.1", "to forgive her daughter and let her stay")]}
     assert gen.shifts_problem(request, kit, ok) is None
     for missing in ({"shifts": []},
-                    {"shifts": [{"card": "characters", "target": "Suvi", "patch": {"sketch": "Changed."}}]},
                     {"shifts": [entry("ties.2", "to hide the ledger for good")]},                  # another tie's edge is not the spotlight's
-                    {"shifts": [entry("ties.1", "To bring her daughter home.")]},                    # the same edge, said again
-                    {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "remove", "id": "ties.1"}]}}]}):
+                    {"shifts": [entry("ties.1", "To bring her daughter home.")]}):                   # the same edge, said again
         problem = gen.shifts_problem(request, kit, missing)
         assert problem and "ties.1" in problem and "Marit toward Suvi" in problem, missing
+    people = gen.shifts_problem(request, kit, {"shifts": [{"card": "characters", "target": "Suvi", "patch": {"sketch": "Changed."}}]})
+    assert people and "only the edge of ties" in people                          # a chapter does not change people
+    removed = gen.shifts_problem(request, kit, {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "remove", "id": "ties.1"}]}}]})
+    assert removed and "only the edge of ties" in removed                        # nor take a tie away
 
 
 def test_the_shifts_check_accepts_any_named_tie_when_the_spotlight_is_not_singled_out():

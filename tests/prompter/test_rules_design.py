@@ -136,14 +136,18 @@ def test_rule6_the_shifts_check_rejects_a_chapter_that_leaves_the_edge_unchanged
     assert request["beat"]["spotlight"] == TIE_A and request["ties"][0]["edge"] == "to bring her daughter home"
     assert check({"shifts": [edge_entry("ties.1", "to forgive her daughter and let her stay")]}) is None
     unchanged = ({"shifts": []},
-                 {"shifts": [{"card": "characters", "target": "Suvi", "patch": {"sketch": "Changed."}}]},                      # other cards moved, the tie did not
                  {"shifts": [edge_entry("ties.2", "to hide the ledger for good")]},                                         # another tie's edge is not the spotlight's
                  {"shifts": [edge_entry("ties.1", "To bring her daughter home.")]},                                         # the same edge, said again
-                 {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": {"bond": "mother, still"}}]}}]},
-                 {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "remove", "id": "ties.1"}]}}]})
+                 )
     for reply in unchanged:
         problem = check(reply)
         assert problem and "ties.1" in problem and "Marit toward Suvi" in problem and "\n" not in problem, reply
+    other = ({"shifts": [{"card": "characters", "target": "Suvi", "patch": {"sketch": "Changed."}}]},                             # people do not change in a chapter
+             {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": {"bond": "mother, still"}}]}}]},
+             {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "remove", "id": "ties.1"}]}}]})
+    for reply in other:
+        problem = check(reply)
+        assert problem and "only the edge of ties" in problem and "\n" not in problem, reply
 
 
 def test_rule6_the_writer_and_the_events_step_ask_for_the_change_the_check_looks_for():
@@ -163,22 +167,17 @@ def seven_cast(request: dict) -> dict:
     return request
 
 
-def test_rule6_a_chapter_never_has_more_than_seven_shift_entries():
-    assert MAX_SHIFTS_PER_CHAPTER == 7
+def test_rule6_a_chapter_has_one_shift_entry_and_it_is_for_the_ties():
     request = seven_cast(gen_with())
     kit, check = Kit(request), shifts_check(seven_cast(gen_with()))
-    assert len(kit.handles.of_card("characters")) == 5
-    assert kit.grammar.shifts()["maxItems"] == 7                                       # five people, the world and the ties: seven cards at most
-    labels = [s.label for s in kit.handles.of_card("characters")]
-    entries = [{"card": "characters", "target": label, "patch": {"sketch": "Changed by the chapter."}} for label in labels]
-    entries += [{"card": "world", "patch": {"everyday_life": "Changed by the chapter."}}, edge_entry("ties.1", "to let her daughter go")]
-    assert len(entries) == 7 and kit.shifts_problem(entries) is None and check({"shifts": entries}) is None
-    too_many = entries + [{"card": "world", "patch": {"era_and_technology": "Changed again."}}]
-    assert len(too_many) == 8 and kit.shifts_problem(too_many), "eight entries are refused"
-    assert check({"shifts": too_many})
-    small = Kit(gen_with())                                                            # two people: four cards at most, never more than seven
-    assert small.grammar.shifts()["maxItems"] == 4
-    assert "at most seven entries" in prompts("generate", seven_cast(gen_with()))["shifts"]
+    assert kit.grammar.shifts()["maxItems"] == 1                                       # the ties; people and the world do not change in a chapter
+    ok = [edge_entry("ties.1", "to let her daughter go")]
+    assert kit.shifts_problem(ok) is None and check({"shifts": ok}) is None
+    two = ok + [edge_entry("ties.2", "to burn the ledger")]
+    assert kit.shifts_problem(two) and check({"shifts": two}), "a second entry for the ties is refused"
+    people = ok + [{"card": "characters", "target": "Marit", "patch": {"sketch": "Changed by the chapter."}}]
+    assert kit.shifts_problem(people) and check({"shifts": people}), "people do not change in a chapter"
+    assert "one entry for the ties" in prompts("generate", request)["shifts"]
 
 
 # ---- rule 5: minor characters never carry the plot and appear only by role --------------------------------------------------------

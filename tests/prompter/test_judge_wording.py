@@ -53,7 +53,7 @@ def judge_request(card: str, rule_id: str, fields: list[str]) -> dict:
         values.update(id="c0000001", name="Imre")
     related = {"characters": [{"id": "c0000001", "name": "Imre"}, {"id": "c0000002", "name": "Teodora"}], "world": {"objects": [{"id": "o0000001", "name": "The Lattice"}]}} \
         if card == "entanglements" else {}
-    return {"call": "judge", "schema_version": 3, "language": "en", "card": card, "instance": "c0000001" if card == "characters" else None,
+    return {"call": "judge", "schema_version": 4, "language": "en", "card": card, "instance": "c0000001" if card == "characters" else None,
             "rules": [{"id": rule_id, "fields": fields}], "values": values, "related": related}
 
 

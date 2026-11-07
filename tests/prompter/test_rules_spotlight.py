@@ -102,15 +102,13 @@ def test_the_shifts_check_judges_the_spotlight_ties_edge_only():
     assert check({"shifts": [{"card": "entanglements", "patch": {"ties": ops}}]}) is None                       # one entry may move both ties
 
 
-def test_no_more_than_seven_shift_entries_with_the_key_present():
+def test_one_shift_entry_with_the_key_present_and_it_may_move_more_than_one_tie():
     request = crowded()
-    request["cast"] += [{**copy.deepcopy(MARIT), "id": f"c000000{n}", "name": name} for n, name in ((4, "Odo"), (5, "Pia"))]
     kit = Kit(request)
-    assert kit.grammar.shifts()["maxItems"] == 7
-    labels = [s.label for s in kit.handles.of_card("characters")]
-    entries = [{"card": "characters", "target": l, "patch": {"sketch": "Changed."}} for l in labels]
-    entries += [{"card": "world", "patch": {"everyday_life": "Changed."}}, replace(handle_of(request, "t1000002"), "to forgive her sister")]
+    assert kit.grammar.shifts()["maxItems"] == 1
     flow, _ = run_steps(request)
     check = flow.next(["The chapter text.", {"happened": "Something happened here.", "changed": "Something moved."}]).check
-    assert len(entries) == 7 and check({"shifts": entries}) is None
-    assert check({"shifts": entries + [{"card": "world", "patch": {"era_and_technology": "Changed again."}}]})
+    entry = replace(handle_of(request, "t1000002"), "to forgive her sister")
+    assert check({"shifts": [entry]}) is None
+    assert check({"shifts": [entry, entry]})                                                                     # a second entry for the ties is refused
+    assert check({"shifts": [{"card": "world", "patch": {"everyday_life": "Changed."}}]})                       # the world does not change in a chapter

@@ -3,7 +3,7 @@ draft carries a handle (or, for the character a patch is about, its label). This
 anything the request did not send. Shapes are in pulpermill/prompter/README.md."""
 from typing import Any
 
-from pulpermill.schema.shifts import MAX_SHIFTS_PER_CHAPTER, validate_patch
+from pulpermill.schema.shifts import CHAPTER_SHIFT_CARDS, MAX_SHIFTS_PER_CHAPTER, validate_patch
 
 from .handles import Handles, Scope, Unresolved
 
@@ -43,15 +43,28 @@ def _stored_form(patch: dict) -> dict:
     return {k: [{**op, "id": "new-item"} if op.get("op") == "add" else op for op in v] if isinstance(v, list) else v for k, v in patch.items()}
 
 
+def _edges_only(patch: dict) -> None:
+    """A chapter's patch holds `ties` replace operations that carry an `edge` and nothing else; anything more raises Unresolved."""
+    for key, ops in patch.items():
+        if key != "ties":
+            raise Unresolved(f"a chapter changes only the edge of ties, not {key}")
+        for op in ops if isinstance(ops, list) else []:
+            if op.get("op") != "replace" or set(op.get("values") or {}) - {"edge"}:
+                raise Unresolved("a chapter changes only the edge of ties: replace the edge of a tie and nothing else")
+
+
 def shifts(entries: Any, handles: Handles) -> list[dict]:
-    """The contract's shift entries. An entry whose patch holds nothing is a card that did not change and is left out. Anything that is
-    not a valid patch for its card, or that points at something not sent, raises Unresolved with a line saying what."""
+    """The contract's shift entries of a chapter: only the Entanglements, replacing the edge of ties. An entry whose patch holds nothing is a
+    card that did not change and is left out. Anything else, or anything that points at something not sent, raises Unresolved with a line
+    saying what."""
     if not isinstance(entries, list):
         raise Unresolved("shifts must be a list")
     out, seen = [], set()
     for entry in entries:
         entry = _object(entry, "a shift")
         card, label = entry.get("card"), entry.get("target")
+        if card not in CHAPTER_SHIFT_CARDS:
+            raise Unresolved(f"a chapter changes only the edge of ties (the entanglements card), not {card}")
         scope = handles.scope(card, label)
         if (card, scope.target) in seen:
             raise Unresolved(f"the {card} card has two entries; give each card one entry with all its changes")
@@ -59,6 +72,7 @@ def shifts(entries: Any, handles: Handles) -> list[dict]:
         patch = patch_with_ids(scope, entry.get("patch") or {})
         if not patch:
             continue
+        _edges_only(patch)
         problems = validate_patch(card, _stored_form(patch))
         if problems:
             raise Unresolved(problems[0].message)

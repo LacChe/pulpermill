@@ -65,13 +65,10 @@
     "whyMatchesNothing": "“{words}” matches nothing in the cards",
     "whyMatchesSeveral": "“{words}” matches more than one entry in the cards",
     "whyNoItem": "there is no such item to {op}",
-    "whyNoCharacter": "there is no such character",
     "whyEmpty": "nothing was left to change",
     "shiftLeftOut": "A change to {what} was left out: {why}.",
     "shiftPartLeftOut": "Part of a change to {what} was left out: {why}.",
     "shiftTwice": "Two changes were given for {what}, so the second was left out.",
-    "shiftsTooMany": "More than {max} cards changed in one chapter, so the rest were left out.",
-    "notInChapter": "“{name}” changed, but was not in this chapter, so it was left out.",
     "laterStale": "The {n} later chapter(s) were written from the old version. They stay as they are, and their beats are marked stale."
   },
   "endstory": {
