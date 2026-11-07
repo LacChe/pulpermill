@@ -261,7 +261,7 @@ def test_the_check_refuses_what_the_grammar_cannot_see():
     assert "name field is empty" in problem("world", {"name": " ", "history": "A station built over a drowned city."})
     assert "protagonist field is empty" in problem("setup", {"protagonist": "", "chapter_count": 9})
     assert "world card must name no character" in problem("world", {"history": "Imre left the station in a famine."})
-    assert "at least two wants" in problem("characters", {"wants": [{"text": "to be left alone"}]})
+    assert "at least two wants" in problem("characters", {"wants": [{"text": "to be left alone"}]}, values={})
     assert "at least two wants" in problem("characters", {"wants": [{"text": "to be left alone"}]}, values={"id": "c0000009", "wants": [{"text": "to win"}]})
 
 

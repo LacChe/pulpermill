@@ -14,6 +14,7 @@ chapter_only: "The writer gave an example chapter instead of a note. Read it and
 both: "The writer gave a note and an example chapter. The note decides what the card holds, exactly as the writer meant it, and every fact in it goes on the card as written. Use the chapter to confirm and enrich the details the note leaves open."
 note_label: "The writer's note:"
 chapter_label: "The example chapter:"
+person_line: "This card is for the person the writer named {name}. Describe only that person, using what the writer's text shows about them, and leave every other person out."
 chapter_gap: "[…]"
 
 language_line: "Write every text you produce in {language}. Keep names exactly as the writer spelled them, and keep the English answer words listed under the fields that offer a choice."
@@ -212,6 +213,7 @@ problems:
   empty_item_field: "Every item in {list} needs a {field}: write it for each item, or leave the item out."
   name_leak: "The world card must name no character; take {name} out of {where} and describe it without the person."
   one_want: "Give at least two wants that pull against each other."
+  name_mismatch: "The name field must be exactly the name the writer gave: {name}. Write that name, and describe only that person."
   chapter_count: "The writer asked for {count} chapters, so chapter_count is {count}."
   chapter_count_missing: "Set chapter_count to {count}, the number of chapters the writer asked for."
 

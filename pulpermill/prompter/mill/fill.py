@@ -125,10 +125,12 @@ def build_prompt(request: dict, kit: Any, factor: float = 1.0) -> str:
     if chapter:
         inputs.append(w["chapter_label"] + "\n" + _shorten(chapter, factor if factor < 0.7 else 1.0))
     guidance = [meta["scope"]] + list(meta["specific"])
+    person = r.s((request.get("values") or {}).get("name")) if card == "characters" else ""      # the one current value a prompt shows: who the card is for
 
     blocks = [
         w["role"].format(label=label, intro=meta["intro"]),
         "\n\n".join(inputs),
+        w["person_line"].format(name=person) if person else "",
         w["language_line"].format(language=language_name(request.get("language"))),
         "\n\n".join(guidance),
         field_guidance(card, keys),
@@ -253,6 +255,9 @@ def fill_problem(request: dict, value: Any) -> str | None:
                 if name and name in text:
                     return pr["name_leak"].format(name=name, where=path.split(".")[0])
     if card == "characters":
+        typed = r.s((request.get("values") or {}).get("name"))
+        if typed and _norm(value.get("name")) != _norm(typed):      # a blank typed name skips the check
+            return pr["name_mismatch"].format(name=typed)
         wants = value.get("wants")
         if wants is not None and len(wants) < 2:
             return pr["one_want"]
