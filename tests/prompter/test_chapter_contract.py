@@ -38,8 +38,8 @@ def test_late_chapter_is_gone_from_the_planner_wording():
 def test_every_chapter_is_told_to_settle_its_collision_in_the_brainstorm_and_the_plan(chapter):
     p = plan_prompts(chapter)
     assert "cannot be undone" in p["plan"] or chapter == LAST          # the last chapter has its own closing words, checked below
-    assert "collision" in p["brainstorm"] and "decided for good" in p["brainstorm"] and "decided for good" in p["plan"]
-    assert "how the clash is decided for good" in p["brainstorm"]
+    assert "collision" in p["brainstorm"] and "decided for good" in p["plan"]
+    assert "how the collision ends" in p["brainstorm"]
     assert "Act 3" in p["plan"] and "Act 4" in p["plan"] and "collision of the chapter is decided for good" in p["plan"]
 
 
