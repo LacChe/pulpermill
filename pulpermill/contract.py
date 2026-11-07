@@ -183,8 +183,8 @@ class PlanRequest(_StoryRequest):
     # Every rule and object of the world in words with ids, sent only when `choose` is true (a later addition, 2026-11-05).
     pressure_options: list[PressureChoice] = Field(default_factory=list)
     # Pass the Setup's disruption to the planning prompts (select, brainstorm, plan) of chapters 2 and later, as origin history that the story
-    # so far extends from (a later addition, 2026-11-07, so older requests stay valid). Off by default: the prompts are then unchanged.
-    origin_history: bool = False
+    # so far extends from (a later addition, 2026-11-07). On by default; `false` leaves the prompts as they were before it.
+    origin_history: bool = True
 
     @model_validator(mode="after")
     def _pressure_option_ids_are_unique(self):

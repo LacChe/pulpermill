@@ -193,7 +193,7 @@ def _context(request: dict, factor: float, combos: list[dict] | None = None) -> 
     timeline = r.render_earlier_beats(beats)
     chain = chain_text(request, w, history_ratio)
 
-    origin = r.render_origin_history(request.get("setup") or {}, chapter) if request.get("origin_history") else ""      # chapters 2+ only, and only when the page asks
+    origin = r.render_origin_history(request.get("setup") or {}, chapter) if request.get("origin_history", True) else ""      # chapters 2+ only, and only when the page asks
     setup = r.render_setup(request.get("setup") or {}, chapter, total or None, protagonist_name=protagonist_name(request, names), origin=origin)
     blocks = [
         _section(heads["tone"], r.render_style(request.get("style") or {}, scope="planner")),
@@ -376,7 +376,7 @@ class PlanFlow(Flow):
 
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
-        self.notes: dict[str, Any] = {"pressure_on": bool(pressure_of(request)), "origin_history": bool(request.get("origin_history"))}      # for the run log: whether a pressure was sent, whether origin history was asked for, the judges' verdict words, whether a last resort stood in for a step, and the walk-on counts (minor_names, minor_new)
+        self.notes: dict[str, Any] = {"pressure_on": bool(pressure_of(request)), "origin_history": bool(request.get("origin_history", True))}      # for the run log: whether a pressure was sent, whether origin history was asked for, the judges' verdict words, whether a last resort stood in for a step, and the walk-on counts (minor_names, minor_new)
         self._pressure_at: int | None = None    # where the pressure judge's result sits among the results after the brainstorm, once that step has been asked for
         self.brainstorm = ""                    # the brainstorm's text once it has run ("" until then, and when it fell back)
         self.combos: list[dict] | None = None   # choose mode: the three combinations the select step picked (None until then, and when it fell back)
