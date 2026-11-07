@@ -327,3 +327,26 @@ def test_rule6_a_chapter_whose_shifts_leave_the_edge_unchanged_is_asked_for_agai
         assert response.status_code == 200 and response.json()["ok"] is True
         assert wait_idle(base_url)
     assert engine.calls == 5 and "replaces the edge of ties.1" in engine.prompts[3]
+
+
+# ---- a tie end counts as named when any part of its name appears ----------------------------------------------------------------------
+
+@pytest.mark.parametrize("name, text, expected", [
+    ("Orla Vance", "Orla waits.", True), ("Orla Vance", "Vance waits.", True), ("Orla Vance", "orla", True), ("Orla Vance", "Orlando waits.", False),
+    ("Pim Harrow", "Pim", True), ("Orla Vance", "Li went home.", False),
+    ("Aoife O'Brien", "Brien nods.", True), ("Aoife O'Brien", "O nods.", False), ("Aoife O'Brien", "Aoife nods.", True),
+    ("Ann Smith-Jones", "Jones nods.", True), ("Ann Smith-Jones", "Smith nods.", True),
+    ("The Baker's Guild", "The council meets.", False), ("The Baker's Guild", "The Guild meets.", True), ("The Baker's Guild", "Baker", True),
+    ("", "anything", False),
+])
+def test_mentions_part_matches_any_name_part_as_a_whole_word_and_skips_short_and_filler_parts(name, text, expected):
+    assert mill_plan._mentions_part(text, name) is expected, (name, text)
+
+
+def test_the_plan_check_accepts_a_plan_that_names_each_end_by_a_part_and_refuses_one_that_names_only_one_end():
+    request = plan_with()
+    check, good = plan_check(request), good_plan(request)
+    text = good["plan"]
+    assert check(good) is None
+    assert check({**good, "plan": text.replace("Marit", "the mother")}), "naming one end only is still refused"
+    assert check({**good, "plan": text.replace("Suvi", "the daughter")}), "naming one end only is still refused"

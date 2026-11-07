@@ -84,8 +84,16 @@ def _words(text: Any) -> set[str]:
     return {w for w in _norm(text).split() if len(w) > 3}
 
 
-def _mentions(text: str, name: str) -> bool:
-    return bool(name) and name.lower() in str(text or "").lower()
+_FILLER = {"the", "and", "for"}
+
+
+def _mentions_part(text: str, name: str) -> bool:
+    """True when any part of `name` stands in `text` as a whole word. A name splits at every character that is not a letter or digit, so "O'Brien"
+    and "Smith-Jones" give parts, and parts of under 3 characters or the filler words ("the", "and", "for") are skipped: "O" or "The Baker's Guild"
+    is then not met by every plan."""
+    low = str(text or "").lower()
+    parts = [w for w in re.split(r"[\W_]+", name.lower()) if len(w) >= 3 and w not in _FILLER]
+    return any(re.search(rf"(?<![^\W_]){re.escape(w)}(?![^\W_])", low) for w in parts)
 
 
 def spotlight_of(request: dict) -> dict | None:
@@ -107,7 +115,7 @@ def spotlight_candidates(request: dict, names: dict[str, str]) -> list[dict]:
     out = []
     for tie in request.get("ties") or []:
         a, b = names.get(tie.get("tie_from"), ""), names.get(tie.get("tie_to"), "")
-        if a and b and _mentions(text, a) and _mentions(text, b):
+        if a and b and _mentions_part(text, a) and _mentions_part(text, b):
             out.append(tie)
     return out
 
@@ -332,7 +340,7 @@ def plan_problem(request: dict, value: Any) -> str | None:
     tie = next((t for t in request.get("ties") or [] if t.get("id") == request.get("spotlight")), None)
     if tie:
         ends = [names.get(tie.get("tie_from"), ""), names.get(tie.get("tie_to"), "")]
-        absent = [e for e in ends if e and not _mentions(plan, e)]
+        absent = [e for e in ends if e and not _mentions_part(plan, e)]
         if absent:
             return p["missing_names"].format(names=" and ".join(absent))
     return None

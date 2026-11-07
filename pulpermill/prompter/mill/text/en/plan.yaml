@@ -31,7 +31,7 @@ aim_rules: "The aim is one thing the protagonist can try to get or do inside thi
 # R7. Four points per chapter, whatever the chapter count. The labels stay in English so a check can find them.
 four_points: "Write the plan as four points, in this order, each starting with its label exactly as written here (keep the labels in English whatever language the story is in). Act 1 is the starting point: who is there, where and when. Act 2 is where the central conflict emerges, as the aim meets the spotlight tie. Act 3 is the climax or turning point: the moment where something gives, a choice costs something, and the collision of the chapter is decided for good. Act 4 is the end point: where the chapter leaves the people and the situation, with the outcome of the collision and the new state it produced. Each point says what people do and choose, in concrete actions."
 other_person: "Act 2 says what {other} wants from this chapter and what {other} does about it, so that the tie is a person who acts and never a backdrop."
-spotlight_names: "Name both ends of the spotlight tie, {tie_from} and {tie_to}, in the plan, so that the writer knows whose tie the chapter is about."
+spotlight_names: "Name both ends of the spotlight tie, {tie_from} and {tie_to}, in the plan (a first or last name is enough, written as on the cards), so that the writer knows whose tie the chapter is about."
 
 # R6. Both must move, distinctly.
 movement: "The end point must stand clearly apart from the starting point, and it must grow out of how the collision ended. By the end of the chapter, the edge of the spotlight tie (what drives {tie_from} in it) and the protagonist's aim must each have moved to a distinctly new state: the aim reached, lost or turned into a new one, the edge met, broken or changed into something different from what it was. Say in Act 4 what the protagonist wants now and what now drives {tie_from} in the tie."
@@ -113,7 +113,7 @@ problems:
   repeated_aim: "Aim at a different step than chapter {chapter}'s aim ({aim}), one that builds on what that chapter changed."
   same_as_retry: "Choose an aim that differs from the aim of the refused attempt ({aim})."
   missing_points: "Write the plan as four points labelled Act 1, Act 2, Act 3 and Act 4, in that order, each saying what happens; the plan is missing {missing}."
-  missing_names: "Name {names} in the plan, since the chapter is about the tie between them."
+  missing_names: "Name {names} in the plan (a first or last name is enough), since the chapter is about the tie between them."
   idea_missing: "Say which idea you build on: idea is 1, 2 or 3."
   select_count: "Give exactly three combinations, each with a reason, a tie and (when there are rules or objects) a rule or object."
   select_reason: "Give pick {n} a reason of one or two sentences, in at most 700 characters."
