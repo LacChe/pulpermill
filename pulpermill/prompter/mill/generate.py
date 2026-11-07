@@ -19,7 +19,7 @@ from pulpermill.prompter.base import Flow, Step
 from . import advance, common
 from .plan import cut_events, in_names, names_of, pressure_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-12"
+VERSION = "generate-13"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -35,7 +35,7 @@ RESEND_STAND_IN = "word " * 90        # the longest line the judge can send the 
 EDGE_STAND_IN = "word " * 60       # the longest an edge is shown to a model (300 characters), for the worst case
 HAPPENED_STAND_IN = "word " * 100      # the longest a chapter's `happened` is shown to the pressure judge, for the worst case
 EVENTS_ATTEMPTS, SHIFTS_ATTEMPTS = 4, 3          # after the chapter is written, each of these steps is retried on its own and then falls back
-CHANGED_WORDS, HAPPENED_WORDS = 100, 60         # the most words `changed` keeps (its first sentence, which has room for the aim and the tie) and the fallback's `happened` keeps
+CHANGED_WORDS, HAPPENED_WORDS = 100, 60         # the most words `changed` keeps (its first two sentences, which have room for the outcome, the aim and the tie) and the fallback's `happened` keeps
 
 
 def _lang(request: dict) -> str:
@@ -209,10 +209,10 @@ def _words(text: str, limit: int) -> str:
 
 
 def repair_events(value: Any) -> dict:
-    """`changed` as its first sentence only, cut to CHANGED_WORDS words. Everything else is left as it came."""
+    """`changed` as its first two sentences (the outcome and the aim, then what drives the tie), cut to CHANGED_WORDS words. Everything else is left as it came."""
     out = dict(value or {})
-    first = sentences(out.get("changed"))
-    out["changed"] = _words(first[0], CHANGED_WORDS) if first else r.s(out.get("changed"))
+    kept = sentences(out.get("changed"))[:2]
+    out["changed"] = _words(" ".join(kept), CHANGED_WORDS) if kept else r.s(out.get("changed"))
     return out
 
 

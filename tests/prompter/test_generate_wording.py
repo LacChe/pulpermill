@@ -289,6 +289,8 @@ def test_the_events_prompt_holds_the_chapter_and_asks_for_happened_and_changed()
     prompt = gen.events_prompt(one_tie(), CHAPTER)
     assert CHAPTER in prompt and "happened" in prompt and "changed" in prompt and "one or two short sentences" in prompt and "where the protagonist's aim stands now" in prompt
     assert "at the start its edge was: to bring her daughter home" in prompt
+    assert "reached what they were after, lost it or gave it up, or whether it is still open" in prompt and "a person, an object or a deadline" in prompt and "is not an aim" in prompt
+    assert "not on what they realized, felt or concluded at the end of the chapter" in prompt
 
 
 def test_the_events_check_refuses_only_an_empty_or_too_short_reply():
@@ -300,15 +302,15 @@ def test_the_events_check_refuses_only_an_empty_or_too_short_reply():
     assert gen.events_problem({"happened": happened, "changed": "Suvi can hide no more. Marit knows everything now."}) is None
 
 
-def test_a_running_on_changed_is_repaired_to_its_first_sentence_and_the_word_cap():
-    fixed = gen.repair_events({"happened": "H", "changed": "Suvi can hide no more. Marit knows everything now."})
-    assert fixed == {"happened": "H", "changed": "Suvi can hide no more."}
+def test_a_running_on_changed_is_repaired_to_its_first_two_sentences_and_the_word_cap():
+    fixed = gen.repair_events({"happened": "H", "changed": "Suvi can hide no more. Marit knows everything now. A third sentence."})
+    assert fixed == {"happened": "H", "changed": "Suvi can hide no more. Marit knows everything now."}
     kept = gen.repair_events({"happened": "H", "changed": " ".join(["word"] * 90) + "."})
-    assert len(kept["changed"].split()) == 90 and kept["changed"].endswith(".")        # a 90-word first sentence is kept whole
+    assert len(kept["changed"].split()) == 90 and kept["changed"].endswith(".")        # a 90-word sentence is kept whole
     long = gen.repair_events({"happened": "H", "changed": " ".join(["word"] * 130) + "."})
     assert gen.CHANGED_WORDS == 100 and len(long["changed"].split()) == 100 and long["changed"].endswith(".")
     assert gen.repair_events({"happened": "H", "changed": "No stop here"})["changed"] == "No stop here"
-    assert gen.repair_events({"happened": "H", "changed": "她再也无法隐藏。马里特全都知道了。"})["changed"] == "她再也无法隐藏。"
+    assert gen.repair_events({"happened": "H", "changed": "她再也无法隐藏。马里特全都知道了。"})["changed"] == "她再也无法隐藏。 马里特全都知道了。"
 
 
 def test_the_events_fallback_is_plain_code_over_the_chapter():
@@ -414,7 +416,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-12:" in load_prompter("mill").version
+    assert "+generate:generate-13:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------
@@ -596,7 +598,7 @@ def test_the_write_step_keeps_its_own_two_attempts_and_no_fallback():
 def test_an_events_reply_that_runs_on_is_repaired_not_retried():
     long = json.dumps({"happened": "The people met and quarrelled over the ledger.", "changed": "Suvi can hide no more. Marit knows everything now."})
     reply, ctx, engine, _ = _generate(0, long, 2)
-    assert engine.calls == 4 and reply["events"]["changed"] == "Suvi can hide no more."
+    assert engine.calls == 4 and reply["events"]["changed"] == "Suvi can hide no more. Marit knows everything now."
 
 
 def test_every_fallback_is_a_line_in_the_trace(tmp_path):

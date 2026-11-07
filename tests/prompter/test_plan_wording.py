@@ -754,18 +754,21 @@ def test_every_plan_vector_with_a_pressure_is_answered_through_the_real_server(v
     assert ("Combination 1" in engine.prompts[1]) if select.is_on(request) else (SENTENCE in engine.prompts[1])
 
 
-def test_the_plan_prompts_say_the_aim_continues_the_running_aim_from_where_the_chapter_before_left_it():
+def test_the_plan_prompts_say_the_aim_follows_from_how_the_last_collision_ended():
     request = chain_request()
     prompt = plan.build_prompt(request)
-    assert "the next step of the running aim shown under the story so far" in prompt and "does not start a new one" in prompt
-    assert "continue the running aim from where the chapter before left it" in prompt
+    assert "the aim follows from how the last collision ended" in prompt and "A new aim is allowed when the old one has ended" in prompt
+    assert "If they lost it, the aim is what they do about the loss" in prompt and "If they gave it up, the aim is what they turn to instead" in prompt
+    assert "does not start a new one" not in prompt and "taking it one step further" not in prompt
+    assert "let the aim for this chapter follow from how the last collision ended" in prompt
     assert "differs from the aims of the earlier chapters" not in prompt and "that the earlier plans have not used" in prompt          # the setting and the turn are still new; the aim is not
     brain = "1. An idea. 2. Another idea. 3. A third idea."
-    assert "how its aim takes the running aim one step on" in plan.build_prompt(request, brainstorm=brain)
+    assert "how its aim follows from how the last collision ended" in plan.build_prompt(request, brainstorm=brain)
+    assert "A new aim is allowed when the old one has ended" in plan.build_brainstorm_prompt(request) and "does not start a new one" not in plan.build_brainstorm_prompt(request)
     first = {**request, "chapter": 1, "earlier_beats": [], "earlier_events": []}
-    assert "how its aim takes the running aim" not in plan.build_prompt(first, brainstorm=brain)
+    assert "how its aim follows from how the last collision ended" not in plan.build_prompt(first, brainstorm=brain)
     combos = [{"tie_id": "t", "tie_words": "A and B: x", "pressure_id": None, "pressure": None, "pressure_words": "", "reason": "r"}] * 3
-    assert "how its aim takes the running aim one step on" in plan.build_prompt(request, brainstorm=brain, combos=combos)
+    assert "how its aim follows from how the last collision ended" in plan.build_prompt(request, brainstorm=brain, combos=combos)
 
 
 def test_a_chapter_with_an_ending_but_no_aim_is_left_out_of_the_chain():
