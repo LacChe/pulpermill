@@ -47,7 +47,7 @@ def test_the_log_starts_with_the_settings_and_has_one_line_per_call(tmp_path):
 def test_a_real_pipeline_records_its_passes_and_a_retry(tmp_path):
     path = tmp_path / "runs.jsonl"
     engine = FakeEngine()
-    engine.script("not json", json.dumps({"protagonist": "Suvi"}))
+    engine.script("not json", json.dumps({"protagonist": "Suvi", "normal": "A quiet harbour town.", "disruption": "A ship came in with no crew.", "chapter_count": 8}))
     with running(Config(log_path=str(path)), engine, run=pipelines.run) as (base, _):
         assert post(base, FILL).status_code == 200
         assert wait_idle(base)

@@ -324,7 +324,8 @@ def test_a_reply_that_fails_the_check_is_asked_for_again_with_the_line_and_then_
     request = req("setup")
     kit = Kit(request)
     engine = FakeEngine()
-    engine.script(json.dumps({"normal": "TBD", "chapter_count": 9}), fill.script(request, kit)[0])
+    good = fill.script(request, kit)[0]
+    engine.script(json.dumps({**json.loads(good), "normal": "TBD"}), good)             # every field is given (the grammar needs it); one holds a stand-in
     with running(config=Config(prompter="mill"), engine=engine, run=None) as (base_url, _):
         assert post(base_url, request).status_code == 200
         assert wait_idle(base_url)
