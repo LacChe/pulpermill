@@ -387,9 +387,10 @@ def render_entanglements(ent: dict, cast_names: Iterable[str] = (), *, scope: st
 # ---- Setup, the story so far ------------------------------------------------------------------------------
 
 def render_setup(setup: dict, chapter: int, chapter_count: int | None, *, protagonist_name: str | None = None,
-                 report: Report | None = None) -> str:
+                 report: Report | None = None, origin: str = "") -> str:
     """Who the story follows, the opening (chapter 1 only: the normal and what broke it) and where this chapter sits in the
-    story. The Setup card holds the protagonist as an id; pass `protagonist_name` so the model reads the name."""
+    story. The Setup card holds the protagonist as an id; pass `protagonist_name` so the model reads the name. `origin` (see
+    `render_origin_history`) goes between the protagonist line and the chapter line; empty adds nothing."""
     c = tx.limits()["setup"]
     fr = tx.prompt_text("frames")
     lines = []
@@ -401,6 +402,8 @@ def render_setup(setup: dict, chapter: int, chapter_count: int | None, *, protag
             lines.append(sentence(fr["chapter_one_normal"].format(value=clip(setup["normal"], c["normal"], "setup.normal", report))))
         if s(setup.get("disruption")):
             lines.append(sentence(fr["chapter_one_break"].format(value=clip(setup["disruption"], c["disruption"], "setup.disruption", report))))
+    if origin:
+        lines.append(origin)
     total = int(chapter_count or 0)
     lines.append(fr["chapter_of"].format(n=chapter, total=total) if total else fr["chapter_of_unknown"].format(n=chapter))
     if total and chapter >= total:
