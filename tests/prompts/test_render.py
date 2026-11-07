@@ -4,7 +4,7 @@ import json
 import re
 from pathlib import Path
 
-from pulpermill.prompts import (Report, render_cast, render_entanglements, render_history, render_scene, render_setup, render_shift,
+from pulpermill.prompts import (Report, render_origin_history, render_cast, render_entanglements, render_history, render_scene, render_setup, render_shift,
                                 render_spotlight, render_story_so_far, render_style, render_world)
 from pulpermill.prompts import render
 from pulpermill.prompts import textfiles as tx
@@ -210,6 +210,30 @@ def test_chapter_one_carries_the_normal_and_the_break_and_later_chapters_do_not(
     five = render_setup({k: v for k, v in setup.items() if k not in ("normal", "disruption")}, 5, 8)
     assert "The shop opened at six." in one and "Someone broke in." in one and "chapter 1 of 8" in one
     assert "shop opened" not in five and "chapter 5 of 8" in five
+
+
+def test_origin_history_is_the_disruption_alone_for_chapters_after_the_first():
+    setup = dict(generate_request()["setup"], normal="The shop opened at six.", disruption="Someone broke in.")
+    two = render_origin_history(setup, 2)
+    assert two.startswith("Where the story began: Someone broke in.")
+    assert "origin history" in two and "story so far" in two and "begins from where the story so far leaves off" in two
+    assert "shop opened" not in two
+    assert render_origin_history(setup, 8) == render_origin_history(setup, 2)
+    assert not NEGATIVE.search(two) and not re.search(r"\b(goal|stakes)\b", two)
+
+
+def test_origin_history_is_empty_for_chapter_one_and_when_there_is_no_disruption():
+    setup = dict(generate_request()["setup"], disruption="Someone broke in.")
+    assert render_origin_history(setup, 1) == ""
+    assert render_origin_history({k: v for k, v in setup.items() if k != "disruption"}, 3) == ""
+    assert render_origin_history(dict(setup, disruption="  "), 3) == ""
+
+
+def test_origin_history_clips_a_long_disruption_like_chapter_one_does():
+    cap = tx.limits()["setup"]["disruption"]
+    report = Report()
+    text = render_origin_history({"disruption": "A fire took the harbor. " * 200}, 2, report=report)
+    assert report and len(text) < cap + 400
 
 
 def test_the_last_chapter_is_said_to_be_the_last():

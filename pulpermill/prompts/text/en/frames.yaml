@@ -31,6 +31,8 @@ chapter_of_unknown: "This is chapter {n}."
 chapter_last: "This is the last chapter. Bring the story to its close: settle the collision and what the story set in motion for good, open nothing new, then stop."
 chapter_one_normal: "Open the story where ordinary life was: {value}"
 chapter_one_break: "What just broke it: {value}"
+origin_history_lead: "Where the story began: {value}"
+origin_history_note: "That happened before chapter 1 and is origin history. The story so far below extends from it, and this chapter begins from where the story so far leaves off."
 
 # ---- History (what happened and what changed) ----
 history_lead_writer: "The story so far:"
