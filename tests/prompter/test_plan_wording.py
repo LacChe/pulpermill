@@ -408,6 +408,7 @@ def test_the_brainstorm_prompt_asks_for_three_ways_to_take_the_next_step_with_th
                    "what the protagonist is after", "what Marit wants from this chapter", "the line or moment where the two of them clash", "what it costs",
                    "Marit toward Suvi", "chapter 2 of 8", "in English"):
         assert needed in prompt, needed
+    assert "which must touch something about them described above (something they want, fear, are blind to or value) or the disruption the story began from, and what it costs if they lose it" in prompt
     assert "and in how they end, but never in what the protagonist is after" in prompt
     assert "Option 1 ends with the protagonist reaching what they are after, at a price. Option 2 ends with them losing it. Option 3 ends with them giving it up for something else." in prompt
     assert "Act 1" not in prompt and "JSON" not in prompt and "four points" not in prompt        # no plan shape is asked for here
