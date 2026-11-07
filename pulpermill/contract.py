@@ -205,8 +205,24 @@ class GenerateRequest(_StoryRequest):
     beat: dict[str, Any]                    # the beat in words, not ids, including its aim and plan
 
 
+class FinishRequest(Envelope):
+    """After the last chapter: how did the story change each person? The model reads the chapters' event records and the Characters
+    cards as they were before the story began, never a chapter's text (added 2026-11-07, so older requests stay valid)."""
+    call: Literal["finish"]
+    setup: dict[str, Any]                   # the Setup card: the protagonist's id and the opening (normal, disruption)
+    protagonist: str                        # the protagonist's character id, one of `characters`
+    characters: list[dict[str, Any]] = Field(min_length=1)   # the base Characters cards, with ids
+    events: list[dict[str, Any]] = Field(min_length=1)       # every chapter's Events entry, oldest first: chapter, happened, changed
+
+    @model_validator(mode="after")
+    def _protagonist_is_one_of_the_characters(self):
+        if self.protagonist not in {c.get("id") for c in self.characters}:
+            raise ValueError("protagonist must be the id of one of the characters sent")
+        return self
+
+
 Request = Annotated[Union[StatusRequest, JobRequest, CancelRequest, FillRequest, JudgeRequest, StyleFitRequest, PlanRequest,
-                          GenerateRequest], Field(discriminator="call")]
+                          GenerateRequest, FinishRequest], Field(discriminator="call")]
 _request = TypeAdapter(Request)
 
 
@@ -374,9 +390,23 @@ class GenerateReply(Strict):
         return self
 
 
+class FinishReply(Strict):
+    ok: Literal[True]
+    shifts: list[ShiftOut]               # at most one per character, for Characters only: the most notable change the whole story made to that person
+
+    @model_validator(mode="after")
+    def _one_per_character(self):
+        if any(s.card != "characters" for s in self.shifts):
+            raise ValueError("the end of the story changes the Characters only")
+        targets = [s.target for s in self.shifts]
+        if len(targets) != len(set(targets)):
+            raise ValueError("at most one shift per character")
+        return self
+
+
 REPLIES: dict[str, type[Strict]] = {
     "status": StatusReply, "job": JobReply, "cancel": CancelReply, "fill": FillReply, "judge": JudgeReply, "style_fit": StyleFitReply,
-    "plan": PlanReply, "generate": GenerateReply,
+    "plan": PlanReply, "generate": GenerateReply, "finish": FinishReply,
 }
 _error = TypeAdapter(ErrorReply)
 

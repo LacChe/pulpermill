@@ -82,6 +82,32 @@ def shifts(entries: Any, handles: Handles) -> list[dict]:
     return out
 
 
+def finish_shifts(entries: Any, handles: Handles) -> list[dict]:
+    """The contract's shift entries at the end of the story: Characters only, at most one per character, each a patch of that person's own
+    fields. An entry whose patch holds nothing is a person who did not change and is left out. Anything else, or anything that points at
+    something not sent, raises Unresolved with a line saying what. The cap on a beat and the cast rule do not apply to these entries (they
+    are the last beat's, see the rules in pulpermill/schema/shifts.py), so the one limit here is one entry per person."""
+    if not isinstance(entries, list):
+        raise Unresolved("shifts must be a list")
+    out, seen = [], set()
+    for entry in entries:
+        entry = _object(entry, "a shift")
+        if entry.get("card") != "characters":
+            raise Unresolved(f"the end of the story changes only the characters, not {entry.get('card')}")
+        scope = handles.scope("characters", entry.get("target"))
+        if scope.target in seen:
+            raise Unresolved(f"{scope.label} has two entries; give each person one entry with the most notable change")
+        seen.add(scope.target)
+        patch = patch_with_ids(scope, entry.get("patch") or {})
+        if not patch:
+            continue
+        problems = validate_patch("characters", _stored_form(patch))
+        if problems:
+            raise Unresolved(problems[0].message)
+        out.append({"card": "characters", "target": scope.target, "patch": patch})
+    return out
+
+
 def _fill(draft: dict, handles: Handles) -> dict:
     return {"values": _object(draft.get("values"), "the values")}
 
@@ -118,7 +144,11 @@ def _generate(draft: dict, handles: Handles) -> dict:
             "shifts": shifts(draft.get("shifts") or [], handles)}
 
 
-_CALLS = {"fill": _fill, "judge": _judge, "style_fit": _style_fit, "plan": _plan, "generate": _generate}
+def _finish(draft: dict, handles: Handles) -> dict:
+    return {"shifts": finish_shifts(draft.get("shifts") or [], handles)}
+
+
+_CALLS = {"fill": _fill, "judge": _judge, "style_fit": _style_fit, "plan": _plan, "generate": _generate, "finish": _finish}
 
 
 def reply(call: str, draft: dict, handles: Handles) -> dict:

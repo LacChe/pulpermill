@@ -177,7 +177,7 @@ def test_records_are_one_per_beat_and_replaced_not_appended():
     assert {r.id: r for r in CARDS["summary_events"][3]}["events_beat_unique"].params == {"field": "beat"}
     shifts = {r.id: r for r in CARDS["shifts"][3]}
     assert shifts["shift_unique"].params == {"fields": ["beat", "card", "target"]}
-    assert shifts["shifts_per_chapter_max"].params == {"group_by": "beat", "max": 7}
+    assert shifts["shifts_per_chapter_max"].params == {"group_by": "beat", "max": 7, "except": "last_beat"}   # the last beat also holds the end-of-story entries
 
 
 def test_the_old_shift_and_history_records_are_gone():

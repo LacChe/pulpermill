@@ -11,7 +11,7 @@ MODEL_TEXT = sorted([*(ROOT / "prompter" / "mill" / "text" / "en").glob("*.yaml"
 PROMPT_CODE = sorted([*(ROOT / "prompter").rglob("*.py"), *(ROOT / "prompts").rglob("*.py"), *(ROOT / "backend").rglob("*.py")])
 
 # Keys whose value is a format demonstration with placeholders, not sample content.
-FORMAT_DEMOS = {"shifts_example"}
+FORMAT_DEMOS = {"shifts_example", "finish_example"}
 
 MARKERS = re.compile(r"\be\.g\.|\bfor example\b|\bfor instance\b|\bsuch as\b|\bsounds like\b|\blooks like\b|\blike this\b", re.I)
 QUOTED = re.compile(r"[\"“‘][^\"”’{}]*[A-Za-z]{3}[^\"”’{}]*[\"”’]")          # a quoted phrase; a quoted {placeholder} is not one

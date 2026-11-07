@@ -202,11 +202,25 @@ Reply:
 - A `changes` entry on a Knowledge item names `knows`, `suspects` or `misled` as the field and the one person or group who now stands that way as the value; the page moves them out of the item's other lists, and clears `belief` when no one is misled any more.
 - `changes` are proposals to **live** Entanglements fields (`ties`, `holdings`, `knowledge`, `pressures`). `item` is an id the page sent; the backend never makes one. The page applies them, asks before touching anything locked, and warns if a reveal landed but no one's knowledge changed.
 
-### `end_story`: update Characters and World
+### `finish`: how the story changed each person
 
-After the last chapter. Reads the Events and Shifts summaries (one sentence per event), never the chapters.
+*Added 2026-11-07 (a new call, so older requests stay valid).* After the last chapter, one model call looks back over the whole story and writes the most notable change per person: at most one entry for each character, and none for a character the story did not truly change. It reads the chapters' Events records (what happened, what changed; one entry per chapter, in order) and the Characters cards as they were before the story began, so it knows the field names and the current values. It never reads a chapter's text. The Setup card gives it the protagonist and the opening.
 
-Request: `style`, `setup`, `characters` (all, with ids), `world`, `events`, `shifts`. Reply: `{"ok": true, "characters": [{"id": "c0000001", ...}], "world": {...}}`. Every character carries the id it was sent. The page forces the fixed fields (name, age, sex, appearance) back and keeps the originals. The characters must come back as the same people (none missing, none new), or the page refuses the reply as `bad_output`. In a list, an item that returns with an id the page knows keeps it, an item without a known id is new (the page gives it one), and an item left out stays as it was; the backend never needs to make an id. A value that does not fit its field is dropped and the field keeps its old value. The page stores the result as `after_story` and never touches the originals.
+```json
+{"call": "finish", "schema_version": 4, "language": "en",
+ "setup": {"protagonist": "c0000001", "normal": "Suvi kept the Archive.", "disruption": "A ledger went missing."},
+ "protagonist": "c0000001",
+ "characters": [{"id": "c0000001", "name": "Suvi", "fear": "Being found out", "wants": [{"id": "w0000001", "text": "To be left alone"}]},
+                {"id": "c0000002", "name": "Marit"}],
+ "events": [{"chapter": 1, "happened": "Suvi hid the ledger.", "changed": "Suvi now owes her mother an answer."},
+            {"chapter": 2, "happened": "Suvi told Marit where it was.", "changed": "Suvi has let her mother in."}]}
+```
+
+Request: `setup`, `protagonist` (the id of one of `characters`), `characters` (at least one, all of them, with ids) and `events` (at least one, oldest first). A request with a field it does not know is `bad_request`.
+
+Reply: `{"ok": true, "shifts": [{"card": "characters", "target": "c0000001", "patch": {"fear": "Being left with nobody to tell"}}]}`. `target` is the character's id as it was sent. `patch` is a sparse copy of the Characters card in the shape every shift has: a single-value field holds its new value, a list field holds `replace` operations naming items by the id they were sent with. Fixed fields (name, age, sex, appearance) never appear. The list is empty when nobody changed in a way that matters, and that is a valid reply. A reply for the Entanglements or the World, two entries for one character, or an entry with no target is `bad_output`.
+
+The page stores each entry as a shift on the last beat. The last beat is exempt from two rules of the Shifts record, the cap of seven entries per beat and the cast rule (a story may have more than six characters, and a character who was not in the last chapter may still have changed over the whole story); the rule that allows one entry per character on a beat still holds. The backend checks every entry before it answers: only people it was sent, one entry each, a patch that fits the card. When no reply passes the check after two attempts, the call answers with no shifts, so the end of the story is never blocked by it.
 
 ## How it is tested
 

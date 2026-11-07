@@ -3,7 +3,7 @@ what a free-written reply is checked against (shape.py). Only the keywords llama
 enum, const, items, properties, required, anyOf, minItems, maxItems, additionalProperties.
 
 Three grammars come ready made, because they follow from the cards alone: a card fill (`fill`), the planner's fields of a beat
-(`plan_beat`) and the shifts of a chapter (`shifts`, the new edge of ties). The shape of any other reply (a
+(`plan_beat`), the shifts of a chapter (`shifts`, the new edge of ties) and the shifts at the end of the story (`finish`, one patch per person). The shape of any other reply (a
 judge's answer, an extractor's) is the prompter's, built from the small pieces at the top. Link fields are limited to the names the
 request sent (the `ref` of the field says which names); where a request sent none, a link is plain text."""
 from copy import deepcopy
@@ -224,3 +224,16 @@ def shifts(request: dict, handles: Handles) -> Schema:
     if not variants:
         return {"type": "array", "items": text(), "maxItems": 0}
     return {"type": "array", "items": variants[0], "maxItems": 1}
+
+
+def finish(request: dict, handles: Handles) -> Schema:
+    """The `shifts` list at the end of the story: at most one entry per character, each for the Characters card, as the contract's ShiftOut with
+    the character named by label and a list item by its handle. Every shiftable field of the card may be in the patch (`patch`). Which person an
+    entry is for is part of its shape, so one person's patch can only point at that person's own items; that there is one entry per person is
+    checked by `assemble.finish_shifts`, which a grammar cannot say."""
+    refs = link_names([s.label for s in handles.of_card("characters")], None)
+    variants = [obj({"card": {"const": "characters"}, "target": {"const": scope.label}, "patch": patch("characters", scope, refs)})
+                for scope in handles.of_card("characters")]
+    if not variants:
+        return {"type": "array", "items": text(), "maxItems": 0}
+    return {"type": "array", "items": variants[0] if len(variants) == 1 else {"anyOf": variants}, "maxItems": len(variants)}

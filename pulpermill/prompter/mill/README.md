@@ -1,6 +1,6 @@
 # mill
 
-The prompter that holds the product's own wording for the five calls (`fill`, `judge`, `style_fit`, `plan`, `generate`). Choose it with
+The prompter that holds the product's own wording for the six calls (`fill`, `judge`, `style_fit`, `plan`, `generate`, `finish`). Choose it with
 `Config.prompter = "mill"`; the default stays `stub` until the real-model run says otherwise (see `../DECISIONS.md`). The interface it
 implements is in `../README.md` and `../base.py`.
 
@@ -9,7 +9,7 @@ implements is in `../README.md` and `../base.py`.
 __init__.py   prompter() -> MillPrompter (name "mill"); VERSION = "mill-0.1"; script(call, request, kit) for the fake engine
 mill.py       MillPrompter.flow(call, request, kit): finds the module for `call` by name; none, or still the scaffold: the stub's flow
 common.py     load_text (wording files), text_digest, labelled (item + handle), clip (squeeze helper), stub_flow
-fill.py judge.py style_fit.py plan.py generate.py    one module per call
+fill.py judge.py style_fit.py plan.py generate.py finish.py    one module per call
 text/en/<call>.yaml                                  that call's wording (empty until written)
 ```
 

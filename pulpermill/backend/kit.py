@@ -20,6 +20,14 @@ class Kit:
             return str(e)
         return None
 
+    def finish_problem(self, entries: Any) -> str | None:
+        """None when `entries` (the end-of-story shifts list, as the model wrote it) can be turned into valid contract entries, else one plain line."""
+        try:
+            assemble.finish_shifts(entries, self.handles)
+        except Unresolved as e:
+            return str(e)
+        return None
+
 
 class Grammars:
     """The ready-made grammars (see grammar.py) and the small pieces for building any other."""
@@ -37,3 +45,6 @@ class Grammars:
 
     def shifts(self) -> dict:
         return grammar.shifts(self._request, self._handles)
+
+    def finish(self) -> dict:
+        return grammar.finish(self._request, self._handles)

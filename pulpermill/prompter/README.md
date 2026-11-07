@@ -9,7 +9,7 @@ Choose one by name: `Config.prompter` (default `stub`) is the folder name under 
 `prompter()`, returning a `Prompter` whose `name` equals the folder name. An unknown name stops the server at startup, listing the known ones.
 The run log records the prompter's `name` and `version` with every call, so change `version` whenever any wording changes.
 
-The interface uses no story vocabulary: only the five calls, `fill`, `judge`, `style_fit`, `plan`, `generate` (`CALLS`).
+The interface uses no story vocabulary: only the six calls, `fill`, `judge`, `style_fit`, `plan`, `generate`, `finish` (`CALLS`).
 
 ## The interface (`base.py`)
 
@@ -64,6 +64,7 @@ The contract's reply without `ok`, with handles where the contract has ids:
 | `style_fit` | `{"fits": bool, "message": str}` |
 | `plan` | `{"beat": {field: value}}` |
 | `generate` | `{"chapter_text": str, "events": {"happened", "changed"}, "shifts": [{"card", "target": a character's label or None, "patch": {...}}]}`; list operations name items by handle |
+| `finish` | `{"shifts": [{"card": "characters", "target": a character's label, "patch": {...}}]}`, at most one per character; list operations name items by handle |
 
 The runner refuses a draft that names a handle or card the request did not send (`bad_output`), drops a shift whose patch holds nothing,
 and checks every patch with `validate_patch`.

@@ -23,7 +23,9 @@ def edges(*ops) -> dict:
 def test_the_cap_rule_is_by_beat_and_a_chapter_changes_only_the_entanglements():
     assert MAX_SHIFTS_PER_CHAPTER == 7
     rule = next(r for r in RULES if r.id == "shifts_per_chapter_max")
-    assert rule.params == {"group_by": "beat", "max": MAX_SHIFTS_PER_CHAPTER}
+    assert rule.params == {"group_by": "beat", "max": MAX_SHIFTS_PER_CHAPTER, "except": "last_beat"}
+    cast = next(r for r in RULES if r.id == "shift_target_in_cast")
+    assert cast.params["except"] == "last_beat"      # a character who left the story early may still have changed over all of it
     assert CHAPTER_SHIFT_CARDS == ["entanglements"]
 
 

@@ -3,7 +3,9 @@ never edited by hand (a chapter is regenerated instead). An entry belongs to a c
 chapter drops its entries and every later one.
 
 A chapter's own shifts change only the edge of ties (the Entanglements card). Characters change once, after the last chapter, with
-at most one entry per character on the last beat. The World never changes.
+at most one entry per character on the last beat (the `finish` call writes them). Two rules do not apply to the last beat for that reason:
+the cap of entries per beat (a story may have more than six characters) and the cast rule (a character who was not in the last chapter
+may still have changed over the whole story); `shift_unique` still allows one entry per character there. The World never changes.
 
 The cards themselves are locked once the story starts, so shifts are what change them. The page computes the effective
 state (base card plus the shifts of earlier chapters) and sends it in every request; the overlay is written once, in the
@@ -23,8 +25,10 @@ from typing import Any, Literal, NamedTuple
 from pydantic import TypeAdapter, ValidationError
 from .common import spec, Rule, Item
 
-# The most entries one beat may hold (P0 A14). A chapter writes one, for the Entanglements; the entries after the last chapter are Characters.
+# The most entries one beat may hold (P0 A14). A chapter writes one, for the Entanglements. The last beat is exempt (EXEMPT_LAST_BEAT below): it also
+# holds the end-of-story entries, one per character, and a story may have more than six characters.
 MAX_SHIFTS_PER_CHAPTER = 7
+EXEMPT_LAST_BEAT = {"except": "last_beat"}         # a rule param: the rule does not apply to the entries of the last beat (the end-of-story shifts)
 
 CARD = {
     "id": "shifts",
@@ -61,11 +65,12 @@ RULES = [
          when="two entries are for the same chapter (the same beat), card and target",
          check="unique_across_items", params={"fields": ["beat", "card", "target"]}),
     Rule(id="shifts_per_chapter_max", severity="block", fields=["entries"],
-         when=f"more than {MAX_SHIFTS_PER_CHAPTER} entries are recorded for one chapter",
-         check="max_per_group", params={"group_by": "beat", "max": MAX_SHIFTS_PER_CHAPTER}),
+         when=f"more than {MAX_SHIFTS_PER_CHAPTER} entries are recorded for one chapter, the last chapter excepted (it also holds the end-of-story entries, one per character)",
+         check="max_per_group", params={"group_by": "beat", "max": MAX_SHIFTS_PER_CHAPTER, **EXEMPT_LAST_BEAT}),
     Rule(id="shift_target_in_cast", severity="block", fields=["entries"],
-         when="a Characters entry names a character who is not in that chapter's cast, or has no character, or another card's entry names one",
-         check="target_in_cast", params={"field": "target", "when": {"card": "characters"}, "cast": "cast"}, context=["beat_casts"]),
+         when="a Characters entry names a character who is not in that chapter's cast, or has no character, or another card's entry names one; "
+              "the last chapter's entries are excepted (they are the end of the story's, for any character)",
+         check="target_in_cast", params={"field": "target", "when": {"card": "characters"}, "cast": "cast", **EXEMPT_LAST_BEAT}, context=["beat_casts"]),
     Rule(id="shift_patch_valid", severity="block", fields=["entries"],
          when="a patch is not valid for its card (an unknown or fixed field, a wrong type or option, a bad operation, an identity field changed); "
               "validate_patch in shifts.py does the checking",

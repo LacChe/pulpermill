@@ -3,7 +3,7 @@ with a valid sample reply and no model work, so the server and the page can be e
 from .context import RunContext
 from . import canned
 
-CALLS = ("fill", "judge", "style_fit", "plan", "generate")
+CALLS = ("fill", "judge", "style_fit", "plan", "generate", "finish")
 
 
 def run(request, ctx: RunContext) -> dict:

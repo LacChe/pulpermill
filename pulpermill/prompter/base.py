@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Literal
 
-CALLS = ("fill", "judge", "style_fit", "plan", "generate")
+CALLS = ("fill", "judge", "style_fit", "plan", "generate", "finish")
 SAMPLING = ("prose", "thinking", "structured")        # the sampling sets the Config holds; a step names one
 _NAME = re.compile(r"^[A-Za-z0-9_-]{1,32}$")          # the contract's Progress name: it is what `status` shows
 

@@ -6780,6 +6780,662 @@
           "plan": "Suvi hides the ledger in the quay stores. Marit arrives and asks her to come home. Suvi must choose which to protect first."
         }
       }
+    },
+    {
+      "name": "a finish request carries the summaries and the base characters",
+      "golden": false,
+      "valid": true,
+      "data": {
+        "call": "finish",
+        "schema_version": 4,
+        "language": "en",
+        "setup": {
+          "protagonist": "c0000001",
+          "normal": "Suvi kept the Archive and kept her counsel.",
+          "disruption": "A ledger went missing on the quay."
+        },
+        "protagonist": "c0000001",
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "events": [
+          {
+            "chapter": 1,
+            "happened": "Suvi hid the ledger in the quay stores and Marit found her there.",
+            "changed": "Suvi now owes her mother an answer."
+          },
+          {
+            "chapter": 2,
+            "happened": "Suvi told Marit where the ledger was and Marit kept it from the board.",
+            "changed": "Suvi has let her mother in."
+          }
+        ]
+      }
+    },
+    {
+      "name": "a finish request for a story of one chapter",
+      "golden": false,
+      "valid": true,
+      "data": {
+        "call": "finish",
+        "schema_version": 4,
+        "language": "en",
+        "setup": {
+          "protagonist": "c0000001",
+          "normal": "Suvi kept the Archive and kept her counsel.",
+          "disruption": "A ledger went missing on the quay."
+        },
+        "protagonist": "c0000001",
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "events": [
+          {
+            "chapter": 1,
+            "happened": "Suvi hid the ledger in the quay stores and Marit found her there.",
+            "changed": "Suvi now owes her mother an answer."
+          }
+        ]
+      }
+    },
+    {
+      "name": "finish with no events",
+      "valid": false,
+      "data": {
+        "call": "finish",
+        "schema_version": 4,
+        "language": "en",
+        "setup": {
+          "protagonist": "c0000001",
+          "normal": "Suvi kept the Archive and kept her counsel.",
+          "disruption": "A ledger went missing on the quay."
+        },
+        "protagonist": "c0000001",
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "events": []
+      }
+    },
+    {
+      "name": "finish with no characters",
+      "valid": false,
+      "data": {
+        "call": "finish",
+        "schema_version": 4,
+        "language": "en",
+        "setup": {
+          "protagonist": "c0000001",
+          "normal": "Suvi kept the Archive and kept her counsel.",
+          "disruption": "A ledger went missing on the quay."
+        },
+        "protagonist": "c0000001",
+        "characters": [],
+        "events": [
+          {
+            "chapter": 1,
+            "happened": "Suvi hid the ledger in the quay stores and Marit found her there.",
+            "changed": "Suvi now owes her mother an answer."
+          },
+          {
+            "chapter": 2,
+            "happened": "Suvi told Marit where the ledger was and Marit kept it from the board.",
+            "changed": "Suvi has let her mother in."
+          }
+        ]
+      }
+    },
+    {
+      "name": "finish whose protagonist is not one of the characters",
+      "valid": false,
+      "data": {
+        "call": "finish",
+        "schema_version": 4,
+        "language": "en",
+        "setup": {
+          "protagonist": "c0000001",
+          "normal": "Suvi kept the Archive and kept her counsel.",
+          "disruption": "A ledger went missing on the quay."
+        },
+        "protagonist": "c9999999",
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "events": [
+          {
+            "chapter": 1,
+            "happened": "Suvi hid the ledger in the quay stores and Marit found her there.",
+            "changed": "Suvi now owes her mother an answer."
+          },
+          {
+            "chapter": 2,
+            "happened": "Suvi told Marit where the ledger was and Marit kept it from the board.",
+            "changed": "Suvi has let her mother in."
+          }
+        ]
+      }
+    },
+    {
+      "name": "finish with no protagonist",
+      "valid": false,
+      "data": {
+        "call": "finish",
+        "schema_version": 4,
+        "language": "en",
+        "setup": {
+          "protagonist": "c0000001",
+          "normal": "Suvi kept the Archive and kept her counsel.",
+          "disruption": "A ledger went missing on the quay."
+        },
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "events": [
+          {
+            "chapter": 1,
+            "happened": "Suvi hid the ledger in the quay stores and Marit found her there.",
+            "changed": "Suvi now owes her mother an answer."
+          },
+          {
+            "chapter": 2,
+            "happened": "Suvi told Marit where the ledger was and Marit kept it from the board.",
+            "changed": "Suvi has let her mother in."
+          }
+        ]
+      }
+    },
+    {
+      "name": "finish with no setup",
+      "valid": false,
+      "data": {
+        "call": "finish",
+        "schema_version": 4,
+        "language": "en",
+        "protagonist": "c0000001",
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "events": [
+          {
+            "chapter": 1,
+            "happened": "Suvi hid the ledger in the quay stores and Marit found her there.",
+            "changed": "Suvi now owes her mother an answer."
+          },
+          {
+            "chapter": 2,
+            "happened": "Suvi told Marit where the ledger was and Marit kept it from the board.",
+            "changed": "Suvi has let her mother in."
+          }
+        ]
+      }
+    },
+    {
+      "name": "finish with a chapter's text instead of events",
+      "valid": false,
+      "data": {
+        "call": "finish",
+        "schema_version": 4,
+        "language": "en",
+        "setup": {
+          "protagonist": "c0000001",
+          "normal": "Suvi kept the Archive and kept her counsel.",
+          "disruption": "A ledger went missing on the quay."
+        },
+        "protagonist": "c0000001",
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "chapter_text": "Dusk came early."
+      }
+    },
+    {
+      "name": "finish with a field nobody knows",
+      "valid": false,
+      "data": {
+        "call": "finish",
+        "schema_version": 4,
+        "language": "en",
+        "setup": {
+          "protagonist": "c0000001",
+          "normal": "Suvi kept the Archive and kept her counsel.",
+          "disruption": "A ledger went missing on the quay."
+        },
+        "protagonist": "c0000001",
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "events": [
+          {
+            "chapter": 1,
+            "happened": "Suvi hid the ledger in the quay stores and Marit found her there.",
+            "changed": "Suvi now owes her mother an answer."
+          },
+          {
+            "chapter": 2,
+            "happened": "Suvi told Marit where the ledger was and Marit kept it from the board.",
+            "changed": "Suvi has let her mother in."
+          }
+        ],
+        "spotlight": "t1000001"
+      }
+    },
+    {
+      "name": "finish with no language",
+      "valid": false,
+      "data": {
+        "call": "finish",
+        "schema_version": 4,
+        "setup": {
+          "protagonist": "c0000001",
+          "normal": "Suvi kept the Archive and kept her counsel.",
+          "disruption": "A ledger went missing on the quay."
+        },
+        "protagonist": "c0000001",
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "events": [
+          {
+            "chapter": 1,
+            "happened": "Suvi hid the ledger in the quay stores and Marit found her there.",
+            "changed": "Suvi now owes her mother an answer."
+          },
+          {
+            "chapter": 2,
+            "happened": "Suvi told Marit where the ledger was and Marit kept it from the board.",
+            "changed": "Suvi has let her mother in."
+          }
+        ]
+      }
+    },
+    {
+      "name": "finish with no schema version",
+      "valid": false,
+      "data": {
+        "call": "finish",
+        "language": "en",
+        "setup": {
+          "protagonist": "c0000001",
+          "normal": "Suvi kept the Archive and kept her counsel.",
+          "disruption": "A ledger went missing on the quay."
+        },
+        "protagonist": "c0000001",
+        "characters": [
+          {
+            "id": "c0000001",
+            "name": "Suvi",
+            "age": 31,
+            "sex": "female",
+            "appearance": "Ink on her cuffs.",
+            "sketch": "An archivist who keeps score.",
+            "wants": [
+              {
+                "id": "w0000001",
+                "text": "To be left alone with the records"
+              }
+            ],
+            "fear": "Being found out",
+            "flaw": "She hoards what she knows",
+            "values": [],
+            "behaviors": [
+              {
+                "id": "h0000001",
+                "state": "When cornered",
+                "tendency": "she goes quiet and counts"
+              }
+            ]
+          },
+          {
+            "id": "c0000002",
+            "name": "Marit",
+            "age": 58,
+            "sex": "female",
+            "appearance": "Grey braid.",
+            "sketch": "Suvi's mother, a fisher.",
+            "wants": [],
+            "fear": "",
+            "flaw": "",
+            "values": [],
+            "behaviors": []
+          }
+        ],
+        "events": [
+          {
+            "chapter": 1,
+            "happened": "Suvi hid the ledger in the quay stores and Marit found her there.",
+            "changed": "Suvi now owes her mother an answer."
+          },
+          {
+            "chapter": 2,
+            "happened": "Suvi told Marit where the ledger was and Marit kept it from the board.",
+            "changed": "Suvi has let her mother in."
+          }
+        ]
+      }
     }
   ],
   "replies": [
@@ -8510,6 +9166,199 @@
             }
           }
         ]
+      }
+    },
+    {
+      "name": "an end of story with one change",
+      "call": "finish",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "shifts": [
+          {
+            "card": "characters",
+            "target": "c0000001",
+            "patch": {
+              "fear": "Being left with nobody to tell"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "an end of story with a change for each of two people",
+      "call": "finish",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "shifts": [
+          {
+            "card": "characters",
+            "target": "c0000001",
+            "patch": {
+              "fear": "Being left with nobody to tell"
+            }
+          },
+          {
+            "card": "characters",
+            "target": "c0000002",
+            "patch": {
+              "flaw": "She still keeps her own counsel, but not from her daughter"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "an end of story with a replace on a list item",
+      "call": "finish",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "shifts": [
+          {
+            "card": "characters",
+            "target": "c0000001",
+            "patch": {
+              "wants": [
+                {
+                  "op": "replace",
+                  "id": "w0000001",
+                  "values": {
+                    "text": "To let her mother into the records"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "an end of story where nobody changed",
+      "call": "finish",
+      "valid": true,
+      "data": {
+        "ok": true,
+        "shifts": []
+      }
+    },
+    {
+      "name": "an end of story with a shift for the entanglements",
+      "call": "finish",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "shifts": [
+          {
+            "card": "entanglements",
+            "target": null,
+            "patch": {
+              "ties": [
+                {
+                  "op": "replace",
+                  "id": "t1000001",
+                  "values": {
+                    "edge": "to let go"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "an end of story with a shift for the world",
+      "call": "finish",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "shifts": [
+          {
+            "card": "world",
+            "target": null,
+            "patch": {
+              "history": "A flood."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "an end of story with two entries for one person",
+      "call": "finish",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "shifts": [
+          {
+            "card": "characters",
+            "target": "c0000001",
+            "patch": {
+              "fear": "Being left with nobody to tell"
+            }
+          },
+          {
+            "card": "characters",
+            "target": "c0000001",
+            "patch": {
+              "flaw": "x"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "an end of story with a character shift that names no one",
+      "call": "finish",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "shifts": [
+          {
+            "card": "characters",
+            "target": null,
+            "patch": {
+              "fear": "x"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "an end of story with an empty patch",
+      "call": "finish",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "shifts": [
+          {
+            "card": "characters",
+            "target": "c0000001",
+            "patch": {}
+          }
+        ]
+      }
+    },
+    {
+      "name": "an end of story with no shifts list",
+      "call": "finish",
+      "valid": false,
+      "data": {
+        "ok": true
+      }
+    },
+    {
+      "name": "an end of story with a field nobody knows",
+      "call": "finish",
+      "valid": false,
+      "data": {
+        "ok": true,
+        "shifts": [],
+        "events": {
+          "happened": "x"
+        }
       }
     }
   ],

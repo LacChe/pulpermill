@@ -30,7 +30,7 @@ class StubPrompter(Prompter):
     def flow(self, call: str, request: dict, kit: Any) -> Flow:
         if call not in CALLS:
             raise ValueError(f"the stub prompter has no flow for {call!r}")
-        return {"fill": _Fill, "judge": _Judge, "style_fit": _StyleFit, "plan": _Plan, "generate": _Generate}[call](request, kit)
+        return {"fill": _Fill, "judge": _Judge, "style_fit": _StyleFit, "plan": _Plan, "generate": _Generate, "finish": _Finish}[call](request, kit)
 
 
 class _Base(Flow):
@@ -161,6 +161,25 @@ class _Generate(_Base):
         return ["The stub chapter opens on a quiet morning and ends on a closed door.",
                 json.dumps({"happened": "Something happened in the stub chapter.", "changed": "A thing changed."}),
                 json.dumps({"shifts": stub_shifts(self.kit)})]
+
+
+class _Finish(_Base):
+    """The end of the story: one step, the patches per person."""
+
+    def _step(self) -> Step:
+        g = self.kit.grammar
+        return Step("finish", lambda f: _prompt("finish", self.request, f), "json", 1500, g.obj({"shifts": g.finish()}),
+                    lambda v: self.kit.finish_problem(v["shifts"]), "structured", False)
+
+    def next(self, results):
+        return None if results else self._step()
+
+    def reply(self, results):
+        return {"shifts": results[0]["shifts"]}
+
+    def script(self):
+        out = [{"card": "characters", "target": scope.label, "patch": {"fear": "A new fear."}} for scope in self.kit.handles.of_card("characters")[:1]]
+        return [json.dumps({"shifts": out})]
 
 
 # ---- The script ---------------------------------------------------------------------------------------------------------

@@ -22,7 +22,8 @@ def cards_sent(request: dict) -> list[Sent]:
     """Every card whose items the model may point at: the card a fill or judge works on, or the cards a story request carries."""
     if request.get("card") and isinstance(request.get("values"), dict):
         return [Sent(request["card"], request.get("instance"), request["values"])]
-    out = [Sent("characters", p.get("id"), p) for p in request.get("cast") or [] if isinstance(p, dict)]
+    people = request.get("cast") or request.get("characters") or []          # a story call carries `cast`; the finish call carries all `characters`
+    out = [Sent("characters", p.get("id"), p) for p in people if isinstance(p, dict)]
     if isinstance(request.get("world"), dict):
         out.append(Sent("world", None, request["world"]))
     if "ties" in request or "holdings" in request:

@@ -1251,8 +1251,10 @@ test("every valid reply is read and every invalid one refused", () => {
       default: throw new Error(`no reader for ${v.call}`);
     }
   };
-  assert.deepEqual([...new Set(contractVectors.replies.map((v) => v.call))].sort(), ["cancel", "fill", "generate", "job", "judge", "plan", "status", "style_fit"]);
-  for (const v of contractVectors.replies) {
+  // The finish call (the end of the story) is the backend's so far: the page reads its reply from step 4 of plan 5.
+  const replies = contractVectors.replies.filter((v) => v.call !== "finish");
+  assert.deepEqual([...new Set(replies.map((v) => v.call))].sort(), ["cancel", "fill", "generate", "job", "judge", "plan", "status", "style_fit"]);
+  for (const v of replies) {
     const result = read(v);
     // A failure the backend may send is read as a failure with its kind; any other reply is read when it is valid.
     const isFailure = v.data.ok === false;

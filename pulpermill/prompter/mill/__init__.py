@@ -1,4 +1,4 @@
-"""The `mill` prompter: wording for the five calls, one module per call. A call whose module has not been written yet runs the stub's
+"""The `mill` prompter: wording for the six calls, one module per call. A call whose module has not been written yet runs the stub's
 flow, so `mill` can be selected (`Config.prompter = "mill"`) from the start. See README.md in this folder."""
 from typing import Any
 

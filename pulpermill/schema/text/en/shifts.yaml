@@ -27,10 +27,10 @@ rules:
     message: "Two entries are for the same chapter, card and character."
     fix: "Merge them into one entry."
   shifts_per_chapter_max:
-    message: "More than seven entries are recorded for one chapter."
+    message: "More than seven entries are recorded for one chapter. (The last chapter is not counted: it also holds the end-of-story entry for each character.)"
     fix: "Keep one entry per card, and one per character."
   shift_target_in_cast:
-    message: "A character entry names someone who is not in this chapter's cast, or names no one."
+    message: "A character entry names someone who is not in this chapter's cast, or names no one. (The last chapter is not checked: its character entries are the end of the story's.)"
     fix: "Record changes only for characters who appeared, and name the character."
   shift_patch_valid:
     message: "A patch is not valid for its card."

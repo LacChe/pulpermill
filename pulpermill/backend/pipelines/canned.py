@@ -39,3 +39,8 @@ def generate(request, ctx):
     return {"ok": True, "chapter_text": f"Canned chapter {request.chapter} of {request.chapter_count}.",
             "events": {"happened": f"Canned events of chapter {request.chapter}.", "changed": "Canned change."},
             "shifts": []}
+
+
+def finish(request, ctx):
+    _think(ctx, ["finish"])
+    return {"ok": True, "shifts": []}      # nobody changed notably: a valid end of story

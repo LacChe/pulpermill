@@ -10,7 +10,7 @@ from helpers import REPO, CARDS, card
 from pulpermill import contract
 from pulpermill.contract import (
     BackendErrorKind, FillableCard, UserCard, HTTP_STATUS, PAGE_ERROR_KINDS, parse_request, parse_reply, error_reply,
-    FillRequest, JobRequest, CancelRequest, JudgeRequest, StatusRequest, StyleFitRequest, ErrorReply, PlanRequest, GenerateRequest,
+    FillRequest, JobRequest, CancelRequest, JudgeRequest, StatusRequest, StyleFitRequest, ErrorReply, PlanRequest, GenerateRequest, FinishRequest, FinishReply,
     ListOp, ShiftOut, Progress, StatusReply, JobReply, PlanReply, GenerateReply, EventsOut,
 )
 from pulpermill.schema.project import UserCard as ProjectUserCard, SCHEMA_VERSION
@@ -43,7 +43,7 @@ def test_every_request_example_is_accepted_or_refused_as_marked():
 
 def test_requests_parse_into_the_model_of_their_call():
     wanted = {"status": StatusRequest, "job": JobRequest, "cancel": CancelRequest, "fill": FillRequest, "judge": JudgeRequest, "style_fit": StyleFitRequest,
-              "plan": PlanRequest, "generate": GenerateRequest}
+              "plan": PlanRequest, "generate": GenerateRequest, "finish": FinishRequest}
     seen = set()
     for case in VECTORS["requests"]:
         if case["valid"]:
@@ -132,7 +132,7 @@ def test_every_call_has_a_valid_and_an_invalid_request_and_reply_example():
 
 
 def test_the_replies_cover_exactly_the_calls_the_contract_has():
-    assert set(contract.REPLIES) == {"status", "job", "cancel", "fill", "judge", "style_fit"} | set(STORY_CALLS)
+    assert set(contract.REPLIES) == {"status", "job", "cancel", "fill", "judge", "style_fit", "finish"} | set(STORY_CALLS)
     assert {c["call"] for c in VECTORS["replies"]} == set(contract.REPLIES)
 
 
@@ -386,3 +386,27 @@ def test_a_chapters_shifts_are_for_the_entanglements_only():
     for card, target in (("characters", "c0000001"), ("world", None)):
         with pytest.raises(ValidationError):
             parse_reply("generate", {**base, "shifts": [{"card": card, "target": target, "patch": {"x": "y"}}]})
+
+
+# ---- finish: the end of the story (one patch per character, from the summaries only) ----------------------------------------------------
+def test_the_finish_request_carries_the_summaries_and_the_base_characters_and_no_chapter_text():
+    assert set(FinishRequest.model_fields) == {"call", "schema_version", "language", "job_id", "setup", "protagonist", "characters", "events"}
+    assert set(FinishReply.model_fields) == {"ok", "shifts"}
+
+
+def test_a_finish_reply_is_for_characters_only_and_has_one_entry_per_character():
+    entry = {"card": "characters", "target": "c1", "patch": {"fear": "x"}}
+    assert parse_reply("finish", {"ok": True, "shifts": [entry]}).shifts[0].target == "c1"
+    for bad in ([{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "t1", "values": {"edge": "x"}}]}}],
+                [{"card": "world", "patch": {"history": "x"}}],
+                [entry, {**entry, "patch": {"flaw": "y"}}]):
+        with pytest.raises(ValidationError):
+            parse_reply("finish", {"ok": True, "shifts": bad})
+
+
+def test_a_finish_request_needs_a_protagonist_among_its_characters_and_something_to_read():
+    case = next(c["data"] for c in VECTORS["requests"] if c["name"] == "a finish request carries the summaries and the base characters")
+    parse_request(case)
+    for change in ({"protagonist": "nobody"}, {"events": []}, {"characters": []}):
+        with pytest.raises(ValidationError):
+            parse_request({**case, **change})

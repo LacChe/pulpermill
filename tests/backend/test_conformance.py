@@ -19,7 +19,7 @@ from pulpermill.prompter.stub import script
 from server_harness import post, running, wait_idle
 
 VECTORS = json.loads((Path(__file__).parents[2] / "tests/shared/contract-vectors.json").read_text())["requests"]
-MODEL_CALLS = {"fill", "judge", "style_fit", "plan", "generate"}
+MODEL_CALLS = {"fill", "judge", "style_fit", "plan", "generate", "finish"}
 VALID = [v for v in VECTORS if v["valid"] and v["data"]["call"] in MODEL_CALLS]
 
 
