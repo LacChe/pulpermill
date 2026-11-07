@@ -180,7 +180,7 @@ def test_with_choose_on_the_steps_run_select_brainstorm_plan_judges_and_the_wors
     assert len(texts) == 5 and len(json.loads(texts[0])["picks"]) == 3 and json.loads(texts[2])["idea"] == 1
     flow, reply, ctx, engine = run_plan(request, *texts)
     assert names_of_steps(ctx) == ["select", "brainstorm", "plan", "advance_aim", "advance_pressure"] and engine.calls == 5
-    assert [s.name for s in flow.worst_case()] == ["select", "brainstorm", "plan", "advance_aim", "advance_pressure"]
+    assert [s.name for s in flow.worst_case()] == ["select", "brainstorm", "decide", "plan", "advance_aim", "advance_pressure"]
     assert "select" not in [s.name for s in plan.build_flow(base(), Kit(base())).worst_case()]
 
 
@@ -283,7 +283,7 @@ def test_the_worst_case_of_the_choose_flow_fits_the_context_for_a_large_story():
     flow = plan.build_flow(request, Kit(request))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert all(m.ok for m in measures) and factor <= 1.0
-    assert [s.name for s in flow.worst_case()][:3] == ["select", "brainstorm", "plan"]
+    assert [s.name for s in flow.worst_case()][:4] == ["select", "brainstorm", "decide", "plan"]
 
 
 def test_the_select_prompt_carries_the_running_aim_and_asks_for_combinations_that_carry_its_next_step():
@@ -311,4 +311,4 @@ def test_the_chain_at_its_longest_still_fits_the_select_the_brainstorm_and_the_p
     assert len(plan.chain_text(request, load_text("plan"))) > 9 * 900
     flow = plan.build_flow(request, Kit(request))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
-    assert all(m.ok for m in measures) and factor <= 1.0 and [m.name for m in measures][:3] == ["select", "brainstorm", "plan"]
+    assert all(m.ok for m in measures) and factor <= 1.0 and [m.name for m in measures][:4] == ["select", "brainstorm", "decide", "plan"]

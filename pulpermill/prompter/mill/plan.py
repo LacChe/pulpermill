@@ -15,9 +15,9 @@ from pulpermill.prompts import render as r
 from pulpermill.prompts import textfiles as tx
 from pulpermill.prompter.base import Flow, Step
 
-from . import advance, common, select
+from . import advance, common, decide, select
 
-VERSION = "plan-15"
+VERSION = "plan-16"
 IDEA = "idea"            # in choose mode: the number (1 to 3) of the idea the plan builds on, which is also the number of its combination; the reply turns it into `picked`
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
@@ -184,7 +184,7 @@ def _context(request: dict, factor: float, combos: list[dict] | None = None) -> 
     spotlight_text = "\n".join(x for x in (spotlight_text, r.render_pressure(pressure)) if x)       # one sentence inside the spotlight section
     spotlight_head = heads["spotlight"]
     if combos is not None:
-        spotlight_head, spotlight_text = heads["combinations"], select.combos_text(combos, w)
+        spotlight_head, spotlight_text = heads["combination" if len(combos) == 1 else "combinations"], select.combos_text(combos, w)
 
     events = cut_events(request.get("earlier_events"), chapter, history_ratio)
     keep = max(1, round(tx.limits()["events"]["full_chapters_planner"] * min(1.0, history_ratio)))
@@ -243,24 +243,27 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dic
     return "\n\n".join(b for b in blocks if b)
 
 
-def build_prompt(request: dict, factor: float = 1.0, brainstorm: str = "", combos: list[dict] | None = None) -> str:
+def build_prompt(request: dict, factor: float = 1.0, brainstorm: str = "", combos: list[dict] | None = None, decided: bool = False) -> str:
     """The plan step's prompt. `brainstorm` is the text of the brainstorm step: with it, the prompt carries it under its own heading and tells
     the planner to choose from it; without it (no brainstorm, or one that could not be had) the prompt is the plan prompt on its own. With `combos`
     (choose mode) the three combinations stand in the place of the spotlight, and the plan chooses one idea (or, with no brainstorm, one
-    combination) and is built on its tie and its rule or object."""
+    combination) and is built on its tie and its rule or object. With `decided` the brainstorm is the one idea the decider chose, shown as idea 1
+    (and `combos` is its combination alone): the plan is told to build on it, not to choose among ideas."""
     if combos is not None:
         request = select.without_pair(request)
     c = _context(request, factor, combos=combos)
     w, names, chapter, total, heads, tie = c["w"], c["names"], c["chapter"], c["total"], c["heads"], c["tie"]
+    kind = "decided" if decided else None
+    tail = "_chain" if c["chain"] else ""
     ends = [names.get(tie.get("tie_from"), ""), names.get(tie.get("tie_to"), "")] if tie else ["", ""]
     task = _task_block(c, "method")
     if combos is not None:
-        task.append(w["choose_one"] if brainstorm else w["choose_combo"])
+        task.append(w["decided_one" if kind else "choose_one"] if brainstorm else w["choose_combo"])
         if brainstorm:
-            task.append(w["idea_number_chain" if c["chain"] else "idea_number"])
+            task.append(w[("decided_number" if kind else "idea_number") + tail])
     elif brainstorm:
-        task.append(w["choose_from"])
-        task.append(w["idea_use_chain" if c["chain"] else "idea_use"])
+        task.append(w["decided_from" if kind else "choose_from"])
+        task.append(w[("decided_use" if kind else "idea_use") + tail])
     task += [
         w["four_points"],
         w["other_person"].format(other=other_end(request, names)),
@@ -278,7 +281,7 @@ def build_prompt(request: dict, factor: float = 1.0, brainstorm: str = "", combo
     task.append(w["output"].format(language=language_name(request.get("language"))))
 
     role = w["role"].format(chapter=chapter, total=total) if total else w["role_unknown_total"].format(chapter=chapter)
-    blocks = [role, *c["blocks"], _section(heads["brainstorm"], brainstorm.strip()), _section(heads["task"], "\n\n".join(x for x in task if x))]
+    blocks = [role, *c["blocks"], _section(heads["decided" if decided else "brainstorm"], brainstorm.strip()), _section(heads["task"], "\n\n".join(x for x in task if x))]
     return "\n\n".join(b for b in blocks if b)
 
 
@@ -371,8 +374,9 @@ def _tidy_brainstorm(text: Any) -> str:
 
 class PlanFlow(Flow):
     """(In choose mode, `select` first: three combinations of a tie and a rule or object, and the brainstorm then writes one idea for each.)
-    brainstorm, plan, aim judge (observe-only: nothing is sent back for its verdict). The brainstorm is free text that the plan prompt carries; if it cannot be had, the
-    plan goes ahead without it."""
+    brainstorm, (decide), plan, aim judge (observe-only: nothing is sent back for its verdict). The brainstorm is free text that the plan prompt carries; if it cannot be had, the
+    plan goes ahead without it. The decider (decide.py) reads the brainstorm's options and picks one, and the plan is then built on that one option
+    alone, as idea 1 with its own combination; with fewer than two options, or with `decide.ON` False, the plan carries the whole brainstorm as before."""
 
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
@@ -380,6 +384,10 @@ class PlanFlow(Flow):
         self._pressure_at: int | None = None    # where the pressure judge's result sits among the results after the brainstorm, once that step has been asked for
         self.brainstorm = ""                    # the brainstorm's text once it has run ("" until then, and when it fell back)
         self.combos: list[dict] | None = None   # choose mode: the three combinations the select step picked (None until then, and when it fell back)
+        self._options: list[tuple[int, str]] | None = None    # the brainstorm's options when the decider is to run (at least two), else None
+        self._order: list[int] = []             # the order the decider was shown them in
+        self.decision: decide.Decision | None = None          # the decider's pick, once it has run
+        self._shown: list[dict] | None = None   # once decided in choose mode: the one combination the plan carries (the picked option's), else None
         self._select_on = select.is_on(request)   # the request asks to choose and has at least one tie to choose from
         if self._select_on:
             self.notes["pressure_on"] = bool(pressure_of(request) or request.get("pressure_options"))
@@ -448,8 +456,9 @@ class PlanFlow(Flow):
 
     def _step(self, brainstorm: str | None = None, combos: list[dict] | None = None) -> Step:
         text = self.brainstorm if brainstorm is None else brainstorm
-        use = combos if combos is not None else self.combos
-        return Step("plan", lambda f: build_prompt(self.request, f, text, use), "json", MAX_OUTPUT, self._grammar(text, use), self._check(),
+        use = combos if combos is not None else self._shown if self._shown is not None else self.combos
+        decided = brainstorm is None and self.decision is not None       # the worst case (a brainstorm given) is the longest wording, the undecided one
+        return Step("plan", lambda f: build_prompt(self.request, f, text, use, decided), "json", MAX_OUTPUT, self._grammar(text, use), self._check(),
                     "thinking", True)
 
     # -- choose mode
@@ -471,19 +480,49 @@ class PlanFlow(Flow):
         self.notes["select_ties"], self.notes["select_pressures"] = select.counts(self.combos)
         self.notes["pressure_on"] = bool(self.request.get("pressure_options"))
 
+    def _combo_of(self, beat: Any) -> dict | None:
+        """The combination the plan's `idea` stands for, or None when it names none. The plan shows three ideas, so the number is the combination's
+        place among the three. After the decider it shows one, idea 1: the schema still lets 1 to 3 through, and any of them is that one idea."""
+        idea = beat.get(IDEA) if isinstance(beat, dict) else None
+        if isinstance(idea, bool) or not isinstance(idea, int) or self.combos is None:
+            return None
+        if self._shown is not None:
+            return self._shown[0] if 1 <= idea <= 3 else None
+        return self.combos[idea - 1] if 1 <= idea <= len(self.combos) else None
+
     def _resolved(self, beat: Any) -> dict | None:
         """The request a plan is checked and judged against. Outside choose mode (or after a select fallback) it is the request. In choose mode it
         is the request with the spotlight and the pressure of the idea the plan chose, or None when the plan names no idea from 1 to 3."""
         if self.combos is None:
             return self.request
-        idea = beat.get(IDEA) if isinstance(beat, dict) else None
-        if isinstance(idea, bool) or not isinstance(idea, int) or not 1 <= idea <= len(self.combos):
+        combo = self._combo_of(beat)
+        if combo is None:
             return None
-        combo = self.combos[idea - 1]
         request = {**{k: v for k, v in self.request.items() if k != "pressure"}, "spotlight": combo["tie_id"]}
         if combo["pressure"]:
             request["pressure"] = combo["pressure"]
         return request
+
+    # -- the decider
+
+    def _decide_request(self) -> dict:
+        """The request the decider reads: with combinations chosen, no single pair, as in the brainstorm."""
+        return select.without_pair(self.request) if self.combos is not None else self.request
+
+    def _decide_step(self) -> Step:
+        return decide.step(self._decide_request(), self._options, self._order, lambda: None)
+
+    def _take_decide(self, value: Any) -> None:
+        """Reads the decider's result: the plan then carries the picked option alone, as idea 1, with its own combination (in choose mode).
+        An unusable result picks the first option and the notes say it fell back."""
+        if self.decision is not None:
+            return
+        self.decision = decide.decide(self._options, self._order, value)
+        self.notes.update(self.decision.notes())
+        picked = self._options[self.decision.position - 1][1]
+        self.brainstorm = common.load_text("plan")["decided_item"].format(text=decide.unnumbered(picked))
+        if self.combos is not None:
+            self._shown = [self.combos[self.decision.combo - 1]]
 
     def _judges(self) -> bool:
         """The aim judge runs from the second chapter on, when there is an earlier aim to be a kind of."""
@@ -529,7 +568,25 @@ class PlanFlow(Flow):
             return self._brainstorm_step()
         if len(results) == 1:
             self.brainstorm = _tidy_brainstorm(results[0])
+            self._options = self._options_of(r.s(results[0]).strip())     # the reply as written: the tidy cut-back would make a cut-off option look whole
+            if self._options is not None:
+                self._order = decide.order_of(self._options, self.request)
+                return self._decide_step()
+        if self._options is not None:         # the decider ran: its result is the one after the brainstorm
+            self._take_decide(results[1])
+            results = results[1:]
         return self._after_brainstorm(results[1:])
+
+    def _options_of(self, brainstorm: str) -> list[tuple[int, str]] | None:
+        """The options the decider is to judge: the brainstorm's, when there are at least two and (in choose mode) each belongs to one of the
+        combinations. Else None, and the plan carries the whole brainstorm as it did before the decider (the notes say `none`)."""
+        if not decide.ON:
+            return None
+        options = decide.parse_options(brainstorm)[:decide.OPTIONS_MAX]
+        if len(options) < 2 or (self.combos is not None and not all(1 <= n <= len(self.combos) for n, _ in options)):
+            self.notes["decide"] = "none"
+            return None
+        return options
 
     def _after_brainstorm(self, results):
         """plan, the aim judge (observe-only: its verdict goes to the notes and nothing is sent back for it), then the pressure judge."""
@@ -549,7 +606,11 @@ class PlanFlow(Flow):
         """The brainstorm, then the plan carrying a brainstorm of the longest size, then the judges."""
         stand = select.stand_in(self.request) if self._select_on else None       # choose mode: the select step first, and the combinations as large as they can get
         steps = [self._select_step()] if self._select_on else []
-        steps += [self._brainstorm_step(stand), self._step(brainstorm=BRAINSTORM_STAND_IN, combos=stand)]
+        steps.append(self._brainstorm_step(stand))
+        if decide.ON:        # whether the brainstorm gives options is not known until it is written: the call is fitted as if it did
+            options = decide.stand_in(BRAINSTORM_OUTPUT)
+            steps.append(decide.step(select.without_pair(self.request) if self._select_on else self.request, options, list(range(len(options))), lambda: None))
+        steps.append(self._step(brainstorm=BRAINSTORM_STAND_IN, combos=stand))
         if self._judges():
             steps.append(self._aim_step(AIM_STAND_IN))
         if self.notes["pressure_on"]:
@@ -559,12 +620,13 @@ class PlanFlow(Flow):
     def reply(self, results):
         if self._select_on:
             results = results[1:]
-        beat = results[1]
+        beat = results[2 if self._options is not None else 1]      # the decider's result sits between the brainstorm and the plan
         out: dict[str, Any] = {}
-        if isinstance(beat, dict) and self.combos is not None and isinstance(beat.get(IDEA), int) and 1 <= beat[IDEA] <= len(self.combos):
-            combo = self.combos[beat[IDEA] - 1]       # the idea the plan chose is its combination's tie and pressure: the ids come from the request, never from the model
+        combo = self._combo_of(beat)
+        if combo is not None:
+            idea = beat[IDEA]                         # the idea the plan chose is its combination's tie and pressure: the ids come from the request, never from the model
             out["picked"] = {"spotlight": combo["tie_id"], "pressure": combo["pressure_id"]}
-            self.notes["idea"] = beat[IDEA]
+            self.notes["idea"] = idea
         if isinstance(beat, dict) and (IDEA_USE in beat or IDEA in beat):      # they stay in the trace's copy of the reply, and the page never sees them
             beat = {k: v for k, v in beat.items() if k not in (IDEA, IDEA_USE)}
         return {"beat": beat, **out}

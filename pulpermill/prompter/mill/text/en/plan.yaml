@@ -13,9 +13,12 @@ headings:
   entanglements: "Ties and holdings"
   spotlight: "The tie in the spotlight"
   combinations: "The three combinations"
+  combination: "The combination"
   choices: "The combinations you may choose from"
   history: "The story so far"
   brainstorm: "Three ideas for this chapter"
+  decide: "The options to judge"
+  decided: "The idea for this chapter"
   task: "Your task"
 
 # One role and one task, stated first. The planner designs; it does not write the chapter.
@@ -94,7 +97,24 @@ brainstorm_combos: "Write one chapter for each of the three combinations above, 
 choose_one: "The three ideas above each belong to the combination of the same number. Choose one idea and build the plan on it alone: its combination's tie is the tie the chapter is about, and its rule or object is what the chapter puts to work. The aim you give is the aim of the idea you chose, in one sentence, and from the second chapter on it is the next step of the running aim."
 idea_number: "Begin your reply with idea: the number, 1 to 3, of the idea you build on. Then give idea_use: one sentence that says what you take from that idea."
 idea_number_chain: "Begin your reply with idea: the number, 1 to 3, of the idea you build on. Then give idea_use: one sentence that says what you take from that idea and how its aim takes the running aim one step on from where the chapter before left it."
+# After the decider: the one idea it chose, shown as idea 1 (and its combination as combination 1), and the plan builds on it.
+decided_item: "Idea 1\n{text}"
+decided_from: "The idea above is the one chosen for this chapter. Build the plan on it: keep its aim and the collision it sets up, and design the chapter from there. The aim you give is the aim of that idea, in one sentence, and from the second chapter on it is the next step of the running aim."
+decided_use: "Begin your reply with idea_use: one sentence that says what you take from the idea."
+decided_use_chain: "Begin your reply with idea_use: one sentence that says what you take from the idea and how its aim takes the running aim one step on from where the chapter before left it."
+decided_one: "The idea above is the one chosen for this chapter, and it belongs to the combination above. Build the plan on it alone: the combination's tie is the tie the chapter is about, and its rule or object is what the chapter puts to work. The aim you give is the aim of the idea, in one sentence, and from the second chapter on it is the next step of the running aim."
+decided_number: "Begin your reply with idea: 1, the number of the idea above. Then give idea_use: one sentence that says what you take from it."
+decided_number_chain: "Begin your reply with idea: 1, the number of the idea above. Then give idea_use: one sentence that says what you take from it and how its aim takes the running aim one step on from where the chapter before left it."
 choose_combo: "Choose one of the three combinations above and build the plan on it: its tie is the tie the chapter is about, and its rule or object is what the chapter puts to work. Begin your reply with idea: the number, 1 to 3, of the combination you chose."
+
+# The decider (decide.py): one call between the brainstorm and the plan that judges the options and picks one. It shows each option under a
+# letter in a random order, so nothing in the prompt says which option came first.
+decide_role: "You are the judge of a story that is written one chapter at a time. Before chapter {chapter} of {total} is planned, you read the options proposed for it and choose the one the chapter is built on. You do not write or plan the chapter."
+decide_role_unknown_total: "You are the judge of a story that is written one chapter at a time. Before chapter {chapter} is planned, you read the options proposed for it and choose the one the chapter is built on. You do not write or plan the chapter."
+decide_item: "Option {label}\n{text}"
+decide_task: "Each option is a way to take the protagonist's aim its next step in this chapter. They are lettered in a random order that means nothing: do not prefer the first, the last or any letter. For each option, name its weakest point first, in one sentence of at most 200 characters: the place where it is thinnest, least believable or least tied to the people and the situation shown above. Then score the option on three criteria. loss: what the protagonist stands to lose in it, from 1 (little, and easily made good) to 3 (something that matters to them and would hurt to lose). irreversible: true when what is lost cannot be undone later in the story, false when it can. opposed: true when a person on stage actively works against the protagonist's aim, false when only circumstance, a rule or an object stands in the way. Then pick the option that does best on the three criteria together; when two are close, pick the one whose weakest point matters less."
+decide_chain: "The story so far shows the protagonist's running aim. An option is only as good as the next step of that aim that it carries on from where the chapter before left it, so weigh that when you name each weakest point."
+decide_output: "Reply with a JSON object with two keys. options: a list with one entry for every option, in the order shown, each with label (the letter), weakest (write it first), loss, irreversible and opposed. pick: the letter of the option you choose."
 
 # What to answer. The keys are the grammar's own (kit.grammar.plan_beat()).
 output: "Reply with a JSON object with four keys. where: the place where the chapter opens, one of the places in the world. when_time: the day and time of day at which the chapter opens, in a few words; the scene is already in motion at that moment. aim: what the protagonist is after in this chapter, in one sentence. plan: the four points, Act 1 to Act 4, in about 150 words. Write when_time, aim and plan in {language}, and keep every name exactly as it is written above."
@@ -120,6 +140,8 @@ problems:
   select_range: "Pick {n} must use a number from the lists: a tie from 1 to {n_ties}{rules}."
   select_range_rules: ", a rule or object from 1 to {n_pressures}"
   select_same: "Picks {a} and {b} are the same tie with the same rule or object; the three picks must hold at least {need} different combinations."
+  decide_labels: "Give one entry for every lettered option, each letter once, and pick one of the letters."
+  decide_weakest: "Give every option a weakest point of one sentence, at most 300 characters."
 
 # Data for the aim check, not shown to the model. An aim whose first verb (after "wants to", "needs to" and the like) names a state of
 # mind is abstract; so is one that starts with an exact phrase below. The check is a net, not a proof; D tunes it against real plans.
