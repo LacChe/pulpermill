@@ -1,10 +1,13 @@
-"""A9: a chapter does not open on the end of the one before, and nobody who is on no card is named in the setup fill. In the plan and the chapter
-a name on no card is no longer refused (minor1): it is counted (`plan_names`, `write_names`), and a name an earlier chapter's record already
-carries is established, so it is not new. The quoted examples come from a real run (test-6)."""
+"""A9: a chapter does not open on the end of the one before, and nobody who is on no card is named in the setup fill. In the plan, the chapter and
+the setup fill a name on no card is no longer refused (minor1): it is counted (`plan_names`, `write_names`, `setup_strangers`) and put to the
+trace as a soft note, and a name an earlier chapter's record already carries is established, so it is not new. The quoted examples come from
+a real run (test-6)."""
 import copy
 import json
+import logging
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -84,24 +87,59 @@ def setup_request(note="Pim bakes bread in the village.", characters=("Pim", "Or
 NORMAL = "Pim baked before dawn. Old Man Hemlock bought the first loaf and Bess at the dye works waved from her door."
 
 
-def test_old_man_hemlock_in_a_setup_reply_is_refused_when_no_card_names_him():
-    line = fill.fill_problem(setup_request(), {"normal": NORMAL, "disruption": "The oven went cold."})
-    assert line and "Old Man Hemlock" in line and "Bess" in line and "by role" in line
+def fill_check(request):
+    flow = fill.FillFlow(request, SimpleNamespace(grammar=SimpleNamespace(fill=lambda: {"type": "object"})))
+    return flow, flow._step().check
 
 
-def test_the_name_passes_when_a_card_or_the_writers_own_text_carries_it():
-    assert fill.fill_problem(setup_request(characters=("Pim", "Orla", "Hemlock", "Bess")), {"normal": NORMAL, "disruption": "The oven went cold."}) is None
-    assert fill.fill_problem(setup_request(note="Pim bakes. Old Man Hemlock buys the first loaf. Bess at the dye works waves."), {"normal": NORMAL, "disruption": "The oven went cold."}) is None
+def test_old_man_hemlock_in_a_setup_reply_is_listed_but_never_refused_when_no_card_names_him(caplog):
+    request, reply = setup_request(), {"normal": NORMAL, "disruption": "The oven went cold."}
+    strangers = fill.setup_strangers(request, reply)
+    assert "Old Man Hemlock" in strangers and "Bess" in strangers
+    assert fill.fill_problem(request, reply) is None
+    flow, check = fill_check(request)
+    with caplog.at_level(logging.WARNING, logger="pulpermill"):
+        assert check(reply) is None, "the fill is used on the first attempt"
+    assert flow.notes == {"minor_names": len(strangers)}
+    lines = [r.getMessage() for r in caplog.records if r.getMessage().startswith("call=fill step=fill soft problem accepted")]
+    assert len(lines) == 1 and "Old Man Hemlock" in lines[0] and "Bess" in lines[0] and "by role" in lines[0]
 
 
-def test_roles_cards_places_and_sentence_openers_are_not_refused_in_setup():
+def test_the_name_passes_when_a_card_or_the_writers_own_text_carries_it(caplog):
+    for request in (setup_request(characters=("Pim", "Orla", "Hemlock", "Bess")),
+                    setup_request(note="Pim bakes. Old Man Hemlock buys the first loaf. Bess at the dye works waves.")):
+        reply = {"normal": NORMAL, "disruption": "The oven went cold."}
+        assert fill.fill_problem(request, reply) is None and fill.setup_strangers(request, reply) == []
+        flow, check = fill_check(request)
+        with caplog.at_level(logging.WARNING, logger="pulpermill"):
+            assert check(reply) is None
+        assert flow.notes == {"minor_names": 0}
+    assert not [r for r in caplog.records if "soft problem" in r.getMessage()]
+
+
+def test_roles_cards_places_and_sentence_openers_are_not_listed_in_setup():
     normal = "Pim baked before dawn. The woodcutter left a stack by the door, and a neighbour came for the first loaf. Orla opened the shutters at the Millpond. On Tuesday the Parish Council met."
-    assert fill.fill_problem(setup_request(), {"normal": normal, "disruption": "Then the oven went cold."}) is None
+    reply = {"normal": normal, "disruption": "Then the oven went cold."}
+    assert fill.fill_problem(setup_request(), reply) is None and fill.setup_strangers(setup_request(), reply) == []
 
 
 def test_a_story_in_another_language_is_not_checked():
     request = setup_request(language="zh")
-    assert fill.fill_problem(request, {"normal": "皮姆在黎明前烤面包。Hemlock Bess Tiber 来了。", "disruption": "炉子冷了。"}) is None
+    reply = {"normal": "皮姆在黎明前烤面包。Hemlock Bess Tiber 来了。", "disruption": "炉子冷了。"}
+    assert fill.fill_problem(request, reply) is None and fill.setup_strangers(request, reply) == []
+
+
+def test_a_hard_problem_still_refuses_a_setup_fill_that_also_names_a_stranger(caplog):
+    flow, check = fill_check(setup_request())
+    with caplog.at_level(logging.WARNING, logger="pulpermill"):
+        line = check({"normal": NORMAL, "disruption": ""})
+    assert line and "disruption" in line and "minor_names" not in flow.notes
+    assert not [r for r in caplog.records if "soft problem" in r.getMessage()]
+
+
+def test_only_a_setup_fill_is_checked_for_names():
+    request = {**setup_request(), "card": "world"}
+    assert fill.setup_strangers(request, {"normal": NORMAL, "disruption": "The oven went cold."}) == []
 
 
 # ---- names in the plan ------------------------------------------------------------------------------------------------------

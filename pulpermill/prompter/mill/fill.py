@@ -198,8 +198,20 @@ def empty_item_field(card: str, value: dict) -> str | None:
     return None
 
 
+def setup_strangers(request: dict, value: Any) -> list[str]:
+    """The people on no card that the setup fill's normal and disruption name (Rule 5 asks for role only). This only lists them, as the plan
+    and the chapter do (`plan_names`, `write_names`): a name is no reason to refuse a reply, so the fill is used and the names go to the
+    console as a soft note. The cards and the writer's own text (note, example chapter, values) are the names that may be used. Empty for
+    any other card, and for a story in a language the detector does not read."""
+    if request.get("card") != "setup" or not isinstance(value, dict):
+        return []
+    return common.names_found(request, [r.s(value.get("normal")), r.s(value.get("disruption"))],
+                              [request.get(k) for k in ("note", "example_chapter", "values", "related")])
+
+
 def fill_problem(request: dict, value: Any) -> str | None:
-    """None when the reply is usable, else one plain line saying what to fix."""
+    """None when the reply is usable, else one plain line saying what to fix. Every problem it returns is hard and refuses the attempt. A
+    person on no card never does (see `setup_strangers`)."""
     p = common.load_text("fill")
     pr = p["problems"]
     if not isinstance(value, dict):
@@ -262,12 +274,7 @@ def fill_problem(request: dict, value: Any) -> str | None:
         if wants is not None and len(wants) < 2:
             return pr["one_want"]
     if card == "setup":
-        # Rule 5: people beyond the Characters card are never named. The cards and the writer's own text (note, example chapter, values) are
-        # the names that may be used.
-        strangers = common.names_found(request, [r.s(value.get("normal")), r.s(value.get("disruption"))],
-                                       [request.get(k) for k in ("note", "example_chapter", "values", "related")])
-        if strangers:
-            return pr["unknown_person"].format(names=", ".join(strangers))
+        # (A person on no card is not a problem here: see `setup_strangers`.)
         count = stated_chapter_count(r.s(request.get("note")))
         if count and "chapter_count" in value and int(value["chapter_count"]) != count:
             return pr["chapter_count"].format(count=count)
@@ -283,10 +290,24 @@ def fill_problem(request: dict, value: Any) -> str | None:
 class FillFlow(Flow):
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
+        self.notes: dict[str, Any] = {}     # for the run log: on a setup fill, how many people on no card the reply names (minor_names)
+
+    def _check(self, value: Any) -> str | None:
+        """The step's check: the hard problems refuse the attempt. A person on no card does not: the reply is used, the names go to the
+        trace as a soft note, and the count goes to the run record. The last reply to pass is the one used, so its count is the one that stays."""
+        problem = fill_problem(self.request, value)
+        if problem:
+            return problem
+        if self.request.get("card") == "setup":
+            strangers = setup_strangers(self.request, value)
+            self.notes["minor_names"] = len(strangers)
+            if strangers:
+                common.note_soft("fill", "fill", common.load_text("fill")["problems"]["unknown_person"].format(names=", ".join(strangers)))
+        return None
 
     def _step(self) -> Step:
         return Step("fill", lambda f: build_prompt(self.request, self.kit, f), "json", MAX_OUTPUT, self.kit.grammar.fill(),
-                    lambda v: fill_problem(self.request, v), "structured", True)
+                    self._check, "structured", True)
 
     def next(self, results):
         return None if results else self._step()
