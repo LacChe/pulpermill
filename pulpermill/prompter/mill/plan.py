@@ -195,16 +195,19 @@ def _context(request: dict, factor: float, combos: list[dict] | None = None) -> 
 
     origin = r.render_origin_history(request.get("setup") or {}, chapter) if request.get("origin_history", True) else ""      # chapters 2+ only, and only when the page asks
     setup = r.render_setup(request.get("setup") or {}, chapter, total or None, protagonist_name=protagonist_name(request, names), origin=origin)
+    setup_block = _section(heads["setup"], setup)
+    history_block = _section(heads["history"], "\n\n".join(x for x in (history, timeline, chain) if x))
     blocks = [
         _section(heads["tone"], r.render_style(request.get("style") or {}, scope="planner")),
-        _section(heads["setup"], setup),
+        setup_block,
         _section(heads["cast"], cast_text),
         _section(heads["world"], world_text),
         _section(heads["entanglements"], r.render_entanglements({"ties": ties, "holdings": holdings}, scope="planner")),
         _section(spotlight_head, spotlight_text),
-        _section(heads["history"], "\n\n".join(x for x in (history, timeline, chain) if x)),
+        history_block,
     ]
-    return {"w": w, "names": names, "chain": chain, "chapter": chapter, "total": total, "heads": heads, "tie": tie, "blocks": blocks}
+    return {"w": w, "names": names, "chain": chain, "chapter": chapter, "total": total, "heads": heads, "tie": tie, "blocks": blocks,
+            "setup_block": setup_block, "history_block": history_block}       # the decider reads only these two, not the cards
 
 
 def _task_block(c: dict, method: str) -> list[str]:

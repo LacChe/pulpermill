@@ -29,7 +29,7 @@ def reply_for(request: dict, wanted: int) -> str:
     letters = decide.LABELS[:len(OPTIONS)]
     best = letters[order.index(wanted - 1)]
     worst = next(letter for letter in letters if letter != best)
-    return json.dumps({k: {**{letter: f"Phrase {k} {letter}." for letter in letters}, "best": best, "worst": worst} for k in decide.criteria_for(request)})
+    return json.dumps({k: {"held": f"Held {k}.", **{letter: f"Phrase {k} {letter}." for letter in letters}, "best": best, "worst": worst} for k in decide.criteria_for(request)})
 
 
 def everyone(request: dict, text: str) -> str:
@@ -127,7 +127,7 @@ def test_the_picked_option_is_the_one_with_the_best_marks_and_the_run_notes_carr
     flow, _, ctx, _ = run_plan(request, *texts_for(request, wanted=2))
     notes = ctx.notes["flow"]
     assert (notes["decide"], notes["decide_pick"], notes["decide_tied"], notes["decide_sampling"]) == ("on", 2, 1, "structured")
-    assert notes["decide_s2"] == 4 and notes["decide_s1"] + notes["decide_s2"] + notes["decide_s3"] == 0         # best on all four criteria; one other option is worst on all four
+    assert notes["decide_s2"] == 1 and notes["decide_s1"] + notes["decide_s2"] + notes["decide_s3"] == 0         # best on the one criterion; one other option is worst on it
     for criterion in decide.criteria_for(request):
         best, worst = notes[f"decide_{criterion}_best"], notes[f"decide_{criterion}_worst"]
         assert best.endswith("2") and best[0] in "ABC" and worst[0] in "ABC" and worst[0] != best[0]       # the best of every criterion is the option at place 2

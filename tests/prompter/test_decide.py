@@ -68,7 +68,8 @@ OPTIONS = [(1, "**Option 1: First (Combination 1)**\nThe protagonist wants one t
            (2, "**Option 2 (Combination 2: A & B)**\nThe protagonist wants another thing. A rule gets in the way."),
            (3, "**Option 3: Combination 3 – A & B**\nThe protagonist wants a third thing. An object is lost.")]
 ORDER = [2, 0, 1]                        # shown as A: the third option, B: the first, C: the second
-OLD_WORDS = ("pick", "weakest", "loss", "irreversible", "opposed")
+OLD_WORDS = ("pick", "weakest", "irreversible", "opposed")
+OLD_KEYS = ("decide_hook", "decide_resistance", "decide_change", "decide_raise")
 
 
 def request() -> dict:
@@ -80,9 +81,9 @@ def first_chapter() -> dict:
     return {**request(), "chapter": 1, "earlier_beats": [], "earlier_events": []}
 
 
-def reply(best=("A", "A", "B", "A"), worst=("B", "C", "C", "C"), criteria=decide.CRITERIA, n=3) -> dict:
-    """A decider reply built by hand: a phrase for every letter, then the best and the worst letter, for each criterion."""
-    return {k: {**{decide.LABELS[i]: f"Phrase {k} {decide.LABELS[i]}." for i in range(n)}, "best": b, "worst": w} for k, b, w in zip(criteria, best, worst)}
+def reply(best=("A",), worst=("B",), criteria=decide.CRITERIA, n=3) -> dict:
+    """A decider reply built by hand: what the story holds now, a text for every letter, then the best and the worst letter, for each criterion."""
+    return {k: {"held": f"Held {k}.", **{decide.LABELS[i]: f"Phrase {k} {decide.LABELS[i]}." for i in range(n)}, "best": b, "worst": w} for k, b, w in zip(criteria, best, worst)}
 
 
 def test_the_order_is_a_seeded_shuffle_of_every_option_and_does_not_always_start_with_the_first():
@@ -110,24 +111,37 @@ def test_the_prompt_shows_the_options_under_letters_in_the_shuffled_order_and_ne
     assert "Option 1" not in section and "Option 2" not in section and "Combination" not in section
     task = prompt.split("## Your task\n")[1]
     w = load_text("plan")
-    assert w["decide_task"] in task and "no ending is better than another" in task
+    assert w["decide_task"] in task and "a loss moves the story as much as a win" in task
     assert prompt.startswith("You are the judge of a story that is written one chapter at a time. Before chapter 2")
     assert "running aim" in prompt and "decide_chain" not in w                                   # chapter 2 carries the chain in the history, not in the task
 
 
-def test_the_prompt_has_each_criterion_once_three_in_chapter_one_and_four_from_chapter_two_and_asks_for_no_pick_or_scores():
+def test_the_prompt_has_the_move_criterion_once_with_its_own_wording_in_chapter_one_and_asks_for_no_pick_or_scores():
     w = load_text("plan")
     second = decide.build_decide_prompt(request(), OPTIONS, ORDER)
     first = decide.build_decide_prompt(first_chapter(), OPTIONS, ORDER)
-    for key in ("decide_hook", "decide_resistance", "decide_change", "decide_raise"):
-        assert second.count(w[key]) == 1, key
-    assert all(first.count(w[key]) == 1 for key in ("decide_hook", "decide_resistance", "decide_change")) and w["decide_raise"] not in first
-    assert "hook, resistance, change and raise" in second and "hook, resistance and change" in first and "raise" not in first.split("## Your task")[1].split("Reply with")[1]
+    assert second.count(w["decide_move"]) == 1 and w["decide_move_first"] not in second
+    assert first.count(w["decide_move_first"]) == 1 and w["decide_move"] not in first
+    assert all(key not in w for key in OLD_KEYS)
     for prompt in (first, second):
+        assert prompt.count(w["decide_task"]) == 1 and "moves the story forward the most" in prompt.split("\n\n")[0]       # the job and the criterion, in the role line too
         assert not any(word in prompt.lower() for word in OLD_WORDS), [word for word in OLD_WORDS if word in prompt.lower()]
-        assert "best and worst" in prompt and "at most 200 characters" in prompt and "in English" in prompt
-        assert prompt.count("write the phrases first") == 1
-    assert [decide.criteria_for(r) for r in (first_chapter(), request(), {"chapter": None}, {})] == [decide.CRITERIA[:3], decide.CRITERIA, decide.CRITERIA[:3], decide.CRITERIA[:3]]
+        assert "best and worst" in prompt and "at most 600 characters" in prompt and "at most 400 characters" in prompt and "in English" in prompt
+        assert "hook" not in prompt.lower() and "resistance" not in prompt.lower()
+    assert [decide.criteria_for(r) for r in (first_chapter(), request(), {"chapter": None}, {})] == [("move",)] * 4
+
+
+def test_the_prompt_reads_only_the_setup_the_story_so_far_and_the_options_with_the_role_first_and_the_task_last():
+    heads = load_text("plan")["headings"]
+    req, combos = choose_combos()
+    for prompt, chapter in ((decide.build_decide_prompt(first_chapter(), OPTIONS, ORDER), 1), (decide.build_decide_prompt(request(), OPTIONS, ORDER), 2),
+                            (decide.build_decide_prompt(req, OPTIONS, ORDER, 1.0, None, combos), 2)):
+        order = [prompt.index(f"## {heads[k]}\n") for k in ("setup", "decide", "task") if f"## {heads[k]}\n" in prompt]
+        assert prompt.startswith("You are the judge of a story") and len(order) == 3 and order == sorted(order), chapter
+        assert prompt.rstrip().endswith("two different letters.") and "Option A\n" in prompt.split(f"## {heads['decide']}\n")[1].split(f"## {heads['task']}")[0]
+        for key in ("tone", "cast", "world", "entanglements", "spotlight", "combinations", "combination"):
+            assert f"## {heads[key]}\n" not in prompt, key
+    assert f"## {heads['history']}\n" in decide.build_decide_prompt(request(), OPTIONS, ORDER) and "running aim" in decide.build_decide_prompt(request(), OPTIONS, ORDER)
 
 
 def test_the_prompt_holds_no_ids():
@@ -147,61 +161,68 @@ def test_the_prompt_holds_no_ids():
     assert ids and all(i not in prompt for i in ids)
 
 
-def test_the_grammar_asks_for_a_phrase_per_letter_then_best_and_worst_for_each_criterion_and_no_pick():
+def test_the_grammar_asks_for_held_then_a_text_per_letter_then_best_and_worst_and_no_pick():
     g = decide.grammar(3, decide.CRITERIA)
-    assert list(g["properties"]) == list(decide.CRITERIA) and g["required"] == list(decide.CRITERIA) and g["additionalProperties"] is False
-    entry = g["properties"]["hook"]
-    assert list(entry["properties"]) == ["A", "B", "C", "best", "worst"] and entry["required"] == list(entry["properties"]) and entry["additionalProperties"] is False
-    assert entry["properties"]["best"]["enum"] == entry["properties"]["worst"]["enum"] == ["A", "B", "C"] and entry["properties"]["A"] == {"type": "string"}
-    assert "pick" not in g["properties"] and list(decide.grammar(3, decide.CRITERIA[:3])["properties"]) == ["hook", "resistance", "change"]
+    assert list(g["properties"]) == ["move"] and g["required"] == ["move"] and g["additionalProperties"] is False
+    entry = g["properties"]["move"]
+    assert list(entry["properties"]) == ["held", "A", "B", "C", "best", "worst"] and entry["required"] == list(entry["properties"]) and entry["additionalProperties"] is False
+    assert entry["properties"]["best"]["enum"] == entry["properties"]["worst"]["enum"] == ["A", "B", "C"] and entry["properties"]["A"] == entry["properties"]["held"] == {"type": "string"}
+    assert "pick" not in g["properties"]
 
 
-def test_the_check_wants_every_criterion_a_short_phrase_for_every_letter_and_a_different_best_and_worst():
+def test_the_check_wants_held_a_text_for_every_letter_and_a_different_best_and_worst():
     p = load_text("plan")["problems"]
-    assert decide.decide_problem(reply(), 3, decide.CRITERIA) is None and decide.decide_problem(reply(criteria=decide.CRITERIA[:3]), 3, decide.CRITERIA[:3]) is None
-    assert decide.decide_problem(reply(criteria=decide.CRITERIA[:3]), 3, decide.CRITERIA) == p["decide_shape"]          # a criterion missing
+    assert decide.decide_problem(reply(), 3, decide.CRITERIA) is None
     missing = reply()
-    del missing["change"]["B"]
-    assert decide.decide_problem(missing, 3, decide.CRITERIA) == p["decide_shape"] and decide.decide_problem({}, 3, decide.CRITERIA) == p["decide_shape"]
-    assert decide.decide_problem(None, 3, decide.CRITERIA) == p["decide_shape"] and decide.decide_problem({**reply(), "hook": "text"}, 3, decide.CRITERIA) == p["decide_shape"]
+    del missing["move"]["B"]
+    no_held = reply()
+    del no_held["move"]["held"]
+    for bad in (missing, no_held, {}, None, {"move": "text"}):
+        assert decide.decide_problem(bad, 3, decide.CRITERIA) == p["decide_shape"]
+    for bad in (" ", "", "x" * (decide.HELD_MAX + 1), 3):
+        held = reply()
+        held["move"]["held"] = bad
+        assert decide.decide_problem(held, 3, decide.CRITERIA) == p["decide_phrase"]
     for bad in (" ", "x" * (decide.PHRASE_MAX + 1), 3):
         phrase = reply()
-        phrase["hook"]["C"] = bad
+        phrase["move"]["C"] = bad
         assert decide.decide_problem(phrase, 3, decide.CRITERIA) == p["decide_phrase"]
     ok = reply()
-    ok["hook"]["C"] = "x" * decide.PHRASE_MAX
+    ok["move"]["C"], ok["move"]["held"] = "x" * decide.PHRASE_MAX, "x" * decide.HELD_MAX
     assert decide.decide_problem(ok, 3, decide.CRITERIA) is None
     for best, worst in (("A", "A"), ("A", "Z"), ("Z", "A"), (None, "A")):
         same = reply()
-        same["resistance"].update(best=best, worst=worst)
+        same["move"].update(best=best, worst=worst)
         assert decide.decide_problem(same, 3, decide.CRITERIA) == p["decide_best_worst"], (best, worst)
 
 
 def test_the_scores_are_plus_one_for_each_best_and_minus_one_for_each_worst():
-    assert decide.scores(reply(), 3, decide.CRITERIA) == [3, 0, -3]
-    assert decide.scores(reply(criteria=decide.CRITERIA[:3]), 3, decide.CRITERIA[:3]) == [2, 0, -2] and decide.scores({}, 3) == [0, 0, 0]
+    assert decide.scores(reply(), 3, decide.CRITERIA) == [1, -1, 0] and decide.scores({}, 3) == [0, 0, 0]
 
 
 def test_the_pick_is_the_option_with_the_highest_total_whatever_letter_it_stood_under():
     for wanted, letter in ((3, "A"), (1, "B"), (2, "C")):             # shown as A: the third option, B: the first, C: the second
         other = "B" if letter == "A" else "A"
-        got = decide.decide(OPTIONS, ORDER, reply(best=(letter,) * 4, worst=(other,) * 4), decide.CRITERIA)
+        got = decide.decide(OPTIONS, ORDER, reply(best=(letter,), worst=(other,)), decide.CRITERIA)
         assert (got.position, got.combo, got.fell_back, got.order, got.tied) == (wanted, wanted, False, (3, 1, 2), 1)
 
 
 def test_a_tie_picks_one_of_the_tied_options_at_random():
-    tie = reply(best=("A", "B", "A", "B"), worst=("C", "C", "B", "A"))        # totals: A 1, B 1, C -2
+    tie = reply()                                      # one criterion: A best, B worst, C neither, so no tie; two criteria make one
+    tie = {"move": tie["move"], "extra": {**tie["move"], "best": "B", "worst": "C"}}          # totals: A 1, B 0, C -1 ... then B 1, C -1: A 1, B 0
+    tie["extra"].update(best="B", worst="C")
+    tie["move"].update(best="A", worst="C")                                                  # A 1, B 1, C -2
     seen = set()
     for seed in range(40):
         random.seed(seed)
-        got = decide.decide(OPTIONS, ORDER, tie, decide.CRITERIA)
+        got = decide.decide(OPTIONS, ORDER, tie, ("move", "extra"))
         assert got.tied == 2 and got.scores == (1, -2, 1) and not got.fell_back
         seen.add(got.position)
     assert seen == {1, 3}                                                     # A is the third option, B the first: both win sometimes, C never
 
 
 def test_a_result_that_cannot_be_used_picks_a_random_option_and_says_it_fell_back():
-    for value in ({}, None, {"pick": "Z"}, {"hook": {}}, reply(best=("A", "A", "A", "A"), worst=("A", "A", "A", "A"))):
+    for value in ({}, None, {"pick": "Z"}, {"move": {}}, reply(best=("A",), worst=("A",))):
         got = decide.decide(OPTIONS, ORDER, value, decide.CRITERIA)
         assert got.fell_back and got.position in (1, 2, 3) and got.scores == (0, 0, 0) and got.marks == {} and got.combo == got.position
     seen = set()
@@ -213,15 +234,12 @@ def test_a_result_that_cannot_be_used_picks_a_random_option_and_says_it_fell_bac
 
 def test_the_notes_carry_the_totals_and_every_mark_as_short_plain_words():
     random.seed(1)
-    got = decide.decide(OPTIONS, ORDER, reply(), decide.CRITERIA)                  # A (place 3) wins with 3; B (place 1) has 0; C (place 2) has -3
+    got = decide.decide(OPTIONS, ORDER, reply(), decide.CRITERIA)                  # A (place 3) wins with 1; B (place 1) has -1; C (place 2) has 0
     assert got.notes() == {"decide": "on", "decide_options": 3, "decide_order": "3-1-2", "decide_pick": 3, "decide_combo": 3, "decide_sampling": "structured",
-                           "decide_s1": 0, "decide_s2": -3, "decide_s3": 3, "decide_tied": 1, "decide_invented": 0,
-                           "decide_hook_best": "A3", "decide_hook_worst": "B1", "decide_resistance_best": "A3", "decide_resistance_worst": "C2",
-                           "decide_change_best": "B1", "decide_change_worst": "C2", "decide_raise_best": "A3", "decide_raise_worst": "C2"}
-    three = decide.decide(OPTIONS, ORDER, reply(criteria=decide.CRITERIA[:3]), decide.CRITERIA[:3]).notes()
-    assert not any("raise" in k for k in three) and "decide_change_best" in three
+                           "decide_s1": -1, "decide_s2": 0, "decide_s3": 1, "decide_tied": 1, "decide_invented": 0,
+                           "decide_move_best": "A3", "decide_move_worst": "B1"}
     fell = decide.decide(OPTIONS, ORDER, {}, decide.CRITERIA).notes()
-    assert fell["decide"] == "fallback" and fell["decide_s1"] == fell["decide_s2"] == fell["decide_s3"] == 0 and fell["decide_tied"] == 3 and "decide_hook_best" not in fell
+    assert fell["decide"] == "fallback" and fell["decide_s1"] == fell["decide_s2"] == fell["decide_s3"] == 0 and fell["decide_tied"] == 3 and "decide_move_best" not in fell
 
 
 def test_the_notes_are_only_what_the_run_log_may_keep():
@@ -237,11 +255,11 @@ def test_the_step_is_a_small_low_temperature_json_call_with_two_attempts_and_a_f
     flags = []
     step = decide.step(request(), OPTIONS, ORDER, lambda: flags.append("fell back"), decide.criteria_for(request()))
     assert (step.name, step.kind, step.sampling, step.attempts, step.language) == ("decide", "json", "structured", 2, False)
-    assert step.max_output == decide.MAX_OUTPUT < 1200 and step.grammar == decide.grammar(3, decide.CRITERIA)
+    assert step.max_output == decide.MAX_OUTPUT and step.grammar == decide.grammar(3, decide.CRITERIA)
     assert step.text(1.0) == decide.build_decide_prompt(request(), OPTIONS, ORDER)
     assert step.check(reply()) is None and step.check({}) == load_text("plan")["problems"]["decide_shape"]
     assert step.fallback() == {} and flags == ["fell back"]
-    assert decide.step(first_chapter(), OPTIONS, ORDER, lambda: None).grammar == decide.grammar(3, decide.CRITERIA[:3])
+    assert decide.step(first_chapter(), OPTIONS, ORDER, lambda: None).grammar == decide.grammar(3, decide.CRITERIA)
 
 
 def test_the_step_runs_on_the_fake_engine_and_a_reply_that_cannot_be_used_twice_falls_back():
@@ -258,7 +276,7 @@ def test_the_step_runs_on_the_fake_engine_and_a_reply_that_cannot_be_used_twice_
     result = runner.run_step(RunContext(good, CancelFlag(), [].append, Config()), step, 1.0, "en")
     assert result.value == reply() and not result.fallback and good.calls == 1 and good.prompts[0] == step.text(1.0)
     bad = FakeEngine()
-    bad.script(json.dumps(reply(best=("A",) * 4, worst=("A",) * 4)), "not json")
+    bad.script(json.dumps(reply(best=("A",), worst=("A",))), "not json")
     ctx = RunContext(bad, CancelFlag(), [].append, Config())
     result = runner.run_step(ctx, step, 1.0, "en")
     assert result.value == {} and result.fallback and bad.calls == 2 and flags == [1] and decide.decide(OPTIONS, ORDER, result.value, decide.CRITERIA).fell_back
@@ -370,19 +388,19 @@ def test_a_story_in_a_language_the_detector_does_not_read_gets_no_penalty():
 def test_an_option_that_invents_a_name_loses_one_point_to_an_otherwise_equal_option():
     flagged = [False, False, False]
     flagged[2] = True                                  # the third option (shown as A) names a stranger
-    tie = reply(best=("A", "B", "A", "B"), worst=("C", "C", "B", "A"))               # totals by letter: A 1, B 1, C -2
+    tie = {"move": {**reply()["move"], "best": "A", "worst": "C"}, "extra": {**reply()["move"], "best": "B", "worst": "C"}}       # totals by letter: A 1, B 1, C -2
     seen = set()
     for seed in range(40):
         random.seed(seed)
-        got = decide.decide(OPTIONS, ORDER, tie, decide.CRITERIA, flagged)
+        got = decide.decide(OPTIONS, ORDER, tie, ("move", "extra"), flagged)
         assert got.scores == (1, -2, 0) and got.tied == 1 and got.position == 1 and got.invented == 1 and not got.fell_back
         seen.add(got.position)
     assert seen == {1}                                 # without the penalty the third option wins half the time (see the tie test)
 
 
 def test_a_penalty_is_not_an_elimination():
-    got = decide.decide(OPTIONS, ORDER, reply(), decide.CRITERIA, [False, False, True])        # A (place 3) leads with 3 and loses one point: still wins with 2
-    assert (got.position, got.scores, got.invented) == (3, (0, -3, 2), 1)
+    got = decide.decide(OPTIONS, ORDER, reply(best=("A",), worst=("B",)), decide.CRITERIA, [False, False, True])        # A (place 3) leads with 1 and loses one point: ties C at 0 with B at -1
+    assert got.scores == (-1, 0, 0) and got.invented == 1 and got.tied == 2
 
 
 def test_nothing_is_penalized_when_nothing_was_compared_but_the_count_is_noted():

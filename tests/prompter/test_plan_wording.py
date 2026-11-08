@@ -627,8 +627,8 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
     flow = plan.build_flow(request, Kit(request))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert factor == 1.0 and all(m.ok for m in measures) and len(measures) == 4
-    brainstorm = flow.worst_case()[0]
-    assert tokens.count(brainstorm.text(1.0)) < tokens.count(flow.worst_case()[1].text(1.0))      # the brainstorm prompt is the lighter of the two
+    brainstorm, decide_step = flow.worst_case()[:2]
+    assert tokens.count(decide_step.text(1.0)) < tokens.count(brainstorm.text(1.0))      # the decider reads only the setup, the story so far and the options: the lighter of the two
 
 
 def test_the_prompter_version_changes_with_the_plan_wording():
