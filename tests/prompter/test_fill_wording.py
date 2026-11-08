@@ -121,7 +121,7 @@ def test_a_re_fill_is_asked_exactly_as_a_blank_card_is():
 
 def test_the_cards_a_card_reads_are_shown_as_prose_and_the_link_names_are_listed():
     entanglements = prompt(req("entanglements", note="Teodora mentors Imre; the Authority holds Dock 9."))
-    for needed in ("Imre (he/him)", "Dock 9", "The Lattice", "The Authority", "People: Imre, Teodora.", "Groups: The Authority.", "Places: Dock 9.", "Things: The Lattice."):
+    for needed in ("The character's name is Imre.", "Imre is a man, referred to as he and him.", "to be taken seriously", "Dock 9", "The Lattice", "The Authority", "People: Imre, Teodora.", "Groups: The Authority.", "Places: Dock 9.", "Things: The Lattice."):
         assert needed in entanglements, needed
     setup = prompt(req("setup"))
     assert "People: Imre, Teodora." in setup and "Groups:" not in setup and "Teodora toward Imre" in setup
@@ -333,4 +333,4 @@ def test_a_reply_that_fails_the_check_is_asked_for_again_with_the_line_and_then_
 
 
 def test_the_version_follows_the_wording():
-    assert "+fill:fill-3:" in load_prompter("mill").version
+    assert "+fill:fill-4:" in load_prompter("mill").version

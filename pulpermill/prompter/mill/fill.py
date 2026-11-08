@@ -16,7 +16,7 @@ from pulpermill.prompter.stub.stub import sample
 
 from . import common
 
-VERSION = "fill-3"
+VERSION = "fill-4"
 MAX_OUTPUT = 2000      # a long World (nine places and their detail) is the heaviest reply
 
 
@@ -64,7 +64,7 @@ def _related_text(request: dict, names: dict[str, str]) -> str:
     if related.get("style"):
         parts.append(r.render_style(related["style"], scope="planner"))
     if related.get("characters"):
-        parts.append("\n".join(r.render_person_brief(p) for p in _people(related)))
+        parts.append(r.render_cast(_people(related), scope="planner"))      # sketch, wants, fear, flaw, values, competence, vulnerability, history
     if related.get("world"):
         parts.append(r.render_world(related["world"], scope="planner"))
     if related.get("entanglements"):

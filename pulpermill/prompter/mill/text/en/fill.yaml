@@ -9,9 +9,9 @@ languages: {en: English, zh: Simplified Chinese, ja: Japanese, ko: Korean, fr: F
 role: "You help a writer fill in one card of a story's setup. The card is the {label} card. Its subject: {intro} Use what the writer gave you to fill its fields."
 
 # ---- input modes. A note is used exactly as the writer meant it; a chapter is read to infer the card. ----
-note_only: "The writer's note for this card is below. Use it exactly as the writer meant it: every fact in it (names, ages, numbers, places, things) goes on the card as written, and what the note leaves open you fill with specific, useful detail that stays faithful to it."
-chapter_only: "The writer gave an example chapter instead of a note. Read it and work out what this card holds: the facts the chapter states go on the card as stated, and what it leaves open you fill with specific detail that fits the chapter."
-both: "The writer gave a note and an example chapter. The note decides what the card holds, exactly as the writer meant it, and every fact in it goes on the card as written. Use the chapter to confirm and enrich the details the note leaves open."
+note_only: "The writer's note for this card is below. Use it exactly as the writer meant it: every fact in it (names, ages, numbers, places, things) goes on the card as written, and what the note leaves open you fill with specific, useful detail that stays faithful to it. When the writer gives a want, value, rule or fact in their own words, keep those words and their specifics on the card; do not shorten them into a label."
+chapter_only: "The writer gave an example chapter instead of a note. Read it and work out what this card holds: the facts the chapter states go on the card as stated, and what it leaves open you fill with specific detail that fits the chapter. When the writer gives a want, value, rule or fact in their own words, keep those words and their specifics on the card; do not shorten them into a label."
+both: "The writer gave a note and an example chapter. The note decides what the card holds, exactly as the writer meant it, and every fact in it goes on the card as written. Use the chapter to confirm and enrich the details the note leaves open. When the writer gives a want, value, rule or fact in their own words, keep those words and their specifics on the card; do not shorten them into a label."
 note_label: "The writer's note:"
 chapter_label: "The example chapter:"
 person_line: "This card is for the person the writer named {name}. Describe only that person, using what the writer's text shows about them, and leave every other person out."
@@ -20,7 +20,7 @@ chapter_gap: "[…]"
 language_line: "Write every text you produce in {language}. Keep names exactly as the writer spelled them, and keep the English answer words listed under the fields that offer a choice."
 
 empty_card: "The card is still empty."
-related_lead: "The cards this card builds on already exist. Read them; they are not yours to change."
+related_lead: "The cards this card builds on already exist. Read them; they are material to build on, not to change."
 names_lead: "Link only to these names, spelled exactly as listed:"
 names_people: "People: {items}."
 names_groups: "Groups: {items}."
@@ -32,7 +32,7 @@ fields_lead: "What each field holds:"
 choice_lead: "Choose exactly one of these answer words:"
 choice_item: "\"{key}\": {expand}"
 
-output: "Reply with a JSON object holding only the fields you have something to say for. A field with nothing to say is left out, and a list stays empty when nothing allowed can fill it. Text fields hold plain prose; list fields hold lists of items; no field holds an id, a label or a note to the writer."
+output: "Reply with a JSON object holding every field of the card. Use the writer's text first, and invent what it leaves open, so that no field is empty. A list holds up to five items, each a different thing. Text fields hold plain prose. No field holds an id, a label or a note to the writer."
 
 # ---- what each field holds (the schema's help and why, in our words) ----
 fields:
