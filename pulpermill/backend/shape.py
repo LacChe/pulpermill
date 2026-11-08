@@ -70,13 +70,14 @@ def _unfinished(body: str) -> bool:
 
 
 def parse_json(text: str):
-    """The JSON in a reply. Raises ValueError with a short plain message (a cut-off reply is one of these)."""
+    """The JSON in a reply. Raises ValueError with a short plain message (a cut-off reply is one of these). Raw control characters (a newline,
+    a tab) inside a string are accepted and kept as written, because models write a multi-line string that way."""
     body = text.strip()
     fenced = _FENCE.match(body)
     if fenced:
         body = fenced.group(1)
     try:
-        return json.loads(body)
+        return json.loads(body, strict=False)
     except json.JSONDecodeError as e:
         tail = " (the reply looks cut off)" if _unfinished(body) else ""
         raise ValueError(f"the reply is not valid JSON: {e.msg} at character {e.pos}{tail}") from None

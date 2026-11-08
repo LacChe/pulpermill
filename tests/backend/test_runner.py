@@ -66,6 +66,13 @@ def test_a_valid_first_reply_is_used_once_and_constrained():
     assert stages == [{"name": "think", "index": 1, "of": 1}]
 
 
+def test_a_raw_newline_inside_a_json_string_is_used_on_the_first_attempt():
+    ctx, engine, _ = make()
+    engine.script('{"fits": true, "message": "line one\nline two\tend"}', GOOD)
+    assert run(ctx, json_step()) == [{"fits": True, "message": "line one\nline two\tend"}]
+    assert engine.calls == 1 and [len(p["attempts"]) for p in ctx.notes["passes"]] == [1]
+
+
 def test_bad_json_retries_once_with_the_problem_and_without_the_first_reply():
     ctx, engine, _ = make()
     engine.script("this is not json at all", GOOD)

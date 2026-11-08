@@ -30,6 +30,20 @@ def test_parse_json_takes_a_fenced_reply():
         shape.parse_json("")
 
 
+def test_parse_json_accepts_raw_newlines_and_tabs_inside_strings_and_still_refuses_the_rest():
+    raw = '{"plan": "Act 1: one\nAct 2: two\tend"}'                  # real newline and tab characters, as a model writes them
+    assert "\n" in raw and "\t" in raw and "\\n" not in raw
+    expected = {"plan": "Act 1: one\nAct 2: two\tend"}
+    assert shape.parse_json(raw) == expected and shape.parse_json("```json\n" + raw + "\n```") == expected
+    with pytest.raises(ValueError):
+        shape.parse_json("")
+    with pytest.raises(ValueError) as cut:
+        shape.parse_json('{"plan": "Act 1: one\nAct 2')
+    assert "the reply looks cut off" in str(cut.value)
+    with pytest.raises(ValueError):
+        shape.parse_json('{"plan": "one",}')
+
+
 def test_language_check():
     assert language.check(ENGLISH, "en") is None
     assert language.check(FRENCH, "fr") is None
