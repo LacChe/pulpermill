@@ -112,6 +112,8 @@ def test_the_prompt_shows_the_options_under_letters_in_the_shuffled_order_and_ne
     task = prompt.split("## Your task\n")[1]
     w = load_text("plan")
     assert w["decide_task"] in task and "a loss moves the story as much as a win" in task
+    assert "when a reader could point at something in it that the story does not already hold: the tie in the spotlight is different afterwards (what one wants from the other, or what they are to each other, would have to be rewritten), something is lost or gained" in task
+    assert "An option after which the tie could be described in the same words moves the story little." in task and "a relationship that changes" not in task
     assert prompt.startswith("You are the judge of a story that is written one chapter at a time. Before chapter 2")
     assert "running aim" in prompt and "decide_chain" not in w                                   # chapter 2 carries the chain in the history, not in the task
 

@@ -177,7 +177,7 @@ def test_a_retry_carries_its_problems_and_the_refused_attempt_into_the_prompt():
     retry = next(v["data"] for v in PLANS if v["name"] == "a plan retry carries the first attempt and the rules' words")
     prompt = plan.build_prompt(retry)
     assert "The aim is too like chapter 1's aim." in prompt and "Nothing changes." in prompt and "fixes every one of these problems" in prompt
-    assert "refused" not in plan.build_prompt(base())
+    assert "An earlier plan for this chapter was refused" not in plan.build_prompt(base())
 
 
 # ---- the squeeze ----------------------------------------------------------------------------------------------------------
@@ -414,7 +414,12 @@ def test_the_brainstorm_prompt_asks_for_three_ways_to_take_the_next_step_with_th
     assert "never a comfort or a convenience" in prompt
     assert "All three go after the same concrete thing" not in prompt and "to take the protagonist's aim its next step" not in prompt
     assert prompt.count(load_text("plan")["brainstorm_continue"]) == 1 and plan.build_brainstorm_prompt({**base(), "chapter": 1, "earlier_beats": [], "earlier_events": []}).count("At most one idea may continue it") == 0
-    assert "idea 1 ends with the protagonist reaching what they are after, at a price; idea 2 ends with them losing it; idea 3 ends with them giving it up for something else." in prompt
+    assert "idea 1 ends with the protagonist reaching what they are after, at a price, and the want is given; idea 2 ends with them losing it, and the want is refused; idea 3 ends with them giving it up for something else, and the want is dropped." in prompt
+    assert "idea 1 ends with the protagonist reaching what they are after, at a price; idea 2" not in prompt          # the old outcome sentence is gone
+    goes = "The aim goes beyond the tie's edge: it is the one thing the protagonist does in this chapter that forces an answer to what the person at the from end wants from the other person in the tie."
+    assert prompt.count(goes) == 1 and "that want has been given, refused or dropped, and the two of them are different to each other afterwards" in prompt
+    assert prompt.count("and what the tie is afterwards: its new edge in one clause and, if the two are now something else to each other, its new bond.") == 1
+    assert "The new edge cannot be the old one in other words or made stronger" in prompt and "what that leaves behind that cannot be redone in a later chapter" in prompt
     assert "Act 1" not in prompt and "JSON" not in prompt and "four points" not in prompt        # no plan shape is asked for here
     assert not any(w in prompt for w in ("refusal", "a trade", "misunderstanding"))        # no example kinds: the model thinks them up
     assert "differ in kind" not in prompt and "already used" not in prompt and "no two of them share what the protagonist is after" not in prompt
@@ -523,7 +528,7 @@ def test_the_brainstorm_prompt_is_told_the_chapters_place_and_carries_a_retry():
     retry = next(v["data"] for v in PLANS if v["name"] == "a plan retry carries the first attempt and the rules' words")
     prompt = plan.build_brainstorm_prompt(retry)
     assert "An earlier plan for this chapter was refused" in prompt and "The aim is too like chapter 1's aim." in prompt
-    assert "refused" not in plan.build_brainstorm_prompt(base())
+    assert "An earlier plan for this chapter was refused" not in plan.build_brainstorm_prompt(base())
 
 
 def test_the_brainstorm_prompt_holds_no_ids_and_names_the_story_language():
