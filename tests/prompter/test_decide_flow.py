@@ -134,9 +134,11 @@ def test_fewer_than_two_options_or_a_combination_that_does_not_exist_keeps_the_f
     texts = plan.script(request, Kit(request))                                           # the scripted brainstorm is one paragraph: one option at most
     flow, _, ctx, engine = run_plan(request, *texts)
     assert "decide" not in names_of_steps(ctx) and ctx.notes["flow"]["decide"] == "none" and "Three ideas for this chapter" in engine.prompts[2]
-    texts[1] = BRAINSTORM.replace("Combination 3", "Combination 4")                         # the select step made three combinations: there is no fourth
+    wrong = BRAINSTORM.replace("Combination 3", "Combination 4")                            # the select step made three combinations: there is no fourth
+    no_use = {k: v for k, v in json.loads(texts[2]).items() if k != plan.IDEA_USE}          # no brainstorm: the plan grammar has no `idea_use`
+    texts[1:3] = [wrong, wrong, json.dumps(no_use)]                                          # the count check refuses it twice, so the plan goes ahead without a brainstorm
     _, _, ctx, engine = run_plan(request, *texts)
-    assert "decide" not in names_of_steps(ctx) and ctx.notes["flow"]["decide"] == "none" and engine.calls == 5
+    assert "decide" not in names_of_steps(ctx) and ctx.notes["flow"]["decide"] == "none" and ctx.notes["flow"]["brainstorm_fallback"] is True and engine.calls == 6
 
 
 def test_a_brainstorm_cut_off_by_the_token_cap_is_judged_on_its_whole_options_only():

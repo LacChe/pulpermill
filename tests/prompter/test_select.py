@@ -132,7 +132,7 @@ def test_a_cast_of_two_with_one_tie_and_one_rule_runs_select_and_the_brainstorm_
     flow, reply, ctx, engine = run_plan(request, *texts)
     assert names_of_steps(ctx)[:3] == ["select", "brainstorm", "plan"]
     assert "Option 3" in engine.prompts[2] or "Option 3" in texts[1]
-    assert "write two different chapters for it" in engine.prompts[1]
+    assert "the two ideas still differ in obstacle, person or place" in engine.prompts[1]
     assert reply["picked"]["spotlight"] == select.candidates(request)[0][0]["id"]
 
 
@@ -194,7 +194,7 @@ def test_the_brainstorm_and_the_plan_carry_the_three_combinations_instead_of_one
         assert all(i not in prompt for i in ids_in(request))
         assert "is a part of that chapter's collision, whether or not it has anything to do with the aim or the tie to begin with" in prompt
         assert "is kept at its price, bent, or broken, with what follows its breaking" in prompt
-    assert "one chapter for each of the three combinations" in brainstorm
+    assert "one idea for each, in order: idea 1 is built on combination 1" in brainstorm
     assert "Choose one idea and build the plan on it alone" in planned and "Begin your reply with idea" in planned and "combine two" not in planned
 
 

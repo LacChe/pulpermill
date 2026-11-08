@@ -404,17 +404,69 @@ def test_the_brainstorm_is_a_free_text_step_first_with_thinking_sampling_and_no_
 
 def test_the_brainstorm_prompt_asks_for_three_ways_to_take_the_next_step_with_the_four_things_for_each():
     prompt = plan.build_brainstorm_prompt(base())
-    for needed in ("three ways to take the protagonist's aim its next step", "differ from each other in what stands in the way, who is involved, where it happens or what is at stake", "never in what the protagonist is after", "three to five sentences", "what the protagonist stands to lose", "let them grow as the story goes on",
-                   "what the protagonist is after", "what Marit wants from this chapter", "the line or moment where the two of them clash", "what it costs",
+    for needed in ("three ways to take the protagonist's aim its next step", "differ from each other in what stands in the way, who is involved, where it happens and what is at stake",
+                   "All three go after the same concrete thing", "what the protagonist puts at risk and what it costs if they lose it", "let them grow as the story goes on",
+                   "what the protagonist is after", "what Marit wants from this chapter", "the line or moment where the two of them clash",
                    "Marit toward Suvi", "chapter 2 of 8", "in English"):
         assert needed in prompt, needed
-    assert "which must touch something about them described above (something they want, fear, are blind to or value) or the disruption the story began from, and what it costs if they lose it" in prompt
-    assert "and in how they end, but never in what the protagonist is after" in prompt
-    assert "Option 1 ends with the protagonist reaching what they are after, at a price. Option 2 ends with them losing it. Option 3 ends with them giving it up for something else." in prompt
+    assert "one specific thing the cards above show to matter" in prompt and "prefer the things the cards treat as central over the minor ones" in prompt
+    assert "never a comfort or a convenience" in prompt
+    assert "idea 1 ends with the protagonist reaching what they are after, at a price; idea 2 ends with them losing it; idea 3 ends with them giving it up for something else." in prompt
     assert "Act 1" not in prompt and "JSON" not in prompt and "four points" not in prompt        # no plan shape is asked for here
     assert not any(w in prompt for w in ("refusal", "a trade", "misunderstanding"))        # no example kinds: the model thinks them up
     assert "differ in kind" not in prompt and "already used" not in prompt and "no two of them share what the protagonist is after" not in prompt
     assert "supporting" in prompt and "by what they do or one telling detail" in prompt
+
+
+def combos_of(n: int = 3) -> list[dict]:
+    return [{"tie_id": f"t{i}", "tie_words": f"Tie words {i}", "pressure_id": None, "pressure": None, "pressure_words": "", "reason": f"Reason {i}"} for i in range(1, n + 1)]
+
+
+def test_the_brainstorm_outcome_sentence_stands_once_and_the_prompt_never_asks_for_more_than_three_ideas():
+    w = load_text("plan")
+    for request, combos in ((base(), None), ({**base(), "chapter": 3}, None), (base(), combos_of())):
+        prompt = plan.build_brainstorm_prompt(request, 1.0, combos)
+        assert prompt.count(w["brainstorm_outcomes"]) == 1 and prompt.count("idea 1 ends with") == 1
+        assert "exactly three ideas" in prompt and "and no more" in prompt
+        assert not re.search(r"\b(four|five|six|seven|eight|nine) ideas\b", prompt) and "Option 4" not in prompt
+
+
+def test_in_choose_mode_idea_n_is_built_on_combination_n_and_plain_mode_names_no_combination():
+    prompt = plan.build_brainstorm_prompt(base(), 1.0, combos_of())
+    assert "idea 1 is built on combination 1, idea 2 on combination 2 and idea 3 on combination 3" in prompt
+    for n in (1, 2, 3):
+        assert f"Combination {n}" in prompt and f"Tie words {n}" in prompt
+    assert "one chapter for each" not in prompt and "numbered 1 to 3. Each chapter" not in prompt
+    assert "combination" not in plan.build_brainstorm_prompt(base()).lower()
+
+
+def test_the_variety_block_is_in_chapter_two_and_later_and_not_in_chapter_one():
+    variety = load_text("plan")["brainstorm_variety"]
+    first = {**base(), "chapter": 1, "earlier_beats": [], "earlier_events": []}
+    assert variety not in plan.build_brainstorm_prompt(first)
+    for n in (2, 5):
+        assert plan.build_brainstorm_prompt({**base(), "chapter": n}).count(variety) == 1
+
+
+def test_the_brainstorm_length_is_stated_once_in_words_and_the_header_instruction_and_aim_rules_are_there_once():
+    w = load_text("plan")
+    for combos in (None, combos_of()):
+        prompt = plan.build_brainstorm_prompt(base(), 1.0, combos)
+        assert prompt.count("130 words") == 1 and "150 words" not in prompt and "three to five sentences" not in prompt and "two or three sentences" not in prompt
+        assert "exactly Option 1, Option 2 or Option 3" in prompt and prompt.count("keep the headers in English") == 1
+        assert prompt.count(w["aim_rules"]) == 1                                  # the aim-chain rules are said once, by the shared block
+        assert "if the protagonist reached what they were after" not in prompt.replace(w["aim_rules"], "")
+
+
+def test_the_brainstorm_blocks_come_in_the_planned_order_with_the_output_line_last():
+    w = load_text("plan")
+    prompt = plan.build_brainstorm_prompt({**base(), "chapter": 3}, 1.0, combos_of())
+    keys = ("brainstorm_method", "brainstorm_task", "brainstorm_outcomes", "brainstorm_combos", "brainstorm_risk", "brainstorm_variety", "brainstorm_people")
+    at = [prompt.index(w[k]) for k in keys]
+    parts = prompt.index("Each idea says, in plain sentences")
+    assert at == sorted(at) and at[3] < parts < at[4]                        # combos, then the parts, then the risk
+    assert prompt.rstrip().endswith("Keep every name exactly as it is written above.")
+    assert prompt.index("Reply in plain prose") > prompt.index(w["brainstorm_people"])
 
 
 def chain_request() -> dict:
@@ -547,7 +599,7 @@ def test_a_brainstorm_that_fails_every_attempt_never_fails_the_call_and_the_plan
     assert "Three ideas for this chapter" not in engine.prompts[2] and "Choose one of them" not in engine.prompts[2]
     brainstorm_pass = [p for p in ctx.notes["passes"] if p["step"] == "brainstorm"][0]
     assert len(brainstorm_pass["attempts"]) == 2 and brainstorm_pass["fallback"] is True
-    assert "Propose three different chapters" in engine.prompts[1]                                  # the retry line said what to fix
+    assert "Write three ideas headed Option 1, Option 2 and Option 3" in engine.prompts[1]                                 # the retry line said what to fix
 
 
 def test_one_refused_brainstorm_is_asked_for_again_and_then_used():
@@ -580,7 +632,7 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-16"
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-17"
 
 
 # ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------
@@ -776,3 +828,9 @@ def test_a_chapter_with_an_ending_but_no_aim_is_left_out_of_the_chain():
     request["earlier_beats"] = [b for b in request["earlier_beats"] if b["chapter"] != 2]
     text = plan.chain_text(request, plan.common.load_text("plan"))
     assert "Chapter 2" not in text and "aim: \n" not in text and "Chapter 1: aim: Aim number 1. It ended: Ending number 1." in text
+
+
+def test_three_ideas_of_the_stated_length_fit_the_brainstorm_cap_with_room_to_spare():
+    idea = " ".join(["Someone goes after something and meets a person who stands in the way, and it costs them dearly."] * 9).split()[:130]
+    reply = "\n".join(f"Option {n}\n" + " ".join(idea) for n in (1, 2, 3))
+    assert len(idea) == 130 and tokens.count(reply) * 2 < plan.BRAINSTORM_OUTPUT                    # at most half the cap, so a longer idea still fits

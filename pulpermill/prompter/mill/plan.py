@@ -17,12 +17,12 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common, decide, select
 
-VERSION = "plan-16"
+VERSION = "plan-17"
 IDEA = "idea"            # in choose mode: the number (1 to 3) of the idea the plan builds on, which is also the number of its combination; the reply turns it into `picked`
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
 POINTS = ("1", "2", "3", "4")
-BRAINSTORM_OUTPUT = 1200      # three ideas of about 150 words each need roughly 700 tokens; the rest is room to spare, so a cut-off tail is the exception
+BRAINSTORM_OUTPUT = 1200      # three ideas of about 130 words each need roughly 600 tokens; the rest is room to spare, so a cut-off tail is the exception
 BRAINSTORM_ATTEMPTS = 2       # then the plan goes ahead without a brainstorm: it is a help to the plan, never a reason to fail a call
 BRAINSTORM_MIN_CHARS = 120    # three options cannot be told in less
 BRAINSTORM_STAND_IN = "word " * BRAINSTORM_OUTPUT       # the longest a brainstorm can be as the plan prompt carries it (a token a word), for the worst case
@@ -223,9 +223,14 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dic
     w, names, chapter, total = c["w"], c["names"], c["chapter"], c["total"]
     role = w["brainstorm_role"].format(chapter=chapter, total=total) if total else w["brainstorm_role_unknown_total"].format(chapter=chapter)
     task = _task_block(c, "brainstorm_method")
+    task.append(w["brainstorm_task"])
+    task.append(w["brainstorm_outcomes"])
     if combos is not None:
         task.append(w["brainstorm_combos"])
-    task.append(w["brainstorm_task"].format(other=other_end(request, names)))
+    task.append(w["brainstorm_parts"].format(other=other_end(request, names)))
+    task.append(w["brainstorm_risk"])
+    if chapter > 1:
+        task.append(w["brainstorm_variety"])
     task.append(w["brainstorm_people"])
     if chapter == 1:
         task.append(w["brainstorm_first"])
@@ -402,10 +407,18 @@ class PlanFlow(Flow):
 
     # -- the brainstorm
 
-    @staticmethod
-    def _brainstorm_check(value: Any) -> str | None:
-        if len(r.s(value)) < BRAINSTORM_MIN_CHARS:
-            return common.load_text("plan")["problems"]["brainstorm_short"]
+    def _brainstorm_check(self, value: Any) -> str | None:
+        """Refuses a reply that is too short, and one that has options but not exactly three (in choose mode, numbered 1, 2, 3 for the three
+        combinations). A reply the parser cannot split (0 or 1 options) passes: the decider then notes `none` and the plan carries the whole text.
+        A cut-off last option is dropped by `parse_options`, so a truncated reply parses short and is refused too."""
+        text = r.s(value)
+        p = common.load_text("plan")["problems"]
+        if len(text) < BRAINSTORM_MIN_CHARS:
+            return p["brainstorm_short"]
+        if decide.ON:
+            options = decide.parse_options(text)
+            if options and (len(options) != 3 or (self.combos is not None and [n for n, _ in options] != [1, 2, 3])):
+                return p["brainstorm_count"]
         return None
 
     def _brainstorm_step(self, combos: list[dict] | None = None) -> Step:
