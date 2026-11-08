@@ -37,60 +37,60 @@ output: "Reply with a JSON object holding every field of the card. Use the write
 # ---- what each field holds (the schema's help and why, in our words) ----
 fields:
   style:
-    person: "Whose voice tells the story, fixed for every chapter. Read it from the narration of the chapter or from what the note says."
-    tense: "The tense of the narration, fixed for every chapter."
-    distance: "How far the narrator stands from the protagonist's thoughts: outside them, close to them, or inside them."
-    humor: "How much the telling jokes, and what kind of joking it is."
-    pacing: "How fast the telling moves, and how much page each moment gets."
-    narrator_note: "One or two sentences on anything about the narrator that the choices do not cover. Leave it out when the writer's text adds nothing."
-    rhythm: "How the sentences sound: short and clipped, mixed, or long and flowing."
-    diction: "Whether word choice is plain and everyday or elaborate."
-    formality: "How formal the narration sounds."
-    imagery: "How much figurative language the prose uses."
-    edge: "How rough the language is: swearing, bluntness, roughness."
-    explicitness: "Whether intense moments, violent or intimate ones, happen on the page or just off it."
-    sentences_note: "One or two sentences on anything about the prose that the choices do not cover. Leave it out when the writer's text adds nothing."
-    attitude: "The narrator's feeling toward the story and its people, which shows in what it notices and how it words an event."
-    stance_note: "One or two sentences on anything about the narrator's attitude that the choice does not cover. Leave it out when the writer's text adds nothing."
-    amount: "How much of the story is carried by conversation."
-    directness: "Whether people say what they mean or leave it underneath."
-    polish: "Whether speech reads as real talk or as crafted lines."
-    voice_difference: "Whether the characters sound different from one another."
-    dialogue_note: "One or two sentences on anything about dialogue that the choices do not cover. Leave it out when the writer's text adds nothing."
-    lens: "A habit of attention: what the narrator keeps noticing and how it weighs what it sees. A lens is never a subject or a theme; when the writer names a subject, turn it into the kind of noticing that would make that subject surface, and keep the writer's intent."
-    genre: "A tradition or a feeling that sets mood and conventions, in a few words. It requires no particular event and names no one."
+    person: "Whose voice tells the story, fixed for every chapter. Read it from the narration of the chapter or from what the note says. Every sentence of every chapter depends on it, and the protagonist chosen later must fit it, so commit to the person the writer's text uses."
+    tense: "The tense of the narration, fixed for every chapter. Every chapter is written in it, so commit to the tense the writer's text uses."
+    distance: "How far the narrator stands from the protagonist's thoughts: outside them, close to them, or inside them. It decides how much of the protagonist's inner life the reader gets. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    humor: "How much the telling jokes, and what kind of joking it is. It decides whether the reader is invited to laugh at what happens. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    pacing: "How fast the telling moves, and how much page each moment gets. It also shapes how long each chapter runs. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    narrator_note: "One or two sentences on anything about the narrator that the choices do not cover. It is always filled: it names one concrete habit of how the narrator tells the story, a habit that follows from the writer's text and agrees with the choices. It says something the choices do not already say and invents no trait the writer's text did not suggest, and it pulls against nothing the writer asked for. When the text suggests nothing further, state how the choices show up in practice as one habit."
+    rhythm: "How the sentences sound: short and clipped, mixed, or long and flowing. It sets the pace of reading line by line. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    diction: "Whether word choice is plain and everyday or elaborate. Plain words keep the reader moving and elaborate ones make the reader notice the language. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    formality: "How formal the narration sounds. It decides whether the narrator sounds like a person talking or like a record being kept. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    imagery: "How much figurative language the prose uses. More of it adds texture and slows the reading. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    edge: "How rough the language is: swearing, bluntness, roughness. It decides whether rough events are told in rough language. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    explicitness: "Whether intense moments, violent or intimate ones, happen on the page or just off it. It decides what the reader sees directly and what the reader imagines. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    sentences_note: "One or two sentences on anything about the prose that the choices do not cover. It is always filled: it names one concrete habit of the sentences and words, a habit that follows from the writer's text and agrees with the choices. It says something the choices do not already say and invents no trait the writer's text did not suggest, and it pulls against nothing the writer asked for. When the text suggests nothing further, state how the choices show up in practice as one habit."
+    attitude: "The narrator's feeling toward the story and its people, which shows in what it notices and how it words an event. The same event reads differently under each attitude. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    stance_note: "One or two sentences on anything about the narrator's attitude that the choice does not cover. It is always filled: it names one concrete habit of how the narrator's feeling shows, a habit that follows from the writer's text and agrees with the choice. It says something the choice does not already say and invents no trait the writer's text did not suggest, and it pulls against nothing the writer asked for. When the text suggests nothing further, state how the choice shows up in practice as one habit."
+    amount: "How much of the story is carried by conversation. More talk makes scenes quicker to read and less talk leaves room for the narrator. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    directness: "Whether people say what they mean or leave it underneath. Meaning left unsaid makes people feel less scripted and asks more of the reader. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    polish: "Whether speech reads as real talk or as crafted lines. Real talk sounds true and crafted lines stay with the reader. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    voice_difference: "Whether the characters sound different from one another. Distinct voices let the reader know who is speaking without tags. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    dialogue_note: "One or two sentences on anything about dialogue that the choices do not cover. It is always filled: it names one concrete habit of how people talk, a habit that follows from the writer's text and agrees with the choices. It says something the choices do not already say and invents no trait the writer's text did not suggest, and it pulls against nothing the writer asked for. When the text suggests nothing further, state how the choices show up in practice as one habit."
+    lens: "A habit of attention: what the narrator keeps noticing and how it weighs what it sees. It decides which details keep surfacing in every chapter, and theme grows from them, so derive it from what the writer's text dwells on. A lens is never a subject or a theme; when the writer names a subject, turn it into the kind of noticing that would make that subject surface, and keep the writer's intent."
+    genre: "A tradition or a feeling that sets mood and conventions, in a few words. It tells the story which conventions to use and which to leave out, so choose the one the writer's text calls for. It requires no particular event and names no one."
   characters:
-    name: "What the narration calls the person, spelled exactly as the writer spelled it."
-    age: "A whole number of years."
-    sex: "The person's sex, which fixes the pronouns."
-    appearance: "Concrete, checkable details: build, hair, face, marks, usual dress. Facts, not impressions, and every detail the writer lists stays."
-    sketch: "One or two sentences about what this person is like, as a person and not as a job title, with one contradiction that does not fit the type."
-    wants: "Two to five broad desires that cannot all be satisfied at once. Each is a desire in a few words; none names a person, an object or a place, and none is a concrete aim. The pull between the wants is what drives the person."
-    fear: "What this person avoids or protects themselves from."
-    flaw: "A false belief or blind spot that sabotages what they want."
-    values: "Things the person protects or keeps faith with, each phrased as something held dear."
-    behaviors: "How the person acts in different inner states. Each item pairs a broad inner or social state with a leaning, never a single situation or a single act, and at least one item is a calm or happy state."
-    competence: "What they are good at."
-    vulnerability: "Where they can be hurt or caught out, including shame that shapes how they behave."
-    speech: "How they talk: rhythm, vocabulary, what they never say."
-    history: "A short formative background that explains the flaw and the wants, told as events and conditions, with no named person, place or object."
+    name: "What the narration calls the person, spelled exactly as the writer spelled it. Every chapter uses it."
+    age: "A whole number of years. A fixed number keeps the person from drifting across chapters."
+    sex: "The person's sex, which fixes the pronouns of every chapter."
+    appearance: "Concrete, checkable details: build, hair, face, marks, usual dress. Facts, not impressions, and every detail the writer lists stays. A detail missing here may be invented differently in a later chapter."
+    sketch: "One or two sentences about what this person is like, as a person and not as a job title, with one contradiction that does not fit the type. It is the quickest way to give later chapters a person instead of a type, so write it in the terms of this person's own habits, trade and circumstances, in its own shape and not a formula, so that it could not be copied onto another person's card."
+    wants: "Up to five broad desires, never fewer than two, that cannot all be satisfied at once. Each is a desire in a short phrase; none names a person, an object or a place, and none is a concrete aim. The pull between the wants is what drives the person and forces the choices the story is built from. Make each want specific to this person, so that it could not sit unchanged on another person's card, while it stays broad enough that many goals could serve it. Each want pulls on a different thing (time, safety, loyalty, pride) and no two say the same in other words. The writer's own wants stay among them, in the writer's own words."
+    fear: "What this person avoids or protects themselves from, in a sentence. Fear shows up as what the person avoids, which is easier to write than a feeling, so name the avoidance."
+    flaw: "One sentence stating a false belief that sabotages what they want, written as a belief the person holds and not as a slogan or a behavior. When the note states a flaw as a behavior, write the belief behind it. A flaw that works against the wants is what turns events into character."
+    values: "Up to five things the person protects or keeps faith with, each phrased as something held dear. Values give the person something to lose and lines they will not cross. Each is a short phrase saying what the person keeps faith with and how or how far, so a limit the writer stated stays in the writer's own words."
+    behaviors: "Up to five items on how the person acts in different inner states. Each item pairs a broad inner or social state with a leaning, never a single situation or a single act, and at least one item is a calm or happy state. This gives later chapters a person who acts differently as they feel differently. Each state is a mood or a pressure, never an activity or a topic, and each tendency is a leaning the person shows in it."
+    competence: "What they are good at: concrete skills that the story could reward, each something a person does. Knowing them lets the story reward the person."
+    vulnerability: "Where they can be hurt or caught out, including shame that shapes how they behave. It gives other people and the plot something to press on, so name a specific place where someone could press, tied to the fear or the shame and written in this person's own terms."
+    speech: "How they talk: rhythm, vocabulary, what they never say. It lets dialogue sound like this person and not like the narrator."
+    history: "A short formative background that explains the flaw and the wants, in two or three sentences of events and conditions, with no named person, place or object. Every event explains the flaw or a want. A relative or a place in the note becomes the condition it created for this person, never a named or described person."
   world:
-    name: "What the world or setting is called."
-    era_and_technology: "When it is, what people can and cannot do, and the scale (a block, a city, a continent), stated as facts with no mood."
-    everyday_life: "What an ordinary day is for most people, and what is scarce, expensive or contested. This is the normal that a disruption will break, so it needs friction."
-    history: "What happened before the story that people still live with, told as events and forces, naming no individual."
-    places: "Places, each with a name, a description you could picture, and what the place does to the people in it. A place that is only scenery gives the story nothing, and every place the writer lists stays."
-    objects: "Things that matter, each with a name, a concrete description, and what it can do or what it means to whoever wants it. A thing has no owner and no location here: who holds it and where it sits are written later, in the ties and holdings."
-    powers: "Institutions, organisations, nations and crowds, each with a name, what kind of group it is, what its hold is (force, money, law, belief, numbers), and how an ordinary person meets it day to day. Say what the group is and how it is felt, never what it currently plans or wants."
-    rules: "Things that are true here, each with what it costs to live by it and what happens when it is broken (impossible, punished, shameful, or a side effect)."
-    terms: "Invented or local words, each with a one-line meaning."
+    name: "What the world or setting is called. The model refers to the setting by it every time."
+    era_and_technology: "When it is, what people can and cannot do, and the scale (a block, a city, a continent), stated as facts with no mood. It tells later chapters what is possible. Facts only: what people can and cannot do, how many they are, the scale. Every number and every technology the writer states stays. Make no comparison to a real period."
+    everyday_life: "What an ordinary day is for most people, and what is scarce, expensive or contested. This is the normal that a disruption will break, so it needs friction: name what people struggle for or fight over."
+    history: "What happened before the story that people still live with, told as events and forces, naming no individual. It gives the world weight without any one person in it."
+    places: "Up to five places, more only when the writer lists more, each with a name, a description you could picture, and what the place does to the people in it. A place gives a scene something to push against, so the effect says what people do, say or risk differently there; mood or atmosphere is not an effect. A place that is only scenery gives the story nothing, and every place the writer lists stays. Places you invent meet the same bar as places the writer lists."
+    objects: "Up to five things that matter, more only when the writer lists more, each with a name, a concrete description, and what it can do or what it means to whoever wants it. A thing matters because someone wants it, so every thing is something someone could want or fight over, and no thing is only decoration. A thing has no owner and no location here: who holds it and where it sits are written later, in the ties and holdings."
+    powers: "Up to five institutions, organisations, nations and crowds, each with a name, what kind of group it is, what its hold is (force, money, law, belief, numbers), and how an ordinary person meets it day to day. Groups are how the world pushes back on ordinary people, so each one is met in a day in a concrete way (a charge, an inspection, a notice, a custom) that carries some friction. Say what the group is and how it is felt, never what it currently plans or wants."
+    rules: "Up to five things that are true here, each with what it costs to live by it and what happens when it is broken (impossible, punished, shameful, or a side effect). A rule with a price gives people a choice, so each rule should be able to put any person living here in a dilemma. A rule with no price gives way to one that has a price."
+    terms: "Up to five words invented for or particular to this world, each with a one-line meaning. A common word is not redefined. They keep invented words spelled and used the same way in every chapter."
   entanglements:
-    ties: "Connections between a person and another person or group. Each tie points one way, from one end to the other. The bond is a standing label that reads from the from end: it says what the from end is to the to end, and it may carry a clause of shared past. The edge is what the tie makes the person at the from end want, their driver in it."
-    holdings: "Who holds or controls which thing or place: each holding names the thing or place and the person, group or place that holds it."
+    ties: "Connections between a person and another person or group. Each tie points one way, from one end to the other. The bond is a standing label that reads from the from end: it says what the from end is to the to end, and it may carry a clause of shared past. The edge is what the tie makes the person at the from end want, their driver in it. Later steps take one tie per chapter and test the protagonist's aim against it, so every person has at least two ties, counting either end, and each tie is a different relationship."
+    holdings: "Who holds or controls which thing or place: each holding names the thing or place and the person, group or place that holds it. A holder gives a thing or a place an owner the story can fight over, so give each one a holder whenever the cards show one."
   setup:
-    protagonist: "The one character whose eyes we follow, chosen from the existing characters."
-    normal: "An ordinary day for the protagonist before the story, drawn from the world's everyday life and the ties, saying what that normal gave them (safety, status, a routine that kept a want or fear quiet) so that the disruption has something to threaten."
-    disruption: "The event that has already happened and broke the normal, so chapter 1 can open on it."
+    protagonist: "The one character whose eyes we follow, chosen from the existing characters: the person the note names, and when the note names nobody, the person whose wants and ties pull hardest. Every chapter follows this person."
+    normal: "An ordinary day for the protagonist before the story, drawn from the world's everyday life and the ties, saying what that normal gave them (safety, status, a routine that kept a want or fear quiet) so that the disruption has something to threaten. Write a concrete day in five or six sentences and at most about 700 characters, because the card keeps no more than that. The day is made of routines, places and people from the world and the ties, with no more people and places than the cards hold. Show what the day gave the protagonist through what the day contains, never in the card's own words for their wants, fear or flaw."
+    disruption: "The event that has already happened and broke the normal, so chapter 1 can open on it. Write one event in the past tense that ends on the event itself, with no closing line about how things stand afterwards. It lands on something the normal gave the protagonist and, where the cards show one, on one of the protagonist's ties. Every later chapter's planning reads it too, so it must be understandable on its own, without the normal beside it."
     chapter_count: "How many chapters the story runs, a whole number."
 
 # ---- what each field inside a list item holds (printed under its list; every item field has one) ----
@@ -98,39 +98,39 @@ item_lead: "Every item holds:"
 item_fields:
   characters:
     wants:
-      text: "One broad desire in a few words."
+      text: "One broad desire in a short phrase that carries this person's own angle, never a single word and never a concrete aim."
     values:
-      text: "One thing the person protects or keeps faith with, phrased as something held dear."
+      text: "One thing the person protects or keeps faith with, phrased as something held dear, with the limit or the cost when there is one, never a single word."
     behaviors:
-      state: "A broad inner or social state, a mood or a pressure the person is under, never a particular event."
+      state: "A broad inner or social state, a mood or a pressure the person is under, never an activity, a topic or a particular event."
       tendency: "What the person does in that state, a leaning and never a single act."
   world:
     places:
       name: "What the narration calls the place."
       description: "What you could picture standing there: concrete things to see, hear and smell."
-      effect: "What the place does to the people in it: how it changes what they do, say or risk."
+      effect: "What the place does to the people in it: how it changes what they do, say or risk. Mood or atmosphere is not an effect."
     objects:
       name: "What the narration calls the thing."
       description: "What it looks and feels like, in concrete detail."
-      significance: "What it can do, or what it means to whoever wants it."
+      significance: "What it can do, or what it means to whoever wants it: why someone would want it or fight over it."
     powers:
       name: "What the group is called."
       nature: "What kind of group it is, in one plain sentence."
-      hold: "How it holds power over people: force, money, law, belief or numbers."
-      felt: "How an ordinary person meets it day to day."
+      hold: "How it holds power over people, named by one or two of exactly these words: force, money, law, belief, numbers."
+      felt: "A concrete way an ordinary person meets it in a day, such as a charge, an inspection, a notice or a custom, with some friction in it."
     rules:
       statement: "The fact itself, in one plain sentence about how things are here. The price of living by it and the result of breaking it go in the next two fields."
-      cost: "What it costs people to live by the rule."
-      when_broken: "What happens when the rule is broken: it proves impossible, someone is punished, someone is shamed, or a side effect follows."
+      cost: "What it costs people to live by the rule: something concrete that someone loses or risks."
+      when_broken: "Which one applies when the rule is broken: it proves impossible, someone is punished, someone is shamed, or a side effect follows, and what that is."
     terms:
       term: "The invented or local word, spelled as people use it."
       meaning: "What it means, in one line."
   entanglements:
     ties:
-      tie_from: "The person or group at the from end, the one whose driver the edge is, named exactly as listed."
+      tie_from: "The person or group at the from end, the one whose driver the edge is, which is the one the note says wants it, named exactly as listed."
       tie_to: "The person or group at the to end, named exactly as listed and different from the from end."
-      bond: "A standing label that reads from the from end: it says what the from end is to the to end, and it may carry a clause of shared past."
-      edge: "What the from end wants in this tie, as a driver, in a short phrase that differs from the bond."
+      bond: "A standing label that reads from the from end: it says what the from end is to the to end, specific to this pair and never a general statement about their roles, and it carries a clause of shared past when the note or the cards give one."
+      edge: "What the from end wants in this tie, as a driver: a concrete aim toward the to end that a chapter can reach, lose or change, in a short phrase that differs from the bond. When the note states a stake, what happens if the aim is not met, the edge carries it."
     holdings:
       holdee: "The thing or place that is held, named exactly as listed."
       held_by: "The person, group or place that holds it, named exactly as listed."
@@ -141,20 +141,23 @@ cards:
     intro: "how the story is told: voice, attitude and the narrator's habit of attention."
     scope: "You may choose everything on this card freely. It is about the telling and never about the story: it holds no name of any person, place or thing, and no event."
     specific:
+      - "This card is the voice of the whole story: every later step that plans or writes a chapter reads it, and each chapter is told in it. A choice therefore holds for every chapter and the choices agree with one another."
       # T1 S3: names in a Style note.
       - "The card must work for any story. When the writer's note names a character or a place, describe the voice itself and leave the name out: say how the narrator tells it, in which person and in what manner, with no name in it."
       # T1 S4: person and tense follow the text.
       - "Person and tense are rules for every chapter. Read them from the narration of the example chapter, where narration that speaks as I is the first person, narration that speaks of he, she or they is the third, and the form of the verbs gives past or present, and from the note when it states them. When the writer is unsure, commit to one person and one tense."
-      - "Fill each choice the writer's text lets you decide. For a choice the text does not touch, take the option that best fits the voice described, and the middle option when nothing points either way. The four note fields stay out unless the writer has something extra to say."
+      - "Fill every field. Decide each choice the writer's text lets you decide. For a choice the text does not touch, take the option that best fits the voice described, and the middle option when nothing points either way. Pick the choices so that the whole set reads as one voice, each agreeing with the others."
+      - "Each of the four notes names one concrete habit that follows from the writer's text and agrees with the choices, repeats nothing the choices already say, and invents no trait the writer did not suggest."
   characters:
     intro: "one individual: who they are, what they want, and how they act when things go wrong."
     scope: "You may create this one person freely. The card names no other person, place or object and no relationship, so that it can move between stories: a relative, partner, boss, friend, rival, home town or heirloom in the note becomes a trait of this person alone."
     specific:
+      - "Later steps read this card to plan what the person tries, risks and refuses: the wants and the flaw drive what they attempt, and the fear, vulnerability and values decide what they avoid, what can be pressed on and what they will not do. Every field is filled. Whatever the note leaves open, invent from the person the note shows, and make each invented value as specific as one the writer stated."
       # T1 C8: stated facts are kept exactly.
       - "Copy every stated fact exactly. The name keeps its spelling, the age is the number given, the sex is the answer word that matches the sex stated, and every appearance detail the writer lists appears with nothing dropped and nothing softened."
       # T1 C1: wants are abstract, never a concrete aim, never a named person.
       - "A want is a broad desire that many different goals could serve. When the note gives a concrete aim, keep the desire behind it and state that desire broadly, never the particular object, contest or person. Aims toward a particular person or object belong to the ties written later, so no want names one."
-      - "Give two to five wants that pull against each other, and keep the writer's own wants among them. When the writer states a single want, add the want that competes with it for the person's time, safety or loyalty."
+      - "Give up to five wants, and never fewer than two, that pull against each other, and keep the writer's own wants among them in the writer's own words. When the writer states a single want, add the want that competes with it for the person's time, safety or loyalty."
       # T1 C4: four distinct ideas.
       - "Fear, flaw, vulnerability and values say four different things: the fear is what the person avoids, the flaw is a false belief that works against what they want, the vulnerability is the place where someone could press on them, and the values are what they hold dear. When the note gives one idea, keep it in the field it fits best and find a different, consistent idea for each of the others, so that no idea is written twice."
       - "Phrase each value as something protected, a thing held dear, never as a prohibition."
@@ -164,22 +167,28 @@ cards:
     intro: "what exists and what is true: places, things, groups and rules."
     scope: "You may create places, things, groups, rules and terms freely. The card names no character and never says who holds, knows or wants something, so that any cast can live in it."
     specific:
+      - "This card is the world that later steps draw on: they take one place, group or rule to push on the people in a chapter, so places and rules need effects and costs, groups need a daily touch on ordinary people, and every thing needs someone who wants it. Every field is filled. Whatever the note leaves open, invent it, and make each invented place, thing, group and rule meet the same bar as one the writer listed."
       # W1/E1: no owner in an object.
       - "A thing's text describes the thing and what it is worth to whoever wants it. When the note says who owns a thing or where it sits, keep the thing and leave the owner and the location out; they are written later as holdings."
       # W2: a group's present plan stays out.
       - "A group is described by what it is and how an ordinary person meets it day to day. Leave out what the group is planning or about to do; that belongs to the ties written later."
       # W5: history and era.
       - "History is events and forces, never people. When the note credits an event to a person, say what happened and leave the person out. The era is facts about the time, the technology and the scale, with no mood."
-      - "Places and things have no limit, so every place and thing the writer lists appears. Groups and rules take at most five each: keep the ones the writer stresses."
+      - "Every list holds up to five items, and each item is a different thing. Places and things go past five only when the writer lists more, since every place and thing the writer lists appears. Groups, rules and terms take at most five each: keep the ones the writer stresses."
       - "No character's name appears anywhere on this card."
   entanglements:
     intro: "the connections in this story: ties between people and groups, and who holds what."
     scope: "You may only connect what already exists: the people, groups, places and things listed below. Create no new person, group, place, thing or rule, in any field and in any free text."
     specific:
+      - "This card is how later steps see who stands where: they take one tie per chapter and test the protagonist's aim against it, so an edge must be something a person can try to reach, lose or change. Every field is filled."
+      - "Write every tie and holding the note states, then add the ones the cards imply. Every person has at least two ties, counting either end. Every group on the World card appears in a tie wherever its hold or the way it is felt touches a person, and a group's tie says what the group wants from that person. Link only the names listed."
+      - "An edge is a concrete aim the from person has toward the to person, built from the people's cards: what a person's want, fear, flaw or vulnerability makes them reach for from the other. Edges across ties pull against one another: the two ends of a pair, or two ties pulling on the same person, want things that cannot all be had."
+      - "A bond is a standing label specific to the pair, with a clause of shared past when the note or the cards give one. It says what the from person is to the to person, never a general statement about their roles."
+      - "Give a thing or a place a holder whenever the cards show one: a group whose hold is control of it, a person whose card ties them to it. A thing with no plausible holder gets no holding."
       # T1 E2: a group that the World does not hold.
       - "When the note speaks of a group, place or thing that is not on the list, make no tie or holding for it and do not invent it. Fill the ties and holdings you can make from the names you have."
       # T1 E8: direction. T1 E4: bond and edge apart.
-      - "A tie points from the person whose driver the edge is. Ask who wants something from whom: the person who wants something done is the from end and the other is the to end, the bond says what the from person is to the to person, and the edge says what the from person wants from them. The same tie is never written twice from both ends."
+      - "A tie points from the person whose driver the edge is. Read the note literally for who wants what: the person the note says wants something is the from end of the tie whose edge is that want, and the other person is the to end; the bond says what the from person is to the to person, and the edge says what the from person wants from them. When two people want different things from each other, write two ties, one from each end, each with its own edge. The same want is never written twice."
       - "Every tie has a bond and an edge, and they differ. The bond is the standing label (what the tie is, with a clause of shared past if the note has one). The edge is what that tie makes the from person want right now. When the note gives only a live aim, invent a bond that fits the note's facts; when it gives only a label, add the edge it implies."
       # T1 E1/E9: ownership is a holding, never a tie.
       - "Ownership and control are holdings, never ties: a holding joins the place or thing to the person or group that holds it. A tie joins a person or group to another person or group, so a place or a thing is never an end of a tie, and no bond says that someone owns something. Things may be held by people, groups or places; places by people or groups."
@@ -188,6 +197,7 @@ cards:
     intro: "the springboard: who we follow, what just broke their normal, and how long the story runs."
     scope: "You may write the normal, the disruption and the chapter count. The protagonist is one of the existing characters; create no new person, place or thing, and write no plan and no ending. People beyond the Characters card appear by role alone, unnamed."
     specific:
+      - "This card is the springboard that later steps read: the normal opens chapter 1, and the disruption feeds the planning of every chapter, so it must be an event that stands on its own. Every field is filled. Whatever the note leaves open, build it from the cards, the people and places they hold and the ties between them."
       - "When the note names someone as the lead who is not among the characters, choose the existing character who fits the note best; never add a person."
       # T1 U6: the normal is a day, not the character card again.
       - "The normal is a day in the protagonist's life: routines, places and people from the world and the ties, and what that day gave them. Do not restate the character card: their fear, flaw and wants are already written, so show them through what the day contains."
