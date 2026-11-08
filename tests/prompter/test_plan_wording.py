@@ -632,7 +632,7 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-17"
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-18"
 
 
 # ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------
@@ -834,3 +834,18 @@ def test_three_ideas_of_the_stated_length_fit_the_brainstorm_cap_with_room_to_sp
     idea = " ".join(["Someone goes after something and meets a person who stands in the way, and it costs them dearly."] * 9).split()[:130]
     reply = "\n".join(f"Option {n}\n" + " ".join(idea) for n in (1, 2, 3))
     assert len(idea) == 130 and tokens.count(reply) * 2 < plan.BRAINSTORM_OUTPUT                    # at most half the cap, so a longer idea still fits
+
+
+@pytest.mark.skipif(not tokens.available(), reason="the tokenizer files are not installed")
+def test_the_whole_choose_flow_with_the_decider_showing_each_option_its_combination_fits_at_a_full_cast_of_five_without_any_squeeze():
+    from test_select import options_of
+    request = inflate(base(), cast=5, each=5, ties=6, chapters=9, chars=900)
+    request["earlier_beats"] = [{"chapter": n, "where": "The Quay", "when": "Morning", "aim": f"Chase number {n} across the harbour", "plan": "x"} for n in range(1, 10)]
+    request["choose"] = True
+    request["pressure_options"] = options_of(request["world"])
+    flow = plan.build_flow(request, Kit(request))
+    steps = flow.worst_case()
+    names = [s.name for s in steps]
+    assert names[:4] == ["select", "brainstorm", "decide", "plan"] and steps[2].text(1.0).count("It is built on:") == 3         # the combination lines are in the count
+    made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
+    assert factor == 1.0 and all(m.ok for m in measures) and len(measures) == len(names)

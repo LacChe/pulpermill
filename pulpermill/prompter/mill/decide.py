@@ -1,30 +1,35 @@
-"""The decider of the `plan` call (Plan 1): between the brainstorm and the plan, one separate call that judges the brainstorm's options on
-explicit criteria, so the plan is built on the best one and not on whichever is listed first. This module holds what the decider needs; plan.py
-wires it in. Wording lives in text/en/plan.yaml (the `decide_*` keys) and says nothing about any one story: the criteria are stated in
-general terms and no sample text reaches the model.
+"""The decider of the `plan` call: between the brainstorm and the plan, one separate call that compares the brainstorm's three options on explicit
+criteria, so the plan is built on the best one and not on whichever is listed first. This module holds what the decider needs; plan.py wires it
+in. Wording lives in text/en/plan.yaml (the `decide_*` keys) and says nothing about any one story: the criteria are stated in general terms and
+no sample text reaches the model.
 
 `parse_options` splits the brainstorm into options. `order_of`, `step` and `decide` are the call: the options are shuffled (seeded by the
-chapter and the options themselves, so a rerun shuffles the same way and the order is logged), lettered A, B, C and so on, and one model call
-names each option's weakest point, scores it on three criteria and picks a letter. A reply that cannot be used falls back to the first
-option, which is today's behavior. `parse_options` is the first piece: it splits the brainstorm's free text into options. Models write the same brainstorm in several shapes
+chapter and the options themselves, so a rerun shuffles the same way and the order is logged), lettered A, B, C, and one model call names, per
+criterion, what each option does and which one is best and which is worst. The model gives no pick: `scores` turns the marks into points (best +1,
+worst -1) and `decide` picks the highest total, with a random choice among equals. An option that names a person on no card (and in no earlier
+chapter's record) loses one point first (`invented`). A reply that cannot be used falls back to a random option.
+`parse_options` splits the brainstorm's free text into options. Models write the same brainstorm in several shapes
 (`**Option 1: Title (...)**`, `**Option 1 (Combination 1: ...)**`, three `**Combination N**` groups of three `**Option k:**` each, an
-`**Overall Aim:**` line before the first option), so it goes by the words "Option" and "Combination" at the start of a line, not by one format."""
+`**Overall Aim:**` line before the first option), so it goes by the words "Option" and "Combination" at the start of a line, not by one format.
+"""
 import random
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from pulpermill.prompter.base import Step
+from pulpermill.prompts import render as r
 
 from . import common
 
 ON = True                  # the decider runs whenever the brainstorm gives at least two options; False leaves the flow as it was before the decider
-OPTIONS_MAX = 9            # the most options one call judges (a brainstorm of three combinations of three); any more are left out
-LABELS = "ABCDEFGHI"       # one letter per option, so OPTIONS_MAX letters
-MAX_OUTPUT = 900           # per option a label, a sentence of up to WEAKEST_ASKED characters and three small scores: about 100 tokens at the most, 9 options
-ATTEMPTS = 2               # then the first option stands: deciding is a help to the plan, never a reason to fail a call
-WEAKEST_ASKED = 200        # what the prompt asks for
-WEAKEST_MAX = 300          # what the check lets through (a retry costs a whole generation, so a little over what was asked is not refused)
+OPTIONS_MAX = 3            # the most options one call judges: exactly the brainstorm's three (one per combination, the outcome fixed by the number)
+LABELS = "ABC"             # one letter per option, so OPTIONS_MAX letters
+MAX_OUTPUT = 900           # per criterion three phrases of up to PHRASE_MAX characters and two letters: 12 phrases are about 600 tokens in English
+ATTEMPTS = 2               # then a random option stands: deciding is a help to the plan, never a reason to fail a call
+PHRASE_MAX = 200           # the longest phrase the check lets through, and what the prompt asks for
+SAMPLING = "structured"    # the step's sampling set; the run notes carry it, so runs before and after a change of set are told apart
+CRITERIA = ("hook", "resistance", "change", "raise")       # `raise` compares against the story so far, so only from the second chapter on
 
 _MARK = r"[ \t]*(?:#{1,6}[ \t]*)?(?:\*\*|__)?[ \t]*"       # what may stand before a header word: indent, `#`s, bold
 _OPTION = re.compile(rf"^{_MARK}Option[ \t]+(\d+)\b", re.I)
@@ -93,80 +98,179 @@ def unnumbered(text: str) -> str:
 
 # ---- The prompt -----------------------------------------------------------------------------------------------------------------
 
-def build_decide_prompt(request: dict, options: list[tuple[int, str]], order: list[int], factor: float = 1.0) -> str:
+def criteria_for(request: dict) -> tuple[str, ...]:
+    """The criteria this call judges on: the first three, and `raise` too from the second chapter on."""
+    try:
+        chapter = int(request.get("chapter") or 1)
+    except (TypeError, ValueError):
+        chapter = 1
+    return CRITERIA if chapter > 1 else CRITERIA[:-1]
+
+
+_COMBINATION_NUMBER = re.compile(r"\b(?:Option|Combination)[ \t]+\d+\b", re.I)
+
+
+def built_on(combo: dict, w: dict) -> str:
+    """The lines under an option that say what it is built on: the tie (with its edge), the rule or object, and the reason they may collide. Never
+    the combination's number, which would show where the option stood: the selector's reason may name it, so a number there is replaced."""
+    lines = [w["decide_built_on_lead"], w["combo_tie"].format(tie=combo["tie_words"])]
+    if combo.get("pressure"):
+        lines.append(w["combo_pressure"].format(kind=r.pressure_kind(combo["pressure"]), element=combo["pressure_words"]))
+    lines.append(w["combo_reason"].format(reason=_COMBINATION_NUMBER.sub("this one", str(combo.get("reason") or ""))))
+    return "\n".join(lines)
+
+
+def _item(w: dict, label: str, text: str, combo: dict | None) -> str:
+    item = w["decide_item"].format(label=label, text=unnumbered(text))
+    return item + "\n" + built_on(combo, w) if combo else item
+
+
+def build_decide_prompt(request: dict, options: list[tuple[int, str]], order: list[int], factor: float = 1.0, criteria: tuple[str, ...] | None = None,
+                        combos: list[dict] | None = None) -> str:
     """The decider's prompt: the same cards and history as the plan (the spotlight is whatever `request` carries, so a flow that chose
-    combinations passes the request without a pair), then the options under their letters in `order`, then the task."""
+    combinations passes the request without a pair), then the options under their letters in `order`, then the task. With `combos` (choose
+    mode) each option is followed by the lines of the combination it was written for, `combos[number - 1]`, where `number` is the combination
+    number `parse_options` gave it: the tie with its edge, the rule or object and the reason. Without them (plain mode) the context's own
+    spotlight section carries the pair for all options."""
     from . import plan
     w = common.load_text("plan")
+    criteria = criteria or criteria_for(request)
     c = plan._context(request, factor)
     role = w["decide_role"].format(chapter=c["chapter"], total=c["total"]) if c["total"] else w["decide_role_unknown_total"].format(chapter=c["chapter"])
-    shown = "\n\n".join(w["decide_item"].format(label=LABELS[n], text=unnumbered(options[i][1])) for n, i in enumerate(order))
-    task = [w["decide_task"], w["decide_chain"] if c["chain"] else "", w["decide_output"]]
+
+    def combo_of(i: int) -> dict | None:
+        return combos[options[i][0] - 1] if combos is not None and 1 <= options[i][0] <= len(combos) else None
+    shown = "\n\n".join(_item(w, LABELS[n], options[i][1], combo_of(i)) for n, i in enumerate(order))
+    names = ", ".join(criteria[:-1]) + f" and {criteria[-1]}"
+    output = w["decide_output"].format(criteria=names, language=plan.language_name(request.get("language")), limit=PHRASE_MAX)
+    task = [w["decide_task"], w["decide_combos"] if combos is not None else "", *(w[f"decide_{k}"] for k in criteria), output]
     blocks = [role, *c["blocks"], plan._section(c["heads"]["decide"], shown), plan._section(c["heads"]["task"], "\n\n".join(x for x in task if x))]
     return "\n\n".join(b for b in blocks if b)
 
 
 # ---- The reply ------------------------------------------------------------------------------------------------------------------
 
-def grammar(n: int) -> dict:
-    """One entry per option, `weakest` before the scores so the model names the weak point before it scores, then the pick."""
+def grammar(n: int, criteria: tuple[str, ...] = CRITERIA[:-1]) -> dict:
+    """One object per criterion: a phrase for each lettered option, written before `best` and `worst` (the letters of the best and the worst
+    option on that criterion). No pick and no scores: the code makes those."""
     labels = list(LABELS[:n])
-    entry = {"label": {"type": "string", "enum": labels}, "weakest": {"type": "string"}, "loss": {"type": "integer", "enum": [1, 2, 3]},
-             "irreversible": {"type": "boolean"}, "opposed": {"type": "boolean"}}
-    item = {"type": "object", "properties": entry, "required": list(entry), "additionalProperties": False}
-    return {"type": "object", "properties": {"options": {"type": "array", "items": item, "minItems": n, "maxItems": n}, "pick": {"type": "string", "enum": labels}},
-            "required": ["options", "pick"], "additionalProperties": False}
+    entry = {**{label: {"type": "string"} for label in labels}, "best": {"type": "string", "enum": labels}, "worst": {"type": "string", "enum": labels}}
+    one = {"type": "object", "properties": entry, "required": list(entry), "additionalProperties": False}
+    return {"type": "object", "properties": {k: one for k in criteria}, "required": list(criteria), "additionalProperties": False}
 
 
-def decide_problem(value: Any, n: int) -> str | None:
-    """None when the reply is usable, else one plain line saying what to fix: not one entry for every letter, or a weak point missing or too long."""
+def decide_problem(value: Any, n: int, criteria: tuple[str, ...] = CRITERIA[:-1]) -> str | None:
+    """None when the reply is usable, else one plain line saying what to fix: a criterion or a phrase missing, a phrase empty or too long, or a
+    best and worst that are not two different letters of the options shown."""
     p = common.load_text("plan")["problems"]
-    entries = value.get("options") if isinstance(value, dict) else None
-    if not isinstance(entries, list) or sorted(str(e.get("label")) for e in entries if isinstance(e, dict)) != list(LABELS[:n]):
-        return p["decide_labels"]
-    if any(not str(e.get("weakest") or "").strip() or len(str(e["weakest"])) > WEAKEST_MAX for e in entries):
-        return p["decide_weakest"]
+    labels = tuple(LABELS[:n])
+    entries = [value.get(k) if isinstance(value, dict) else None for k in criteria]
+    if not all(isinstance(e, dict) and all(label in e for label in labels) for e in entries):
+        return p["decide_shape"]
+    if any(not isinstance(e[label], str) or not e[label].strip() or len(e[label]) > PHRASE_MAX for e in entries for label in labels):
+        return p["decide_phrase"]
+    if any(e.get("best") not in labels or e.get("worst") not in labels or e["best"] == e["worst"] for e in entries):
+        return p["decide_best_worst"]
     return None
 
 
-def step(request: dict, options: list[tuple[int, str]], order: list[int], on_fallback) -> Step:
-    """The decide step: JSON at the low-temperature set (the shuffle, not the sampling, keeps the first option from winning by habit), a small
-    token cap, two attempts. Its last resort is `{}`, which makes no model call and leaves the first option standing (`on_fallback` notes it)."""
+def step(request: dict, options: list[tuple[int, str]], order: list[int], on_fallback, criteria: tuple[str, ...] | None = None,
+         combos: list[dict] | None = None) -> Step:
+    """The decide step: JSON at the low-temperature set (the shuffle, not the sampling, keeps one position from winning by habit), a small
+    token cap, two attempts. Its last resort is `{}`, which makes no model call and picks a random option (`on_fallback` notes it)."""
     n = len(order)
+    criteria = criteria or criteria_for(request)
 
     def none():
         on_fallback()
         return {}
-    return Step("decide", lambda f: build_decide_prompt(request, options, order, f), "json", MAX_OUTPUT, grammar(n),
-                lambda value: decide_problem(value, n), "structured", False, attempts=ATTEMPTS, fallback=none)
+    return Step("decide", lambda f: build_decide_prompt(request, options, order, f, criteria, combos), "json", MAX_OUTPUT, grammar(n, criteria),
+                lambda value: decide_problem(value, n, criteria), SAMPLING, False, attempts=ATTEMPTS, fallback=none)
+
+
+# ---- Invented names -------------------------------------------------------------------------------------------------------------
+
+PENALTY = 1                # the points an option loses for naming a person on no card: a penalty, never an elimination
+_BOLD_HEAD = re.compile(r"^[ \t#]*(\*\*|__).*?\1[ \t]*")      # a header's bold span: its label and title, whose capitals are not names
+
+
+def _body(text: str) -> str:
+    """The option's text without its header's label and title (\"**Option 2: A Title**\"): a title's capitalised words would read as names. Words
+    after a bold header on the same line stay."""
+    head, _, rest = text.partition("\n")
+    return (_BOLD_HEAD.sub("", head, count=1) if _OPTION.match(head) else head) + ("\n" + rest if rest else "")
+
+
+def invented(request: dict, options: list[tuple[int, str]]) -> list[bool]:
+    """One flag per option, in the brainstorm's order: True when the option's own text (without its header's title) names a person on no card and in no earlier chapter's
+    record (the same inputs `plan.plan_names` uses). A story in a language the detector does not read has no flags."""
+    allowed = [request.get(k) for k in ("cast", "world", "ties", "holdings", "setup", "style")]
+    earlier = common.earlier_records(request, beats=True)
+    return [bool(common.minor_people(request, [_body(text)], allowed, earlier)[1]) for _, text in options]
 
 
 # ---- The pick -------------------------------------------------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class Decision:
-    combo: int              # the picked option's original combination number
-    position: int           # its place in the brainstorm's options, from 1
-    fell_back: bool         # True when the reply could not be used and the first option stands
-    order: tuple[int, ...]  # the places of the options in the order they were shown, from 1
+    combo: int                                  # the picked option's original combination number
+    position: int                               # its place in the brainstorm's options, from 1
+    fell_back: bool                             # True when the reply could not be used and a random option stands
+    order: tuple[int, ...]                      # the places of the options in the order they were shown, from 1
+    scores: tuple[int, ...] = ()                # the totals by place in the brainstorm, from 1
+    tied: int = 0                               # how many options shared the top total
+    marks: dict[str, tuple[str, str]] = field(default_factory=dict)       # per criterion, the best and the worst: shown letter + brainstorm place, "A1"
+    invented: int = 0                           # how many options named a person on no card and so lost a point
 
     def notes(self) -> dict[str, Any]:
-        """For the run log: numbers and short plain words only (the weak points are in the trace, in the step's reply)."""
-        return {"decide": "fallback" if self.fell_back else "on", "decide_options": len(self.order), "decide_order": "-".join(map(str, self.order)),
-                "decide_pick": self.position, "decide_combo": self.combo}
+        """For the run log: numbers and short plain words only. It carries everything needed to adjust after a run, without the trace: the
+        totals by place, and per criterion the best and the worst as the letter shown and the place it had (a habit of favoring a screen
+        position shows in the letters, a habit of favoring an outcome in the places). The phrases stay in the trace."""
+        out: dict[str, Any] = {"decide": "fallback" if self.fell_back else "on", "decide_options": len(self.order), "decide_order": "-".join(map(str, self.order)),
+                               "decide_pick": self.position, "decide_combo": self.combo, "decide_sampling": SAMPLING}
+        out.update({f"decide_s{place}": total for place, total in enumerate(self.scores, 1)})
+        out["decide_tied"] = self.tied
+        out["decide_invented"] = self.invented
+        for criterion, (best, worst) in self.marks.items():
+            out[f"decide_{criterion}_best"], out[f"decide_{criterion}_worst"] = best, worst
+        return out
 
 
-def decide(options: list[tuple[int, str]], order: list[int], value: Any) -> Decision:
-    """The picked option's original combination number, from the step's result: the letter it picked is a place in `order`. A result that is
-    not usable (the fallback `{}`, or no letter among those shown) picks the first option."""
+def scores(value: Any, n: int, criteria: tuple[str, ...] = CRITERIA[:-1]) -> list[int]:
+    """The points of each shown letter: +1 for each criterion it is best on, -1 for each it is worst on."""
+    total = [0] * n
+    for k in criteria:
+        entry = value.get(k) if isinstance(value, dict) else None
+        if isinstance(entry, dict):
+            for key, points in (("best", 1), ("worst", -1)):
+                if entry.get(key) in tuple(LABELS[:n]):
+                    total[LABELS.index(entry[key])] += points
+    return total
+
+
+def decide(options: list[tuple[int, str]], order: list[int], value: Any, criteria: tuple[str, ...] = CRITERIA[:-1], flagged: list[bool] | None = None) -> Decision:
+    """The picked option, from the step's result: the highest total, and among equal totals one chosen at random. `flagged` (from `invented`, one
+    flag per option in the brainstorm's order) takes a point off each option that names a person on no card, before the winner is chosen. A result
+    that is not usable (the fallback `{}`, or a reply the check would refuse) picks a random option and sets `fell_back`: nothing was compared, so
+    nothing is penalized, though the count of flagged options is still noted."""
+    n = len(order)
     shown = tuple(i + 1 for i in order)
-    label = value.get("pick") if isinstance(value, dict) else None
-    if isinstance(label, str) and label in LABELS[:len(order)]:
-        place = order[LABELS.index(label)]
-        return Decision(options[place][0], place + 1, False, shown)
-    return Decision(options[0][0], 1, True, shown)
+    flags = [bool(flagged[i]) if flagged and i < len(flagged) else False for i in range(len(options))]
+    count = sum(flags[i] for i in order)
+    if decide_problem(value, n, criteria) is not None:
+        place = random.choice(order)
+        return Decision(options[place][0], place + 1, True, shown, (0,) * n, n, invented=count)
+    by_letter = [total - PENALTY * flags[order[k]] for k, total in enumerate(scores(value, n, criteria))]
+    top = max(by_letter)
+    letter = random.choice([k for k, total in enumerate(by_letter) if total == top])
+    place = order[letter]
+    by_place = [0] * n
+    for k, total in enumerate(by_letter):
+        by_place[order[k]] = total
+    marks = {k: tuple(f"{value[k][side]}{order[LABELS.index(value[k][side])] + 1}" for side in ("best", "worst")) for k in criteria}
+    return Decision(options[place][0], place + 1, False, shown, tuple(by_place), by_letter.count(top), marks, count)
 
 
 def stand_in(words: int) -> list[tuple[int, str]]:
-    """The most options of the longest size a brainstorm of `words` tokens can hold, for the worst case: the step reads them in full."""
+    """The three options, each as long as the brainstorm allows, for the worst case: the step reads them in full."""
     return [(n, "word " * (words // OPTIONS_MAX)) for n in range(1, OPTIONS_MAX + 1)]

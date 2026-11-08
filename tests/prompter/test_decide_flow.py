@@ -1,5 +1,5 @@
-"""The decider (Plan 1), step 3: the decide step between the brainstorm and the plan, in the real plan flow on the fake engine. The plan is then
-built on the one option the decider picked, shown as idea 1 with its own combination; the plan reply's schema is unchanged. Neutral placeholder
+"""The decider: the decide step between the brainstorm and the plan, in the real plan flow on the fake engine. The plan is then
+built on the one option the decider picked (the option with the highest total of best and worst marks), shown as idea 1 with its own combination; the plan reply's schema is unchanged. Neutral placeholder
 text throughout. No model."""
 import json
 
@@ -21,12 +21,14 @@ BRAINSTORM = ("Here are the options for this chapter.\n\n"
 OPTIONS = decide.parse_options(BRAINSTORM)
 
 
-def reply_for(request: dict, wanted: int, **entry) -> str:
-    """A decider reply that picks the option that stood at place `wanted` (from 1) in the brainstorm, whatever letter the shuffle gave it."""
+def reply_for(request: dict, wanted: int) -> str:
+    """A decider reply in which the option that stood at place `wanted` (from 1) in the brainstorm is best on every criterion and another is worst,
+    whatever letter the shuffle gave them."""
     order = decide.order_of(OPTIONS, request)
     letters = decide.LABELS[:len(OPTIONS)]
-    row = {"weakest": "It is thin in the middle.", "loss": 2, "irreversible": True, "opposed": False, **entry}
-    return json.dumps({"options": [{"label": letter, **row} for letter in letters], "pick": letters[order.index(wanted - 1)]})
+    best = letters[order.index(wanted - 1)]
+    worst = next(letter for letter in letters if letter != best)
+    return json.dumps({k: {**{letter: f"Phrase {k} {letter}." for letter in letters}, "best": best, "worst": worst} for k in decide.criteria_for(request)})
 
 
 def everyone(request: dict, text: str) -> str:
@@ -105,7 +107,8 @@ def test_without_choose_the_plan_is_told_to_build_on_the_one_idea_and_not_to_cho
     assert ctx.notes["flow"]["decide_combo"] == 2 and ctx.notes["flow"]["decide_pick"] == 2
 
 
-def test_a_decider_reply_that_cannot_be_used_falls_back_to_the_first_option_and_the_notes_say_so():
+def test_a_decider_reply_that_cannot_be_used_falls_back_to_a_random_option_and_the_notes_say_so(monkeypatch):
+    monkeypatch.setattr(decide.random, "choice", lambda seq: min(seq))           # the random option is the one at the lowest place, so the test can say which
     request = choose_request()
     texts = texts_for(request, wanted=3)
     broken = texts[:2] + ["not json", "still not json"] + texts[3:]
@@ -115,7 +118,18 @@ def test_a_decider_reply_that_cannot_be_used_falls_back_to_the_first_option_and_
     assert "a first thing" in planned.split("## The idea for this chapter\n")[1].split("## Your task")[0] and "a third thing" not in planned.split("## Your task")[0].split("## The idea")[1]
     notes = ctx.notes["flow"]
     assert (notes["decide"], notes["decide_pick"], notes["decide_combo"]) == ("fallback", 1, 1)
-    assert reply["picked"] == run_plan(request, *first_texts_of(request))[1]["picked"]        # the first option is what planning did before the decider
+    assert reply["picked"] == run_plan(request, *first_texts_of(request))[1]["picked"]        # the same plan as one built on the first option
+
+
+def test_the_picked_option_is_the_one_with_the_best_marks_and_the_run_notes_carry_the_totals_and_marks(monkeypatch):
+    request = base()
+    flow, _, ctx, _ = run_plan(request, *texts_for(request, wanted=2))
+    notes = ctx.notes["flow"]
+    assert (notes["decide"], notes["decide_pick"], notes["decide_tied"], notes["decide_sampling"]) == ("on", 2, 1, "structured")
+    assert notes["decide_s2"] == 4 and notes["decide_s1"] + notes["decide_s2"] + notes["decide_s3"] == 0         # best on all four criteria; one other option is worst on all four
+    for criterion in decide.criteria_for(request):
+        best, worst = notes[f"decide_{criterion}_best"], notes[f"decide_{criterion}_worst"]
+        assert best.endswith("2") and best[0] in "ABC" and worst[0] in "ABC" and worst[0] != best[0]       # the best of every criterion is the option at place 2
 
 
 def test_the_decider_is_off_when_the_flag_is_off_and_the_plan_carries_the_whole_brainstorm_as_before(monkeypatch):
@@ -148,3 +162,25 @@ def test_a_brainstorm_cut_off_by_the_token_cap_is_judged_on_its_whole_options_on
     texts[0] = cut
     flow, _, ctx, engine = run_plan(request, *texts)
     assert ctx.notes["flow"]["decide_options"] == 3 and "fourth thing" not in engine.prompts[1]
+
+
+def test_in_choose_mode_the_decide_prompt_shows_each_option_with_its_combination_and_plain_mode_does_not():
+    request = choose_request()
+    flow, _, ctx, engine = run_plan(request, *texts_for(request, wanted=1))
+    prompt = engine.prompts[2]
+    section = prompt.split("## The options to judge\n")[1].split("## Your task")[0]
+    assert section.count("It is built on:") == 3 and section.count("How they may collide:") == 3 and "combination" not in section.lower()
+    assert all(c["tie_words"] in section for c in flow.combos) and "## The tie in the spotlight" not in prompt
+    assert "Under each option you see the tie and the rule or object it is built on" in prompt
+    plain = base()
+    _, _, _, plain_engine = run_plan(plain, *texts_for(plain, wanted=1))
+    assert "It is built on:" not in plain_engine.prompts[1] and "Under each option you see" not in plain_engine.prompts[1]
+
+
+def test_the_worst_case_decide_step_carries_the_longest_combinations():
+    from pulpermill.prompter.mill import select
+    request = choose_request()
+    steps = plan.build_flow(request, Kit(request)).worst_case()
+    assert [s.name for s in steps][:3] == ["select", "brainstorm", "decide"]
+    text = steps[2].text(1.0)
+    assert text.count("It is built on:") == 3 and text.count("How they may collide: " + select.REASON_STAND_IN.strip()) == 3      # the longest reason of each combination

@@ -17,7 +17,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common, decide, select
 
-VERSION = "plan-17"
+VERSION = "plan-18"
 IDEA = "idea"            # in choose mode: the number (1 to 3) of the idea the plan builds on, which is also the number of its combination; the reply turns it into `picked`
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
@@ -381,7 +381,7 @@ class PlanFlow(Flow):
     """(In choose mode, `select` first: three combinations of a tie and a rule or object, and the brainstorm then writes one idea for each.)
     brainstorm, (decide), plan, aim judge (observe-only: nothing is sent back for its verdict). The brainstorm is free text that the plan prompt carries; if it cannot be had, the
     plan goes ahead without it. The decider (decide.py) reads the brainstorm's options and picks one, and the plan is then built on that one option
-    alone, as idea 1 with its own combination; with fewer than two options, or with `decide.ON` False, the plan carries the whole brainstorm as before."""
+    alone, as idea 1 with its own combination; with any other number of options than three, or with `decide.ON` False, the plan carries the whole brainstorm as before."""
 
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
@@ -523,14 +523,14 @@ class PlanFlow(Flow):
         return select.without_pair(self.request) if self.combos is not None else self.request
 
     def _decide_step(self) -> Step:
-        return decide.step(self._decide_request(), self._options, self._order, lambda: None)
+        return decide.step(self._decide_request(), self._options, self._order, lambda: None, decide.criteria_for(self.request), self.combos)
 
     def _take_decide(self, value: Any) -> None:
         """Reads the decider's result: the plan then carries the picked option alone, as idea 1, with its own combination (in choose mode).
-        An unusable result picks the first option and the notes say it fell back."""
+        An unusable result picks a random option and the notes say it fell back."""
         if self.decision is not None:
             return
-        self.decision = decide.decide(self._options, self._order, value)
+        self.decision = decide.decide(self._options, self._order, value, decide.criteria_for(self.request), decide.invented(self.request, self._options))
         self.notes.update(self.decision.notes())
         picked = self._options[self.decision.position - 1][1]
         self.brainstorm = common.load_text("plan")["decided_item"].format(text=decide.unnumbered(picked))
@@ -591,12 +591,12 @@ class PlanFlow(Flow):
         return self._after_brainstorm(results[1:])
 
     def _options_of(self, brainstorm: str) -> list[tuple[int, str]] | None:
-        """The options the decider is to judge: the brainstorm's, when there are at least two and (in choose mode) each belongs to one of the
+        """The options the decider is to judge: the brainstorm's, when there are exactly three and (in choose mode) each belongs to one of the
         combinations. Else None, and the plan carries the whole brainstorm as it did before the decider (the notes say `none`)."""
         if not decide.ON:
             return None
-        options = decide.parse_options(brainstorm)[:decide.OPTIONS_MAX]
-        if len(options) < 2 or (self.combos is not None and not all(1 <= n <= len(self.combos) for n, _ in options)):
+        options = decide.parse_options(brainstorm)
+        if len(options) != decide.OPTIONS_MAX or (self.combos is not None and not all(1 <= n <= len(self.combos) for n, _ in options)):
             self.notes["decide"] = "none"
             return None
         return options
@@ -622,7 +622,8 @@ class PlanFlow(Flow):
         steps.append(self._brainstorm_step(stand))
         if decide.ON:        # whether the brainstorm gives options is not known until it is written: the call is fitted as if it did
             options = decide.stand_in(BRAINSTORM_OUTPUT)
-            steps.append(decide.step(select.without_pair(self.request) if self._select_on else self.request, options, list(range(len(options))), lambda: None))
+            steps.append(decide.step(select.without_pair(self.request) if self._select_on else self.request, options, list(range(len(options))), lambda: None,
+                                     decide.criteria_for(self.request), stand))
         steps.append(self._step(brainstorm=BRAINSTORM_STAND_IN, combos=stand))
         if self._judges():
             steps.append(self._aim_step(AIM_STAND_IN))
