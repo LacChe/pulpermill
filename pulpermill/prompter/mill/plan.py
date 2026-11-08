@@ -234,6 +234,7 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dic
     task.append(w["brainstorm_risk"])
     if chapter > 1:
         task.append(w["brainstorm_variety"])
+        task.append(w["brainstorm_continue"])
     task.append(w["brainstorm_people"])
     if chapter == 1:
         task.append(w["brainstorm_first"])

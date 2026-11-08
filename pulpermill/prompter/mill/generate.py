@@ -265,7 +265,7 @@ def shifts_prompt(request: dict, kit: Any, chapter_text: str, factor: float = 1.
              w["shifts_chapter_lead"] + "\n" + chapter_text.strip(),
              w["shifts_cards_lead"] + "\n" + _reference(request, kit, names, factor),
              w["shifts_rules"],
-             w["shifts_example"], edge, extra, w["shifts_format"]]        # `extra`: the advancement judge sent the shifts back once, and this is its line
+             w["shifts_example"], edge, w["shifts_edge_move"] if edge else "", extra, w["shifts_format"]]        # `extra`: the advancement judge sent the shifts back once, and this is its line
     return "\n\n".join(p for p in parts if p)
 
 
@@ -403,7 +403,7 @@ class GenerateFlow(Flow):
         return results[4] if self.notes.get("edge_resent") else results[2]
 
     def next(self, results):
-        """write, events, shifts, judge; and when `advance.ENFORCE` and the judge says the edge only rewords: the shifts step once more with the
+        """write, events, shifts, judge; and when `advance.ENFORCE` and the judge says the edge is the same want: the shifts step once more with the
         judge's line (never the write), then the judge once more. A second bad verdict is accepted (noted). Never more than that one extra pass."""
         n = len(results)
         if self._pressure_at is not None and n == self._pressure_at + 1:      # the pressure judge has run: record its word and stop

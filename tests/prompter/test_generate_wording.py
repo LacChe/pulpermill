@@ -337,6 +337,9 @@ def test_the_shifts_prompt_shows_handles_and_names_the_edge_to_replace():
     assert "one entry for the ties" in prompt and "only the edge of a tie" in prompt and "t1000001" not in prompt and "c0000001" not in prompt
     ambiguous = gen.shifts_prompt(legacy(base()), Kit(base()), CHAPTER)
     assert "is one of these: ties.1" in ambiguous and "ties.2" in ambiguous
+    move = load_text("generate")["shifts_edge_move"]
+    assert prompt.count(move) == 1 and ambiguous.count(move) == 1                      # one shared key, in the single-tie and the any-tie version
+    assert prompt.index("its edge was:") < prompt.index(move) < prompt.index("Reply with a JSON object with one key") and "never the old want made stronger" in prompt
 
 
 def test_the_shifts_check_wants_the_spotlight_edge_replaced_with_something_new():
@@ -629,32 +632,32 @@ def test_no_edge_judge_runs_when_the_shifts_replaced_no_edge():
     assert gen.replaced_edge(request, Kit(request), {"shifts": []}) is None
 
 
-REWORDS = json.dumps({"reason": "Same want, new words.", "move": "rewords"})
+SAME = json.dumps({"reason": "Same want, new words.", "move": "same"})
 
 
 def test_with_the_flag_off_the_verdict_only_goes_to_the_notes_and_the_reply_is_the_same_whatever_it_says(monkeypatch):
     monkeypatch.setattr(advance, "ENFORCE", False)
-    reply, ctx, engine, good = _generate(0, 1, 2, REWORDS)
+    reply, ctx, engine, good = _generate(0, 1, 2, SAME)
     plain, _, _, _ = _generate(0, 1, 2)
-    assert reply == plain and engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords", "minor_names": 0, "minor_new": 0, "pressure_on": False}
+    assert reply == plain and engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "same", "minor_names": 0, "minor_new": 0, "pressure_on": False}
     assert [s.name for s in gen.build_flow(base(), Kit(base())).worst_case()][-1] == "advance_edge" and len(gen.build_flow(base(), Kit(base())).worst_case()) == 4
 
 
-def test_a_reworded_edge_sends_only_the_shifts_back_once_with_the_judges_line_and_the_judge_runs_again():
-    reply, ctx, engine, good = _generate(0, 1, 2, REWORDS, 2)
+def test_a_same_want_edge_sends_only_the_shifts_back_once_with_the_judges_line_and_the_judge_runs_again():
+    reply, ctx, engine, good = _generate(0, 1, 2, SAME, 2)
     assert engine.calls == 6 and reply["chapter_text"] == good[0].strip()
     assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 1), ("shifts", 1), ("advance_edge", 1), ("shifts", 1), ("advance_edge", 1)]
-    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "rewords", "edge_resent": True, "edge_move_after": "complicates", "minor_names": 0, "minor_new": 0, "pressure_on": False}
+    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "same", "edge_resent": True, "edge_move_after": "complicates", "minor_names": 0, "minor_new": 0, "pressure_on": False}
     assert "Your first list of changes was set aside." not in engine.prompts[2]
     assert "Your first list of changes was set aside. Same want, new words." in engine.prompts[4] and "Let the edge move" in engine.prompts[4]
     assert engine.prompts[4].rindex("Let the edge move") < engine.prompts[4].rindex("Reply with a JSON object with one key")                # the line sits ahead of the format rule
     assert "Your first list" not in engine.prompts[0]                                                      # the write was never asked again
 
 
-def test_a_second_reworded_verdict_is_accepted_and_noted_and_nothing_runs_a_third_time():
-    reply, ctx, engine, good = _generate(0, 1, 2, REWORDS, 2, REWORDS)
+def test_a_second_same_verdict_is_accepted_and_noted_and_nothing_runs_a_third_time():
+    reply, ctx, engine, good = _generate(0, 1, 2, SAME, 2, SAME)
     assert engine.calls == 6 and reply["shifts"]
-    assert ctx.notes["flow"]["edge_resent"] is True and ctx.notes["flow"]["edge_move_after"] == "rewords" and ctx.notes["flow"]["edge_accepted"] is True
+    assert ctx.notes["flow"]["edge_resent"] is True and ctx.notes["flow"]["edge_move_after"] == "same" and ctx.notes["flow"]["edge_accepted"] is True
 
 
 def test_a_good_verdict_sends_nothing_back():
@@ -663,7 +666,7 @@ def test_a_good_verdict_sends_nothing_back():
 
 
 def test_shifts_that_cannot_be_redone_keep_the_first_ones_and_the_call_still_succeeds():
-    reply, ctx, engine, good = _generate(0, 1, 2, REWORDS, "a", "b", "c")
+    reply, ctx, engine, good = _generate(0, 1, 2, SAME, "a", "b", "c")
     assert engine.calls == 7 and reply["shifts"] == json.loads(good[2])["shifts"]                 # three refused attempts, then the first shifts stand
     assert ctx.notes["flow"]["edge_resend_fallback"] is True and ctx.notes["flow"]["edge_accepted"] is True
 
@@ -783,7 +786,7 @@ def test_a_decor_verdict_or_a_failing_judge_changes_nothing_in_the_reply():
 def test_the_reply_keeps_the_resent_shifts_when_a_pressure_judge_follows_them():
     request = pressed()
     good = gen.script(request, Kit(request))
-    reply, ctx, engine = _generate_pressed(request, good[0], good[1], good[2], REWORDS, good[2], good[3], ACTS)
+    reply, ctx, engine = _generate_pressed(request, good[0], good[1], good[2], SAME, good[2], good[3], ACTS)
     assert engine.calls == 7 and [p["step"] for p in ctx.notes["passes"]][-3:] == ["shifts", "advance_edge", "advance_pressure"]
     assert reply["shifts"] == json.loads(good[2])["shifts"] and ctx.notes["flow"]["pressure_effect"] == "acts"
     assert ctx.notes["flow"]["edge_resent"] is True

@@ -4,19 +4,19 @@
   {
    "old_edge": "needs to prove her skill",
    "new_edge": "to earn Orla's approval",
-   "expected": "rewords",
+   "expected": "same",
    "note": "first test story"
   },
   {
    "old_edge": "wants her company at the fair",
    "new_edge": "to see what she'll create",
-   "expected": "rewords",
+   "expected": "same",
    "note": "first test story"
   },
   {
    "old_edge": "to see what she'll create",
    "new_edge": "to see if she'll rise to the challenge",
-   "expected": "rewords",
+   "expected": "same",
    "note": "first test story"
   },
   {
@@ -34,14 +34,20 @@
   {
    "old_edge": "wants her to stay and help at the stall",
    "new_edge": "needs her to stay or the stall is lost by Friday",
-   "expected": "escalates",
-   "note": "hand-written: the stakes rise"
+   "expected": "same",
+   "note": "hand-written: the stakes rise, the want is the same"
   },
   {
    "old_edge": "to win her trust",
    "new_edge": "trusts her at last and hands over the keys",
    "expected": "resolves",
    "note": "hand-written"
+  },
+  {
+   "old_edge": "wants the first person to share the first thing",
+   "new_edge": "wants the second person to hand over the second thing",
+   "expected": "redirects",
+   "note": "hand-written, neutral placeholders: the want aims at another person and thing"
   }
  ],
  "aim_chains": [

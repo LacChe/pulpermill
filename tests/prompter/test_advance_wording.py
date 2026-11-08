@@ -41,10 +41,10 @@ def test_the_aim_step_is_a_json_step_with_reason_first_then_link_and_new_obstacl
     assert step.grammar["additionalProperties"] is False
 
 
-def test_the_edge_step_has_the_five_moves():
+def test_the_edge_step_has_the_five_moves_and_same_is_the_one_that_is_sent_back():
     step = advance.edge_step(request(), "a", "b")
     assert step.name == "advance_edge" and list(step.grammar["properties"]) == ["reason", "move"]
-    assert step.grammar["properties"]["move"]["enum"] == ["escalates", "reverses", "complicates", "resolves", "rewords"]
+    assert step.grammar["properties"]["move"]["enum"] == ["reverses", "complicates", "resolves", "redirects", "same"] == list(advance.EDGE_MOVES)
 
 
 def test_the_aim_prompt_shows_the_chain_with_the_latest_marked_the_last_ending_and_the_new_aim():
@@ -61,8 +61,9 @@ def test_the_edge_prompt_shows_the_trail_oldest_first_and_both_edges():
     req = request(spotlight_edges=["first want", "second want"])
     text = advance.edge_step(req, "second want", "a third").text(1.0)
     assert text.index("first want") < text.index("second want") and "before this chapter: second want" in text and "after this chapter: a third" in text
-    for word in ("escalates", "reverses", "complicates", "resolves", "rewords"):
+    for word in ("reverses", "complicates", "resolves", "redirects", "same"):
         assert word in text
+    assert "escalates" not in text and "rewords" not in text
     assert not ids_in(text, req) and "{" not in text
 
 
@@ -87,21 +88,24 @@ def test_the_reason_check_wants_a_reason():
 
 
 def test_the_verdicts_are_bad_only_for_the_one_word_each():
-    assert advance.edge_ok({"reason": "r", "move": "escalates"}) and not advance.edge_ok({"reason": "r", "move": "rewords"})
-    for odd in (None, {}, "rewords", {"move": "nonsense"}, 3):
+    assert not advance.edge_ok({"reason": "r", "move": "same"})
+    for word in ("reverses", "complicates", "resolves", "redirects"):
+        assert advance.edge_ok({"reason": "r", "move": word})
+    for odd in (None, {}, "same", {"move": "nonsense"}, {"move": "escalates"}, {"move": "rewords"}, 3):         # unreadable or no longer a word: a failed judge costs nothing
         assert advance.edge_ok(odd)
     assert not hasattr(advance, "aim_ok")          # the aim judge only observes: nothing acts on its verdict
 
 
 def test_problem_lines_start_from_the_reason_and_tell_the_model_what_to_do():
-    assert advance.problem_line("edge", {"reason": "Same want.", "move": "rewords"}).startswith("Same want.") and "move" in advance.problem_line("edge", None)
+    assert advance.problem_line("edge", {"reason": "Same want.", "move": "same"}).startswith("Same want.") and "move" in advance.problem_line("edge", None)
+    assert "stronger" in advance.problem_line("edge", None) and "not the old want made stronger" in advance.problem_line("edge", None)           # it names the bad case and never offers it
     for kind in ("aim", "plan"):
         with pytest.raises(ValueError):
             advance.problem_line(kind, None)
 
 
 def test_notes_hold_short_words_only():
-    assert advance.notes({"reason": "long text", "link": "drifts", "new_obstacle": "yes"}, {"reason": "x", "move": "escalates"}) == {"aim_link": "drifts", "aim_new": "yes", "edge_move": "escalates"}
+    assert advance.notes({"reason": "long text", "link": "drifts", "new_obstacle": "yes"}, {"reason": "x", "move": "redirects"}) == {"aim_link": "drifts", "aim_new": "yes", "edge_move": "redirects"}
     assert advance.notes({"link": "continues"}) == {"aim_link": "continues"} and advance.notes({"link": "sideways", "new_obstacle": "maybe"}) == {}
     assert advance.notes(None, {"move": "bogus"}) == {} and advance.notes() == {}
 
@@ -111,7 +115,7 @@ def test_the_flag_is_on_and_the_version_is_set():
 
 
 def test_a_resend_line_exists_for_the_edge_only_and_says_the_first_reply_was_set_aside():
-    edge = {"reason": "Same want.", "move": "rewords"}
+    edge = {"reason": "Same want.", "move": "same"}
     assert advance.resend_line("edge", edge).startswith("Your first list of changes was set aside. Same want.")
     assert "aim" not in common.load_text("advance")["resend"] and "aim" not in common.load_text("advance")["problems"]
     for kind in ("aim", "plan"):
@@ -123,7 +127,8 @@ def test_the_labelled_cases_use_only_known_words_and_build_prompts():
     for pair in CASES["edge_pairs"]:
         assert pair["expected"] in advance.EDGE_MOVES
         assert advance.edge_step(request(), pair["old_edge"], pair["new_edge"]).text(1.0)
-    assert sum(p["expected"] == "rewords" for p in CASES["edge_pairs"]) >= 3 and sum(p["expected"] != "rewords" for p in CASES["edge_pairs"]) >= 4
+    assert sum(p["expected"] == "same" for p in CASES["edge_pairs"]) >= 3 and sum(p["expected"] != "same" for p in CASES["edge_pairs"]) >= 4
+    assert sum(p["expected"] == "redirects" for p in CASES["edge_pairs"]) >= 1
     chains = CASES["aim_chains"]
     assert sum(c["expected_link"] == "drifts" for c in chains) >= 3 and sum(c["expected_link"] == "continues" for c in chains) >= 3
     assert {c["expected_new_obstacle"] for c in chains} == {"yes", "no"} and all(c["earlier"] for c in chains)

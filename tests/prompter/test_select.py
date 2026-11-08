@@ -132,7 +132,7 @@ def test_a_cast_of_two_with_one_tie_and_one_rule_runs_select_and_the_brainstorm_
     flow, reply, ctx, engine = run_plan(request, *texts)
     assert names_of_steps(ctx)[:3] == ["select", "brainstorm", "plan"]
     assert "Option 3" in engine.prompts[2] or "Option 3" in texts[1]
-    assert "the two ideas still differ in obstacle, person or place" in engine.prompts[1]
+    assert "the two ideas still differ in aim, obstacle, person or place" in engine.prompts[1]
     assert reply["picked"]["spotlight"] == select.candidates(request)[0][0]["id"]
 
 

@@ -20,14 +20,14 @@ aim_questions: "Answer two questions. First, link: continues when the new aim is
 aim_answer: "Reply with a JSON object with three keys. reason: one short sentence that says how the new aim relates to where the last chapter left the aim and what, if anything, is new in its obstacle, person or stake. link: continues or drifts. new_obstacle: yes or no. Write reason in English and keep every name exactly as it is written above."
 
 # ---- The edge ---------------------------------------------------------------------------------------------------------------
-edge_role: "You are a careful reader of a story that is written one chapter at a time. You decide whether the edge of the spotlight tie moved in the chapter that just ended, or only came back in other words."
+edge_role: "You are a careful reader of a story that is written one chapter at a time. You decide whether the edge of the spotlight tie moved in the chapter that just ended, or is only the same want again."
 edge_what: "The edge of a tie is what drives {tie_from} in it: the want or the fear that {tie_from} brings to {tie_to}."
 edge_trail_lead: "The edge in the earlier chapters, oldest first:"
 edge_trail_item: "{edge}"
 old_edge_line: "The edge before this chapter: {edge}"
 new_edge_line: "The edge after this chapter: {edge}"
-edge_moves: "Sort the change into one move. escalates: the same want, now stronger, costlier or more urgent, so that more is at stake. reverses: the want turns into its opposite, or turns against the other person. complicates: a second want or a fear joins the first, so that {tie_from} is pulled two ways. resolves: the want is met, given up, or no longer drives {tie_from}. rewords: the same underlying want said in other words, with nothing new at stake. Judge by what {tie_from} wants from {tie_to}, and let the choice of words fall away. When the want underneath is the same and nothing has been added to it, answer rewords."
-edge_answer: "Reply with a JSON object with two keys. reason: one short sentence that says what {tie_from} wanted before, what {tie_from} wants now, and why that is the move you chose. move: escalates, reverses, complicates, resolves or rewords. Write reason in English and keep every name exactly as it is written above."
+edge_moves: "Sort the change into one move. reverses: the want turns into its opposite, or turns against the other person. complicates: a second want or a fear joins the first, so that {tie_from} is pulled two ways. resolves: the want is met, given up, or no longer drives {tie_from}, and what drives {tie_from} now is something new that grew out of that. redirects: the want now aims at a different thing, person or place than before. same: the want underneath is the same, said in other words, or stronger, costlier or more urgent, with nothing new wanted. Judge by what {tie_from} wants from {tie_to}, and let the choice of words fall away. When the want underneath is the same and only its strength or its wording has changed, answer same."
+edge_answer: "Reply with a JSON object with two keys. reason: one short sentence that says what {tie_from} wanted before, what {tie_from} wants now, and why that is the move you chose. move: reverses, complicates, resolves, redirects or same. Write reason in English and keep every name exactly as it is written above."
 
 # ---- The pressure -----------------------------------------------------------------------------------------------------------
 # One rule or object of the world was asked to act on a chapter. This judge only records whether it did; no flow acts on the verdict.
@@ -42,8 +42,8 @@ pressure_answer: "Reply with a JSON object with two keys. reason: one short sent
 # ---- The lines a flow can show a model that has to try again ---------------------------------------------------------------
 # problem_line builds one line from the judge's own reason. The reason comes first, then what to do.
 problems:
-  edge: "{reason} Let the edge move: show what the person now wants that is new, by making the want stronger, turning it around, adding a second want or a fear, or letting it be met or given up."
-  edge_bare: "The edge only repeats what it was in other words. Let the edge move: show what the person now wants that is new, by making the want stronger, turning it around, adding a second want or a fear, or letting it be met or given up."
+  edge: "{reason} Let the edge move to something new: show what the person now wants that is not the old want made stronger, by turning it around, adding a second want or a fear, letting it be met, or pointing it at something else."
+  edge_bare: "The edge only repeats the old want, in other words or made stronger. Let the edge move to something new: show what the person now wants that is not the old want made stronger, by turning it around, adding a second want or a fear, letting it be met, or pointing it at something else."
 # When the edge flow sends the shifts back once, this opens the line it adds (resend_line), ahead of the problem line above.
 resend:
   edge: "Your first list of changes was set aside."

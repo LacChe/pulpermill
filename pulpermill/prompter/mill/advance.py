@@ -1,7 +1,7 @@
 """The advancement judge: small JSON steps that ask a model whether a chapter really moved. `aim_step` reads the protagonist's aim for a
 chapter against the running aim (the chain of earlier aims and endings) and answers two questions: does it continue that aim from where the
 last chapter left it (continues or drifts), and is its obstacle, person or stake new (yes or no); `edge_step` sorts the change of the spotlight tie's edge into one move
-(escalates, reverses, complicates, resolves) or a rewording. A step is a classification, never a comparison of wording, and the reason
+(reverses, complicates, resolves, redirects) or `same`, the want underneath unchanged (reworded, or only stronger, costlier or more urgent). A step is a classification, never a comparison of wording, and the reason
 comes first in the reply so that the verdict follows from it.
 
 The flows run these steps (plan.py, generate.py). `ENFORCE` says whether the edge flow acts on a bad edge verdict: it sends the shifts back once, with
@@ -24,7 +24,7 @@ MAX_OUTPUT = 160            # one short sentence and one word, with room to spar
 
 AIM_LINKS = ("continues", "drifts")
 YES_NO = ("yes", "no")
-EDGE_MOVES = ("escalates", "reverses", "complicates", "resolves", "rewords")
+EDGE_MOVES = ("reverses", "complicates", "resolves", "redirects", "same")       # `same` is the only one the flow sends back; the judge does not check the move against the chapter's outcome
 PRESSURE_EFFECTS = ("acts", "decor", "unclear")
 TEXT_LIMIT = 1500            # the most characters of a plan or of a chapter's events the pressure judge reads
 
@@ -242,8 +242,9 @@ def _word(value: Any, key: str, words: tuple[str, ...]) -> str:
 
 
 def edge_ok(value: Any) -> bool:
-    """False only when the judge said the edge only rewords. Anything else, a missing verdict included, is fine."""
-    return _word(value, "move", EDGE_MOVES) != "rewords"
+    """False only when the judge said the edge is the `same` want (reworded, or only stronger, costlier or more urgent). Anything else, a missing
+    or unreadable verdict included, is fine."""
+    return _word(value, "move", EDGE_MOVES) != "same"
 
 
 def pressure_effect(value: Any) -> str:
