@@ -74,7 +74,7 @@ def test_every_chapter_is_asked_to_show_its_collision_settled_on_the_page(chapte
 def test_a_middle_chapter_seeds_the_next_and_is_not_final(chapter):
     p = plan_prompts(chapter)
     w = write_prompts(chapter)
-    assert "distinctly new state" in p["plan"] and "what the protagonist wants now" in p["plan"]
+    assert "distinctly new state" in p["plan"] and "what is now different" in p["plan"] and "consequence the outcome leaves standing" in p["plan"]
     assert "makes the next chapter matter" in w["write"]
     for text in (*p.values(), *w.values()):
         assert "open nothing new" not in text and "final state" not in text and "nothing new opened" not in text
@@ -82,7 +82,7 @@ def test_a_middle_chapter_seeds_the_next_and_is_not_final(chapter):
 
 def test_only_the_last_chapter_is_final_and_opens_nothing_new():
     p, w = plan_prompts(LAST), write_prompts(LAST)
-    assert "open nothing new" in p["plan"] and "final state" in p["plan"] and "distinctly new state" not in p["plan"]       # movement_last, beside last_chapter
+    assert "open nothing new" in p["plan"] and "final state" in p["plan"] and "distinctly new state" not in p["plan"] and "consequence the outcome leaves standing" not in p["plan"]       # movement_last, beside last_chapter
     assert "final state" in p["brainstorm"] and "nothing new opened" in p["brainstorm"]
     assert "final state" in w["write"] and "nothing new opened" in w["write"] and "makes the next chapter matter" not in w["write"]
     assert "settles what it set in motion" in w["write"]
@@ -90,4 +90,4 @@ def test_only_the_last_chapter_is_final_and_opens_nothing_new():
 
 def test_the_last_chapter_plan_prompt_does_not_ask_for_a_new_want_beside_a_final_state():
     plan = plan_prompts(LAST)["plan"]
-    assert "what the protagonist wants now" not in plan and "turned into a new one" not in plan
+    assert "wants now" not in plan and "turned into a new one" not in plan and "consequence the outcome leaves standing" not in plan and "nothing left open" in plan

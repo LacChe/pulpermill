@@ -17,7 +17,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common, decide, select
 
-VERSION = "plan-18"
+VERSION = "plan-20"
 IDEA = "idea"            # in choose mode: the number (1 to 3) of the idea the plan builds on, which is also the number of its combination; the reply turns it into `picked`
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
@@ -248,12 +248,18 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dic
     return "\n\n".join(b for b in blocks if b)
 
 
-def build_prompt(request: dict, factor: float = 1.0, brainstorm: str = "", combos: list[dict] | None = None, decided: bool = False) -> str:
+OUTCOMES = {1: "outcome_reached", 2: "outcome_lost", 3: "outcome_gave_up"}     # the number of an idea fixes how it ends (the brainstorm contract)
+
+
+def build_prompt(request: dict, factor: float = 1.0, brainstorm: str = "", combos: list[dict] | None = None, decided: bool = False,
+                 outcome: int = 0) -> str:
     """The plan step's prompt. `brainstorm` is the text of the brainstorm step: with it, the prompt carries it under its own heading and tells
     the planner to choose from it; without it (no brainstorm, or one that could not be had) the prompt is the plan prompt on its own. With `combos`
     (choose mode) the three combinations stand in the place of the spotlight, and the plan chooses one idea (or, with no brainstorm, one
     combination) and is built on its tie and its rule or object. With `decided` the brainstorm is the one idea the decider chose, shown as idea 1
-    (and `combos` is its combination alone): the plan is told to build on it, not to choose among ideas."""
+    (and `combos` is its combination alone): the plan is told to build on it, not to choose among ideas. With `decided` and an `outcome` of 1, 2 or 3 (the
+    picked idea's place in the brainstorm, which fixes how it ends: reached at a price, lost, given up) the prompt also says that ending stands.
+    Without a decision, or with outcome 0, no outcome line is added."""
     if combos is not None:
         request = select.without_pair(request)
     c = _context(request, factor, combos=combos)
@@ -269,6 +275,8 @@ def build_prompt(request: dict, factor: float = 1.0, brainstorm: str = "", combo
     elif brainstorm:
         task.append(w["decided_from" if kind else "choose_from"])
         task.append(w[("decided_use" if kind else "idea_use") + tail])
+    if kind and brainstorm and outcome in OUTCOMES:
+        task.append(w[OUTCOMES[outcome]])
     task += [
         w["four_points"],
         w["other_person"].format(other=other_end(request, names)),
@@ -471,7 +479,7 @@ class PlanFlow(Flow):
         text = self.brainstorm if brainstorm is None else brainstorm
         use = combos if combos is not None else self._shown if self._shown is not None else self.combos
         decided = brainstorm is None and self.decision is not None       # the worst case (a brainstorm given) is the longest wording, the undecided one
-        return Step("plan", lambda f: build_prompt(self.request, f, text, use, decided), "json", MAX_OUTPUT, self._grammar(text, use), self._check(),
+        return Step("plan", lambda f: build_prompt(self.request, f, text, use, decided, self.decision.position if decided else 0), "json", MAX_OUTPUT, self._grammar(text, use), self._check(),
                     "thinking", True)
 
     # -- choose mode

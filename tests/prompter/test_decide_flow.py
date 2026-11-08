@@ -13,6 +13,7 @@ from test_select import base, choose_request, names_of_steps, run_plan  # noqa: 
 
 from pulpermill.backend.kit import Kit  # noqa: E402
 from pulpermill.prompter.mill import decide, plan  # noqa: E402
+from pulpermill.prompter.mill.common import load_text  # noqa: E402
 
 BRAINSTORM = ("Here are the options for this chapter.\n\n"
               "**Option 1: First (Combination 1)**\nThe protagonist wants a first thing. A says no, and the two clash at the first place.\n\n"
@@ -184,3 +185,26 @@ def test_the_worst_case_decide_step_carries_the_longest_combinations():
     assert [s.name for s in steps][:3] == ["select", "brainstorm", "decide"]
     text = steps[2].text(1.0)
     assert text.count("It is built on:") == 3 and text.count("How they may collide: " + select.REASON_STAND_IN.strip()) == 3      # the longest reason of each combination
+
+
+@pytest.mark.parametrize("wanted", (1, 2, 3))
+def test_the_plan_prompt_after_a_decision_says_the_picked_ideas_outcome_stands_for_every_position(wanted):
+    w = load_text("plan")
+    for request in (base(), choose_request()):
+        at = 2 if request.get("choose") else 1
+        flow, reply, ctx, engine = run_plan(request, *texts_for(request, wanted=wanted))
+        planned = engine.prompts[at + 1]
+        assert ctx.notes["flow"]["decide_pick"] == wanted
+        for number, key in ((1, "outcome_reached"), (2, "outcome_lost"), (3, "outcome_gave_up")):
+            assert (w[key] in planned) == (number == wanted), (wanted, key)
+        assert "how it ends" in planned
+
+
+def test_a_flow_without_the_decider_adds_no_outcome_line(monkeypatch):
+    monkeypatch.setattr(decide, "ON", False)
+    request = choose_request()
+    texts = plan.script(request, Kit(request))
+    texts[1] = BRAINSTORM
+    flow, reply, ctx, engine = run_plan(request, *texts)
+    w = load_text("plan")
+    assert not any(w[key] in engine.prompts[2] for key in ("outcome_reached", "outcome_lost", "outcome_gave_up"))

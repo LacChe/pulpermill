@@ -160,6 +160,7 @@ def test_every_middle_chapter_is_told_to_settle_its_collision_as_firmly_as_the_l
     last = plan.build_prompt({**base(), "chapter": 8})
     assert "open nothing new" in last and "open nothing new" not in early
     assert "final state" in last and "distinctly new state" not in last and "what the protagonist wants now" not in last      # movement_last: no new state beside last_chapter's final one
+    assert "consequence the outcome leaves standing" not in last and "nothing left open" in last and "consequence the outcome leaves standing" in early
     assert "distinctly new state" in early and "final state" not in early
 
 
@@ -632,7 +633,7 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-18"
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-20"
 
 
 # ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------
@@ -849,3 +850,40 @@ def test_the_whole_choose_flow_with_the_decider_showing_each_option_its_combinat
     assert names[:4] == ["select", "brainstorm", "decide", "plan"] and steps[2].text(1.0).count("It is built on:") == 3         # the combination lines are in the count
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert factor == 1.0 and all(m.ok for m in measures) and len(measures) == len(names)
+
+
+def test_no_plan_prompt_asks_for_an_inner_state_in_act_4_and_each_asks_for_actions_and_what_is_now_different_once():
+    for chapter in (1, 3, 7, 8):
+        prompt = plan.build_prompt({**base(), "chapter": chapter})
+        assert "wants now" not in prompt and "now drives" not in prompt, chapter
+        assert prompt.count("what is now different") == 1 and "in facts and actions a reader could watch" in prompt, chapter
+
+
+OUTCOME_LINES = {1: "outcome_reached", 2: "outcome_lost", 3: "outcome_gave_up"}
+IDEA = "Idea 1\n**Option 1: Title**\nThe protagonist wants a thing. A person says no."
+
+
+@pytest.mark.parametrize("position", (1, 2, 3))
+def test_a_decided_plan_prompt_carries_the_outcome_of_the_picked_position_and_neither_other(position):
+    w = load_text("plan")
+    prompt = plan.build_prompt({**base(), "chapter": 3}, 1.0, IDEA, None, True, position)
+    for number, key in OUTCOME_LINES.items():
+        assert (w[key] in prompt) == (number == position), (position, key)
+    assert prompt.index(w[OUTCOME_LINES[position]]) < prompt.index("Write the plan as four points")
+
+
+def test_an_undecided_plan_prompt_and_a_decided_one_without_an_outcome_carry_no_outcome_line():
+    w = load_text("plan")
+    for prompt in (plan.build_prompt({**base(), "chapter": 3}, 1.0, IDEA, None, False, 2), plan.build_prompt({**base(), "chapter": 3}, 1.0, IDEA, None, True, 0),
+                   plan.build_prompt({**base(), "chapter": 3}), plan.build_prompt({**base(), "chapter": 3}, 1.0, IDEA, None, True, 7)):
+        assert not any(w[key] in prompt for key in OUTCOME_LINES.values())
+
+
+def test_the_decided_lines_keep_how_the_idea_ends_and_ask_for_it_in_idea_use_in_every_variant():
+    w = load_text("plan")
+    for key in ("decided_from", "decided_one"):
+        assert "how it ends" in w[key], key
+    for key in ("decided_use", "decided_use_chain", "decided_number", "decided_number_chain"):
+        assert "how it ends" in w[key] and "idea_use" in w[key], key
+    for key in OUTCOME_LINES.values():
+        assert "That ending stands" in w[key] and "Act 3 decides the collision this way" in w[key] and "Act 4 shows" in w[key]
