@@ -45,7 +45,7 @@ fields:
     narrator_note: "One or two sentences on anything about the narrator that the choices do not cover. It is always filled: it names one concrete habit of how the narrator tells the story, a habit that follows from the writer's text and agrees with the choices. It says something the choices do not already say and invents no trait the writer's text did not suggest, and it pulls against nothing the writer asked for. When the text suggests nothing further, state how the choices show up in practice as one habit."
     rhythm: "How the sentences sound: short and clipped, mixed, or long and flowing. It sets the pace of reading line by line. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
     diction: "Whether word choice is plain and everyday or elaborate. Plain words keep the reader moving and elaborate ones make the reader notice the language. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
-    formality: "How formal the narration sounds. It decides whether the narrator sounds like a person talking or like a record being kept. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
+    formality: "How formal the narration sounds. It decides whether the narrator reads as a person talking or as a record being kept. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
     imagery: "How much figurative language the prose uses. More of it adds texture and slows the reading. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
     edge: "How rough the language is: swearing, bluntness, roughness. It decides whether rough events are told in rough language. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
     explicitness: "Whether intense moments, violent or intimate ones, happen on the page or just off it. It decides what the reader sees directly and what the reader imagines. Take the option the writer's text points to; when it points nowhere, take the one that agrees with the rest of the voice, the middle one when nothing points either way."
@@ -72,7 +72,7 @@ fields:
     behaviors: "Up to five items on how the person acts in different inner states. Each item pairs a broad inner or social state with a leaning, never a single situation or a single act, and at least one item is a calm or happy state. This gives later chapters a person who acts differently as they feel differently. Each state is a mood or a pressure, never an activity or a topic, and each tendency is a leaning the person shows in it."
     competence: "What they are good at: concrete skills that the story could reward, each something a person does. Knowing them lets the story reward the person."
     vulnerability: "Where they can be hurt or caught out, including shame that shapes how they behave. It gives other people and the plot something to press on, so name a specific place where someone could press, tied to the fear or the shame and written in this person's own terms."
-    speech: "How they talk: rhythm, vocabulary, what they never say. It lets dialogue sound like this person and not like the narrator."
+    speech: "How they talk: rhythm, vocabulary, what they never say. It lets dialogue fit this person and set them apart from the narrator."
     history: "A short formative background that explains the flaw and the wants, in two or three sentences of events and conditions, with no named person, place or object. Every event explains the flaw or a want. A relative or a place in the note becomes the condition it created for this person, never a named or described person."
   world:
     name: "What the world or setting is called. The model refers to the setting by it every time."
@@ -117,7 +117,7 @@ item_fields:
       name: "What the group is called."
       nature: "What kind of group it is, in one plain sentence."
       hold: "How it holds power over people, named by one or two of exactly these words: force, money, law, belief, numbers."
-      felt: "A concrete way an ordinary person meets it in a day, such as a charge, an inspection, a notice or a custom, with some friction in it."
+      felt: "A concrete way an ordinary person meets it in a day, with some friction in it."
     rules:
       statement: "The fact itself, in one plain sentence about how things are here. The price of living by it and the result of breaking it go in the next two fields."
       cost: "What it costs people to live by the rule: something concrete that someone loses or risks."
