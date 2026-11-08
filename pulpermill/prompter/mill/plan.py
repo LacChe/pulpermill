@@ -176,11 +176,11 @@ def _context(request: dict, factor: float, combos: list[dict] | None = None) -> 
     holdings = in_names(request.get("holdings") or [], ("holdee", "held_by"), names)
 
     with tx.squeeze(cast_f):
-        cast_text = r.render_cast(cast, scope="planner")
+        cast_text = r.render_cast(cast, scope="planner", pick=str(request.get("chapter")))      # one want and one value a person, the same for every planning step of this chapter
     pressure = pressure_of(request, factor)
     with tx.squeeze(world_f):
         world_text = r.render_world(request.get("world") or {}, scope="planner", without=pressure)
-    spotlight_text = r.render_spotlight(tie_words, cast, scope="planner", names=names) if tie else ""
+    spotlight_text = r.render_spotlight(tie_words, cast, scope="planner", names=names, pick=str(request.get("chapter"))) if tie else ""
     spotlight_text = "\n".join(x for x in (spotlight_text, r.render_pressure(pressure)) if x)       # one sentence inside the spotlight section
     spotlight_head = heads["spotlight"]
     if combos is not None:

@@ -410,7 +410,7 @@ def test_the_brainstorm_prompt_asks_for_three_ways_to_take_the_next_step_with_th
                    "what the protagonist is after", "what Marit wants from this chapter", "the line or moment where the two of them clash",
                    "Marit toward Suvi", "chapter 2 of 8", "in English"):
         assert needed in prompt, needed
-    assert "one specific thing the cards above show to matter" in prompt and "prefer the things the cards treat as central over the minor ones" in prompt
+    assert "one specific thing the cards above show to matter" in prompt and "prefer something the earlier chapters have not put at risk yet, as the story so far shows" in prompt and "treat as central" not in prompt
     assert "never a comfort or a convenience" in prompt
     assert "All three go after the same concrete thing" not in prompt and "to take the protagonist's aim its next step" not in prompt
     assert prompt.count(load_text("plan")["brainstorm_continue"]) == 1 and plan.build_brainstorm_prompt({**base(), "chapter": 1, "earlier_beats": [], "earlier_events": []}).count("At most one idea may continue it") == 0
@@ -894,3 +894,17 @@ def test_the_decided_lines_keep_how_the_idea_ends_and_ask_for_it_in_idea_use_in_
         assert "how it ends" in w[key] and "idea_use" in w[key], key
     for key in OUTCOME_LINES.values():
         assert "That ending stands" in w[key] and "Act 3 decides the collision this way" in w[key] and "Act 4 shows" in w[key]
+
+
+def test_every_planning_prompt_of_a_chapter_shows_the_same_one_want_and_one_value_a_person_and_the_writer_and_fill_do_not_cut():
+    from pulpermill.prompter.mill import generate as gen_mod
+    request = copy.deepcopy(base())
+    request["cast"][0]["wants"] = [{"id": f"w{i}", "text": f"want number {i}"} for i in range(1, 6)]
+    request["cast"][0]["values"] = [{"id": f"v{i}", "text": f"value number {i}"} for i in range(1, 6)]
+    prompts = [plan.build_prompt(request), plan.build_brainstorm_prompt(request)]
+    shown = [(re.findall(r"want number \d", p), re.findall(r"value number \d", p)) for p in prompts]
+    assert all(len(set(w)) == 1 and len(set(v)) == 1 for w, v in shown) and shown[0] == shown[1]      # one want and one value, the same in the cast and the spotlight brief and in both steps
+    other = copy.deepcopy(request)
+    other["chapter"] = request["chapter"] + 1
+    assert re.findall(r"want number \d", plan.build_prompt(other)) and "several things" not in prompts[0]
+    assert len(re.findall(r"want number \d", gen_mod.write_prompt(request))) == 5                    # the writer keeps the whole card

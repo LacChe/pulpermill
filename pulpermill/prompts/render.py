@@ -3,6 +3,7 @@ RENDER_ORDER where it has one), a length cap per field (the schema's `cap`, plus
 instead of printing an empty label. Nothing here calls a model.
 
 Two scopes: "writer" (the chapter writer, and the extractors that read the same cast) and "planner"."""
+import random
 import re
 from typing import Any, Iterable
 
@@ -109,14 +110,17 @@ def lead(card: str, key: str, **tokens) -> str:
     return fill(tx.field(card, key)["lead_in"], tokens)
 
 
-def _items_block(card: str, key: str, items: list[str], **tokens) -> str:
+def _items_block(card: str, key: str, items: list[str], one: bool = False, **tokens) -> str:
+    """`one`: the list was cut to a single item, so the singular lead-in (`lead_in_one`) is used when the field has one."""
     items = [i for i in items if i]
     if not items:
         return ""
-    join = tx.field(card, key).get("item_join") or "\n"
+    field = tx.field(card, key)
+    lead_in = field.get("lead_in_one") if one and field.get("lead_in_one") else field["lead_in"]
+    join = field.get("item_join") or "\n"
     if join.strip():                                     # a list in one line: each item is a phrase, and the list ends with a stop
-        return sentence(fill_lead(tx.field(card, key)["lead_in"], join.join(bare(i) for i in items), tokens))
-    return fill_lead(tx.field(card, key)["lead_in"], join.join(sentence(i) for i in items), tokens)   # one sentence per line
+        return sentence(fill_lead(lead_in, join.join(bare(i) for i in items), tokens))
+    return fill_lead(lead_in, join.join(sentence(i) for i in items), tokens)   # one sentence per line
 
 
 def fill_lead(lead_in: str, items: str, tokens: dict[str, Any]) -> str:
@@ -165,7 +169,16 @@ def _list_items(person: dict, key: str, text_key: str, cap: int, report) -> list
     return [clip(i.get(text_key), cap, f"{person.get('name')}.{key}", report) for i in person.get(key) or []]
 
 
-def render_person(person: dict, *, scope: str = "writer", report: Report | None = None) -> str:
+def _picked(items: list[str], pick: str | None, scope: str, name: str, key: str) -> tuple[list[str], bool]:
+    """(the items, whether the list was cut to one). With a `pick` seed and the planner scope a list of two or more is cut to one item,
+    chosen by the seed, the person and the field, so the same seed always shows the same item. Anything else is returned as it is."""
+    kept = [i for i in items if i]
+    if pick is None or scope != "planner" or len(kept) < 2:
+        return items, False
+    return [random.Random(f"{pick}\n{name}\n{key}").choice(kept)], True
+
+
+def render_person(person: dict, *, scope: str = "writer", report: Report | None = None, pick: str | None = None) -> str:
     c = tx.limits()["characters"]
     name = s(person.get("name"))
     writer = scope == "writer"
@@ -196,16 +209,16 @@ def render_person(person: dict, *, scope: str = "writer", report: Report | None 
 
     # what drives them
     drive = []
-    wants = _list_items(person, "wants", "text", c["want_item"], report)
+    wants, one_want = _picked(_list_items(person, "wants", "text", c["want_item"], report), pick, scope, name, "wants")
     if wants:
-        drive.append(_items_block("characters", "wants", wants, name=name))
+        drive.append(_items_block("characters", "wants", wants, one_want, name=name))
     if s(person.get("fear")):
         drive.append(fill(frames["portrait_fear"], {"name": name, "themselves": pro["themselves"], "value": clip(person["fear"], c["fear"], f"{name}.fear", report)}))
     if s(person.get("flaw")):
         drive.append(fill(frames["portrait_flaw"], {"name": name, "their": pro["their"], "value": clip(person["flaw"], c["flaw"], f"{name}.flaw", report)}))
-    values = _list_items(person, "values", "text", c["value_item"], report)
+    values, one_value = _picked(_list_items(person, "values", "text", c["value_item"], report), pick, scope, name, "values")
     if values:
-        drive.append(_items_block("characters", "values", values, name=name))
+        drive.append(_items_block("characters", "values", values, one_value, name=name))
     if writer:
         behaviors = [fill(frames["portrait_behavior"],
                           {"state": state_clause(clip(b.get("state"), c["behavior_state"], f"{name}.behavior", report)),
@@ -224,8 +237,8 @@ def render_person(person: dict, *, scope: str = "writer", report: Report | None 
     return "\n".join(lines)
 
 
-def render_cast(cast: list[dict], *, scope: str = "writer", report: Report | None = None) -> str:
-    people = [render_person(p, scope=scope, report=report) for p in cast]
+def render_cast(cast: list[dict], *, scope: str = "writer", report: Report | None = None, pick: str | None = None) -> str:
+    people = [render_person(p, scope=scope, report=report, pick=pick) for p in cast]
     note = tx.prompt_text("frames")["portraits_note"] if scope == "writer" else ""
     return "\n\n".join(x for x in [note, *people] if x)
 
@@ -488,7 +501,7 @@ def _check_scope(scope: str) -> None:
         raise ValueError(f"scope must be 'writer' or 'planner', not {scope!r}")
 
 
-def _brief(person: dict, *, with_sketch: bool, report: Report | None) -> str:
+def _brief(person: dict, *, with_sketch: bool, report: Report | None, pick: str | None = None, scope: str = "writer") -> str:
     """Who a person is and what drives them, in a few sentences of prose."""
     c = tx.limits()["characters"]
     fr = tx.prompt_text("frames")
@@ -498,9 +511,9 @@ def _brief(person: dict, *, with_sketch: bool, report: Report | None) -> str:
     parts = []
     if with_sketch and s(person.get("sketch")):
         parts.append(fill(fr["sketch"], {"name": name, "value": clip(person["sketch"], c["sketch"], f"{name}.sketch", report)}))
-    wants = _list_items(person, "wants", "text", c["want_item"], report)
+    wants, one = _picked(_list_items(person, "wants", "text", c["want_item"], report), pick, scope, name, "wants")      # the same pick as the cast block shows
     if wants:
-        parts.append(fill_lead(chars["wants"]["lead_in"], "; ".join(wants), {"name": name}))
+        parts.append(fill_lead(chars["wants"]["lead_in_one"] if one and chars["wants"].get("lead_in_one") else chars["wants"]["lead_in"], "; ".join(wants), {"name": name}))
     if s(person.get("fear")):
         parts.append(fill(fr["portrait_fear"], {"name": name, "themselves": pro["themselves"], "value": clip(person["fear"], c["fear"], f"{name}.fear", report)}))
     if s(person.get("flaw")):
@@ -509,7 +522,7 @@ def _brief(person: dict, *, with_sketch: bool, report: Report | None) -> str:
 
 
 def render_spotlight(tie: dict, cast: list[dict], *, scope: str, report: Report | None = None,
-                     names: dict[str, str] | None = None) -> str:
+                     names: dict[str, str] | None = None, pick: str | None = None) -> str:
     """The spotlight tie in prose: who stands toward whom, the bond, and the edge as what drives the person at the `from` end,
     then a short brief of each end that is in the cast. The ends are names (a tie from the page is turned into words first; or pass
     `names`, an id-to-name map, and any end given as an id is read through it). Planner briefs add each person's sketch; the writer
@@ -541,7 +554,7 @@ def render_spotlight(tie: dict, cast: list[dict], *, scope: str, report: Report 
     briefs = []
     for person in (from_person, to_person):
         if person is not None and person not in [b[0] for b in briefs]:
-            text = _brief(person, with_sketch=scope == "planner", report=report)
+            text = _brief(person, with_sketch=scope == "planner", report=report, pick=pick, scope=scope)
             if text:
                 briefs.append((person, text))
     if briefs:

@@ -57,6 +57,7 @@ fields:
     delete_confirm: "Delete this want?"
     item_title: "{text}"
     lead_in: "{name} wants several things that cannot all be satisfied at once: {items}."
+    lead_in_one: "In this chapter {name} is driven by this want: {items}."
     item_template: "{text}"
     item_join: "; "
     item_fields:
@@ -82,6 +83,7 @@ fields:
     delete_confirm: "Delete this value?"
     item_title: "{text}"
     lead_in: "{name} holds sacred, and keeps faith with: {items}."
+    lead_in_one: "{name} holds this sacred, and keeps faith with it: {items}."
     item_template: "{text}"
     item_join: "; "
     item_fields:

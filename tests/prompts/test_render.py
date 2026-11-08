@@ -694,3 +694,43 @@ def test_the_scene_block_shows_the_pressure_next_to_the_beat():
     pressed = render.render_scene({**beat, "pressure": RULE_PRESSURE}, scope="writer")
     assert pressed.startswith(plain.split("\n")[0]) and "Cost: A spoken debt is void." in pressed and "make the rule below" not in plain
     assert render.render_scene({**beat, "pressure": "r0000001"}, scope="writer") == plain          # an id is not words: nothing is shown
+
+
+# ---- the planner's one-item view of wants and values ------------------------------------------------------------------------
+
+def five_and_five():
+    return {"name": "Ines", "sex": "female", "sketch": "A careful clerk.", "fear": "being relied on",
+            "wants": [{"id": f"w{i}", "text": f"want number {i}"} for i in range(1, 6)],
+            "values": [{"id": f"v{i}", "text": f"value number {i}"} for i in range(1, 6)]}
+
+
+def test_with_a_pick_the_planner_sees_one_want_and_one_value_and_the_same_seed_the_same_ones():
+    person = five_and_five()
+    text = render_cast([person], scope="planner", pick="2")
+    assert len(re.findall(r"want number \d", text)) == 1 and len(re.findall(r"value number \d", text)) == 1
+    assert "several things" not in text and "In this chapter Ines is driven by this want:" in text and "Ines holds this sacred, and keeps faith with it:" in text
+    assert "being relied on" in text and "A careful clerk" in text                                   # nothing else about the person changes
+    assert render_cast([person], scope="planner", pick="2") == text                                 # the same seed, the same items
+    seen = {re.search(r"want number \d", render_cast([person], scope="planner", pick=str(n))).group() for n in range(1, 21)}
+    assert len(seen) > 1                                                                           # a different chapter, a different want
+
+
+def test_without_a_pick_or_outside_the_planner_nothing_is_cut():
+    person = five_and_five()
+    planner = render_cast([person], scope="planner")
+    assert len(re.findall(r"want number \d", planner)) == 5 and len(re.findall(r"value number \d", planner)) == 5 and "several things" in planner
+    writer = render_cast([person], scope="writer")
+    assert render_cast([person], scope="writer", pick="2") == writer and len(re.findall(r"want number \d", writer)) == 5       # the writer keeps the whole card
+    assert planner == render_cast([person], scope="planner", pick=None)
+
+
+def test_a_list_of_one_or_none_is_unchanged_by_a_pick():
+    one = {**five_and_five(), "wants": [{"id": "w1", "text": "the only want"}], "values": []}
+    assert render_cast([one], scope="planner", pick="3") == render_cast([one], scope="planner")
+    assert "several things" in render_cast([one], scope="planner", pick="3")                       # a single stored want keeps the plain lead-in
+
+
+def test_the_fill_step_still_shows_every_want():
+    from pulpermill.prompter.mill import fill
+    import inspect
+    assert "pick=" not in inspect.getsource(fill)

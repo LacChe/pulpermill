@@ -137,6 +137,8 @@ def test_templates_use_only_known_tokens(cid, lang):
         if fm["kind"] in ("items", "pairs"):
             names = set(item_fields(f))
             assert "items" in tokens(ft["lead_in"]) and tokens(ft["lead_in"]) <= base, n
+            if "lead_in_one" in ft:                       # the singular lead-in of a list cut to one item
+                assert "items" in tokens(ft["lead_in_one"]) and tokens(ft["lead_in_one"]) <= base, n
             assert tokens(ft["item_template"]) and tokens(ft["item_template"]) <= names and ft["item_join"], n
             for sn, it in ft["item_fields"].items():
                 for o in it.get("options", {}).values():
@@ -182,7 +184,7 @@ def test_other_languages_match_english_keys_and_tokens():
 UI_DONE = {"style", "characters", "world", "entanglements", "setup", "outline"}
 FIELD_UI = {"placeholder", "why", "examples", "empty", "add", "delete_confirm", "item_title", "visible_if",
             "no_options", "filtered_note", "disabled_reason", "one_of"}
-FIELD_KEYS = FIELD_UI | {"label", "help", "options", "item_fields", "expand", "lead_in", "item_template", "item_join"}
+FIELD_KEYS = FIELD_UI | {"label", "help", "options", "item_fields", "expand", "lead_in", "lead_in_one", "item_template", "item_join"}
 OPTION_KEYS = {"label", "expand", "description"}
 
 
@@ -275,7 +277,7 @@ def test_ui_wording_never_repeats_model_text(cid, lang):
     text = load_text(cid, lang)
     model_text = set()
     for _, _, t in _targets(card(cid)[0], text):
-        model_text |= {t[k] for k in ("lead_in", "item_template") if k in t}
+        model_text |= {t[k] for k in ("lead_in", "lead_in_one", "item_template") if k in t}
         model_text |= {o["expand"] for v, o in t.get("options", {}).items() if o["expand"] != v}
     shown = []
     for _, _, t in _targets(card(cid)[0], text):

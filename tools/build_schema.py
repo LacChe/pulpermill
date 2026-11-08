@@ -32,7 +32,7 @@ TEXT_DIR = REPO / "pulpermill" / "schema" / "text"
 OUT_DIR = REPO / "web" / "data"
 
 # Text that only the model reads. It never goes into the web data.
-MODEL_ONLY = {"expand", "lead_in", "item_template", "item_join", "judge_prompt"}
+MODEL_ONLY = {"expand", "lead_in", "lead_in_one", "item_template", "item_join", "judge_prompt"}
 
 # Optional UI wording the text files may add (phase 3). Copied through when present, so adding
 # a key to the yaml needs no change here. The page must treat every one of them as optional.
