@@ -44,13 +44,13 @@ def _stored_form(patch: dict) -> dict:
 
 
 def _edges_only(patch: dict) -> None:
-    """A chapter's patch holds `ties` replace operations that carry an `edge` and nothing else; anything more raises Unresolved."""
+    """A chapter's patch holds `ties` replace operations that carry an `edge`, and a `bond` too when the chapter changed it, and nothing else; anything more raises Unresolved."""
     for key, ops in patch.items():
         if key != "ties":
-            raise Unresolved(f"a chapter changes only the edge of ties, not {key}")
+            raise Unresolved(f"a chapter changes only the edge and the bond of ties, not {key}")
         for op in ops if isinstance(ops, list) else []:
-            if op.get("op") != "replace" or set(op.get("values") or {}) - {"edge"}:
-                raise Unresolved("a chapter changes only the edge of ties: replace the edge of a tie and nothing else")
+            if op.get("op") != "replace" or set(op.get("values") or {}) - {"edge", "bond"}:
+                raise Unresolved("a chapter changes only the edge and the bond of ties: replace those and nothing else")
 
 
 def shifts(entries: Any, handles: Handles) -> list[dict]:
@@ -64,7 +64,7 @@ def shifts(entries: Any, handles: Handles) -> list[dict]:
         entry = _object(entry, "a shift")
         card, label = entry.get("card"), entry.get("target")
         if card not in CHAPTER_SHIFT_CARDS:
-            raise Unresolved(f"a chapter changes only the edge of ties (the entanglements card), not {card}")
+            raise Unresolved(f"a chapter changes only the edge and the bond of ties (the entanglements card), not {card}")
         scope = handles.scope(card, label)
         if (card, scope.target) in seen:
             raise Unresolved(f"the {card} card has two entries; give each card one entry with all its changes")

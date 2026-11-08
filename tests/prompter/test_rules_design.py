@@ -138,16 +138,16 @@ def test_rule6_the_shifts_check_rejects_a_chapter_that_leaves_the_edge_unchanged
     unchanged = ({"shifts": []},
                  {"shifts": [edge_entry("ties.2", "to hide the ledger for good")]},                                         # another tie's edge is not the spotlight's
                  {"shifts": [edge_entry("ties.1", "To bring her daughter home.")]},                                         # the same edge, said again
+                 {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": {"bond": "mother, still"}}]}}]},   # a bond alone is no new edge
                  )
     for reply in unchanged:
         problem = check(reply)
         assert problem and "ties.1" in problem and "Marit toward Suvi" in problem and "\n" not in problem, reply
     other = ({"shifts": [{"card": "characters", "target": "Suvi", "patch": {"sketch": "Changed."}}]},                             # people do not change in a chapter
-             {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": {"bond": "mother, still"}}]}}]},
              {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "remove", "id": "ties.1"}]}}]})
     for reply in other:
         problem = check(reply)
-        assert problem and "only the edge of ties" in problem and "\n" not in problem, reply
+        assert problem and "only the edge and the bond of ties" in problem and "\n" not in problem, reply
 
 
 def test_rule6_the_writer_and_the_events_step_ask_for_the_change_the_check_looks_for():

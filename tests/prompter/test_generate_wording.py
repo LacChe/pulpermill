@@ -169,9 +169,9 @@ def test_every_chapter_is_told_to_settle_its_collision_on_the_page_with_the_same
 def test_the_events_and_shifts_prompts_carry_how_the_collision_ended():
     request = one_tie()
     assert "how the collision of the protagonist's aim and the tie in the spotlight ended" in gen.events_prompt(request, CHAPTER)
-    grows = "must grow out of how the collision of the chapter ended"
-    assert grows in gen.shifts_prompt(request, Kit(request), CHAPTER)
-    assert grows in gen.shifts_prompt(legacy(base()), Kit(base()), CHAPTER)
+    answered = "how the chapter answered what the person at the from end wanted from the other person"
+    assert answered in gen.shifts_prompt(request, Kit(request), CHAPTER)
+    assert answered in gen.shifts_prompt(legacy(base()), Kit(base()), CHAPTER)
 
 
 # ---- the squeeze ----------------------------------------------------------------------------------------------------------
@@ -203,7 +203,8 @@ def test_the_squeeze_cuts_oldest_history_then_world_then_cast_and_never_the_plan
 
 @pytest.mark.skipif(not tokens.available(), reason="the tokenizer files are not installed")
 @pytest.mark.parametrize("size", ["small", "large"])
-def test_every_step_at_its_heaviest_fits_the_context_at_some_squeeze(size):
+def test_every_step_at_its_heaviest_fits_the_context_at_some_squeeze(size, monkeypatch):
+    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
     request = big() if size == "large" else base()
     flow = gen.build_flow(request, Kit(request))
     steps = flow.worst_case()
@@ -232,7 +233,8 @@ def test_the_output_limit_holds_a_chapter_at_the_cap_with_room_to_spare():
 
 
 @pytest.mark.skipif(not tokens.available(), reason="the tokenizer files are not installed")
-def test_chapter_19_of_20_with_18_earlier_events_fits_and_cuts_the_oldest_history_first():
+def test_chapter_19_of_20_with_18_earlier_events_fits_and_cuts_the_oldest_history_first(monkeypatch):
+    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
     request = inflate(one_tie(), cast=6, each=5, ties=6, chapters=18, chars=900)
     request["beat"], request["ties"] = one_tie()["beat"], request["ties"][:2]
     request["previous_ending"] = one_tie()["previous_ending"]
@@ -334,12 +336,16 @@ def test_the_shifts_prompt_shows_handles_and_names_the_edge_to_replace():
     assert "ties.1: Marit toward Suvi: mother. Edge: to bring her daughter home" in prompt
     assert "wants.1" not in prompt and "places." not in prompt and "holdings." not in prompt        # only the ties are shown: nothing else changes in a chapter
     assert "The tie in the spotlight is Marit toward Suvi (ties.1); its edge was: to bring her daughter home" in prompt
-    assert "one entry for the ties" in prompt and "only the edge of a tie" in prompt and "t1000001" not in prompt and "c0000001" not in prompt
+    assert "one entry for the ties" in prompt and "only the edge and the bond of a tie" in prompt and "t1000001" not in prompt and "c0000001" not in prompt
     ambiguous = gen.shifts_prompt(legacy(base()), Kit(base()), CHAPTER)
     assert "is one of these: ties.1" in ambiguous and "ties.2" in ambiguous
     move = load_text("generate")["shifts_edge_move"]
     assert prompt.count(move) == 1 and ambiguous.count(move) == 1                      # one shared key, in the single-tie and the any-tie version
-    assert prompt.index("its edge was:") < prompt.index(move) < prompt.index("Reply with a JSON object with one key") and "never the old want made stronger" in prompt
+    bond = load_text("generate")["shifts_bond"]
+    assert prompt.count(bond) == 1 and ambiguous.count(bond) == 1                      # one shared key, after the move, in both versions
+    assert prompt.index("its edge was:") < prompt.index(move) < prompt.index(bond) < prompt.index("Reply with a JSON object with one key") and "never the old want made stronger" in prompt
+    for text in (prompt, ambiguous):
+        assert "written the way the old" not in text and "Start from what the last events of the chapter left standing, not from the old edge" in text
 
 
 def test_the_shifts_check_wants_the_spotlight_edge_replaced_with_something_new():
@@ -353,9 +359,21 @@ def test_the_shifts_check_wants_the_spotlight_edge_replaced_with_something_new()
         problem = gen.shifts_problem(request, kit, missing)
         assert problem and "ties.1" in problem and "Marit toward Suvi" in problem, missing
     people = gen.shifts_problem(request, kit, {"shifts": [{"card": "characters", "target": "Suvi", "patch": {"sketch": "Changed."}}]})
-    assert people and "only the edge of ties" in people                          # a chapter does not change people
+    assert people and "only the edge and the bond of ties" in people                          # a chapter does not change people
     removed = gen.shifts_problem(request, kit, {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "remove", "id": "ties.1"}]}}]})
-    assert removed and "only the edge of ties" in removed                        # nor take a tie away
+    assert removed and "only the edge and the bond of ties" in removed                        # nor take a tie away
+
+
+def test_the_shifts_check_lets_a_bond_ride_along_with_a_new_edge_and_never_alone():
+    request = one_tie()
+    kit = Kit(request)
+    tie = lambda values: {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": values}]}}]}
+    assert gen.shifts_problem(request, kit, tie({"edge": "to forgive her daughter and let her stay", "bond": "two women who share a roof"})) is None
+    assert gen.replaced_edge(request, kit, tie({"edge": "to forgive her daughter and let her stay", "bond": "x"})) == ("to bring her daughter home", "to forgive her daughter and let her stay")
+    alone = gen.shifts_problem(request, kit, tie({"bond": "two women who share a roof"}))
+    assert alone and "ties.1" in alone and "Marit toward Suvi" in alone                     # a bond without a new edge still fails the edge check
+    same = gen.shifts_problem(request, kit, tie({"edge": "To bring her daughter home.", "bond": "two women who share a roof"}))
+    assert same and "ties.1" in same                                                         # a bond does not excuse an edge that is the same
 
 
 def test_the_shifts_check_accepts_any_named_tie_when_the_spotlight_is_not_singled_out():
@@ -635,15 +653,16 @@ def test_no_edge_judge_runs_when_the_shifts_replaced_no_edge():
 SAME = json.dumps({"reason": "Same want, new words.", "move": "same"})
 
 
-def test_with_the_flag_off_the_verdict_only_goes_to_the_notes_and_the_reply_is_the_same_whatever_it_says(monkeypatch):
-    monkeypatch.setattr(advance, "ENFORCE", False)
+def test_with_the_flag_off_the_verdict_only_goes_to_the_notes_and_the_reply_is_the_same_whatever_it_says():
+    assert advance.ENFORCE is False                                                                  # the default: observe-only
     reply, ctx, engine, good = _generate(0, 1, 2, SAME)
     plain, _, _, _ = _generate(0, 1, 2)
     assert reply == plain and engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_move": "same", "minor_names": 0, "minor_new": 0, "pressure_on": False}
     assert [s.name for s in gen.build_flow(base(), Kit(base())).worst_case()][-1] == "advance_edge" and len(gen.build_flow(base(), Kit(base())).worst_case()) == 4
 
 
-def test_a_same_want_edge_sends_only_the_shifts_back_once_with_the_judges_line_and_the_judge_runs_again():
+def test_a_same_want_edge_sends_only_the_shifts_back_once_with_the_judges_line_and_the_judge_runs_again(monkeypatch):
+    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
     reply, ctx, engine, good = _generate(0, 1, 2, SAME, 2)
     assert engine.calls == 6 and reply["chapter_text"] == good[0].strip()
     assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 1), ("shifts", 1), ("advance_edge", 1), ("shifts", 1), ("advance_edge", 1)]
@@ -654,7 +673,8 @@ def test_a_same_want_edge_sends_only_the_shifts_back_once_with_the_judges_line_a
     assert "Your first list" not in engine.prompts[0]                                                      # the write was never asked again
 
 
-def test_a_second_same_verdict_is_accepted_and_noted_and_nothing_runs_a_third_time():
+def test_a_second_same_verdict_is_accepted_and_noted_and_nothing_runs_a_third_time(monkeypatch):
+    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
     reply, ctx, engine, good = _generate(0, 1, 2, SAME, 2, SAME)
     assert engine.calls == 6 and reply["shifts"]
     assert ctx.notes["flow"]["edge_resent"] is True and ctx.notes["flow"]["edge_move_after"] == "same" and ctx.notes["flow"]["edge_accepted"] is True
@@ -665,7 +685,8 @@ def test_a_good_verdict_sends_nothing_back():
     assert engine.calls == 4 and "edge_resent" not in ctx.notes["flow"]
 
 
-def test_shifts_that_cannot_be_redone_keep_the_first_ones_and_the_call_still_succeeds():
+def test_shifts_that_cannot_be_redone_keep_the_first_ones_and_the_call_still_succeeds(monkeypatch):
+    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
     reply, ctx, engine, good = _generate(0, 1, 2, SAME, "a", "b", "c")
     assert engine.calls == 7 and reply["shifts"] == json.loads(good[2])["shifts"]                 # three refused attempts, then the first shifts stand
     assert ctx.notes["flow"]["edge_resend_fallback"] is True and ctx.notes["flow"]["edge_accepted"] is True
@@ -783,7 +804,8 @@ def test_a_decor_verdict_or_a_failing_judge_changes_nothing_in_the_reply():
     assert ctx.notes["flow"]["pressure_effect"] == "unclear" and ctx.notes["flow"]["pressure_judge_fallback"] is True
 
 
-def test_the_reply_keeps_the_resent_shifts_when_a_pressure_judge_follows_them():
+def test_the_reply_keeps_the_resent_shifts_when_a_pressure_judge_follows_them(monkeypatch):
+    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
     request = pressed()
     good = gen.script(request, Kit(request))
     reply, ctx, engine = _generate_pressed(request, good[0], good[1], good[2], SAME, good[2], good[3], ACTS)

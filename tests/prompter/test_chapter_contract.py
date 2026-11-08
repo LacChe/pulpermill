@@ -67,7 +67,7 @@ def test_every_chapter_is_asked_to_show_its_collision_settled_on_the_page(chapte
     p = write_prompts(chapter)
     assert SHARED_CRAFT_SENTENCE in p["write"]                                      # word for word the same in the middle and the last chapter
     assert "cannot be taken back" in p["write"]
-    assert ended(p["events"]) and ended(p["shifts"]), (p["events"][-600:], p["shifts"][-600:])
+    assert ended(p["events"]) and "how the chapter answered what" in p["shifts"], (p["events"][-600:], p["shifts"][-600:])
 
 
 @pytest.mark.parametrize("chapter", MIDDLE)

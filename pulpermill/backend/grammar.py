@@ -202,10 +202,10 @@ def patch(card: str, scope, refs: dict) -> Schema:
 
 
 def edge_patch(scope, refs: dict) -> Schema:
-    """What a chapter's patch of the Entanglements may hold: `replace` operations on the ties this scope sent, each with a new `edge` and nothing
-    else. A bond, a tie's ends and the holdings do not change in a chapter."""
+    """What a chapter's patch of the Entanglements may hold: `replace` operations on the ties this scope sent, each with a new `edge` and, when the chapter
+    changed what the two are to each other, a new `bond`. A tie's ends and the holdings do not change in a chapter."""
     ids = scope.handles("ties")
-    op = obj({"op": {"const": "replace"}, "id": one_of(ids), "values": obj(_item_props("entanglements", "ties", ["edge"], refs), ["edge"])})
+    op = obj({"op": {"const": "replace"}, "id": one_of(ids), "values": obj(_item_props("entanglements", "ties", ["edge", "bond"], refs), ["edge"])})
     return obj({"ties": {"type": "array", "items": op, "minItems": 1, "maxItems": MAX_ITEMS}})
 
 

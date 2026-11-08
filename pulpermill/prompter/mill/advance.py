@@ -5,7 +5,7 @@ last chapter left it (continues or drifts), and is its obstacle, person or stake
 comes first in the reply so that the verdict follows from it.
 
 The flows run these steps (plan.py, generate.py). `ENFORCE` says whether the edge flow acts on a bad edge verdict: it sends the shifts back once, with
-`resend_line`, and runs the judge once more. With it False the flow only records the verdict. The aim and pressure judges are observe-only:
+`resend_line`, and runs the judge once more. It is False now (the judge is the same model grading its own rewrite, so it is a measurement, not a gate): the flow only records the verdict. The aim and pressure judges are observe-only:
 nothing is sent back for their verdicts. The verdict helpers are neutral on anything they cannot read: a missing or odd value is never a bad verdict, so a judge that
 failed can never cost a chapter.
 
@@ -19,7 +19,7 @@ from pulpermill.prompter.base import Step
 from . import common
 
 VERSION = "advance-4"
-ENFORCE = True
+ENFORCE = False        # observe-only: the edge judge runs and its verdict is noted (edge_move), but the shifts are never sent back; True sends them back once on `same`
 MAX_OUTPUT = 160            # one short sentence and one word, with room to spare
 
 AIM_LINKS = ("continues", "drifts")

@@ -43,22 +43,27 @@ def test_a_chapter_with_no_shifts_is_accepted():
     {"card": "world", "patch": {"history": "A flood."}},
 ])
 def test_a_chapter_cannot_shift_characters_or_the_world(entry):
-    with pytest.raises(Unresolved, match="only the edge of ties"):
+    with pytest.raises(Unresolved, match="only the edge and the bond of ties"):
         assemble.shifts([entry], Handles(REQUEST))
 
 
 @pytest.mark.parametrize("op", [
-    {"op": "replace", "id": "ties.1", "values": {"bond": "a new bond"}},
-    {"op": "replace", "id": "ties.1", "values": {"edge": "to hold on", "bond": "a new bond"}},
+    {"op": "replace", "id": "ties.1", "values": {"edge": "to hold on", "tie_to": "someone else"}},
+    {"op": "replace", "id": "ties.1", "values": {"strength": "x"}},
     {"op": "remove", "id": "ties.1"},
 ])
-def test_a_chapter_changes_only_the_edge_of_a_tie(op):
-    with pytest.raises(Unresolved, match="only the edge of ties"):
+def test_a_chapter_changes_only_the_edge_and_bond_of_a_tie(op):
+    with pytest.raises(Unresolved, match="only the edge and the bond of ties"):
         assemble.shifts([edges(op)], Handles(REQUEST))
 
 
+def test_a_chapter_may_replace_the_bond_with_the_edge():
+    out = assemble.shifts([edges({"op": "replace", "id": "ties.1", "values": {"edge": "to hold on", "bond": "a new bond"}})], Handles(REQUEST))
+    assert out[0]["patch"]["ties"][0]["values"] == {"edge": "to hold on", "bond": "a new bond"}
+
+
 def test_holdings_do_not_change_in_a_chapter():
-    with pytest.raises(Unresolved, match="only the edge of ties"):
+    with pytest.raises(Unresolved, match="only the edge and the bond of ties"):
         assemble.shifts([{"card": "entanglements", "patch": {"holdings": [{"op": "remove", "id": "holdings.1"}]}}], Handles(REQUEST))
 
 

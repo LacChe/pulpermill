@@ -265,7 +265,7 @@ def shifts_prompt(request: dict, kit: Any, chapter_text: str, factor: float = 1.
              w["shifts_chapter_lead"] + "\n" + chapter_text.strip(),
              w["shifts_cards_lead"] + "\n" + _reference(request, kit, names, factor),
              w["shifts_rules"],
-             w["shifts_example"], edge, w["shifts_edge_move"] if edge else "", extra, w["shifts_format"]]        # `extra`: the advancement judge sent the shifts back once, and this is its line
+             w["shifts_example"], edge, w["shifts_edge_move"] if edge else "", w["shifts_bond"] if edge else "", extra, w["shifts_format"]]        # `extra`: the advancement judge sent the shifts back once, and this is its line
     return "\n\n".join(p for p in parts if p)
 
 

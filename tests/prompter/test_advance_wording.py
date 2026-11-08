@@ -110,8 +110,8 @@ def test_notes_hold_short_words_only():
     assert advance.notes(None, {"move": "bogus"}) == {} and advance.notes() == {}
 
 
-def test_the_flag_is_on_and_the_version_is_set():
-    assert advance.ENFORCE is True and advance.VERSION == "advance-4"
+def test_the_flag_is_off_and_the_version_is_set():
+    assert advance.ENFORCE is False and advance.VERSION == "advance-4"
 
 
 def test_a_resend_line_exists_for_the_edge_only_and_says_the_first_reply_was_set_aside():

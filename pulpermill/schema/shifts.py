@@ -45,7 +45,7 @@ RENDER_ORDER = [["entries"]]
 # The cards whose fields can be shifted. Anything else on a card list (World, Style, Setup, Outline) is not.
 ShiftCard = Literal["characters", "entanglements"]
 SHIFT_CARDS = ["characters", "entanglements"]
-CHAPTER_SHIFT_CARDS = ["entanglements"]            # what a chapter's own shifts may change: the edge of ties
+CHAPTER_SHIFT_CARDS = ["entanglements"]            # what a chapter's own shifts may change: the edge of ties, and their bond
 
 
 class ShiftEntry(Item):

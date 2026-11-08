@@ -106,7 +106,11 @@ def test_a_reply_that_points_at_something_not_sent_is_not_usable():
     world = [{"card": "world", "patch": {"history": "A flood."}}]
     assert shape.problems(world, kit.grammar.shifts()) and kit.shifts_problem(world)         # nor the world
     bond = [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": {"bond": "x"}}]}}]
-    assert shape.problems(bond, kit.grammar.shifts()) and kit.shifts_problem(bond)           # a tie changes only its edge
+    assert shape.problems(bond, kit.grammar.shifts())                                        # a bond alone is not a reply: the edge is required
+    both = [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": {"edge": "to leave", "bond": "x"}}]}}]
+    assert not shape.problems(both, kit.grammar.shifts()) and kit.shifts_problem(both) is None   # an edge may carry a new bond
+    ends = [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": {"edge": "to leave", "tie_to": "x"}}]}}]
+    assert shape.problems(ends, kit.grammar.shifts()) and kit.shifts_problem(ends)           # a tie's ends do not change
     assert kit.shifts_problem([{"card": "entanglements", "patch": {}}]) is None               # nothing changed: no entry
     assert assemble.shifts([{"card": "entanglements", "patch": {}}], kit.handles) == []
 
