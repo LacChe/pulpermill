@@ -18,7 +18,7 @@ from pulpermill.prompter.base import Step
 
 from . import common
 
-VERSION = "advance-7"
+VERSION = "advance-6"
 ENFORCE = True         # the edge verdict `same` sends the shifts back once (then the judge runs once more, and what it says is accepted); False only records the verdict
 MAX_OUTPUT = 160            # one short sentence and one word, with room to spare
 EDGE_OUTPUT = 260           # the edge judge also names the two objects of the want
@@ -80,9 +80,9 @@ def _tie(request: dict) -> dict | None:
     return None
 
 
-def _ends(request: dict, names: dict[str, str], tie: dict | None = None) -> tuple[str, str, str]:
-    """The names of the two ends of a tie and its bond, each empty when the request does not say. The tie is the explicit `tie` when one is given, else the spotlight tie."""
-    tie = tie or _tie(request) or {}
+def _ends(request: dict, names: dict[str, str]) -> tuple[str, str, str]:
+    """The names of the two ends of the spotlight tie and its bond, each empty when the request does not say."""
+    tie = _tie(request) or {}
     return names.get(tie.get("tie_from"), ""), names.get(tie.get("tie_to"), ""), r.s(tie.get("bond"))
 
 
@@ -179,27 +179,26 @@ def aim_step(request: dict, aim: str) -> Step:
 
 # ---- The edge step ----------------------------------------------------------------------------------------------------------------
 
-def edge_prompt(request: dict, old_edge: str, new_edge: str, factor: float = 1.0, facts: dict | None = None, tie: dict | None = None) -> str:
-    """`facts` is what the chapter's events say: {happened, changed, outcome} (each only when there is one; `outcome` is the planned ending as a sentence).
-    `tie` is the tie judged when it is not the spotlight tie; the edge trail is the spotlight tie's, so an explicit tie has none."""
+def edge_prompt(request: dict, old_edge: str, new_edge: str, factor: float = 1.0, facts: dict | None = None) -> str:
+    """`facts` is what the chapter's events say: {happened, changed, outcome} (each only when there is one; `outcome` is the planned ending as a sentence)."""
     w = common.load_text("advance")
     names = names_of(request)
     protagonist = names.get(request.get("protagonist") or "", "")
-    tie_from, tie_to, bond = _ends(request, names, tie)
+    tie_from, tie_to, bond = _ends(request, names)
     who = tie_from or "the person at the from end"
     other = tie_to or "the other person"
-    trail = [] if tie else _recent(edge_trail(request), factor)
+    trail = _recent(edge_trail(request), factor)
     facts = facts or {}
     lines = [line for line in (w["edge_happened_line"].format(text=r.s(facts.get("happened"))) if r.s(facts.get("happened")) else "",
                                w["edge_changed_line"].format(text=r.s(facts.get("changed"))) if r.s(facts.get("changed")) else "",
                                r.s(facts.get("outcome"))) if line]
-    line = ""
+    tie = ""
     if tie_from and tie_to:
-        line = (w["tie_line"] if bond else w["tie_line_plain"]).format(tie_from=tie_from, tie_to=tie_to, bond=r.bare(bond))
+        tie = (w["tie_line"] if bond else w["tie_line_plain"]).format(tie_from=tie_from, tie_to=tie_to, bond=r.bare(bond))
     blocks = [
         w["edge_role"],
         w["protagonist_line"].format(protagonist=protagonist) if protagonist else "",
-        line,
+        tie,
         w["edge_what"].format(tie_from=who, tie_to=other),
         w["edge_trail_lead"] + "\n" + "\n".join(w["edge_trail_item"].format(edge=r.s(e)) for e in trail) if trail else "",
         w["edge_facts_lead"] + "\n" + "\n".join(lines) if lines else "",
@@ -211,22 +210,22 @@ def edge_prompt(request: dict, old_edge: str, new_edge: str, factor: float = 1.0
     return "\n\n".join(b for b in blocks if b)
 
 
-def edge_step(request: dict, old_edge: str, new_edge: str, facts: dict | None = None, tie: dict | None = None) -> Step:
-    """Did a tie's edge (the spotlight tie's, or the explicit `tie`'s) move from `old_edge` to `new_edge`, and how, judged from the chapter's facts? Reply {old_object, new_object, reason, move}."""
-    return Step("advance_edge", lambda f: edge_prompt(request, old_edge, new_edge, f, facts, tie), "json", EDGE_OUTPUT, edge_grammar(), _reason_check,
+def edge_step(request: dict, old_edge: str, new_edge: str, facts: dict | None = None) -> Step:
+    """Did the spotlight tie's edge move from `old_edge` to `new_edge`, and how, judged from the chapter's facts? Reply {old_object, new_object, reason, move}."""
+    return Step("advance_edge", lambda f: edge_prompt(request, old_edge, new_edge, f, facts), "json", EDGE_OUTPUT, edge_grammar(), _reason_check,
                 "structured", False)
 
 
 # ---- The edge check ---------------------------------------------------------------------------------------------------------------
 
-def edge_check_prompt(request: dict, edge: str, bond: str, factor: float = 1.0, tie: dict | None = None) -> str:
+def edge_check_prompt(request: dict, edge: str, bond: str, factor: float = 1.0) -> str:
     w = common.load_text("advance")
     names = names_of(request)
-    tie_from, tie_to, _ = _ends(request, names, tie)
-    line = w["check_tie"].format(tie_from=tie_from, tie_to=tie_to) if tie_from and tie_to else ""
+    tie_from, tie_to, _ = _ends(request, names)
+    tie = w["check_tie"].format(tie_from=tie_from, tie_to=tie_to) if tie_from and tie_to else ""
     blocks = [
         w["check_role"],
-        line,
+        tie,
         w["check_edge_line"].format(edge=r.s(edge)),
         w["check_bond_line"].format(bond=r.s(bond)) if r.s(bond) else "",
         w["check_rules"],
@@ -235,9 +234,9 @@ def edge_check_prompt(request: dict, edge: str, bond: str, factor: float = 1.0, 
     return "\n\n".join(b for b in blocks if b)
 
 
-def edge_check_step(request: dict, edge: str, bond: str, tie: dict | None = None) -> Step:
-    """Is the tie's new edge (the spotlight tie's, or the explicit `tie`'s) a want with a concrete target, and its new bond a plain noun phrase of the relationship? Reply {reason, ok}."""
-    return Step("edge_check", lambda f: edge_check_prompt(request, edge, bond, f, tie), "json", MAX_OUTPUT, check_grammar(), _reason_check, "structured", False)
+def edge_check_step(request: dict, edge: str, bond: str) -> Step:
+    """Is the tie's new edge a want with a concrete target, and its new bond a plain noun phrase of the relationship? Reply {reason, ok}."""
+    return Step("edge_check", lambda f: edge_check_prompt(request, edge, bond, f), "json", MAX_OUTPUT, check_grammar(), _reason_check, "structured", False)
 
 
 # ---- The pressure step ------------------------------------------------------------------------------------------------------------

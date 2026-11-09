@@ -111,7 +111,7 @@ def test_notes_hold_short_words_only():
 
 
 def test_the_flag_is_on_and_the_version_is_set():
-    assert advance.ENFORCE is True and advance.VERSION == "advance-7"
+    assert advance.ENFORCE is True and advance.VERSION == "advance-6"
 
 
 def test_a_resend_line_exists_for_the_edge_only_and_says_the_first_reply_was_set_aside():
@@ -180,18 +180,3 @@ def test_the_pressure_verdict_word_is_unclear_when_it_cannot_be_read_and_the_not
         assert advance.pressure_effect(odd) == "unclear"
     assert advance.notes(pressure_value={"effect": "decor"}) == {"pressure_effect": "decor"} and advance.notes() == {}
     assert advance.notes(aim_value={"link": "drifts"}, pressure_value={}) == {"aim_link": "drifts", "pressure_effect": "unclear"}
-
-
-def test_the_edge_judge_and_check_name_an_explicit_tie_and_not_the_spotlight_tie():
-    req = request(spotlight="t1000001")
-    other = next(t for t in req["ties"] if t["id"] == "t1000002")
-    judge = advance.edge_step(req, "to keep the board away", "to hand the board the ledger", None, other).text(1.0)
-    check = advance.edge_check_step(req, "to hand the board the ledger", "clerk of", other).text(1.0)
-    for text in (judge, check):
-        assert "Suvi" in text and "Marit toward Suvi" not in text and not ids_in(text, req)
-    assert "Suvi toward" in judge and "bond: clerk of" in judge and "from Suvi to" in check and "from Marit to" not in check
-    spot = advance.edge_step(req, "a", "b").text(1.0)
-    assert "Marit toward Suvi, bond: mother" in spot and advance.edge_check_step(req, "a", "").text(1.0) == advance.edge_check_step(req, "a", "", None).text(1.0)
-    trailed = request(spotlight="t1000001", spotlight_edges=["an earlier edge"])
-    assert "an earlier edge" in advance.edge_step(trailed, "a", "b").text(1.0)
-    assert "an earlier edge" not in advance.edge_step(trailed, "a", "b", None, other).text(1.0)
