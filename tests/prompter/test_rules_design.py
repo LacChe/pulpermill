@@ -153,7 +153,7 @@ def test_rule6_the_shifts_check_rejects_a_chapter_that_leaves_the_edge_unchanged
 def test_rule6_the_writer_and_the_events_step_ask_for_the_change_the_check_looks_for():
     texts = prompts("generate", gen_with())
     assert "the protagonist wanting something new and the tie standing differently" in texts["write"]
-    assert "where the protagonist's aim stands now" in texts["events"] and "what drives the tie now" in texts["events"]
+    assert "the one concrete thing the protagonist goes after next" in texts["events"] and "what drives the tie now" in texts["events"]
     assert "its edge was: to bring her daughter home" in texts["shifts"] and "The new edge must differ from the old one" in texts["shifts"]
     plan_text = prompts("plan", plan_with())["plan"]
     assert "must each have moved to a distinctly new state" in plan_text and "Show both in Act 4 through what people do and the facts that have changed" in plan_text and "what drives Marit in it" in plan_text
@@ -318,14 +318,14 @@ def test_rule4_an_abstract_aim_is_asked_for_again_with_the_line_and_then_used():
 
 def test_rule6_a_chapter_whose_shifts_leave_the_edge_unchanged_is_asked_for_again_with_the_line_and_then_used():
     request = gen_with()
-    text, events, shifts, judge = gen.script(request, Kit(request))
+    text, events, shifts, check, judge = gen.script(request, Kit(request))
     engine = FakeEngine()
-    engine.script(text, events, json.dumps({"shifts": [edge_entry("ties.1", "to bring her daughter home")]}), shifts, judge)
+    engine.script(text, events, json.dumps({"shifts": [edge_entry("ties.1", "to bring her daughter home")]}), shifts, check, judge)
     with running(config=Config(prompter="mill"), engine=engine, run=None) as (base_url, _):
         response = post(base_url, request)
         assert response.status_code == 200 and response.json()["ok"] is True
         assert wait_idle(base_url)
-    assert engine.calls == 5 and "replaces the edge of ties.1" in engine.prompts[3]
+    assert engine.calls == 6 and "replaces the edge of ties.1" in engine.prompts[3]
 
 
 # ---- a tie end counts as named when any part of its name appears ----------------------------------------------------------------------

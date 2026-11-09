@@ -19,7 +19,7 @@ from pulpermill.prompter.base import Flow, Step
 from . import advance, common
 from .plan import cut_events, in_names, names_of, pressure_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-13"
+VERSION = "generate-14"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -161,6 +161,21 @@ def _card_text(request: dict) -> list:
 
 # ---- events ----------------------------------------------------------------------------------------------------------------
 
+EVENTS_NEXT = {"reached": "new", "lost": "forced", "gave_up": "forced"}     # the planned outcomes, and which wording tells what the next aim is after each
+
+
+def planned_outcome(beat: dict) -> str | None:
+    """The beat's planned outcome (reached, lost or gave_up) when it has one the schema knows, else None."""
+    planned = beat.get("outcome")
+    return planned if isinstance(planned, str) and planned in EVENTS_NEXT else None
+
+
+def planned_outcome_line(beat: dict) -> str:
+    """The planned outcome as the sentence the schema gives the model, or an empty string."""
+    outcome = planned_outcome(beat)
+    return tx.field("outline", "beats")["item_fields"]["outcome"]["options"][outcome]["expand"] if outcome else ""
+
+
 def events_prompt(request: dict, chapter_text: str, factor: float = 1.0) -> str:
     w = common.load_text("generate")
     names = names_of(request)
@@ -170,11 +185,13 @@ def events_prompt(request: dict, chapter_text: str, factor: float = 1.0) -> str:
     if identified and len(candidates) == 1:
         t = spotlight_in_words(candidates[0], names)
         tie = w["events_tie"].format(tie_from=t["tie_from"], tie_to=t["tie_to"], edge=r.s(t.get("edge")))
+    outcome = planned_outcome(beat)      # how the plan ended the chapter: given to the model as a fact
     parts = [w["events_task"].format(chapter=request["chapter"], language=_lang(request)),
              w["events_chapter_lead"] + "\n" + chapter_text.strip(),
              w["events_aim"].format(aim=r.sentence(r.s(beat.get("aim"))), tie=tie).strip(),
-             w["events_format"]]
-    return "\n\n".join(parts)
+             planned_outcome_line(beat),
+             w["events_format"].format(ended=w["events_ended_" + ("given" if outcome else "any")], next=w["events_next_" + EVENTS_NEXT.get(outcome, "any")])]
+    return "\n\n".join(p for p in parts if p)
 
 
 def events_problem(value: Any) -> str | None:
@@ -248,8 +265,10 @@ def edge_targets(request: dict, kit: Any) -> list[tuple[str, dict]]:
     return [(scopes[0].of("ties", t["id"]), t) for t in candidates if t.get("id")]
 
 
-def shifts_prompt(request: dict, kit: Any, chapter_text: str, factor: float = 1.0, extra: str = "") -> str:
+def shifts_prompt(request: dict, kit: Any, events: Any, factor: float = 1.0, extra: str = "") -> str:
+    """The ties and the facts of the chapter as its summary records them (`events`: happened, changed). The chapter's prose is never shown here."""
     w = common.load_text("generate")
+    facts = repair_events(events)
     names = names_of(request)
     targets = edge_targets(request, kit)
     _, identified = _spot(request, names)
@@ -262,10 +281,11 @@ def shifts_prompt(request: dict, kit: Any, chapter_text: str, factor: float = 1.
                            for h, t in targets)
         edge = w["shifts_edge_any"].format(ties=listed)
     parts = [w["shifts_task"].format(chapter=request["chapter"]),
-             w["shifts_chapter_lead"] + "\n" + chapter_text.strip(),
+             w["shifts_happened_lead"] + "\n" + r.s(facts.get("happened")),
+             w["shifts_changed_lead"] + "\n" + r.s(facts.get("changed")) if r.s(facts.get("changed")) else "",
              w["shifts_cards_lead"] + "\n" + _reference(request, kit, names, factor),
              w["shifts_rules"],
-             w["shifts_example"], edge, w["shifts_edge_move"] if edge else "", w["shifts_bond"] if edge else "", extra, w["shifts_format"]]        # `extra`: the advancement judge sent the shifts back once, and this is its line
+             w["shifts_example"], edge, w["shifts_edge_move"] if edge else "", w["shifts_bond"] if edge else "", w["shifts_form"] if edge else "", extra, w["shifts_format"]]        # `extra`: the advancement judge sent the shifts back once, and this is its line
     return "\n\n".join(p for p in parts if p)
 
 
@@ -294,9 +314,8 @@ def shifts_problem(request: dict, kit: Any, value: Any) -> str | None:
     return p["edge_not_moved_any"]
 
 
-def replaced_edge(request: dict, kit: Any, shifts: Any) -> tuple[str, str] | None:
-    """(the edge the spotlight tie had, the edge the shifts replaced it with) when the shifts replace the edge of a tie that must move, else
-    None. The same reading as the edge check's, so a reply that passed it has one."""
+def _replaced(request: dict, kit: Any, shifts: Any) -> tuple[dict, dict] | None:
+    """(the tie, the values of the operation that replaces its edge) when the shifts replace the edge of a tie that must move, else None."""
     entries = shifts.get("shifts") if isinstance(shifts, dict) else None
     targets = edge_targets(request, kit)
     for entry in entries if isinstance(entries, list) else []:
@@ -306,8 +325,21 @@ def replaced_edge(request: dict, kit: Any, shifts: Any) -> tuple[str, str] | Non
             for handle, tie in targets:
                 new = r.s((op.get("values") or {}).get("edge")) if isinstance(op, dict) else ""
                 if isinstance(op, dict) and op.get("op") == "replace" and op.get("id") == handle and new and _norm(new) != _norm(tie.get("edge")):
-                    return r.s(tie.get("edge")), new
+                    return tie, op["values"]
     return None
+
+
+def replaced_edge(request: dict, kit: Any, shifts: Any) -> tuple[str, str] | None:
+    """(the edge the spotlight tie had, the edge the shifts replaced it with) when the shifts replace the edge of a tie that must move, else
+    None. The same reading as the edge check's, so a reply that passed it has one."""
+    found = _replaced(request, kit, shifts)
+    return (r.s(found[0].get("edge")), r.s(found[1].get("edge"))) if found else None
+
+
+def replaced_bond(request: dict, kit: Any, shifts: Any) -> str:
+    """The bond the shifts wrote with the new edge, or an empty string when they left the bond alone."""
+    found = _replaced(request, kit, shifts)
+    return r.s(found[1].get("bond")) if found else ""
 
 
 # ---- the flow --------------------------------------------------------------------------------------------------------------
@@ -317,7 +349,11 @@ class GenerateFlow(Flow):
         self.request, self.kit = request, kit
         self.echo_accepted = False          # the write reply that was used carried an echo that the last attempt let through
         self.notes = {"events_fallback": False, "shifts_fallback": False, "pressure_on": bool(pressure_of(request))}      # for the run log: did a step's last resort stand in for it, and was a pressure sent?
-        self._pressure_at: int | None = None    # where the pressure judge's result sits in the results, once that step has been asked for
+        self._last = "write"                    # the kind of step whose result comes next: write, events, shifts, check, edge or pressure
+        self._shifts_at = 2                     # where the shifts that stand sit in the results
+        self._check_runs = self._judge_runs = 0
+        self._check_resent = self._edge_resent = False      # each of the two sends the shifts back at most once
+        self._resend_failed = False             # the last pass the shifts were sent back for could not be used: the first shifts stand
 
     def _write_check(self):
         """A check for one write step instance: strict on its first call, soft-tolerant on its second (the runner's last attempt). Only the
@@ -345,9 +381,10 @@ class GenerateFlow(Flow):
 
     def _step(self, n: int, results: list) -> Step:
         g = self.kit.grammar
+        self._last = ("write", "events", "shifts")[n]
         if n == 0:
             return Step("write", lambda f: write_prompt(self.request, f), "text", WRITE_TOKENS, None, self._write_check(), "prose", True)
-        chapter = results[0]
+        chapter, events = results[0], results[1] if n > 1 else None
 
         def noted(key: str, value: Any):
             def fallback():
@@ -358,28 +395,45 @@ class GenerateFlow(Flow):
             return Step("events", lambda f: events_prompt(self.request, chapter, f), "json", EVENTS_TOKENS,
                         g.obj({"happened": g.text(), "changed": g.text()}), events_problem, "structured", True,
                         EVENTS_ATTEMPTS, noted("events_fallback", lambda: events_fallback(chapter)))
-        return self._shifts_step(chapter, "", noted("shifts_fallback", {"shifts": []}))
+        return self._shifts_step(events, "", noted("shifts_fallback", {"shifts": []}))
 
-    def _shifts_step(self, chapter: str, extra: str, fallback) -> Step:
+    def _shifts_step(self, events: Any, extra: str, fallback) -> Step:
         g = self.kit.grammar
-        return Step("shifts", lambda f: shifts_prompt(self.request, self.kit, chapter, f, extra), "json", SHIFTS_TOKENS,
+        return Step("shifts", lambda f: shifts_prompt(self.request, self.kit, events, f, extra), "json", SHIFTS_TOKENS,
                     g.obj({"shifts": g.shifts()}), lambda v: shifts_problem(self.request, self.kit, v), "structured", False,
                     SHIFTS_ATTEMPTS, fallback)
 
-    def _resend_step(self, chapter: str, first: Any, line: str) -> Step:
-        """The shifts step once more, with the judge's line (the chapter is never written again). If this pass cannot be used either, the first
-        shifts stand (they were usable)."""
+    def _resend_step(self, events: Any, first: Any, line: str) -> Step:
+        """The shifts step once more, with a check's or the judge's line (the chapter is never written again). If this pass cannot be used either,
+        the first shifts stand (they were usable)."""
         def keep_first():
             self.notes["edge_resend_fallback"] = True
+            self._resend_failed = True
             return first
-        return self._shifts_step(chapter, line, keep_first)
+        return self._shifts_step(events, line, keep_first)
 
-    def _edge_step(self, old: str, new: str) -> Step:
+    def _edge_facts(self, events: Any) -> dict:
+        """What the edge judge reads of the chapter: the events' `happened` and `changed`, and the planned outcome."""
+        events = repair_events(events)
+        return {"happened": r.s(events.get("happened")), "changed": r.s(events.get("changed")), "outcome": planned_outcome_line(self.request.get("beat") or {})}
+
+    def _go(self, kind: str, step: Step) -> Step:
+        self._last = kind
+        return step
+
+    def _check_step(self, edge: str, bond: str) -> Step:
+        """The check of a new edge and bond, a step of its own after the shifts. Its last resort is a neutral verdict (ok)."""
+        def neutral():
+            self.notes["edge_check_fallback"] = True
+            return {}
+        return replace(advance.edge_check_step(self.request, edge, bond), attempts=JUDGE_ATTEMPTS, fallback=neutral)
+
+    def _edge_step(self, old: str, new: str, facts: dict | None = None) -> Step:
         """The judge of the spotlight tie's new edge, a step of its own after the shifts. Its last resort is a neutral verdict (none)."""
         def neutral():
             self.notes["edge_judge_fallback"] = True
             return {}
-        return replace(advance.edge_step(self.request, old, new), attempts=JUDGE_ATTEMPTS, fallback=neutral)
+        return replace(advance.edge_step(self.request, old, new, facts), attempts=JUDGE_ATTEMPTS, fallback=neutral)
 
     def _pressure_step(self, events: Any) -> Step:
         """The judge of the chapter's pressure, a step of its own after the shifts. It reads what the chapter's events say happened, not the
@@ -395,53 +449,92 @@ class GenerateFlow(Flow):
         """The chain of steps is over: the pressure judge is the one step left, and only when a pressure was sent."""
         if not self.notes["pressure_on"]:
             return None
-        self._pressure_at = len(results)
-        return self._pressure_step(results[1])
+        return self._go("pressure", self._pressure_step(results[1]))
 
     def _shifts_of(self, results: list) -> Any:
-        """The shifts the reply carries: the second pass when the shifts were sent back, else the first."""
-        return results[4] if self.notes.get("edge_resent") else results[2]
+        """The shifts the reply carries: the ones that stand after any pass the check or the judge asked for."""
+        return results[self._shifts_at]
+
+    def _resend(self, results: list, line: str) -> Step:
+        """The shifts once more with `line`; the ones that stand now are the result of that pass (or the first ones, if it cannot be used)."""
+        self._resend_failed = False
+        return self._go("shifts", self._resend_step(results[1], results[self._shifts_at], line))
+
+    def _check_or_end(self, results: list):
+        """The check of the new edge and bond of the shifts that stand, when they replace the edge of a tie that must move; else the judge's turn."""
+        shifts = results[self._shifts_at]
+        edge = replaced_edge(self.request, self.kit, shifts)             # no edge replaced (the shifts fell back, say): nothing to check or judge
+        if not edge:
+            return self._end(results)
+        return self._go("check", self._check_step(edge[1], replaced_bond(self.request, self.kit, shifts)))
+
+    def _judge_or_end(self, results: list):
+        """The edge judge: once for the shifts first made, and once more, for the record, for the shifts it sent back."""
+        if self._judge_runs > (1 if self._edge_resent else 0):
+            return self._end(results)
+        edge = replaced_edge(self.request, self.kit, results[self._shifts_at])
+        if not edge:
+            return self._end(results)
+        return self._go("edge", self._edge_step(*edge, self._edge_facts(results[1])))
 
     def next(self, results):
-        """write, events, shifts, judge; and when `advance.ENFORCE` and the judge says the edge is the same want: the shifts step once more with the
-        judge's line (never the write), then the judge once more. A second bad verdict is accepted (noted). Never more than that one extra pass."""
+        """write, events, shifts, then for the spotlight tie's new edge and bond: a check (a model: is it a want with a concrete target, and a plain
+        bond) and the edge judge. A check that says no sends the shifts back once with its reason; so does a judge that says `same` (when
+        `advance.ENFORCE`); each of the two at most once. What a pass sent back for is then checked again for the record and accepted, whatever the
+        verdicts say. The judge runs on the shifts that stand after the check, and once more after its own pass."""
         n = len(results)
-        if self._pressure_at is not None and n == self._pressure_at + 1:      # the pressure judge has run: record its word and stop
-            self.notes.update(advance.notes(pressure_value=results[self._pressure_at]))
-            return None
         if n < 3:
             return self._step(n, results)
-        if n == 3:
-            edge = replaced_edge(self.request, self.kit, results[2])         # no edge replaced (the shifts fell back, say): nothing to judge
-            return self._edge_step(*edge) if edge else self._end(results)
-        if n == 4:
-            self.notes.update(advance.notes(edge_value=results[3]))
-            if advance.ENFORCE and not advance.edge_ok(results[3]):
+        kind, value = "shifts" if n == 3 else self._last, results[-1]
+        if kind == "pressure":                                              # the pressure judge has run: record its word and stop
+            self.notes.update(advance.notes(pressure_value=value))
+            return None
+        if kind == "shifts":
+            if self._resend_failed:                                         # a pass that could not be used: the first shifts stand, and were checked already
+                if self._edge_resent:
+                    self.notes["edge_accepted"] = True
+                    return self._end(results)
+                return self._judge_or_end(results)
+            self._shifts_at = n - 1
+            return self._check_or_end(results)
+        if kind == "check":
+            word = advance.notes(check_value=value).get("edge_check")
+            if word:
+                self.notes["edge_check_after" if self._check_runs else "edge_check"] = word
+            self._check_runs += 1
+            if not advance.check_ok(value):
+                if not self._check_resent and self._judge_runs == 0:
+                    self._check_resent = True
+                    self.notes["edge_check_resent"] = True
+                    return self._resend(results, advance.resend_line("edge_check", value))
+                self.notes["edge_check_accepted"] = True
+            return self._judge_or_end(results)
+        self._judge_runs += 1                                                 # the edge judge
+        if self._judge_runs == 1:
+            self.notes.update(advance.notes(edge_value=value))
+            if advance.ENFORCE and not advance.edge_ok(value) and not self._edge_resent:
+                self._edge_resent = True
                 self.notes["edge_resent"] = True
-                return self._resend_step(results[0], results[2], advance.resend_line("edge", results[3]))
+                return self._resend(results, advance.resend_line("edge", value))
             return self._end(results)
-        if self.notes.get("edge_resend_fallback"):                           # the first shifts stand, and they were judged already
-            self.notes["edge_accepted"] = True
-            return self._end(results)
-        if n == 5:
-            edge = replaced_edge(self.request, self.kit, results[4])
-            return self._edge_step(*edge) if edge else self._end(results)
-        again = advance.notes(edge_value=results[5]).get("edge_move")
+        again = advance.notes(edge_value=value).get("edge_move")
         if again:
             self.notes["edge_move_after"] = again
-        if not advance.edge_ok(results[5]):
+        if not advance.edge_ok(value):
             self.notes["edge_accepted"] = True
         return self._end(results)
 
     def worst_case(self):
-        chapter = "word " * WRITE_TOKENS
-        steps = [self._step(n, [chapter, {}]) for n in range(3)]
+        events = {"happened": HAPPENED_STAND_IN, "changed": "word " * CHANGED_WORDS}
+        steps = [self._step(0, []), self._step(1, ["word " * WRITE_TOKENS]), self._step(2, ["word " * WRITE_TOKENS, events])]
         targets = edge_targets(self.request, self.kit)
         if targets:
             old = max((r.s(t.get("edge")) for _, t in targets), key=len)
-            steps.append(self._edge_step(old, EDGE_STAND_IN))
+            facts = self._edge_facts(events)
+            once = [self._check_step(EDGE_STAND_IN, EDGE_STAND_IN), self._edge_step(old, EDGE_STAND_IN, facts)]
+            steps += once
             if advance.ENFORCE:
-                steps += [self._shifts_step(chapter, RESEND_STAND_IN, None), self._edge_step(old, EDGE_STAND_IN)]
+                steps += [self._shifts_step(events, RESEND_STAND_IN, None)] + once
         if self.notes["pressure_on"]:
             steps.append(self._pressure_step({"happened": HAPPENED_STAND_IN}))
         return steps
@@ -473,7 +566,7 @@ def script(request: dict, kit: Any) -> list[str]:
                f"A clerk waited by the {pick(['gate', 'stairs', 'counter', 'window', 'stove'], 4)}, saying nothing. Round {n} cost {pick(['coins', 'keys', 'sacks', 'letters', 'barrels'], 6)} to somebody. "
                f"What was said at the table cost something, and what was left unsaid cost more, until the last choice of the night changed the room.")
     texts = [chapter, json.dumps({"happened": "The people met and quarrelled, and one of them gave something up.", "changed": "The tie and the aim now stand somewhere new."}),
-             json.dumps({"shifts": shifts})] + ([json.dumps({"reason": "The want is now a different kind of want.", "move": "complicates"})] if targets else [])
+             json.dumps({"shifts": shifts})] + ([json.dumps({"reason": "The edge names a target and the bond is a noun phrase.", "ok": "yes"}), json.dumps({"old_object": "object_a", "new_object": "object_b", "reason": "The want is now a different kind of want.", "move": "complicates"})] if targets else [])
     if request.get("pressure"):                # the pressure judge runs last, whenever a pressure was sent
         texts.append(json.dumps({"reason": "The element cost one of them something.", "effect": "acts"}))
     return texts

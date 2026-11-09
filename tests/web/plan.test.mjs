@@ -211,6 +211,16 @@ test("a plan goes stale when the cast cards, the ties or the picks it was made f
   assert.equal(planInputsHash(p, landed.beat), landed.beat.planned_from);
 });
 
+test("landing a plan keeps the planned outcome on the beat when the schema knows it, and clears an old one otherwise", () => {
+  const p = story();
+  const beat = p.outline.beats[1];
+  const given = { where: "The Archive", when_time: "Dusk", aim: "Suvi wants it.", plan: "A plan." };
+  for (const outcome of ["reached", "lost", "gave_up"]) assert.equal(landBeat(schema, p, beat, { ok: true, beat: given, outcome }).beat.outcome, outcome);
+  const first = landBeat(schema, p, beat, { ok: true, beat: given, outcome: "lost" }).beat;
+  assert.equal("outcome" in landBeat(schema, p, first, { ok: true, beat: given }).beat, false, "a plan with no ending leaves none, never the old one");
+  assert.equal("outcome" in landBeat(schema, p, first, { ok: true, beat: given, outcome: "partly" }).beat, false, "an ending the schema does not list is not kept");
+});
+
 test("landing a plan: the words become ids, the code fields stay, and what did not match is reported", () => {
   const p = story();
   const beat = { ...p.outline.beats[1], where: "", aim: "", plan: "" };

@@ -134,6 +134,8 @@ def _plan(draft: dict, handles: Handles) -> dict:
     out = {"beat": _object(draft.get("beat"), "the beat")}
     if draft.get("picked"):        # only a flow that was asked to choose leaves one (the mill's plan flow, when the select step ran and its idea held)
         out["picked"] = draft["picked"]
+    if draft.get("outcome"):       # how the plan's idea ends: reached, lost or gave_up
+        out["outcome"] = draft["outcome"]
     return out
 
 

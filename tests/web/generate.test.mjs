@@ -68,6 +68,7 @@ test("the beat in words carries the spotlight tie's id as stored, and leaves the
   const beat = beat2(p);
   assert.equal(beatInWords(p, beat).spotlight, "t1000001");
   assert.deepEqual(Object.keys(beatInWords(p, beat)).sort(), ["aim", "plan", "spotlight", "when_time", "where"]);
+  assert.equal(beatInWords(p, { ...beat, outcome: "lost" }).outcome, "lost", "the planned outcome goes to the events step with the beat");
   const bare = { ...beat, spotlight: "" };
   assert.deepEqual(Object.keys(beatInWords(p, bare)).sort(), ["aim", "plan", "when_time", "where"]);
   delete bare.spotlight;

@@ -63,7 +63,12 @@ write_problems:
 events_task: "Below is chapter {chapter} of a story. Record what actually happened in it, from the text itself, in {language}."
 events_aim: "The chapter was meant to follow this: the protagonist was after {aim} {tie}"
 events_tie: "The tie in the spotlight was {tie_from} toward {tie_to}, and at the start its edge was: {edge}"
-events_format: "Reply with a JSON object with two keys. happened: plain sentences covering what occurred, in order: who did what, where, and how it turned out. Use the characters' names, and refer to anyone unnamed by their role. changed: one or two short sentences. The first sentence says, in this order, how the collision of the protagonist's aim and the tie in the spotlight ended, saying plainly whether the protagonist reached what they were after, lost it or gave it up, or whether it is still open, and where the protagonist's aim stands now, as one concrete thing to get or do with a person, an object or a deadline in it. A state of mind or a feeling is not an aim, and a wish to understand or find out counts only when it is tied to a specific person, object or deadline. Base the outcome and the aim on what the protagonist did and on what changed in the world or between people, not on what they realized, felt or concluded at the end of the chapter. Then say what drives the tie now."
+events_format: "Reply with a JSON object with two keys. happened: plain sentences covering what occurred, in order: who did what, where, and how it turned out. Use the characters' names, and refer to anyone unnamed by their role. changed: one or two short sentences. The first sentence says, in this order, {ended}, and then the one concrete thing the protagonist goes after next, with a person, an object or a deadline in it. {next} A state of mind or a feeling is not an aim, and a wish to understand or find out counts only when it is tied to a specific person, object or deadline. Base the outcome and the aim on what the protagonist did and on what changed in the world or between people, not on what they realized, felt or concluded at the end of the chapter. Then say what drives the tie now."
+events_ended_given: "that the collision of the protagonist's aim and the tie in the spotlight ended the way the chapter was planned to end, stated plainly as a fact and never hedged"
+events_ended_any: "how the collision of the protagonist's aim and the tie in the spotlight ended, stated plainly as a fact and never hedged, as the protagonist reaching what they were after, losing it, or giving it up"
+events_next_new: "After the protagonist reached what they were after, what they go after next is a new pursuit and not the old aim stated again."
+events_next_forced: "After the protagonist lost what they were after or gave it up, what they go after next is what they turned to, or what the loss now forces."
+events_next_any: "If the protagonist reached what they were after, what they go after next is a new pursuit and not the old aim stated again; if they lost it or gave it up, it is what they turned to, or what the loss now forces."
 events_chapter_lead: "The chapter:"
 events_problems:
   empty_happened: "Say in plain sentences what happened in the chapter."
@@ -71,7 +76,8 @@ events_problems:
 
 # ---- shifts step ----
 shifts_task: "Below is chapter {chapter} of a story and the ties it was written from. Record how the edge of the ties changed in this chapter: what now drives the person at the from end of a tie, compared with the start of the chapter."
-shifts_chapter_lead: "The chapter:"
+shifts_happened_lead: "What happened in the chapter, as its summary records it:"
+shifts_changed_lead: "What the chapter changed, as its summary records it:"
 shifts_cards_lead: "The ties as they stood before the chapter, with the handles you can point at:"
 shifts_rules: "Write one entry for the ties: it names the card (entanglements) and holds a patch with a ties list of replace operations, each with the handle of a tie and its new edge, and its new bond only when the chapter changed it. Change only the edge and the bond of a tie, and only for ties the chapter moved. Nothing else on any card changes. Point at ties only by the handles shown."
 shifts_example: "An entanglements entry that replaces the edge of a tie looks like this: {\"card\": \"entanglements\", \"patch\": {\"ties\": [{\"op\": \"replace\", \"id\": \"ties.1\", \"values\": {\"edge\": \"to <what now drives the person at the from end>\"}}]}}"
@@ -81,6 +87,7 @@ shifts_edge_any: "The tie in the spotlight is one of these: {ties}. Replace the 
 shifts_edge_item: "{handle}, {tie_from} toward {tie_to}, edge: {edge}"
 shifts_edge_move: "First read how the chapter answered what the person at the from end wanted from the other person: it was given, at a price; or refused; or dropped for something else. The tie is different afterwards, so write what it is now. If the want was given, it is met, and the new edge is what the price now makes the person at the from end want. If it was refused, the new edge turns against the other person, or a fear joins the want so that the person is pulled two ways. If it was dropped, the new edge points at what they turned to instead: a different thing, person or place. The new edge is always a different want, never the old want made stronger, costlier or more urgent, and never the same want in other words."
 shifts_bond: "If the chapter changed what the two are to each other, also replace the bond in the same entry: write what they are to each other now, and keep what is still true of the old bond. When the bond changes, write the new edge so that it fits the new bond. If the bond did not change, leave it out."
+shifts_form: "The new edge names what the person wants or fears as a concrete person, thing, place or deadline, and it states a want, not a mood, a manner or a trend. The bond is a short noun phrase naming what the two are to each other; it does not describe a feeling, a manner or a trend."
 shifts_format: "Reply with a JSON object with one key, shifts, holding the list of entries."
 shifts_problems:
   edge_not_moved: "Add an entanglements entry whose ties list replaces the edge of {handle} ({tie_from} toward {tie_to}) with its new state, different from {edge}."

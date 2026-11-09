@@ -4,6 +4,8 @@ a beat nobody has written yet may be replaced. It is the only place a chapter nu
 the summary records point at a beat by id. Not portable. Reads everything above plus the summaries.
 The human picks the cast before Plan. Code picks the spotlight tie at random, or the planner chooses it (the human may change it). The planner
 writes what the protagonist is after and the plan the writer sees."""
+from typing import Literal
+
 from .common import spec, Rule, Item
 
 CARD = {
@@ -33,6 +35,7 @@ class Beat(Item):
     pressure: str | None = spec("select", None, "note", required=False, ref=["world.rules", "world.objects"], filled_by="code")      # one world rule or object for this chapter: code picks one at random for every chapter (or the planner chooses it), and again when the plan is committed if the beat has none; the human may change it. Optional only because a world may hold no rule or object yet
     aim: str = spec("text", None, "note", filled_by="planner")                 # what the protagonist is after in this chapter; it and the spotlight tie must collide
     plan: str = spec("textarea", None, "note", filled_by="planner")            # the planner's plan text; the writer sees it
+    outcome: Literal["reached", "lost", "gave_up"] | None = spec("select", None, "note", required=False, filled_by="code")      # how the chapter is planned to end, from the idea the plan built on; the events step is told it
     planned_from: str | None = spec("text", None, "note", required=False, filled_by="code")   # hash of what this beat was planned from (P5a redefines what is hashed)
 
 

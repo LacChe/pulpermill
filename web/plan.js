@@ -236,6 +236,7 @@ const placeName = (project, id) => (project.world?.places ?? []).find((p) => p.i
 // The backend never shows the id to a model.
 export function beatInWords(project, beat) {
   const words = { where: placeName(project, beat.where), when_time: beat.when_time ?? "", aim: beat.aim ?? "", plan: beat.plan ?? "" };
+  if (beat.outcome) words.outcome = beat.outcome;      // the planned ending: the events step is told it
   return beat.spotlight ? { ...words, spotlight: beat.spotlight } : words;
 }
 
@@ -424,6 +425,8 @@ export function landBeat(schema, project, existing, reply) {
       if (picked.pressure) beat.pressure = picked.pressure; else delete beat.pressure;
     } else warnings.push(msg("plan.pickedIgnored"));
   }
+  const endings = (BEAT_FIELD(schema).item_fields.find((f) => f.key === "outcome")?.options ?? []).map((o) => o.value);
+  if (endings.includes(reply.outcome)) beat.outcome = reply.outcome; else delete beat.outcome;      // a plan without a known ending leaves none, never an old one
   const dropped = Object.keys(given).filter((key) => !planner.some((f) => f.key === key));
   for (const def of planner) {
     if (!(def.key in given)) continue;

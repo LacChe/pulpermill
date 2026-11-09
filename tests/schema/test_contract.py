@@ -188,7 +188,7 @@ def test_the_story_requests_carry_the_fields_the_spec_lists():
 
 
 def test_the_story_replies_carry_the_fields_the_spec_lists():
-    assert set(PlanReply.model_fields) == {"ok", "beat", "picked"}
+    assert set(PlanReply.model_fields) == {"ok", "beat", "picked", "outcome"}
     assert set(GenerateReply.model_fields) == {"ok", "chapter_text", "events", "shifts"}
     assert set(EventsOut.model_fields) == {"happened", "changed"}
     assert set(ShiftOut.model_fields) == {"card", "target", "patch"}

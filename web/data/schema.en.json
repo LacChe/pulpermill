@@ -2231,6 +2231,32 @@
        "why": "This is what the writer follows, so change it if the chapter should go differently."
       },
       {
+       "key": "outcome",
+       "label": "Planned ending",
+       "help": "How the plan ends the chapter: the protagonist reaches what they are after, loses it, or gives it up for something else. Set by the system when the plan is made; the chapter summary is told it.",
+       "input": "select",
+       "kind": "note",
+       "required": false,
+       "filled_by": "code",
+       "options": [
+        {
+         "value": "reached",
+         "label": "Reaches it, at a price",
+         "description": "Gets what they are after, and it costs them."
+        },
+        {
+         "value": "lost",
+         "label": "Loses it",
+         "description": "Does not get what they are after."
+        },
+        {
+         "value": "gave_up",
+         "label": "Gives it up for something else",
+         "description": "Lets go of it and turns to something else."
+        }
+       ]
+      },
+      {
        "key": "planned_from",
        "label": "Planned from",
        "help": "A fingerprint of what this beat was planned from. Set by the system. If that changes afterward, the beat is flagged as planned from older state.",

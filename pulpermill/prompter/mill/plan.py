@@ -254,7 +254,7 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dic
     return "\n\n".join(b for b in blocks if b)
 
 
-OUTCOMES = {1: "outcome_reached", 2: "outcome_lost", 3: "outcome_gave_up"}     # the number of an idea fixes how it ends (the brainstorm contract)
+OUTCOMES = {n: "outcome_" + e for n, e in common.ENDINGS.items()}     # the number of an idea fixes how it ends (the brainstorm contract)
 
 
 def build_prompt(request: dict, factor: float = 1.0, brainstorm: str = "", combos: list[dict] | None = None, decided: bool = False,
@@ -406,6 +406,7 @@ class PlanFlow(Flow):
         self._options: list[tuple[int, str]] | None = None    # the brainstorm's options when the decider is to run (at least two), else None
         self._order: list[int] = []             # the order the decider was shown them in
         self.decision: decide.Decision | None = None          # the decider's pick, once it has run
+        self._replanned = False                 # the aim gate sent the plan back once (never more): the plan that stands is then the second one
         self._shown: list[dict] | None = None   # once decided in choose mode: the one combination the plan carries (the picked option's), else None
         self._select_on = select.is_on(request)   # the request asks to choose and has at least one tie to choose from
         if self._select_on:
@@ -481,11 +482,11 @@ class PlanFlow(Flow):
         grammar["required"] = [*extra, *grammar.get("required", [])]
         return grammar
 
-    def _step(self, brainstorm: str | None = None, combos: list[dict] | None = None) -> Step:
+    def _step(self, brainstorm: str | None = None, combos: list[dict] | None = None, request: dict | None = None) -> Step:
         text = self.brainstorm if brainstorm is None else brainstorm
         use = combos if combos is not None else self._shown if self._shown is not None else self.combos
         decided = brainstorm is None and self.decision is not None       # the worst case (a brainstorm given) is the longest wording, the undecided one
-        return Step("plan", lambda f: build_prompt(self.request, f, text, use, decided, self.decision.position if decided else 0), "json", MAX_OUTPUT, self._grammar(text, use), self._check(),
+        return Step("plan", lambda f: build_prompt(request or self.request, f, text, use, decided, self.decision.position if decided else 0), "json", MAX_OUTPUT, self._grammar(text, use), self._check(),
                     "thinking", True)
 
     # -- choose mode
@@ -579,7 +580,7 @@ class PlanFlow(Flow):
         if not self.notes["pressure_on"]:
             return None
         self._pressure_at = len(results)
-        return self._pressure_step(results[0])
+        return self._pressure_step(results[2 if self._replanned else 0])
 
     @staticmethod
     def _aim_of(beat: Any) -> str:
@@ -616,7 +617,9 @@ class PlanFlow(Flow):
         return options
 
     def _after_brainstorm(self, results):
-        """plan, the aim judge (observe-only: its verdict goes to the notes and nothing is sent back for it), then the pressure judge."""
+        """plan, the aim judge, then the pressure judge. The aim judge is a gate: when it says the aim continues with no new obstacle, the plan is
+        made once more with that as its problem (through the page's retry wording), the aim judge runs again for the record, and what it says is
+        accepted. The results are [plan, aim, (plan again, aim again,) (pressure)]."""
         n = len(results)
         if self._pressure_at is not None and n == self._pressure_at + 1:      # the pressure judge has run: record its word and stop
             self.notes.update(advance.notes(pressure_value=results[self._pressure_at]))
@@ -626,8 +629,20 @@ class PlanFlow(Flow):
         if n == 1:
             aim = self._aim_of(results[0])
             return self._aim_step(aim, results[0]) if aim and self._judges() else self._end(results)
-        self.notes.update(advance.notes(aim_value=results[1]))
+        if n == 2 and advance.aim_gate(results[1]):
+            self._replanned = True
+            self.notes["aim_replanned"] = True
+            return self._step(request=self._gate_request(results[0]))
+        if self._replanned and n == 3:
+            aim = self._aim_of(results[2])
+            return self._aim_step(aim, results[2]) if aim else self._end(results)
+        self.notes.update(advance.notes(aim_value=results[3 if self._replanned and n > 3 else 1]))
         return self._end(results)
+
+    def _gate_request(self, beat: Any) -> dict:
+        """The request for the plan made again: the refused plan and the gate's line, in the page's own retry shape."""
+        line = common.load_text("plan")["problems"]["aim_same_obstacle"]
+        return {**self.request, "retry": {"beat": beat if isinstance(beat, dict) else {}, "problems": [line]}}
 
     def worst_case(self):
         """The brainstorm, then the plan carrying a brainstorm of the longest size, then the judges."""
@@ -645,16 +660,30 @@ class PlanFlow(Flow):
             steps.append(self._pressure_step({"aim": AIM_STAND_IN, "plan": PLAN_STAND_IN}))
         return steps
 
+    def _ending(self, beat: Any) -> str | None:
+        """How the chapter is planned to end: reached, lost or gave_up, from the number of the idea it was built on. After the decider that is the
+        picked option's place in the brainstorm; else, in choose mode with a brainstorm, the idea the plan named. None when no idea fixes it."""
+        if self.decision is not None:
+            return common.ENDINGS.get(self.decision.position)
+        idea = beat.get(IDEA) if isinstance(beat, dict) else None
+        if self.brainstorm and self.combos is not None and isinstance(idea, int) and not isinstance(idea, bool):
+            return common.ENDINGS.get(idea)
+        return None
+
     def reply(self, results):
         if self._select_on:
             results = results[1:]
-        beat = results[2 if self._options is not None else 1]      # the decider's result sits between the brainstorm and the plan
+        at = 2 if self._options is not None else 1                  # the decider's result sits between the brainstorm and the plan
+        beat = results[at + 2 if self._replanned else at]           # the plan the aim gate asked for stands in place of the first
         out: dict[str, Any] = {}
         combo = self._combo_of(beat)
         if combo is not None:
             idea = beat[IDEA]                         # the idea the plan chose is its combination's tie and pressure: the ids come from the request, never from the model
             out["picked"] = {"spotlight": combo["tie_id"], "pressure": combo["pressure_id"]}
             self.notes["idea"] = idea
+        ending = self._ending(beat)
+        if ending:
+            out["outcome"] = ending                   # kept on the beat by the page: the events step is told how the chapter was meant to end
         if isinstance(beat, dict) and (IDEA_USE in beat or IDEA in beat):      # they stay in the trace's copy of the reply, and the page never sees them
             beat = {k: v for k, v in beat.items() if k not in (IDEA, IDEA_USE)}
         return {"beat": beat, **out}

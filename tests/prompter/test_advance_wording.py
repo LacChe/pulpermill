@@ -43,7 +43,7 @@ def test_the_aim_step_is_a_json_step_with_reason_first_then_link_and_new_obstacl
 
 def test_the_edge_step_has_the_five_moves_and_same_is_the_one_that_is_sent_back():
     step = advance.edge_step(request(), "a", "b")
-    assert step.name == "advance_edge" and list(step.grammar["properties"]) == ["reason", "move"]
+    assert step.name == "advance_edge" and list(step.grammar["properties"]) == ["old_object", "new_object", "reason", "move"] and step.grammar["required"] == list(step.grammar["properties"])
     assert step.grammar["properties"]["move"]["enum"] == ["reverses", "complicates", "resolves", "redirects", "same"] == list(advance.EDGE_MOVES)
 
 
@@ -110,8 +110,8 @@ def test_notes_hold_short_words_only():
     assert advance.notes(None, {"move": "bogus"}) == {} and advance.notes() == {}
 
 
-def test_the_flag_is_off_and_the_version_is_set():
-    assert advance.ENFORCE is False and advance.VERSION == "advance-4"
+def test_the_flag_is_on_and_the_version_is_set():
+    assert advance.ENFORCE is True and advance.VERSION == "advance-6"
 
 
 def test_a_resend_line_exists_for_the_edge_only_and_says_the_first_reply_was_set_aside():

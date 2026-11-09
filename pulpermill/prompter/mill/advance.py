@@ -5,7 +5,7 @@ last chapter left it (continues or drifts), and is its obstacle, person or stake
 comes first in the reply so that the verdict follows from it.
 
 The flows run these steps (plan.py, generate.py). `ENFORCE` says whether the edge flow acts on a bad edge verdict: it sends the shifts back once, with
-`resend_line`, and runs the judge once more. It is False now (the judge is the same model grading its own rewrite, so it is a measurement, not a gate): the flow only records the verdict. The aim and pressure judges are observe-only:
+`resend_line`, and runs the judge once more. It is True: the edge judge reads the chapter's facts (what happened, what changed, the planned outcome) beside the two edges, so it is not grading wording with wording. The pressure judge is observe-only (the aim judge is a gate in the plan flow, see plan.py):
 nothing is sent back for their verdicts. The verdict helpers are neutral on anything they cannot read: a missing or odd value is never a bad verdict, so a judge that
 failed can never cost a chapter.
 
@@ -18,9 +18,10 @@ from pulpermill.prompter.base import Step
 
 from . import common
 
-VERSION = "advance-4"
-ENFORCE = False        # observe-only: the edge judge runs and its verdict is noted (edge_move), but the shifts are never sent back; True sends them back once on `same`
+VERSION = "advance-6"
+ENFORCE = True         # the edge verdict `same` sends the shifts back once (then the judge runs once more, and what it says is accepted); False only records the verdict
 MAX_OUTPUT = 160            # one short sentence and one word, with room to spare
+EDGE_OUTPUT = 260           # the edge judge also names the two objects of the want
 
 AIM_LINKS = ("continues", "drifts")
 YES_NO = ("yes", "no")
@@ -46,7 +47,15 @@ def aim_grammar() -> dict:
 
 
 def edge_grammar() -> dict:
-    return _grammar("move", EDGE_MOVES)
+    """{old_object, new_object, reason, move}: what the want was aimed at before and after (for the trace and the retry line; code reads only `move`)."""
+    text = {"type": "string"}
+    return {"type": "object", "properties": {"old_object": text, "new_object": text, "reason": text, "move": {"type": "string", "enum": list(EDGE_MOVES)}},
+            "required": ["old_object", "new_object", "reason", "move"], "additionalProperties": False}
+
+
+def check_grammar() -> dict:
+    """{reason, ok}: the reason first, then yes or no."""
+    return _grammar("ok", YES_NO)
 
 
 def pressure_grammar() -> dict:
@@ -170,7 +179,8 @@ def aim_step(request: dict, aim: str) -> Step:
 
 # ---- The edge step ----------------------------------------------------------------------------------------------------------------
 
-def edge_prompt(request: dict, old_edge: str, new_edge: str, factor: float = 1.0) -> str:
+def edge_prompt(request: dict, old_edge: str, new_edge: str, factor: float = 1.0, facts: dict | None = None) -> str:
+    """`facts` is what the chapter's events say: {happened, changed, outcome} (each only when there is one; `outcome` is the planned ending as a sentence)."""
     w = common.load_text("advance")
     names = names_of(request)
     protagonist = names.get(request.get("protagonist") or "", "")
@@ -178,6 +188,10 @@ def edge_prompt(request: dict, old_edge: str, new_edge: str, factor: float = 1.0
     who = tie_from or "the person at the from end"
     other = tie_to or "the other person"
     trail = _recent(edge_trail(request), factor)
+    facts = facts or {}
+    lines = [line for line in (w["edge_happened_line"].format(text=r.s(facts.get("happened"))) if r.s(facts.get("happened")) else "",
+                               w["edge_changed_line"].format(text=r.s(facts.get("changed"))) if r.s(facts.get("changed")) else "",
+                               r.s(facts.get("outcome"))) if line]
     tie = ""
     if tie_from and tie_to:
         tie = (w["tie_line"] if bond else w["tie_line_plain"]).format(tie_from=tie_from, tie_to=tie_to, bond=r.bare(bond))
@@ -187,6 +201,7 @@ def edge_prompt(request: dict, old_edge: str, new_edge: str, factor: float = 1.0
         tie,
         w["edge_what"].format(tie_from=who, tie_to=other),
         w["edge_trail_lead"] + "\n" + "\n".join(w["edge_trail_item"].format(edge=r.s(e)) for e in trail) if trail else "",
+        w["edge_facts_lead"] + "\n" + "\n".join(lines) if lines else "",
         w["old_edge_line"].format(edge=r.s(old_edge)),
         w["new_edge_line"].format(edge=r.s(new_edge)),
         w["edge_moves"].format(tie_from=who, tie_to=other),
@@ -195,10 +210,33 @@ def edge_prompt(request: dict, old_edge: str, new_edge: str, factor: float = 1.0
     return "\n\n".join(b for b in blocks if b)
 
 
-def edge_step(request: dict, old_edge: str, new_edge: str) -> Step:
-    """Did the spotlight tie's edge move from `old_edge` to `new_edge`, and how? Reply {reason, move}."""
-    return Step("advance_edge", lambda f: edge_prompt(request, old_edge, new_edge, f), "json", MAX_OUTPUT, edge_grammar(), _reason_check,
+def edge_step(request: dict, old_edge: str, new_edge: str, facts: dict | None = None) -> Step:
+    """Did the spotlight tie's edge move from `old_edge` to `new_edge`, and how, judged from the chapter's facts? Reply {old_object, new_object, reason, move}."""
+    return Step("advance_edge", lambda f: edge_prompt(request, old_edge, new_edge, f, facts), "json", EDGE_OUTPUT, edge_grammar(), _reason_check,
                 "structured", False)
+
+
+# ---- The edge check ---------------------------------------------------------------------------------------------------------------
+
+def edge_check_prompt(request: dict, edge: str, bond: str, factor: float = 1.0) -> str:
+    w = common.load_text("advance")
+    names = names_of(request)
+    tie_from, tie_to, _ = _ends(request, names)
+    tie = w["check_tie"].format(tie_from=tie_from, tie_to=tie_to) if tie_from and tie_to else ""
+    blocks = [
+        w["check_role"],
+        tie,
+        w["check_edge_line"].format(edge=r.s(edge)),
+        w["check_bond_line"].format(bond=r.s(bond)) if r.s(bond) else "",
+        w["check_rules"],
+        w["check_answer"],
+    ]
+    return "\n\n".join(b for b in blocks if b)
+
+
+def edge_check_step(request: dict, edge: str, bond: str) -> Step:
+    """Is the tie's new edge a want with a concrete target, and its new bond a plain noun phrase of the relationship? Reply {reason, ok}."""
+    return Step("edge_check", lambda f: edge_check_prompt(request, edge, bond, f), "json", MAX_OUTPUT, check_grammar(), _reason_check, "structured", False)
 
 
 # ---- The pressure step ------------------------------------------------------------------------------------------------------------
@@ -241,6 +279,17 @@ def _word(value: Any, key: str, words: tuple[str, ...]) -> str:
     return word if word in words else ""
 
 
+def aim_gate(value: Any) -> bool:
+    """True when the plan is to be made again: the aim judge said the new aim continues the running aim and brings no new obstacle, person or
+    stake. Any other verdict, a missing or unreadable one included, lets the plan stand."""
+    return _word(value, "link", AIM_LINKS) == "continues" and _word(value, "new_obstacle", YES_NO) == "no"
+
+
+def check_ok(value: Any) -> bool:
+    """False only when the edge check said `no`. Anything else, a missing or unreadable verdict included, is fine."""
+    return _word(value, "ok", YES_NO) != "no"
+
+
 def edge_ok(value: Any) -> bool:
     """False only when the judge said the edge is the `same` want (reworded, or only stronger, costlier or more urgent). Anything else, a missing
     or unreadable verdict included, is fine."""
@@ -253,12 +302,14 @@ def pressure_effect(value: Any) -> str:
 
 
 def problem_line(kind: str, value: Any) -> str:
-    """One line a model can act on, built from the judge's reason: `kind` is "edge" (only the edge is sent back)."""
-    if kind != "edge":
+    """One line a model can act on, built from the judge's or the check's reason: `kind` is "edge" or "edge_check" (only the edge and bond are sent back)."""
+    if kind not in ("edge", "edge_check"):
         raise ValueError(f"problem_line is for an edge, not {kind!r}")
     w = common.load_text("advance")["problems"]
     reason = r.sentence(r.s(value.get("reason"))) if isinstance(value, dict) else ""
-    return w[kind].format(reason=reason) if reason else w[f"{kind}_bare"]
+    aimed = r.s(value.get("new_object")) if isinstance(value, dict) and kind == "edge" else ""
+    aimed = w["edge_object"].format(object=aimed) + " " if aimed else ""
+    return w[kind].format(reason=reason, aimed=aimed) if reason else w[f"{kind}_bare"]
 
 
 def resend_line(kind: str, value: Any) -> str:
@@ -267,7 +318,7 @@ def resend_line(kind: str, value: Any) -> str:
     return f"{common.load_text('advance')['resend'][kind]} {problem_line(kind, value)}"
 
 
-def notes(aim_value: Any = None, edge_value: Any = None, pressure_value: Any = None) -> dict:
+def notes(aim_value: Any = None, edge_value: Any = None, pressure_value: Any = None, check_value: Any = None) -> dict:
     """Short words for `Flow.notes` (the run log): {"aim_link": ..., "aim_new": ..., "edge_move": ..., "pressure_effect": ...}, each only when its verdict was read
     (the pressure verdict is always a word: `unclear` when it could not be read, as long as the judge ran)."""
     out = {}
@@ -277,6 +328,8 @@ def notes(aim_value: Any = None, edge_value: Any = None, pressure_value: Any = N
         out["aim_new"] = aim_value["new_obstacle"]
     if _word(edge_value, "move", EDGE_MOVES):
         out["edge_move"] = edge_value["move"]
+    if _word(check_value, "ok", YES_NO):
+        out["edge_check"] = check_value["ok"]
     if pressure_value is not None:
         out["pressure_effect"] = pressure_effect(pressure_value)
     return out

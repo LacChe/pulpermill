@@ -1300,3 +1300,11 @@ test("a plan reply holds a beat and nothing else", () => {
   assert.equal(vectorsApi.readPlanReply({ ok: true, beat: "x" }).error.kind, "bad_output");
   assert.equal(vectorsApi.readPlanReply({ ok: true, beat: {}, thinking: "x" }).error.kind, "bad_output");
 });
+
+test("a plan reply may carry the planned outcome, with or without a pick, and nothing but a word", () => {
+  assert.deepEqual(vectorsApi.readPlanReply({ ok: true, beat: { aim: "x" }, outcome: "lost" }), { ok: true, beat: { aim: "x" }, outcome: "lost" });
+  const picked = { spotlight: "t1", pressure: "r1" };
+  assert.deepEqual(vectorsApi.readPlanReply({ ok: true, beat: {}, picked, outcome: "gave_up" }), { ok: true, beat: {}, picked: { spotlight: "t1", pressure: "r1" }, outcome: "gave_up" });
+  assert.deepEqual(vectorsApi.readPlanReply({ ok: true, beat: {}, outcome: null }), { ok: true, beat: {} });
+  for (const outcome of ["", 2, ["lost"], {}]) assert.equal(vectorsApi.readPlanReply({ ok: true, beat: {}, outcome }).error.kind, "bad_output");
+});

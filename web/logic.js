@@ -1052,15 +1052,17 @@ const OP_KINDS = ["add", "replace", "remove"];
 export function readPlanReply(reply) {
   const checked = readReply(reply);
   if (!checked.ok) return checked;
-  if (!onlyKeys(checked, ["ok", "beat", "picked"])) return bad("the plan has a field nobody knows.");
+  if (!onlyKeys(checked, ["ok", "beat", "picked", "outcome"])) return bad("the plan has a field nobody knows.");
   if (!isObject(checked.beat)) return bad("the plan has no beat.");
-  if (checked.picked === undefined || checked.picked === null) return { ok: true, beat: checked.beat };
+  if (checked.outcome !== undefined && checked.outcome !== null && (!isText(checked.outcome) || !checked.outcome)) return bad("the plan's ending is not a word.");
+  const ending = isText(checked.outcome) ? { outcome: checked.outcome } : {};      // how the plan ends the chapter; landBeat checks it against the schema's options
+  if (checked.picked === undefined || checked.picked === null) return { ok: true, beat: checked.beat, ...ending };
   // `picked` is the tie and the pressure the planner chose, as ids of the request: landBeat checks them against the project.
   const { picked } = checked;
   if (!isObject(picked) || !onlyKeys(picked, ["spotlight", "pressure"])) return bad("the plan's choice is not an object of spotlight and pressure.");
   if (!isText(picked.spotlight) || !picked.spotlight) return bad("the plan's choice names no tie.");
   if (picked.pressure !== undefined && picked.pressure !== null && (!isText(picked.pressure) || !picked.pressure)) return bad("the plan's pressure is not an id.");
-  return { ok: true, beat: checked.beat, picked: { spotlight: picked.spotlight, pressure: picked.pressure ?? null } };
+  return { ok: true, beat: checked.beat, picked: { spotlight: picked.spotlight, pressure: picked.pressure ?? null }, ...ending };
 }
 
 // One operation on a list field, as the contract's ListOp says: add names no id and has values, replace names an id and has

@@ -12,7 +12,7 @@ pytest.importorskip("requests")
 from test_select import base, choose_request, names_of_steps, run_plan  # noqa: E402
 
 from pulpermill.backend.kit import Kit  # noqa: E402
-from pulpermill.prompter.mill import decide, plan  # noqa: E402
+from pulpermill.prompter.mill import advance, decide, plan  # noqa: E402
 from pulpermill.prompter.mill.common import load_text  # noqa: E402
 
 BRAINSTORM = ("Here are the options for this chapter.\n\n"
@@ -208,3 +208,89 @@ def test_a_flow_without_the_decider_adds_no_outcome_line(monkeypatch):
     flow, reply, ctx, engine = run_plan(request, *texts)
     w = load_text("plan")
     assert not any(w[key] in engine.prompts[2] for key in ("outcome_reached", "outcome_lost", "outcome_gave_up"))
+
+
+@pytest.mark.parametrize("wanted", (1, 2, 3))
+def test_the_plan_reply_carries_the_planned_outcome_of_the_picked_option_for_every_position(wanted):
+    for request in (base(), choose_request()):
+        flow, reply, ctx, engine = run_plan(request, *texts_for(request, wanted=wanted))
+        assert reply["outcome"] == {1: "reached", 2: "lost", 3: "gave_up"}[wanted]
+
+
+def test_without_the_decider_the_outcome_follows_the_idea_number_in_choose_mode_only(monkeypatch):
+    monkeypatch.setattr(decide, "ON", False)
+    request = choose_request()
+    texts = plan.script(request, Kit(request))
+    texts[1] = BRAINSTORM
+    flow, reply, ctx, engine = run_plan(request, *texts)
+    assert reply["outcome"] == "reached"             # the scripted plan names idea 1
+    request = base()
+    flow, reply, ctx, engine = run_plan(request, *plan.script(request, Kit(request)))
+    assert "outcome" not in reply                    # no idea number, so nothing fixes the ending
+
+
+# ---- the aim gate ----------------------------------------------------------------------------------------------------------
+
+GATE_LINE = load_text("plan")["problems"]["aim_same_obstacle"]
+SECOND_AIM = "Reach place_b with item_b before deadline_b."
+
+
+def aim_verdict(link: str, new_obstacle: str) -> str:
+    return json.dumps({"reason": "Reason.", "link": link, "new_obstacle": new_obstacle})
+
+
+def gate_run(link: str, new_obstacle: str, again=("drifts", "yes")):
+    """A chapter-2 plain plan flow whose aim judge says (link, new_obstacle); a second plan with a different aim and a second verdict are scripted too,
+    and are used only when the gate asks for them."""
+    request = base()
+    texts = texts_for(request, wanted=2)
+    first = json.loads(texts[2])
+    second = everyone(request, json.dumps({**first, "aim": SECOND_AIM}))
+    return (request, *run_plan(request, *texts[:3], aim_verdict(link, new_obstacle), second, aim_verdict(*again)))
+
+
+@pytest.mark.parametrize("link,new_obstacle,gated", [("continues", "no", True), ("continues", "yes", False), ("drifts", "no", False), ("drifts", "yes", False)])
+def test_the_aim_gate_reads_only_the_two_labels(link, new_obstacle, gated):
+    assert advance.aim_gate({"link": link, "new_obstacle": new_obstacle}) is gated
+    for unreadable in (None, {}, {"link": "continues"}, {"link": "continues", "new_obstacle": "maybe"}, "continues"):
+        assert advance.aim_gate(unreadable) is False
+
+
+def test_a_continuing_aim_with_no_new_obstacle_sends_the_plan_back_once_with_the_gate_line():
+    request, flow, reply, ctx, engine = gate_run("continues", "no")
+    assert names_of_steps(ctx) == ["brainstorm", "decide", "plan", "advance_aim", "plan", "advance_aim"] and engine.calls == 6
+    assert GATE_LINE not in engine.prompts[2] and GATE_LINE in engine.prompts[4] and load_text("plan")["retry_close"] in engine.prompts[4]
+    assert reply["beat"]["aim"] == SECOND_AIM and ctx.notes["flow"]["aim_replanned"] is True
+    assert ctx.notes["flow"]["aim_link"] == "drifts"                       # the second verdict is the one recorded
+
+
+def test_the_second_verdict_is_accepted_whatever_it_says_and_the_plan_is_never_made_a_third_time():
+    request, flow, reply, ctx, engine = gate_run("continues", "no", again=("continues", "no"))
+    assert names_of_steps(ctx) == ["brainstorm", "decide", "plan", "advance_aim", "plan", "advance_aim"] and engine.calls == 6
+    assert reply["beat"]["aim"] == SECOND_AIM and ctx.notes["flow"]["aim_new"] == "no"
+
+
+@pytest.mark.parametrize("link,new_obstacle", [("continues", "yes"), ("drifts", "no"), ("drifts", "yes")])
+def test_any_other_verdict_leaves_the_plan_alone(link, new_obstacle):
+    request, flow, reply, ctx, engine = gate_run(link, new_obstacle)
+    assert names_of_steps(ctx) == ["brainstorm", "decide", "plan", "advance_aim"] and engine.calls == 4
+    assert "aim_replanned" not in ctx.notes["flow"] and reply["beat"]["aim"] != SECOND_AIM
+
+
+def test_the_first_chapter_has_no_aim_judge_and_so_no_gate():
+    request = base()
+    request["chapter"], request["earlier_beats"], request["earlier_events"] = 1, [], []
+    flow, reply, ctx, engine = run_plan(request, *texts_for(request, wanted=2))
+    assert "advance_aim" not in names_of_steps(ctx) and "aim_replanned" not in ctx.notes["flow"]
+
+
+def test_the_gate_works_with_a_pressure_judge_after_it_and_in_choose_mode():
+    request = choose_request()
+    texts = texts_for(request, wanted=2)
+    at = 2
+    second = everyone(request, json.dumps({**json.loads(texts[at + 1]), "aim": SECOND_AIM}))
+    pressure = texts[-1]
+    flow, reply, ctx, engine = run_plan(request, *texts[:at + 2], aim_verdict("continues", "no"), second, aim_verdict("drifts", "yes"), pressure)
+    assert names_of_steps(ctx) == ["select", "brainstorm", "decide", "plan", "advance_aim", "plan", "advance_aim", "advance_pressure"]
+    assert reply["beat"]["aim"] == SECOND_AIM and reply["outcome"] == "lost" and "picked" in reply
+    assert SECOND_AIM in engine.prompts[7]                                  # the pressure judge reads the plan that stands

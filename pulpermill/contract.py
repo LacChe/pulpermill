@@ -327,6 +327,7 @@ class PlanReply(Strict):
     ok: Literal[True]
     beat: dict[str, Any]
     picked: Picked | None = None            # only when the request asked to choose (a later addition, 2026-11-05)
+    outcome: Literal["reached", "lost", "gave_up"] | None = None      # how the chapter is planned to end, when an idea fixes it (a later addition, 2026-11-09)
 
 
 class EventsOut(Strict):

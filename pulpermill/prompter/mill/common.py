@@ -11,6 +11,9 @@ import yaml
 TEXT = Path(__file__).resolve().parent / "text"
 
 
+ENDINGS = {1: "reached", 2: "lost", 3: "gave_up"}     # how a chapter ends, by the number of the idea it was built on (the brainstorm contract): the planned outcome kept on the beat
+
+
 @lru_cache(maxsize=None)
 def load_text(call: str, lang: str = "en") -> dict:
     """The wording file `text/<lang>/<call>.yaml` as a dict (an empty or comment-only file is an empty dict). Cached, read-only."""
