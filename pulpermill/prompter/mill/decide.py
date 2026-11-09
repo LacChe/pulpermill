@@ -26,11 +26,14 @@ from . import common
 ON = True                  # the decider runs whenever the brainstorm gives at least two options; False leaves the flow as it was before the decider
 OPTIONS_MAX = 3            # the most options one call judges: exactly the brainstorm's three (one per combination, the outcome fixed by the number)
 LABELS = "ABC"             # one letter per option, so OPTIONS_MAX letters
-MAX_OUTPUT = 2000          # the longest reply is `held` (HELD_MAX) and three texts (PHRASE_MAX), 1,800 characters: measured on the Gemma tokenizer, about 450 tokens
-                           # in English and about 990 in Chinese, JSON included; 2,000 is twice the larger, for rarer characters (a cut-off reply is invalid)
+MAX_OUTPUT = 2000          # the longest reply is `held` (HELD_MAX) and three texts (PHRASE_MAX), 2,400 characters. Scaled from the Gemma-tokenizer measurement of the old
+                           # 1,800-character reply (about 450 tokens in English, about 990 in Chinese, JSON included) that is about 600 and about 1,320 tokens; 2,000
+                           # is 1.5 times the larger, for rarer characters (a cut-off reply is invalid)
 ATTEMPTS = 2               # then a random option stands: deciding is a help to the plan, never a reason to fail a call
 HELD_MAX = 600             # the longest `held` (what the story holds now) the check lets through, and what the prompt asks for: a few sentences
-PHRASE_MAX = 400           # the longest text per option (what it adds that is new, or repeats): a few sentences, and what the prompt asks for
+PHRASE_ASK = 400           # the length the prompt asks for per option text (what it adds that is new, or repeats): a few sentences. A request, not a check
+PHRASE_MAX = 600           # the longest option text the check lets through: models run over what they are asked, and a refusal costs a call, so the check allows
+                           # half as much again as the prompt asks for. The prompt never states this number
 SAMPLING = "structured"    # the step's sampling set; the run notes carry it, so runs before and after a change of set are told apart
 CRITERIA = ("move",)       # one criterion: which option moves the story forward the most, from where the story stands now
 
@@ -143,7 +146,7 @@ def build_decide_prompt(request: dict, options: list[tuple[int, str]], order: li
     shown = "\n\n".join(_item(w, LABELS[n], options[i][1], combo_of(i)) for n, i in enumerate(order))
     first = c["chapter"] == 1
     names = ", ".join(criteria[:-1]) + f" and {criteria[-1]}" if len(criteria) > 1 else criteria[0]
-    output = w["decide_output"].format(criteria=names, language=plan.language_name(request.get("language")), held_limit=HELD_MAX, limit=PHRASE_MAX)
+    output = w["decide_output"].format(criteria=names, language=plan.language_name(request.get("language")), held_limit=HELD_MAX, limit=PHRASE_ASK)
     task = [w["decide_task"], w["decide_combos"] if combos is not None else "", *(w[f"decide_{k}_first" if first else f"decide_{k}"] for k in criteria), output]
     blocks = [role, c["setup_block"], c["history_block"], plan._section(c["heads"]["decide"], shown), plan._section(c["heads"]["task"], "\n\n".join(x for x in task if x))]
     return "\n\n".join(b for b in blocks if b)

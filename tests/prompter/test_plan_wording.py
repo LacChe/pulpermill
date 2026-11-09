@@ -21,7 +21,7 @@ from pulpermill.backend.config import Config  # noqa: E402
 from pulpermill.backend.engine import FakeEngine  # noqa: E402
 from pulpermill.backend.kit import Kit  # noqa: E402
 from pulpermill.prompter import load_prompter  # noqa: E402
-from pulpermill.prompter.mill import advance, plan, select  # noqa: E402
+from pulpermill.prompter.mill import plan, select  # noqa: E402
 from pulpermill.prompter.mill.common import load_text  # noqa: E402
 from pulpermill.prompts import budget, tokens  # noqa: E402
 from server_harness import post, running, wait_idle  # noqa: E402
@@ -229,7 +229,7 @@ def test_the_planner_fits_the_context_at_some_squeeze_for_a_large_story():
     flow = plan.build_flow(big(), Kit(big()))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert all(m.ok for m in measures) and factor <= 1.0
-    assert [s.name for s in flow.worst_case()] == ["label", "brainstorm", "label", "decide", "plan", "advance_aim"]
+    assert [s.name for s in flow.worst_case()] == ["label", "brainstorm", "label", "decide", "plan"]
     assert flow.worst_case()[1].max_output == plan.BRAINSTORM_OUTPUT and flow.worst_case()[4].max_output == plan.MAX_OUTPUT
 
 
@@ -286,7 +286,7 @@ def test_the_plan_step_is_a_json_step_with_the_planner_grammar_and_the_check_on_
     assert flow.next([]).name == "brainstorm"
     step = flow.next([brain()])
     assert step.name == "plan" and step.kind == "json" and step.grammar == with_idea_use(kit.grammar.plan_beat()) and step.sampling == "thinking" and step.language
-    assert flow.reply([brain(), good()]) == {"beat": good()} and flow.next([brain(), good()]).name == "advance_aim"      # the earlier aims are there to be judged against
+    assert flow.reply([brain(), good()]) == {"beat": good()} and flow.next([brain(), good()]) is None      # the plan is the last step
     assert step.check({**good(), "where": ""}) and step.check(good()) is None
     assert budget.input_limit(step.max_output) > 10000                     # the context keeps room for the prompt
 
@@ -294,11 +294,10 @@ def test_the_plan_step_is_a_json_step_with_the_planner_grammar_and_the_check_on_
 # ---- the whole call -------------------------------------------------------------------------------------------------------
 
 def expected_calls(request: dict) -> int:
-    """The model calls of a whole plan call: the brainstorm and the plan, plus the select step when the request chooses, the aim judge from the
-    second chapter on (the label step when earlier events exist), and the pressure judge when a pressure is in play (the page's own, or any option in choose mode)."""
+    """The model calls of a whole plan call: the brainstorm and the plan, plus the select step when the request chooses (and the label step when
+    earlier events exist)."""
     chosen = select.is_on(request)
-    pressure = bool(request.get("pressure_options")) if chosen else bool(request.get("pressure"))
-    return 2 + chosen + bool(plan.label_items(request)) + bool(advance.earlier_aims(request)) + pressure
+    return 2 + chosen + bool(plan.label_items(request))
 
 
 @pytest.mark.parametrize("vector", PLANS, ids=lambda v: v["name"])
@@ -324,7 +323,7 @@ def test_a_plan_that_fails_the_check_is_asked_for_again_with_the_line_and_then_u
     with running(config=Config(prompter="mill"), engine=engine, run=None) as (base_url, _):
         assert post(base_url, request).status_code == 200
         assert wait_idle(base_url)
-    assert engine.calls == 4 and "Your previous reply could not be used" in engine.prompts[2] and "state of mind" in engine.prompts[2]
+    assert engine.calls == 3 and "Your previous reply could not be used" in engine.prompts[2] and "state of mind" in engine.prompts[2]
     assert engine.constraints[1] is not None or engine.constraints[2] is not None
 
 
@@ -332,7 +331,7 @@ def test_the_version_follows_the_wording():
     assert f"+plan:{plan.VERSION}:" in load_prompter("mill").version
 
 
-# ---- the aim judge after the plan (phase 3, observe-only) ---------------------------------------------------------------------------
+# ---- nothing after the plan -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def run_plan(request, *texts, **config):
     """The real plan flow on the fake engine, scripted with `texts`. Returns (reply, ctx, engine)."""
@@ -348,55 +347,10 @@ def run_plan(request, *texts, **config):
     return flow.reply(runner.run_flow(ctx, flow, "en")), ctx, engine
 
 
-def test_the_aim_judge_is_a_step_of_its_own_after_the_plan_with_two_attempts_and_a_neutral_fallback():
-    request = base()
-    flow = plan.build_flow(request, Kit(request))
-    step = flow.next([brain(), good()])
-    assert step.name == "advance_aim" and step.attempts == 2 and callable(step.fallback) and good()["aim"] in step.text(1.0)
-    assert step.fallback() == {} and advance.notes(aim_value=step.fallback()) == {} and flow.notes["aim_judge_fallback"] is True
-
-
-def test_no_aim_judge_runs_in_the_first_chapter():
-    request = base()
-    request.update(chapter=1, earlier_beats=[], earlier_events=[])
-    flow = plan.build_flow(request, Kit(request))
-    assert flow.next([brain(request), good(request)]) is None and [s.name for s in flow.worst_case()] == ["brainstorm", "decide", "plan"]
-    reply, ctx, engine = run_plan(request, *plan.script(request, Kit(request)))
-    assert engine.calls == 2 and ctx.notes["flow"] == {"decide": "none", "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": True} and [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan"]
-
-
-SAME = json.dumps({"reason": "It goes back to an earlier step of the aim.", "link": "drifts", "new_obstacle": "no"})
-NEW = json.dumps({"reason": "It takes the aim a step on against a new obstacle.", "link": "continues", "new_obstacle": "yes"})
-
-
-def test_a_verdict_of_drifts_sends_nothing_back_and_only_goes_to_the_notes_so_no_plan_step_runs_twice():
-    request = base()
-    texts = plan.script(request, Kit(request))
-    bad_reply, bad_ctx, bad_engine = run_plan(request, texts[0], texts[1], SAME)
-    good_reply, good_ctx, good_engine = run_plan(request, texts[0], texts[1], NEW)
-    assert bad_reply == good_reply == {"beat": plain(texts[1])} and bad_engine.calls == good_engine.calls == 3          # three model calls whatever the judge says
-    assert bad_ctx.notes["flow"] == {"decide": "none", "aim_link": "drifts", "aim_new": "no", "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": True}
-    assert good_ctx.notes["flow"] == {"decide": "none", "aim_link": "continues", "aim_new": "yes", "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": True}
-    assert [p["step"] for p in bad_ctx.notes["passes"]] == ["brainstorm", "plan", "advance_aim"]
-    assert not any("set aside" in prompt or "different kind" in prompt for prompt in bad_engine.prompts)
-    for gone in ("aim_resent", "aim_accepted", "aim_resend_fallback", "aim_kind_after"):
-        assert gone not in bad_ctx.notes["flow"]
-
-
 def test_the_worst_case_has_no_resend_steps_and_the_plan_has_no_resend_constant():
     request = base()
-    assert [s.name for s in plan.build_flow(request, Kit(request)).worst_case()] == ["brainstorm", "decide", "plan", "advance_aim"]
+    assert [s.name for s in plan.build_flow(request, Kit(request)).worst_case()] == ["brainstorm", "decide", "plan"]
     assert not hasattr(plan, "RESEND_STAND_IN") and not hasattr(plan.PlanFlow, "_resend_step")
-
-
-def test_a_judge_that_fails_every_attempt_never_fails_the_call_and_leaves_the_reply_alone():
-    request = base()
-    texts = plan.script(request, Kit(request))
-    reply, ctx, engine = run_plan(request, texts[0], texts[1], "no json", "still none")
-    assert reply == {"beat": plain(texts[1])} and engine.calls == 4
-    assert ctx.notes["flow"] == {"decide": "none", "aim_judge_fallback": True, "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": True}                                   # no verdict: nothing is sent back
-    judge_pass = [p for p in ctx.notes["passes"] if p["step"] == "advance_aim"][0]
-    assert len(judge_pass["attempts"]) == 2 and judge_pass["fallback"] is True
 
 
 # ---- the brainstorm before the plan (phase 5) ----------------------------------------------------------------------------------------
@@ -584,15 +538,15 @@ def test_the_brainstorm_text_reaches_the_plan_prompt_through_the_runner():
     reply, ctx, engine = run_plan(request, *texts)
     assert "Three ideas for this chapter" not in engine.prompts[0] and "Option 1: a refusal." in engine.prompts[1]
     assert texts[0] in engine.prompts[1]
-    assert "Three ideas" not in engine.prompts[2] and ctx.notes["flow"].get("brainstorm_fallback") is None
+    assert ctx.notes["flow"].get("brainstorm_fallback") is None
 
 
 def test_the_flow_runs_brainstorm_then_plan_then_judge_and_the_reply_is_the_plan():
     request = base()
     texts = plan.script(request, Kit(request))
     reply, ctx, engine = run_plan(request, *texts)
-    assert [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan", "advance_aim"] and reply == {"beat": plain(texts[1])}
-    assert engine.params[0] == engine.params[1] != engine.params[2]                               # the brainstorm and the plan think; the judge is structured
+    assert [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan"] and reply == {"beat": plain(texts[1])}
+    assert engine.params[0] == engine.params[1]                                                          # the brainstorm and the plan think
     assert engine.constraints[0] is None                                                          # free text: no grammar on the brainstorm
 
 
@@ -609,9 +563,9 @@ def test_a_cut_off_brainstorm_is_trimmed_to_its_last_full_sentence():
 def test_a_brainstorm_that_fails_every_attempt_never_fails_the_call_and_the_plan_runs_without_it():
     request = base()
     texts = plan.script(request, Kit(request))
-    reply, ctx, engine = run_plan(request, "no", "still no", json.dumps(plain(texts[1])), texts[2])        # no brainstorm: the plan grammar has no `idea_use`
-    assert reply == {"beat": plain(texts[1])} and engine.calls == 4
-    assert ctx.notes["flow"] == {"decide": "none", "brainstorm_fallback": True, "aim_link": "continues", "aim_new": "yes", "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": True}
+    reply, ctx, engine = run_plan(request, "no", "still no", json.dumps(plain(texts[1])))        # no brainstorm: the plan grammar has no `idea_use`
+    assert reply == {"beat": plain(texts[1])} and engine.calls == 3
+    assert ctx.notes["flow"] == {"decide": "none", "brainstorm_fallback": True, "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": True}
     assert "Three ideas for this chapter" not in engine.prompts[2] and "Choose one of them" not in engine.prompts[2]
     brainstorm_pass = [p for p in ctx.notes["passes"] if p["step"] == "brainstorm"][0]
     assert len(brainstorm_pass["attempts"]) == 2 and brainstorm_pass["fallback"] is True
@@ -622,13 +576,13 @@ def test_one_refused_brainstorm_is_asked_for_again_and_then_used():
     request = base()
     texts = plan.script(request, Kit(request))
     reply, ctx, engine = run_plan(request, "short", *texts)
-    assert engine.calls == 4 and texts[0] in engine.prompts[2] and "brainstorm_fallback" not in ctx.notes.get("flow", {})
+    assert engine.calls == 3 and texts[0] in engine.prompts[2] and "brainstorm_fallback" not in ctx.notes.get("flow", {})
 
 
 def test_the_worst_case_counts_the_brainstorm_and_the_plan_carries_one_of_the_longest_size():
     request = base()
     steps = plan.build_flow(request, Kit(request)).worst_case()
-    assert [s.name for s in steps] == ["brainstorm", "decide", "plan", "advance_aim"]
+    assert [s.name for s in steps] == ["brainstorm", "decide", "plan"]
     stand_in = plan.BRAINSTORM_STAND_IN.strip()
     assert stand_in in steps[2].text(1.0)
     assert len(steps[2].text(1.0)) > len(plan.build_prompt(request)) + len(stand_in)
@@ -641,14 +595,14 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
     assert len(request["cast"]) == 5
     flow = plan.build_flow(request, Kit(request))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
-    assert factor == 1.0 and all(m.ok for m in measures) and len(measures) == 4
+    assert factor == 1.0 and all(m.ok for m in measures) and len(measures) == 3
     brainstorm, decide_step = flow.worst_case()[:2]
     assert tokens.count(decide_step.text(1.0)) < tokens.count(brainstorm.text(1.0))      # the decider reads only the setup, the story so far and the options: the lighter of the two
 
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-22"
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-25"
 
 
 # ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------
@@ -687,8 +641,6 @@ def test_idea_use_reaches_the_trace_and_not_the_reply(tmp_path):
 # ---- the pressure (world-pressure-2): the line, the judge, the notes ----------------------------------------------------------------
 
 SENTENCE = "a part of the collision, whether or not it has anything to do with the aim or the tie to begin with"
-ACTS = json.dumps({"reason": "The rule costs her something.", "effect": "acts"})
-DECOR = json.dumps({"reason": "The rule is only mentioned.", "effect": "decor"})
 
 
 def with_pressure(request=None, kind="rule") -> dict:
@@ -755,55 +707,27 @@ def run_pressed(request, *texts):
     return run_plan(request, *texts)
 
 
-def test_the_pressure_judge_runs_once_after_the_plan_and_the_aim_judge_and_reads_the_plan_text():
+def test_with_a_pressure_in_the_request_the_flow_runs_no_pressure_step_and_the_notes_still_say_pressure_on():
     request = with_pressure()
     texts = plan.script(request, Kit(request))
-    assert len(texts) == 4 and json.loads(texts[3])["effect"] == "acts"
+    assert len(texts) == 2 and len(plan.script(base(), Kit(base()))) == 2         # no reply for a pressure judge, with or without a pressure
     reply, ctx, engine = run_pressed(request, *texts)
-    assert reply == {"beat": plain(texts[1])} and engine.calls == 4
-    assert [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan", "advance_aim", "advance_pressure"]
-    assert ctx.notes["flow"] == {"decide": "none", "pressure_on": True, "origin_history": True, "aim_link": "continues", "aim_new": "yes", "pressure_effect": "acts", "minor_names": 0, "minor_new": 0}
-    judged = engine.prompts[3]
-    assert plain(texts[1])["plan"] in judged and element_of(request) in judged and "Act 1" in judged
-    assert "effect: acts, decor or unclear" in judged and not (set(re.findall(r"\b[a-z]\d{7}\b", judged)))
+    assert reply == {"beat": plain(texts[1])} and engine.calls == 2
+    assert [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan"]
+    assert ctx.notes["flow"] == {"decide": "none", "pressure_on": True, "origin_history": True, "minor_names": 0, "minor_new": 0}
+    assert element_of(request) in engine.prompts[1] and not any("pressure" in step for step in [p["step"] for p in ctx.notes["passes"]])
+    first = with_pressure()
+    first.update(chapter=1, earlier_beats=[], earlier_events=[])
+    _, ctx, engine = run_pressed(first, *plan.script(first, Kit(first)))
+    assert [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan"] and ctx.notes["flow"]["pressure_on"] is True
 
 
-def test_a_decor_verdict_changes_nothing_sends_nothing_back_and_adds_no_problem_line():
-    request = with_pressure()
-    texts = plan.script(request, Kit(request))
-    reply, ctx, engine = run_pressed(request, texts[0], texts[1], texts[2], DECOR)
-    assert reply == {"beat": plain(texts[1])} and engine.calls == 4
-    assert ctx.notes["flow"]["pressure_effect"] == "decor"
-    assert [p["step"] for p in ctx.notes["passes"]].count("plan") == 1               # no second plan: the verdict is only recorded
-    assert not any("pressure" in p for p in ctx.notes["passes"][1:3])
-
-
-def test_the_pressure_judge_runs_in_the_first_chapter_too():
-    request = with_pressure()
-    request.update(chapter=1, earlier_beats=[], earlier_events=[])
-    texts = plan.script(request, Kit(request))
-    reply, ctx, engine = run_pressed(request, *texts)
-    assert len(texts) == 3 and engine.calls == 3 and [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan", "advance_pressure"]
-    assert reply == {"beat": plain(texts[1])} and ctx.notes["flow"]["pressure_effect"] == "acts"
-
-
-def test_a_pressure_judge_that_fails_every_attempt_is_unclear_and_never_fails_the_call():
-    request = with_pressure()
-    texts = plan.script(request, Kit(request))
-    reply, ctx, engine = run_pressed(request, texts[0], texts[1], texts[2], "no", "still no")
-    assert reply == {"beat": plain(texts[1])} and engine.calls == 5
-    assert ctx.notes["flow"]["pressure_effect"] == "unclear" and ctx.notes["flow"]["pressure_judge_fallback"] is True
-    step = plan.build_flow(request, Kit(request)).next([brain(request), good(request), json.loads(texts[2])])
-    assert step.name == "advance_pressure" and step.attempts == 2 and step.fallback() == {"effect": "unclear"}
-
-
-def test_no_pressure_means_no_pressure_judge_and_pressure_off_in_the_notes():
+def test_the_worst_case_has_no_pressure_step_with_or_without_a_pressure():
     request = base()
     flow = plan.build_flow(request, Kit(request))
-    assert flow.notes["pressure_on"] is False and [s.name for s in flow.worst_case()] == ["brainstorm", "decide", "plan", "advance_aim"]
-    assert plan.build_flow(with_pressure(), Kit(request)).worst_case()[-1].name == "advance_pressure"
-    texts = plan.script(request, Kit(request))
-    assert len(texts) == 3
+    assert flow.notes["pressure_on"] is False and [s.name for s in flow.worst_case()] == ["brainstorm", "decide", "plan"]
+    pressed = plan.build_flow(with_pressure(), Kit(request))
+    assert pressed.notes["pressure_on"] is True and [s.name for s in pressed.worst_case()] == ["brainstorm", "decide", "plan"]
 
 
 @pytest.mark.parametrize("vector", PLANS, ids=lambda v: v["name"])
@@ -917,3 +841,14 @@ def test_every_planning_prompt_of_a_chapter_shows_the_same_one_want_and_one_valu
     other["chapter"] = request["chapter"] + 1
     assert re.findall(r"want number \d", plan.build_prompt(other)) and "several things" not in prompts[0]
     assert len(re.findall(r"want number \d", gen_mod.write_prompt(request))) == 5                    # the writer keeps the whole card
+
+
+def test_the_plan_is_the_last_step_in_every_chapter_and_nothing_runs_after_it():
+    for chapter_request in (base(), {**base(), "chapter": 1, "earlier_beats": [], "earlier_events": []}):
+        flow = plan.build_flow(chapter_request, Kit(chapter_request))
+        assert flow.next([brain(chapter_request), good(chapter_request)]) is None
+        assert [s.name for s in flow.worst_case()][-1] == "plan"
+        texts = plan.script(chapter_request, Kit(chapter_request))
+        reply, ctx, engine = run_plan(chapter_request, *texts)
+        assert engine.calls == len(texts) and [p["step"] for p in ctx.notes["passes"]][-1] == "plan"
+        assert not any(key.startswith(("aim_", "pressure_judge", "edge_")) for key in ctx.notes["flow"])

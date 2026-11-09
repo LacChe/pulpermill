@@ -255,12 +255,11 @@ def test_the_plan_is_used_on_the_first_attempt_through_the_runner_and_the_counts
     import json
     monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, *more: "Plan the chapter.")
     ctx, engine = context()
-    verdict = json.dumps({"reason": "It is after something new.", "link": "continues", "new_obstacle": "yes"})        # the aim judge runs after the plan from chapter 2 on
     brainstorm = plan.script(req, KIT)[0]                                                            # the brainstorm runs first
-    engine.script(brainstorm, json.dumps(named), verdict)
+    engine.script(brainstorm, json.dumps(named))
     with caplog.at_level(logging.WARNING, logger="pulpermill"):
         value = runner.run_flow(ctx, plan.PlanFlow(req, KIT), "en")[1]
-    assert value == named and engine.calls == 3 and [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan", "advance_aim"]          # the plan ran once
+    assert value == named and engine.calls == 2 and [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan"]          # the plan ran once
     assert ctx.notes["flow"]["minor_names"] == 1 and ctx.notes["flow"]["minor_new"] == 1
     assert len([r for r in caplog.records if r.getMessage().startswith("call=plan step=plan soft problem accepted")]) == 1
 
@@ -304,7 +303,7 @@ def test_an_echo_still_sends_the_chapter_back_once_through_the_runner(monkeypatc
 
 def test_the_versions_were_bumped():
     from pulpermill.prompter.mill import VERSION
-    assert VERSION == "mill-0.2" and plan.VERSION == "plan-22" and gen.VERSION == "generate-14"
+    assert VERSION == "mill-0.2" and plan.VERSION == "plan-25" and gen.VERSION == "generate-16"
 
 
 # ---- helpers ---------------------------------------------------------------------------------------------------------------

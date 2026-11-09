@@ -186,10 +186,10 @@ def test_the_grammar_has_exactly_three_picks_and_the_right_integer_ranges_and_th
 def test_with_choose_on_the_steps_run_select_brainstorm_plan_judges_and_the_worst_case_names_the_same():
     request = choose_request()
     texts = plan.script(request, Kit(request))
-    assert len(texts) == 5 and len(json.loads(texts[0])["picks"]) == 3 and json.loads(texts[2])["idea"] == 1
+    assert len(texts) == 3 and len(json.loads(texts[0])["picks"]) == 3 and json.loads(texts[2])["idea"] == 1
     flow, reply, ctx, engine = run_plan(request, *texts)
-    assert names_of_steps(ctx) == ["select", "brainstorm", "plan", "advance_aim", "advance_pressure"] and engine.calls == 5
-    assert [s.name for s in flow.worst_case()] == ["select", "brainstorm", "decide", "plan", "advance_aim", "advance_pressure"]
+    assert names_of_steps(ctx) == ["select", "brainstorm", "plan"] and engine.calls == 3
+    assert [s.name for s in flow.worst_case()] == ["select", "brainstorm", "decide", "plan"]
     assert "select" not in [s.name for s in plan.build_flow(base(), Kit(base())).worst_case()]
 
 
@@ -242,8 +242,8 @@ def test_a_select_that_cannot_be_used_leaves_todays_flow_on_the_pages_own_pair_a
     request = choose_request()
     texts = plan.script(request, Kit(request))
     beat = {k: v for k, v in json.loads(texts[2]).items() if k != "idea"}          # without a choice there is no idea to give
-    flow, reply, ctx, engine = run_plan(request, "not json", "not json", texts[1], json.dumps(beat), texts[3])
-    assert engine.calls == 5, "two refused attempts at the select step, then the brainstorm, the plan and the aim judge"
+    flow, reply, ctx, engine = run_plan(request, "not json", "not json", texts[1], json.dumps(beat))
+    assert engine.calls == 4, "two refused attempts at the select step, then the brainstorm and the plan"
     assert "picked" not in reply and flow.combos is None and ctx.notes["flow"]["select"] == "fallback"
     assert "## The tie in the spotlight" in engine.prompts[3] and "## The three combinations" not in engine.prompts[3]
 

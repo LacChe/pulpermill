@@ -12,7 +12,7 @@ pytest.importorskip("requests")
 from test_select import base, choose_request, names_of_steps, run_plan  # noqa: E402
 
 from pulpermill.backend.kit import Kit  # noqa: E402
-from pulpermill.prompter.mill import advance, decide, plan  # noqa: E402
+from pulpermill.prompter.mill import decide, plan  # noqa: E402
 from pulpermill.prompter.mill.common import load_text  # noqa: E402
 
 BRAINSTORM = ("Here are the options for this chapter.\n\n"
@@ -58,7 +58,7 @@ def first_texts_of(request: dict) -> list[str]:
 def test_in_choose_mode_the_plan_is_built_on_the_picked_option_alone_as_idea_one_with_its_own_combination():
     request = choose_request()
     flow, reply, ctx, engine = run_plan(request, *texts_for(request, wanted=3))
-    assert names_of_steps(ctx) == ["select", "brainstorm", "decide", "plan", "advance_aim", "advance_pressure"] and engine.calls == 6
+    assert names_of_steps(ctx) == ["select", "brainstorm", "decide", "plan"] and engine.calls == 4
     planned = engine.prompts[3]
     section = planned.split("## The idea for this chapter\n")[1].split("## Your task")[0]
     assert section.startswith("Idea 1\n") and "a third thing" in section and "a first thing" not in section and "a second thing" not in section
@@ -94,13 +94,13 @@ def test_the_plan_reply_schema_is_unchanged_and_any_idea_number_it_allows_is_the
         assert flow._combo_of({"idea": idea}) is flow._shown[0]
     assert flow._combo_of({"idea": 4}) is None and flow._combo_of({"idea": True}) is None and flow._combo_of({}) is None
     _, reply, _, engine = run_plan(request, *texts_for(request, wanted=2, idea=2))        # a plan that says idea 2 is not refused, and records the pick
-    assert engine.calls == 6 and reply["picked"] == run_plan(request, *texts_for(request, wanted=2, idea=1))[1]["picked"]
+    assert engine.calls == 4 and reply["picked"] == run_plan(request, *texts_for(request, wanted=2, idea=1))[1]["picked"]
 
 
 def test_without_choose_the_plan_is_told_to_build_on_the_one_idea_and_not_to_choose_among_ideas():
     request = base()
     flow, reply, ctx, engine = run_plan(request, *texts_for(request, wanted=2))
-    assert names_of_steps(ctx) == ["brainstorm", "decide", "plan", "advance_aim"] and engine.calls == 4
+    assert names_of_steps(ctx) == ["brainstorm", "decide", "plan"] and engine.calls == 3
     planned = engine.prompts[2]
     assert "Idea 1\n" in planned and "a second thing" in planned and "a first thing" not in planned and "a third thing" not in planned
     assert "The idea above is the one chosen for this chapter. Build the plan on it" in planned and "combine two" not in planned
@@ -114,12 +114,28 @@ def test_a_decider_reply_that_cannot_be_used_falls_back_to_a_random_option_and_t
     texts = texts_for(request, wanted=3)
     broken = texts[:2] + ["not json", "still not json"] + texts[3:]
     flow, reply, ctx, engine = run_plan(request, *broken)
-    assert engine.calls == 7 and names_of_steps(ctx) == ["select", "brainstorm", "decide", "plan", "advance_aim", "advance_pressure"]      # decide took two attempts
+    assert engine.calls == 5 and names_of_steps(ctx) == ["select", "brainstorm", "decide", "plan"]      # decide took two attempts
     planned = engine.prompts[4]
     assert "a first thing" in planned.split("## The idea for this chapter\n")[1].split("## Your task")[0] and "a third thing" not in planned.split("## Your task")[0].split("## The idea")[1]
     notes = ctx.notes["flow"]
     assert (notes["decide"], notes["decide_pick"], notes["decide_combo"]) == ("fallback", 1, 1)
     assert reply["picked"] == run_plan(request, *first_texts_of(request))[1]["picked"]        # the same plan as one built on the first option
+
+
+def test_option_texts_a_little_over_the_asked_length_are_accepted_at_the_first_attempt_with_no_fallback():
+    request = base()
+    texts = texts_for(request, wanted=2)
+    order = decide.order_of(OPTIONS, request)
+    letters = decide.LABELS[:len(OPTIONS)]
+    best = letters[order.index(1)]                                    # the option at place 2 is best, another is worst
+    worst = next(letter for letter in letters if letter != best)
+    over = {k: {"held": f"Held {k}.", **{letter: "x" * length for letter, length in zip(letters, (405, 422, 413))}, "best": best, "worst": worst} for k in decide.criteria_for(request)}
+    assert all(decide.PHRASE_ASK < len(t) <= decide.PHRASE_MAX for t in list(over["move"].values())[1:4])
+    texts[1] = json.dumps(over)
+    flow, reply, ctx, engine = run_plan(request, *texts)
+    assert names_of_steps(ctx).count("decide") == 1 and engine.calls == 3          # one decide call: no second attempt
+    notes = ctx.notes["flow"]
+    assert notes["decide"] == "on" and notes["decide_pick"] == 2 and notes["decide_combo"] == 2
 
 
 def test_the_picked_option_is_the_one_with_the_best_marks_and_the_run_notes_carry_the_totals_and_marks(monkeypatch):
@@ -139,7 +155,7 @@ def test_the_decider_is_off_when_the_flag_is_off_and_the_plan_carries_the_whole_
     texts = plan.script(request, Kit(request))
     texts[1] = BRAINSTORM
     flow, reply, ctx, engine = run_plan(request, *texts)
-    assert names_of_steps(ctx) == ["select", "brainstorm", "plan", "advance_aim", "advance_pressure"] and "decide" not in ctx.notes["flow"]
+    assert names_of_steps(ctx) == ["select", "brainstorm", "plan"] and "decide" not in ctx.notes["flow"]
     assert "## Three ideas for this chapter" in engine.prompts[2] and "a first thing" in engine.prompts[2] and "a third thing" in engine.prompts[2]
     assert "decide" not in [s.name for s in flow.worst_case()]
 
@@ -153,7 +169,7 @@ def test_fewer_than_two_options_or_a_combination_that_does_not_exist_keeps_the_f
     no_use = {k: v for k, v in json.loads(texts[2]).items() if k != plan.IDEA_USE}          # no brainstorm: the plan grammar has no `idea_use`
     texts[1:3] = [wrong, wrong, json.dumps(no_use)]                                          # the count check refuses it twice, so the plan goes ahead without a brainstorm
     _, _, ctx, engine = run_plan(request, *texts)
-    assert "decide" not in names_of_steps(ctx) and ctx.notes["flow"]["decide"] == "none" and ctx.notes["flow"]["brainstorm_fallback"] is True and engine.calls == 6
+    assert "decide" not in names_of_steps(ctx) and ctx.notes["flow"]["decide"] == "none" and ctx.notes["flow"]["brainstorm_fallback"] is True and engine.calls == 4
 
 
 def test_a_brainstorm_cut_off_by_the_token_cap_is_judged_on_its_whole_options_only():
@@ -227,70 +243,3 @@ def test_without_the_decider_the_outcome_follows_the_idea_number_in_choose_mode_
     request = base()
     flow, reply, ctx, engine = run_plan(request, *plan.script(request, Kit(request)))
     assert "outcome" not in reply                    # no idea number, so nothing fixes the ending
-
-
-# ---- the aim gate ----------------------------------------------------------------------------------------------------------
-
-GATE_LINE = load_text("plan")["problems"]["aim_same_obstacle"]
-SECOND_AIM = "Reach place_b with item_b before deadline_b."
-
-
-def aim_verdict(link: str, new_obstacle: str) -> str:
-    return json.dumps({"reason": "Reason.", "link": link, "new_obstacle": new_obstacle})
-
-
-def gate_run(link: str, new_obstacle: str, again=("drifts", "yes")):
-    """A chapter-2 plain plan flow whose aim judge says (link, new_obstacle); a second plan with a different aim and a second verdict are scripted too,
-    and are used only when the gate asks for them."""
-    request = base()
-    texts = texts_for(request, wanted=2)
-    first = json.loads(texts[2])
-    second = everyone(request, json.dumps({**first, "aim": SECOND_AIM}))
-    return (request, *run_plan(request, *texts[:3], aim_verdict(link, new_obstacle), second, aim_verdict(*again)))
-
-
-@pytest.mark.parametrize("link,new_obstacle,gated", [("continues", "no", True), ("continues", "yes", False), ("drifts", "no", False), ("drifts", "yes", False)])
-def test_the_aim_gate_reads_only_the_two_labels(link, new_obstacle, gated):
-    assert advance.aim_gate({"link": link, "new_obstacle": new_obstacle}) is gated
-    for unreadable in (None, {}, {"link": "continues"}, {"link": "continues", "new_obstacle": "maybe"}, "continues"):
-        assert advance.aim_gate(unreadable) is False
-
-
-def test_a_continuing_aim_with_no_new_obstacle_sends_the_plan_back_once_with_the_gate_line():
-    request, flow, reply, ctx, engine = gate_run("continues", "no")
-    assert names_of_steps(ctx) == ["brainstorm", "decide", "plan", "advance_aim", "plan", "advance_aim"] and engine.calls == 6
-    assert GATE_LINE not in engine.prompts[2] and GATE_LINE in engine.prompts[4] and load_text("plan")["retry_close"] in engine.prompts[4]
-    assert reply["beat"]["aim"] == SECOND_AIM and ctx.notes["flow"]["aim_replanned"] is True
-    assert ctx.notes["flow"]["aim_link"] == "drifts"                       # the second verdict is the one recorded
-
-
-def test_the_second_verdict_is_accepted_whatever_it_says_and_the_plan_is_never_made_a_third_time():
-    request, flow, reply, ctx, engine = gate_run("continues", "no", again=("continues", "no"))
-    assert names_of_steps(ctx) == ["brainstorm", "decide", "plan", "advance_aim", "plan", "advance_aim"] and engine.calls == 6
-    assert reply["beat"]["aim"] == SECOND_AIM and ctx.notes["flow"]["aim_new"] == "no"
-
-
-@pytest.mark.parametrize("link,new_obstacle", [("continues", "yes"), ("drifts", "no"), ("drifts", "yes")])
-def test_any_other_verdict_leaves_the_plan_alone(link, new_obstacle):
-    request, flow, reply, ctx, engine = gate_run(link, new_obstacle)
-    assert names_of_steps(ctx) == ["brainstorm", "decide", "plan", "advance_aim"] and engine.calls == 4
-    assert "aim_replanned" not in ctx.notes["flow"] and reply["beat"]["aim"] != SECOND_AIM
-
-
-def test_the_first_chapter_has_no_aim_judge_and_so_no_gate():
-    request = base()
-    request["chapter"], request["earlier_beats"], request["earlier_events"] = 1, [], []
-    flow, reply, ctx, engine = run_plan(request, *texts_for(request, wanted=2))
-    assert "advance_aim" not in names_of_steps(ctx) and "aim_replanned" not in ctx.notes["flow"]
-
-
-def test_the_gate_works_with_a_pressure_judge_after_it_and_in_choose_mode():
-    request = choose_request()
-    texts = texts_for(request, wanted=2)
-    at = 2
-    second = everyone(request, json.dumps({**json.loads(texts[at + 1]), "aim": SECOND_AIM}))
-    pressure = texts[-1]
-    flow, reply, ctx, engine = run_plan(request, *texts[:at + 2], aim_verdict("continues", "no"), second, aim_verdict("drifts", "yes"), pressure)
-    assert names_of_steps(ctx) == ["select", "brainstorm", "decide", "plan", "advance_aim", "plan", "advance_aim", "advance_pressure"]
-    assert reply["beat"]["aim"] == SECOND_AIM and reply["outcome"] == "lost" and "picked" in reply
-    assert SECOND_AIM in engine.prompts[7]                                  # the pressure judge reads the plan that stands

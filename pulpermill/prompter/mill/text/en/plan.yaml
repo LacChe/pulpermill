@@ -177,7 +177,6 @@ problems:
   missing_aim: "Give the protagonist's aim as one concrete thing to get or do inside this chapter."
   abstract_aim: "Make the aim something the protagonist can try to get or do and a reader can watch, instead of a state of mind."
   repeated_aim: "Aim at a different step than chapter {chapter}'s aim ({aim}), one that builds on what that chapter changed."
-  aim_same_obstacle: "The new aim pursues the same thing against the same obstacle, person or stake as the aim of the last chapter. Keep the idea's fixed ending and its combination, but change the obstacle, the person in the way, or the stake."
   same_as_retry: "Choose an aim that differs from the aim of the refused attempt ({aim})."
   missing_points: "Write the plan as four points labelled Act 1, Act 2, Act 3 and Act 4, in that order, each saying what happens; the plan is missing {missing}."
   missing_names: "Name {names} in the plan (a first or last name is enough), since the chapter is about the tie between them."

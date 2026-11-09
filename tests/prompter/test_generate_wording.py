@@ -21,7 +21,7 @@ from pulpermill.backend.config import Config  # noqa: E402
 from pulpermill.backend.engine import FakeEngine  # noqa: E402
 from pulpermill.backend.kit import Kit  # noqa: E402
 from pulpermill.prompter import load_prompter  # noqa: E402
-from pulpermill.prompter.mill import advance, generate as gen, plan as mill_plan  # noqa: E402
+from pulpermill.prompter.mill import generate as gen, plan as mill_plan  # noqa: E402
 from pulpermill.prompter.mill.common import load_text  # noqa: E402
 from pulpermill.prompts import budget, tokens  # noqa: E402
 from server_harness import post, running, wait_idle  # noqa: E402
@@ -204,14 +204,13 @@ def test_the_squeeze_cuts_oldest_history_then_world_then_cast_and_never_the_plan
 
 @pytest.mark.skipif(not tokens.available(), reason="the tokenizer files are not installed")
 @pytest.mark.parametrize("size", ["small", "large"])
-def test_every_step_at_its_heaviest_fits_the_context_at_some_squeeze(size, monkeypatch):
-    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
+def test_every_step_at_its_heaviest_fits_the_context_at_some_squeeze(size):
     request = big() if size == "large" else base()
     flow = gen.build_flow(request, Kit(request))
     steps = flow.worst_case()
-    assert [s.name for s in steps] == ["write", "events", "shifts", "edge_check", "advance_edge", "shifts", "edge_check", "advance_edge"]
+    assert [s.name for s in steps] == ["write", "events", "shifts"]
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
-    assert all(m.ok for m in measures) and len(measures) == 8
+    assert all(m.ok for m in measures) and len(measures) == 3
     assert steps[0].max_output == gen.WRITE_TOKENS and budget.input_limit(gen.WRITE_TOKENS) > 8000    # the chapter has room to be written
 
 
@@ -234,8 +233,7 @@ def test_the_output_limit_holds_a_chapter_at_the_cap_with_room_to_spare():
 
 
 @pytest.mark.skipif(not tokens.available(), reason="the tokenizer files are not installed")
-def test_chapter_19_of_20_with_18_earlier_events_fits_and_cuts_the_oldest_history_first(monkeypatch):
-    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
+def test_chapter_19_of_20_with_18_earlier_events_fits_and_cuts_the_oldest_history_first():
     request = inflate(one_tie(), cast=6, each=5, ties=6, chapters=18, chars=900)
     request["beat"], request["ties"] = one_tie()["beat"], request["ties"][:2]
     request["previous_ending"] = one_tie()["previous_ending"]
@@ -243,7 +241,7 @@ def test_chapter_19_of_20_with_18_earlier_events_fits_and_cuts_the_oldest_histor
     assert len(request["earlier_events"]) == 18
     flow = gen.build_flow(request, Kit(request))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
-    assert all(m.ok for m in measures) and len(measures) == 8
+    assert all(m.ok for m in measures) and len(measures) == 3
     full, squeezed = sections(gen.write_prompt(request, 1.0)), sections(gen.write_prompt(request, 0.55))
     history = "The story so far"
     assert squeezed[history] != full[history] and "Chapter 18" in squeezed[history]
@@ -395,7 +393,6 @@ def test_the_shifts_check_lets_a_bond_ride_along_with_a_new_edge_and_never_alone
     kit = Kit(request)
     tie = lambda values: {"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": values}]}}]}
     assert gen.shifts_problem(request, kit, tie({"edge": "to forgive her daughter and let her stay", "bond": "two women who share a roof"})) is None
-    assert gen.replaced_edge(request, kit, tie({"edge": "to forgive her daughter and let her stay", "bond": "x"})) == ("to bring her daughter home", "to forgive her daughter and let her stay")
     alone = gen.shifts_problem(request, kit, tie({"bond": "two women who share a roof"}))
     assert alone and "ties.1" in alone and "Marit toward Suvi" in alone                     # a bond without a new edge still fails the edge check
     same = gen.shifts_problem(request, kit, tie({"edge": "To bring her daughter home.", "bond": "two women who share a roof"}))
@@ -439,20 +436,20 @@ def test_every_generate_vector_is_answered_through_the_real_server_on_the_mill_p
         edges = [op for s in reply.shifts if s.card == "entanglements" for op in s.patch.get("ties", []) if op.op == "replace"]
         assert edges and edges[0].id == request["beat"]["spotlight"]                                # handles came back as the id the page sent, the spotlight's
         assert wait_idle(base_url)
-    assert engine.calls == 5 and "## The plan for this chapter" in engine.prompts[0] and engine.params[0] is not None
-    assert [c is None for c in engine.constraints] == [True, False, False, False, False]                          # prose is free; events and shifts are grammar-bound
+    assert engine.calls == 3 and "## The plan for this chapter" in engine.prompts[0] and engine.params[0] is not None
+    assert [c is None for c in engine.constraints] == [True, False, False]                          # prose is free; events and shifts are grammar-bound
 
 
 def test_a_shifts_reply_that_misses_the_edge_is_asked_for_again_with_the_line_and_then_used():
     request = one_tie()
     kit = Kit(request)
-    text, events, shifts, check, judge = gen.script(request, kit)
+    text, events, shifts = gen.script(request, kit)
     engine = FakeEngine()
-    engine.script(text, events, json.dumps({"shifts": []}), shifts, check, judge)
+    engine.script(text, events, json.dumps({"shifts": []}), shifts)
     with running(config=Config(prompter="mill"), engine=engine, run=None) as (base_url, _):
         assert post(base_url, request).status_code == 200
         assert wait_idle(base_url)
-    assert engine.calls == 6 and "replaces the edge of ties.1" in engine.prompts[3]
+    assert engine.calls == 4 and "replaces the edge of ties.1" in engine.prompts[3]
 
 
 def test_the_chapter_is_the_writers_text_and_nothing_else():
@@ -463,7 +460,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-14:" in load_prompter("mill").version
+    assert "+generate:generate-16:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------
@@ -599,7 +596,7 @@ def _generate(*texts, **config):
     kit = Kit(request)
     good = gen.script(request, kit)
     engine = FakeEngine()
-    engine.script(*[good[i] if isinstance(i, int) else i for i in texts], good[3], good[4])      # an int stands for the module's own good text number i; the edge check's and the edge judge's good replies come last (unused when no edge was replaced)
+    engine.script(*[good[i] if isinstance(i, int) else i for i in texts])      # an int stands for the module's own good text number i
     ctx = RunContext(engine, CancelFlag(), [].append, Config(**config))
     ctx.notes["call"] = "generate"
     flow = gen.build_flow(request, kit)
@@ -608,7 +605,7 @@ def _generate(*texts, **config):
 
 def test_the_two_steps_after_the_write_get_more_attempts_and_a_fallback_each():
     steps = gen.build_flow(base(), Kit(base())).worst_case()
-    write, events, shifts, judge, *_ = steps
+    write, events, shifts = steps
     assert (write.attempts, write.fallback) == (2, None)
     assert (events.attempts, shifts.attempts) == (4, 3) and callable(events.fallback) and callable(shifts.fallback)
     assert shifts.fallback() == {"shifts": []}
@@ -617,15 +614,15 @@ def test_the_two_steps_after_the_write_get_more_attempts_and_a_fallback_each():
 def test_an_events_step_that_fails_every_attempt_still_returns_the_chapter_with_a_fallback():
     reply, ctx, engine, good = _generate(0, "no json", "still no", "nope", "again no", 2)
     assert reply["chapter_text"] == good[0].strip() and reply["events"] == gen.events_fallback(good[0].strip())
-    assert reply["shifts"] and ctx.notes["flow"] == {"events_fallback": True, "shifts_fallback": False, "edge_check": "yes", "edge_move": "complicates", "minor_names": 0, "minor_new": 0, "pressure_on": False}
+    assert reply["shifts"] and ctx.notes["flow"] == {"events_fallback": True, "shifts_fallback": False, "minor_names": 0, "minor_new": 0, "pressure_on": False}
     events_pass = [p for p in ctx.notes["passes"] if p["step"] == "events"][0]
-    assert len(events_pass["attempts"]) == 4 and events_pass["fallback"] is True and engine.calls == 8
+    assert len(events_pass["attempts"]) == 4 and events_pass["fallback"] is True and engine.calls == 6
 
 
 def test_a_first_events_attempt_that_fails_does_not_rerun_the_other_steps():
     reply, ctx, engine, good = _generate(0, "no json", 1, 2)
-    assert engine.calls == 6 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_check": "yes", "edge_move": "complicates", "minor_names": 0, "minor_new": 0, "pressure_on": False}
-    assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 2), ("shifts", 1), ("edge_check", 1), ("advance_edge", 1)]
+    assert engine.calls == 4 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "minor_names": 0, "minor_new": 0, "pressure_on": False}
+    assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 2), ("shifts", 1)]
     assert reply["events"]["happened"] == json.loads(good[1])["happened"]
 
 
@@ -645,7 +642,7 @@ def test_the_write_step_keeps_its_own_two_attempts_and_no_fallback():
 def test_an_events_reply_that_runs_on_is_repaired_not_retried():
     long = json.dumps({"happened": "The people met and quarrelled over the ledger.", "changed": "Suvi can hide no more. Marit knows everything now."})
     reply, ctx, engine, _ = _generate(0, long, 2)
-    assert engine.calls == 5 and reply["events"]["changed"] == "Suvi can hide no more. Marit knows everything now."
+    assert engine.calls == 3 and reply["events"]["changed"] == "Suvi can hide no more. Marit knows everything now."
 
 
 def test_every_fallback_is_a_line_in_the_trace(tmp_path):
@@ -657,92 +654,30 @@ def test_every_fallback_is_a_line_in_the_trace(tmp_path):
     assert events[-1]["reply"] == "" and events[-1]["problem"] is None
 
 
-# ---- the edge judge after the shifts (phase 3, observe-only) -------------------------------------------------------------------------
+# ---- after the shifts: nothing --------------------------------------------------------------------------------------------------
 
-def test_the_edge_judge_is_a_step_of_its_own_after_the_shifts_with_two_attempts_and_a_neutral_fallback():
+def test_a_generate_call_runs_exactly_write_events_and_shifts():
     request = base()
     flow = gen.build_flow(request, Kit(request))
-    text, events, shifts, check, judge = gen.script(request, Kit(request))
+    text, events, shifts = gen.script(request, Kit(request))
     results = [text, json.loads(events), json.loads(shifts)]
-    step = flow.next(results)
-    assert step.name == "edge_check" and step.attempts == 2 and callable(step.fallback)
-    assert "to settle what this chapter opened" in step.text(1.0) and "concrete target of the want" in step.text(1.0)
-    assert step.fallback() == {} and advance.check_ok(step.fallback()) and flow.notes["edge_check_fallback"] is True
-    step = flow.next(results + [json.loads(check)])
-    assert step.name == "advance_edge" and step.attempts == 2 and callable(step.fallback)
-    assert "to bring her daughter home" in step.text(1.0) and "to settle what this chapter opened" in step.text(1.0)
-    assert step.fallback() == {} and advance.edge_ok(step.fallback()) and flow.notes["edge_judge_fallback"] is True
-
-
-def test_no_edge_judge_runs_when_the_shifts_replaced_no_edge():
-    request = base()
-    flow = gen.build_flow(request, Kit(request))
-    assert flow.next(["a chapter", {"happened": "x", "changed": "y"}, {"shifts": []}]) is None
-    assert gen.replaced_edge(request, Kit(request), {"shifts": []}) is None
-
-
-SAME = json.dumps({"old_object": "object_a", "new_object": "object_a", "reason": "Same want, new words.", "move": "same"})
-
-
-def test_with_the_flag_off_the_verdict_only_goes_to_the_notes_and_the_reply_is_the_same_whatever_it_says(monkeypatch):
-    monkeypatch.setattr(advance, "ENFORCE", False)                                                    # the switch off: observe-only
-    reply, ctx, engine, good = _generate(0, 1, 2, 3, SAME)
-    plain, _, _, _ = _generate(0, 1, 2)
-    assert reply == plain and engine.calls == 5 and ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_check": "yes", "edge_move": "same", "minor_names": 0, "minor_new": 0, "pressure_on": False}
-    assert [s.name for s in gen.build_flow(base(), Kit(base())).worst_case()][-1] == "advance_edge" and len(gen.build_flow(base(), Kit(base())).worst_case()) == 5
-
-
-def test_a_same_want_edge_sends_only_the_shifts_back_once_with_the_judges_line_and_the_judge_runs_again(monkeypatch):
-    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
-    reply, ctx, engine, good = _generate(0, 1, 2, 3, SAME, 2)
-    assert engine.calls == 8 and reply["chapter_text"] == good[0].strip()
-    assert [(p["step"], len(p["attempts"])) for p in ctx.notes["passes"]] == [("write", 1), ("events", 1), ("shifts", 1), ("edge_check", 1), ("advance_edge", 1), ("shifts", 1), ("edge_check", 1), ("advance_edge", 1)]
-    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "edge_check": "yes", "edge_check_after": "yes", "edge_move": "same", "edge_resent": True, "edge_move_after": "complicates", "minor_names": 0, "minor_new": 0, "pressure_on": False}
-    assert "Your first list of changes was set aside." not in engine.prompts[2]
-    assert "Your first list of changes was set aside. Same want, new words." in engine.prompts[5] and "Let the edge move" in engine.prompts[5]
-    assert engine.prompts[5].rindex("Let the edge move") < engine.prompts[5].rindex("Reply with a JSON object with one key")                # the line sits ahead of the format rule
-    assert "Your first list" not in engine.prompts[0]                                                      # the write was never asked again
-
-
-def test_a_second_same_verdict_is_accepted_and_noted_and_nothing_runs_a_third_time(monkeypatch):
-    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
-    reply, ctx, engine, good = _generate(0, 1, 2, 3, SAME, 2, 3, SAME)
-    assert engine.calls == 8 and reply["shifts"]
-    assert ctx.notes["flow"]["edge_resent"] is True and ctx.notes["flow"]["edge_move_after"] == "same" and ctx.notes["flow"]["edge_accepted"] is True
-
-
-def test_the_edge_judge_reads_the_chapters_facts_and_the_retry_carries_its_reason_and_object():
-    reply, ctx, engine, good = _generate(0, 1, 2, 3, SAME, 2, 3, SAME)
-    events = gen.repair_events(json.loads(good[1]))
-    judge, retry = engine.prompts[4], engine.prompts[5]
-    assert events["happened"] in judge and events["changed"] in judge and "Judge the change from these" in judge and "Answer same unless the object of the want" in judge
-    assert "old_object" in judge and "new_object" in judge and engine.prompts[7].count(events["happened"]) == 1          # the second judge reads the same facts
-    assert "Same want, new words." in retry and "still aims at object_a" in retry
-
-
-def test_the_planned_outcome_goes_to_the_edge_judge_as_a_fact_when_the_beat_has_one():
-    request = base()
-    request["beat"]["outcome"] = "lost"
-    flow = gen.build_flow(request, Kit(request))
-    facts = flow._edge_facts({"happened": "Happened text.", "changed": "Changed text."})
-    assert facts["outcome"] == gen.planned_outcome_line(request["beat"]) and "losing what they were after" in facts["outcome"]
-    text = advance.edge_prompt(request, "old", "new", 1.0, facts)
-    assert "Happened text." in text and "Changed text." in text and facts["outcome"] in text
-    bare = advance.edge_prompt(request, "old", "new")
-    assert "The facts of the chapter" not in bare
-    assert "outcome" in gen.build_flow(base(), Kit(base()))._edge_facts({}) and gen.build_flow(base(), Kit(base()))._edge_facts({})["outcome"] == ""
-
-
-def test_a_good_verdict_sends_nothing_back():
+    assert flow.next(results) is None and flow.next([]).name == "write" and flow.next(results[:1]).name == "events" and flow.next(results[:2]).name == "shifts"
+    assert [s.name for s in flow.worst_case()] == ["write", "events", "shifts"]
     reply, ctx, engine, good = _generate(0, 1, 2)
-    assert engine.calls == 5 and "edge_resent" not in ctx.notes["flow"]
+    assert engine.calls == 3 and [p["step"] for p in ctx.notes["passes"]] == ["write", "events", "shifts"]
+    assert ctx.notes["flow"] == {"events_fallback": False, "shifts_fallback": False, "minor_names": 0, "minor_new": 0, "pressure_on": False}
 
 
-CHECK_NO = json.dumps({"reason": "The edge states a mood, not a want with a target.", "ok": "no"})
-
-
-def shifts_passes(ctx):
-    return [p["step"] for p in ctx.notes["passes"]].count("shifts")
+def test_shifts_that_replace_the_spotlight_edge_are_accepted_as_they_are_and_returned():
+    request = one_tie()
+    kit = Kit(request)
+    tie = lambda values: json.dumps({"shifts": [{"card": "entanglements", "patch": {"ties": [{"op": "replace", "id": "ties.1", "values": values}]}}]})
+    for shifts in (tie({"edge": "to bring her daughter home, and soon"}), tie({"edge": "a feeling", "bond": "Two women, bound by it"}), tie({"edge": "to forgive her daughter and let her stay"})):
+        assert gen.shifts_problem(request, kit, json.loads(shifts)) is None
+        reply, ctx, engine, _ = _generate(0, 1, shifts)
+        assert engine.calls == 3 and reply["shifts"] == json.loads(shifts)["shifts"]            # no model reads the new edge or bond, and nothing sends the shifts back
+        assert [p["step"] for p in ctx.notes["passes"]] == ["write", "events", "shifts"]
+        assert not any(k.startswith("edge_") for k in ctx.notes["flow"])
 
 
 def test_the_shifts_prompt_gets_the_summary_facts_and_never_the_prose():
@@ -752,118 +687,16 @@ def test_the_shifts_prompt_gets_the_summary_facts_and_never_the_prose():
     assert "What the chapter changed, as its summary records it:" in prompt and "The chapter:" not in prompt
     assert load_text("generate")["shifts_form"] in prompt and prompt.count(load_text("generate")["shifts_form"]) == 1
     assert "a concrete person, thing, place or deadline" in prompt and "not a mood, a manner or a trend" in prompt and "it does not describe a feeling" in prompt
-    assert CHAPTER not in prompt and CHAPTER not in gen.shifts_prompt(request, Kit(request), EVENTS, 1.0, "A line.")
+    assert CHAPTER not in prompt and CHAPTER not in gen.shifts_prompt(request, Kit(request), EVENTS, 1.0)
     no_changed = gen.shifts_prompt(request, Kit(request), {"happened": "Only this."})
     assert "Only this." in no_changed and "What the chapter changed" not in no_changed
     reply, ctx, engine, good = _generate(0, 1, 2)
     assert good[0].strip() not in engine.prompts[2] and json.loads(good[1])["happened"] in engine.prompts[2]
 
 
-def test_the_edge_check_step_reads_only_the_tie_the_new_edge_and_the_new_bond_and_answers_yes_or_no():
-    request = one_tie()
-    step = advance.edge_check_step(request, "to reach place_a before deadline_a", "daughter")
-    assert step.name == "edge_check" and list(step.grammar["properties"]) == ["reason", "ok"] and step.grammar["properties"]["ok"]["enum"] == ["yes", "no"]
-    text = step.text(1.0)
-    assert "to reach place_a before deadline_a" in text and "The new bond: daughter" in text and "concrete target of the want" in text and "plain noun phrase" in text
-    assert "to bring her daughter home" not in text and "The chapter" not in text                        # not the old edge, not the prose or the facts
-    assert "The new bond" not in advance.edge_check_step(request, "to reach place_a", "").text(1.0)
-    for word, expected in (("yes", True), ("no", False)):
-        assert advance.check_ok({"reason": "r", "ok": word}) is expected
-    for odd in (None, {}, "no", {"ok": "maybe"}, {"ok": None}, 3):
-        assert advance.check_ok(odd) is True                                                          # a check that cannot be read never costs a chapter
-    assert advance.notes(check_value={"ok": "no"}) == {"edge_check": "no"} and advance.notes(check_value={"ok": "maybe"}) == {}
-    assert "Write the edge as a want or a fear" in advance.problem_line("edge_check", {"reason": "It is a mood."}) and advance.problem_line("edge_check", {"reason": "It is a mood."}).startswith("It is a mood.")
-    assert advance.problem_line("edge_check", None) == load_text("advance")["problems"]["edge_check_bare"]
-
-
-def test_a_check_that_says_no_sends_the_shifts_back_once_with_its_reason_and_the_retry_is_checked_for_the_record():
-    reply, ctx, engine, good = _generate(0, 1, 2, CHECK_NO, 2, 3, 4)
-    assert [p["step"] for p in ctx.notes["passes"]] == ["write", "events", "shifts", "edge_check", "shifts", "edge_check", "advance_edge"] and engine.calls == 7
-    assert "Your first list of changes was set aside. The edge states a mood, not a want with a target." in engine.prompts[4] and "Write the edge as a want or a fear" in engine.prompts[4]
-    assert "Your first list" not in engine.prompts[2] and "Your first list" not in engine.prompts[0]
-    flow = ctx.notes["flow"]
-    assert flow["edge_check"] == "no" and flow["edge_check_after"] == "yes" and flow["edge_check_resent"] is True and "edge_check_accepted" not in flow and "edge_resent" not in flow
-    assert reply["chapter_text"] == good[0].strip()                                                 # the chapter is never written again
-
-
-def test_a_second_no_from_the_check_is_accepted_and_nothing_is_sent_back_a_third_time():
-    reply, ctx, engine, good = _generate(0, 1, 2, CHECK_NO, 2, CHECK_NO, 4)
-    assert shifts_passes(ctx) == 2 and engine.calls == 7 and reply["shifts"]
-    flow = ctx.notes["flow"]
-    assert flow["edge_check_resent"] is True and flow["edge_check_accepted"] is True and flow["edge_check_after"] == "no"
-
-
-def test_a_check_that_fails_to_answer_never_sends_anything_back(monkeypatch):
-    reply, ctx, engine, good = _generate(0, 1, 2, "no json", "still none", 4)
-    assert shifts_passes(ctx) == 1 and ctx.notes["flow"]["edge_check_fallback"] is True and "edge_check_resent" not in ctx.notes["flow"]
-
-
-def test_the_judge_sends_the_shifts_back_once_even_after_the_check_did_and_the_passes_are_never_more_than_three(monkeypatch):
-    monkeypatch.setattr(advance, "ENFORCE", True)
-    reply, ctx, engine, good = _generate(0, 1, 2, CHECK_NO, 2, 3, SAME, 2, CHECK_NO, 4)
-    assert [p["step"] for p in ctx.notes["passes"]] == ["write", "events", "shifts", "edge_check", "shifts", "edge_check", "advance_edge", "shifts", "edge_check", "advance_edge"]
-    assert shifts_passes(ctx) == 3 and engine.calls == 10
-    flow = ctx.notes["flow"]
-    assert flow["edge_check_resent"] is True and flow["edge_resent"] is True and flow["edge_move_after"] == "complicates"
-
-
-def test_a_check_after_the_judge_has_run_is_for_the_record_only(monkeypatch):
-    monkeypatch.setattr(advance, "ENFORCE", True)
-    reply, ctx, engine, good = _generate(0, 1, 2, 3, SAME, 2, CHECK_NO, 4)
-    assert [p["step"] for p in ctx.notes["passes"]][-3:] == ["shifts", "edge_check", "advance_edge"] and shifts_passes(ctx) == 2
-    assert ctx.notes["flow"]["edge_check_accepted"] is True and "edge_check_resent" not in ctx.notes["flow"]
-
-
-def test_a_check_that_says_no_with_no_way_to_redo_the_shifts_keeps_the_first_ones(monkeypatch):
-    reply, ctx, engine, good = _generate(0, 1, 2, CHECK_NO, "a", "b", "c", 4)
-    assert reply["shifts"] == json.loads(good[2])["shifts"] and ctx.notes["flow"]["edge_resend_fallback"] is True
-    assert [p["step"] for p in ctx.notes["passes"]][-1] == "advance_edge" and ctx.notes["flow"]["edge_check_resent"] is True
-
-
-def test_shifts_that_cannot_be_redone_keep_the_first_ones_and_the_call_still_succeeds(monkeypatch):
-    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
-    reply, ctx, engine, good = _generate(0, 1, 2, 3, SAME, "a", "b", "c")
-    assert engine.calls == 8 and reply["shifts"] == json.loads(good[2])["shifts"]                 # three refused attempts, then the first shifts stand
-    assert ctx.notes["flow"]["edge_resend_fallback"] is True and ctx.notes["flow"]["edge_accepted"] is True
-
-
-def test_a_judge_that_fails_every_attempt_never_fails_the_call_and_leaves_the_reply_alone():
-    reply, ctx, engine, good = _generate(0, 1, 2)
-    engine_bad = FakeEngine()
-    from pulpermill.backend import runner
-    from pulpermill.backend.engine.base import CancelFlag
-    from pulpermill.backend.pipelines import RunContext
-    request = base()
-    kit = Kit(request)
-    engine_bad.script(good[0], good[1], good[2], "no json", "still none")
-    ctx2 = RunContext(engine_bad, CancelFlag(), [].append, Config())
-    ctx2.notes["call"] = "generate"
-    flow = gen.build_flow(request, kit)
-    again = flow.reply(runner.run_flow(ctx2, flow, "en"))
-    assert again == reply and ctx2.notes["flow"]["edge_judge_fallback"] is True and "edge_move" not in ctx2.notes["flow"]
-    judge_pass = [p for p in ctx2.notes["passes"] if p["step"] == "advance_edge"][0]
-    assert len(judge_pass["attempts"]) == 2 and judge_pass["fallback"] is True
-
-
-def test_the_prompter_version_changes_with_the_judge_wording(monkeypatch, tmp_path):
-    import shutil
-    from pulpermill.prompter.mill import common
-    first = load_prompter("mill").version
-    assert f"+advance:{advance.VERSION}:" in first
-    shutil.copytree(common.TEXT, tmp_path / "text")
-    monkeypatch.setattr(common, "TEXT", tmp_path / "text")
-    assert load_prompter("mill").version == first                           # a copy of the same wording: the same version
-    with open(tmp_path / "text" / "en" / "advance.yaml", "a", encoding="utf-8") as handle:
-        handle.write("# one more word\n")
-    changed = load_prompter("mill").version
-    assert changed != first and changed.split("+advance:")[0] == first.split("+advance:")[0]
-
-
 # ---- the pressure (world-pressure-2): the writer's line, the judge, the notes -----------------------------------------------------------
 
 SENTENCE = "a part of the collision, whether or not it has anything to do with the aim or the tie to begin with"
-ACTS = json.dumps({"reason": "The rule costs her something.", "effect": "acts"})
-DECOR = json.dumps({"reason": "The rule is only mentioned.", "effect": "decor"})
 
 
 def pressed(kind="rule") -> dict:
@@ -914,46 +747,15 @@ def test_with_no_pressure_the_writer_prompt_is_what_it_was_and_a_squeeze_drops_t
         assert gen.write_prompt(pressed(kind), 0.7) == gen.write_prompt(plain, 0.7)
 
 
-def test_the_pressure_judge_runs_last_reads_what_happened_and_not_the_chapter_and_records_a_word():
+def test_with_a_pressure_in_the_request_the_flow_runs_no_pressure_step_and_the_notes_still_say_pressure_on():
     request = pressed()
-    kit = Kit(request)
-    good = gen.script(request, kit)
-    assert len(good) == 6 and json.loads(good[5])["effect"] == "acts"
+    good = gen.script(request, Kit(request))
+    assert len(good) == 3 and len(gen.script(base(), Kit(base()))) == 3       # no reply for a pressure judge, with or without a pressure
     reply, ctx, engine = _generate_pressed(request, *good)
-    assert engine.calls == 6 and [p["step"] for p in ctx.notes["passes"]] == ["write", "events", "shifts", "edge_check", "advance_edge", "advance_pressure"]
-    judged = engine.prompts[5]
-    assert json.loads(good[1])["happened"] in judged and good[0].strip() not in judged and request["pressure"]["statement"] in judged
-    assert request["beat"]["pressure"] not in judged and request["beat"]["aim"] in judged
-    assert ctx.notes["flow"]["pressure_on"] is True and ctx.notes["flow"]["pressure_effect"] == "acts"
-    assert reply["events"]["happened"] == json.loads(good[1])["happened"] and reply["shifts"]
-
-
-def test_a_decor_verdict_or_a_failing_judge_changes_nothing_in_the_reply():
-    request = pressed()
-    good = gen.script(request, Kit(request))
-    reply_acts, _, _ = _generate_pressed(request, *good)
-    reply_decor, ctx, engine = _generate_pressed(request, *good[:5], DECOR)
-    assert reply_decor == reply_acts and engine.calls == 6 and ctx.notes["flow"]["pressure_effect"] == "decor"
-    reply_bad, ctx, engine = _generate_pressed(request, *good[:5], "no", "still no")
-    assert reply_bad == reply_acts and engine.calls == 7
-    assert ctx.notes["flow"]["pressure_effect"] == "unclear" and ctx.notes["flow"]["pressure_judge_fallback"] is True
-
-
-def test_the_reply_keeps_the_resent_shifts_when_a_pressure_judge_follows_them(monkeypatch):
-    monkeypatch.setattr(advance, "ENFORCE", True)      # this covers the resend path, which is off by default
-    request = pressed()
-    good = gen.script(request, Kit(request))
-    reply, ctx, engine = _generate_pressed(request, good[0], good[1], good[2], good[3], SAME, good[2], good[3], good[4], ACTS)
-    assert engine.calls == 9 and [p["step"] for p in ctx.notes["passes"]][-4:] == ["shifts", "edge_check", "advance_edge", "advance_pressure"]
-    assert reply["shifts"] == json.loads(good[2])["shifts"] and ctx.notes["flow"]["pressure_effect"] == "acts"
-    assert ctx.notes["flow"]["edge_resent"] is True
-
-
-def test_the_pressure_judge_runs_when_no_edge_was_replaced_and_not_without_a_pressure():
-    request = pressed()
+    assert engine.calls == 3 and [p["step"] for p in ctx.notes["passes"]] == ["write", "events", "shifts"]
+    assert ctx.notes["flow"]["pressure_on"] is True and not any(k.startswith("pressure_") and k != "pressure_on" for k in ctx.notes["flow"])
+    assert not any("advance_pressure" in p["step"] for p in ctx.notes["passes"]) and reply["shifts"]
     flow = gen.build_flow(request, Kit(request))
-    step = flow.next(["a chapter", {"happened": "The rule cost her.", "changed": "y"}, {"shifts": []}])
-    assert step.name == "advance_pressure" and "The rule cost her." in step.text(1.0)
-    assert flow.notes["pressure_on"] is True and [s.name for s in flow.worst_case()][-1] == "advance_pressure"
+    assert flow.notes["pressure_on"] is True and "advance_pressure" not in [s.name for s in flow.worst_case()]
     plain = gen.build_flow(base(), Kit(base()))
-    assert plain.notes["pressure_on"] is False and "advance_pressure" not in [s.name for s in plain.worst_case()] and len(gen.script(base(), Kit(base()))) == 5
+    assert plain.notes["pressure_on"] is False and "advance_pressure" not in [s.name for s in plain.worst_case()]

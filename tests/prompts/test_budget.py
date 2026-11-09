@@ -183,5 +183,5 @@ def test_a_pressure_adds_little_to_a_writer_prompt_and_the_worst_case_still_fits
         from pulpermill.backend.kit import Kit
         flow = gen.build_flow(request, Kit(request))
         steps = flow.worst_case()
-        assert steps[-1].name == "advance_pressure"                                           # the judge is counted in the worst case
+        assert not any("pressure" in s.name for s in steps)                                  # no pressure judge: a pressure adds no step
         assert all(budget.measure(budget.Sized(s.name, s.text(1.0), s.max_output)).ok for s in steps)

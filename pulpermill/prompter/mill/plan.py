@@ -1,5 +1,5 @@
 """The `plan` call: a free-text brainstorm of three ways to take the running aim its next step, then one JSON step that designs the chapter from
-them, then the aim judge (advance.py, observe-only). The planner collides the protagonist's aim with the spotlight tie (R4), designs the chapter in four points inside the
+them. The planner collides the protagonist's aim with the spotlight tie (R4), designs the chapter in four points inside the
 `plan` text (R7), and ends in a state where both have moved (R6). Minor characters appear by role only (R5). The brainstorm only helps the plan:
 if it cannot be had, the plan goes ahead without it. Wording lives in text/en/plan.yaml; this module assembles it from the renderers and checks
 the reply.
@@ -8,7 +8,6 @@ Helpers at the top (names, ties in words, squeeze tiers, the spotlight) are shar
 import copy
 import math
 import re
-from dataclasses import replace
 from typing import Any
 
 from pulpermill.prompts import render as r
@@ -17,7 +16,7 @@ from pulpermill.prompter.base import Flow, Step
 
 from . import advance, common, decide, repeat, select
 
-VERSION = "plan-22"
+VERSION = "plan-25"
 IDEA = "idea"            # in choose mode: the number (1 to 3) of the idea the plan builds on, which is also the number of its combination; the reply turns it into `picked`
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
@@ -26,9 +25,6 @@ BRAINSTORM_OUTPUT = 1200      # three ideas of about 130 words each need roughly
 BRAINSTORM_ATTEMPTS = 2       # then the plan goes ahead without a brainstorm: it is a help to the plan, never a reason to fail a call
 BRAINSTORM_MIN_CHARS = 120    # three options cannot be told in less
 BRAINSTORM_STAND_IN = "word " * BRAINSTORM_OUTPUT       # the longest a brainstorm can be as the plan prompt carries it (a token a word), for the worst case
-JUDGE_ATTEMPTS = 2        # the advancement judge (observe-only): two tries, then a neutral verdict, so a judge can never fail a call
-AIM_STAND_IN = "word " * 60       # the longest an aim is shown to a model (300 characters), for the worst case
-PLAN_STAND_IN = "word " * 300      # the longest a plan is shown to the pressure judge (1,200 characters), for the worst case
 
 
 # ---- Shared helpers -------------------------------------------------------------------------------------------------------
@@ -451,20 +447,18 @@ def _tidy_brainstorm(text: Any) -> str:
 
 class PlanFlow(Flow):
     """(In choose mode, `select` first: three combinations of a tie and a rule or object, and the brainstorm then writes one idea for each.)
-    brainstorm, (decide), plan, aim judge (observe-only: nothing is sent back for its verdict). The brainstorm is free text that the plan prompt carries; if it cannot be had, the
+    label steps (from the second chapter), brainstorm, (decide), plan; nothing runs after the plan. The brainstorm is free text that the plan prompt carries; if it cannot be had, the
     plan goes ahead without it. The decider (decide.py) reads the brainstorm's options and picks one, and the plan is then built on that one option
     alone, as idea 1 with its own combination; with any other number of options than three, or with `decide.ON` False, the plan carries the whole brainstorm as before."""
 
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
         self.notes: dict[str, Any] = {"pressure_on": bool(pressure_of(request)), "origin_history": bool(request.get("origin_history", True))}      # for the run log: whether a pressure was sent, whether origin history was asked for, the judges' verdict words, whether a last resort stood in for a step, and the walk-on counts (minor_names, minor_new)
-        self._pressure_at: int | None = None    # where the pressure judge's result sits among the results after the brainstorm, once that step has been asked for
         self.brainstorm = ""                    # the brainstorm's text once it has run ("" until then, and when it fell back)
         self.combos: list[dict] | None = None   # choose mode: the three combinations the select step picked (None until then, and when it fell back)
         self._options: list[tuple[int, str]] | None = None    # the brainstorm's options when the decider is to run (at least two), else None
         self._order: list[int] = []             # the order the decider was shown them in
         self.decision: decide.Decision | None = None          # the decider's pick, once it has run
-        self._replanned = False                 # the aim gate sent the plan back once (never more): the plan that stands is then the second one
         self._shown: list[dict] | None = None   # once decided in choose mode: the one combination the plan carries (the picked option's), else None
         self._label_items = label_items(request)    # the earlier chapters the label step describes (empty: no label step)
         self.used: list[dict] = []              # the labelled earlier chapters, oldest first: {chapter, the seven labels}; empty after a fallback or with no label step
@@ -701,40 +695,6 @@ class PlanFlow(Flow):
         else:
             self._alive = [i for i in range(count) if i not in dropped]
 
-    def _judges(self) -> bool:
-        """The aim judge runs from the second chapter on, when there is an earlier aim to be a kind of."""
-        return bool(advance.earlier_aims(self.request))
-
-    def _aim_step(self, aim: str, beat: Any = None) -> Step:
-        """The judge of the plan's aim, a step of its own after the plan. Its last resort is a neutral verdict (none), never an error."""
-        def neutral():
-            self.notes["aim_judge_fallback"] = True
-            return {}
-        request = self._resolved(beat) if beat is not None else None
-        return replace(advance.aim_step(request or self.request, aim), attempts=JUDGE_ATTEMPTS, fallback=neutral)
-
-    def _pressure_step(self, beat: Any) -> Step:
-        """The judge of the chapter's pressure, a step of its own after the plan that stands. It reads the plan text. Observe-only: its last
-        resort is `unclear`, and nothing is ever sent back for its verdict."""
-        def unclear():
-            self.notes["pressure_judge_fallback"] = True
-            return {"effect": "unclear"}
-        beat = beat if isinstance(beat, dict) else {}
-        request = self._resolved(beat) or self.request
-        return replace(advance.pressure_step(request, r.s(beat.get("plan")), "plan", r.s(beat.get("aim"))), attempts=JUDGE_ATTEMPTS, fallback=unclear)
-
-    def _end(self, results):
-        """The chain of steps is over: the pressure judge is the one step left, and only when a pressure was sent. `results` are the ones after
-        the brainstorm."""
-        if not self.notes["pressure_on"]:
-            return None
-        self._pressure_at = len(results)
-        return self._pressure_step(results[2 if self._replanned else 0])
-
-    @staticmethod
-    def _aim_of(beat: Any) -> str:
-        return r.s(beat.get("aim")) if isinstance(beat, dict) else ""
-
     def next(self, results):
         if self._select_on:                 # choose mode: the select result comes first; everything after it is today's flow, counted from its own start
             if not results:
@@ -784,35 +744,11 @@ class PlanFlow(Flow):
         return options
 
     def _after_brainstorm(self, results):
-        """plan, the aim judge, then the pressure judge. The aim judge is a gate: when it says the aim continues with no new obstacle, the plan is
-        made once more with that as its problem (through the page's retry wording), the aim judge runs again for the record, and what it says is
-        accepted. The results are [plan, aim, (plan again, aim again,) (pressure)]."""
-        n = len(results)
-        if self._pressure_at is not None and n == self._pressure_at + 1:      # the pressure judge has run: record its word and stop
-            self.notes.update(advance.notes(pressure_value=results[self._pressure_at]))
-            return None
-        if n == 0:
-            return self._step()
-        if n == 1:
-            aim = self._aim_of(results[0])
-            return self._aim_step(aim, results[0]) if aim and self._judges() else self._end(results)
-        if n == 2 and advance.aim_gate(results[1]):
-            self._replanned = True
-            self.notes["aim_replanned"] = True
-            return self._step(request=self._gate_request(results[0]))
-        if self._replanned and n == 3:
-            aim = self._aim_of(results[2])
-            return self._aim_step(aim, results[2]) if aim else self._end(results)
-        self.notes.update(advance.notes(aim_value=results[3 if self._replanned and n > 3 else 1]))
-        return self._end(results)
-
-    def _gate_request(self, beat: Any) -> dict:
-        """The request for the plan made again: the refused plan and the gate's line, in the page's own retry shape."""
-        line = common.load_text("plan")["problems"]["aim_same_obstacle"]
-        return {**self.request, "retry": {"beat": beat if isinstance(beat, dict) else {}, "problems": [line]}}
+        """The plan, and nothing after it: no results yet means the plan is the next step, and once it is in the chain is over."""
+        return self._step() if not results else None
 
     def worst_case(self):
-        """The brainstorm, then the plan carrying a brainstorm of the longest size, then the judges."""
+        """The brainstorm, then the plan carrying a brainstorm of the longest size."""
         stand = select.stand_in(self.request) if self._select_on else None       # choose mode: the select step first, and the combinations as large as they can get
         steps = [self._select_step()] if self._select_on else []
         table = _used_stand_in() if self._label_items else None       # the label step, and the "already used" table as long as it can get
@@ -827,10 +763,6 @@ class PlanFlow(Flow):
             steps.append(decide.step(select.without_pair(self.request) if self._select_on else self.request, options, list(range(len(options))), lambda: None,
                                      decide.criteria_for(self.request), stand))
         steps.append(self._step(brainstorm=BRAINSTORM_STAND_IN, combos=stand, used=table, avoid=list(repeat.FIELDS) if table else None))
-        if self._judges():
-            steps.append(self._aim_step(AIM_STAND_IN))
-        if self.notes["pressure_on"]:
-            steps.append(self._pressure_step({"aim": AIM_STAND_IN, "plan": PLAN_STAND_IN}))
         return steps
 
     def _ending(self, beat: Any) -> str | None:
@@ -849,7 +781,7 @@ class PlanFlow(Flow):
         if self._label_items:
             results = results[1:]
         at = 1 + (self._options is not None and self._gated) + (self._options is not None and len(self._alive) >= 2)       # the gate's and the decider's results (each when it ran) sit between the brainstorm and the plan
-        beat = results[at + 2 if self._replanned else at]           # the plan the aim gate asked for stands in place of the first
+        beat = results[at]
         out: dict[str, Any] = {}
         combo = self._combo_of(beat)
         if combo is not None:
@@ -900,8 +832,4 @@ def script(request: dict, kit: Any) -> list[str]:
                                              "obstacle_party": party, "turning_kind": "refusal", "outcome": "lost", "closing_hook": "new_task"} for c, _ in items]}))
     chosen = {"idea": 1} if choose else {}
     texts += [brainstorm, json.dumps({**chosen, "idea_use": f"I build on option 2, the trade, and take its price quarrel.", "where": place, "when_time": f"Day {n}, early morning", "aim": aim, "plan": plan})]
-    if advance.earlier_aims(request):          # the advancement judge runs from the second chapter on
-        texts.append(json.dumps({"reason": "The aim takes the running aim on from where the last chapter left it, against a new obstacle.", "link": "continues", "new_obstacle": "yes"}))
-    if request.get("pressure") or (choose and request.get("pressure_options")):                # the pressure judge runs last, whenever a pressure was sent
-        texts.append(json.dumps({"reason": "The plan makes the element cost the protagonist something.", "effect": "acts"}))
     return texts

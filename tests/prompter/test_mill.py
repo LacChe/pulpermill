@@ -43,7 +43,7 @@ def test_the_version_is_the_base_plus_one_piece_per_call_with_its_own_wording_an
     # B1 and B2 give calls their own wording, so the version is no longer the bare base.
     version = load_prompter("mill").version
     assert version.startswith("mill-0.2")
-    assert all(piece.split(":")[0] in set(CALLS) | {"advance"} for piece in version.split("+")[1:] if piece)        # the judge's wording is a piece of its own
+    assert all(piece.split(":")[0] in set(CALLS) for piece in version.split("+")[1:] if piece)        # one piece for each call with its own wording
 
 
 @pytest.mark.parametrize("vector", VALID, ids=lambda v: v["name"])

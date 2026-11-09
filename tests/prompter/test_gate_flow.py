@@ -54,7 +54,7 @@ def decide_reply(request: dict, survivors: list[tuple[int, str]], wanted_place: 
 
 def run(request: dict, matching: tuple[int, ...], wanted: int | None = None):
     """A whole call: the label step over the earlier chapters, the brainstorm of three options, the gate's labels, the decider (when two or more ideas are
-    left; `wanted` is the place it picks), the plan and the aim judge. `matching` is how many labels each idea shares with the earlier chapters."""
+    left; `wanted` is the place it picks), the plan. `matching` is how many labels each idea shares with the earlier chapters."""
     texts = plan.script(request, Kit(request))
     at = (1 if request.get("choose") else 0) + 1                    # the brainstorm's place in the scripted texts
     beat = json.loads(texts[at + 1])
@@ -83,7 +83,7 @@ def test_three_survivors_run_the_decider_on_all_three_and_the_notes_carry_the_ma
     assert notes["repeat"] == "on" and (notes["repeat_m1"], notes["repeat_m2"], notes["repeat_m3"]) == (1, 2, 3) and notes["repeat_dropped"] == 0 and notes["repeat_avoid"] is False
     assert notes["decide"] == "on" and notes["decide_options"] == 3 and notes["decide_pick"] == 2 and reply["outcome"] == ENDINGS[2]
     assert all(t in decide_prompt(engine) for t in ("a first thing", "a second thing", "a third thing")) and flow.avoid_fields == []
-    assert load_text("plan")["avoid_line"][:30] not in engine.prompts[-2]
+    assert load_text("plan")["avoid_line"][:30] not in engine.prompts[-1]
 
 
 def test_the_gate_labels_the_three_ideas_and_the_outcome_comes_from_the_number_not_the_model():
@@ -107,7 +107,7 @@ def test_an_idea_that_matches_too_much_is_dropped_and_the_decider_sees_two_under
     assert notes["repeat_dropped"] == 1 and notes["repeat_m1"] == 5 and notes["decide_options"] == 2 and notes["decide"] == "on"
     assert notes["decide_pick"] == 3 and notes["decide_s3"] in (1, 0, -1) and "decide_s1" not in notes and sorted(notes["decide_order"].split("-")) == ["2", "3"]
     assert reply["outcome"] == ENDINGS[3] == "gave_up"                    # the third idea's own number, though it was the second one judged
-    assert "a third thing" in engine.prompts[-2].split("## The idea for this chapter\n")[1].split("## Your task")[0]
+    assert "a third thing" in engine.prompts[-1].split("## The idea for this chapter\n")[1].split("## Your task")[0]
 
 
 def test_in_choose_mode_the_picked_ideas_own_combination_is_the_one_the_plan_carries():
@@ -161,14 +161,11 @@ def test_when_every_idea_is_dropped_the_one_with_the_fewest_matches_stays_and_th
     assert line in prompt and "a second thing" in prompt
 
 
-def test_the_avoid_line_stays_in_the_plan_the_aim_gate_asks_for_again():
+def test_the_avoid_line_is_in_the_plan_prompt_only_when_fields_were_kept():
     request = chaptered(base())
-    texts_flow = run(request, (5, 4, 4))
-    flow = texts_flow[0]
-    first = plan.build_prompt(flow.request, 1.0, flow.brainstorm, None, True, 2, flow.used, flow.avoid_fields)
-    assert load_text("plan")["avoid_line"][:30] in first
-    retried = flow._step(request=flow._gate_request({"aim": "x"})).text(1.0)
-    assert load_text("plan")["avoid_line"][:30] in retried
+    flow = run(request, (5, 4, 4))[0]
+    kept = plan.build_prompt(flow.request, 1.0, flow.brainstorm, None, True, 2, flow.used, flow.avoid_fields)
+    assert load_text("plan")["avoid_line"][:30] in kept
     assert load_text("plan")["avoid_line"][:30] not in plan.build_prompt(flow.request, 1.0, flow.brainstorm, None, True, 2, flow.used)
 
 

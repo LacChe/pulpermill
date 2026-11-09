@@ -21,7 +21,7 @@ for sub in ("backend", "e2e"):
 
 from pulpermill.backend.config import Config  # noqa: E402
 from pulpermill.backend.errors import Cancelled  # noqa: E402
-from pulpermill.prompter.mill import advance, fill, generate as gen, judge, plan, style_fit  # noqa: E402
+from pulpermill.prompter.mill import fill, generate as gen, judge, plan, style_fit  # noqa: E402
 from server_harness import running, wait_idle  # noqa: E402
 from stub_engine import StubEngine  # noqa: E402
 
@@ -79,7 +79,7 @@ def test_the_whole_story_passes_on_the_mill_prompter_with_real_plan_and_generate
     prompts = engine_with_scripts.prompts
     assert any("## Your task" in p for p in prompts) and any("## The plan for this chapter" in p for p in prompts)
     versions = {r for r in log.read_text().split('"version": "') if r.startswith("mill-0.2")}
-    assert versions and all(f"+plan:{plan.VERSION}:" in v and f"+generate:{gen.VERSION}:" in v and f"+advance:{advance.VERSION}:" in v for v in versions)
+    assert versions and all(f"+plan:{plan.VERSION}:" in v and f"+generate:{gen.VERSION}:" in v for v in versions)
     records = [json.loads(x) for x in log.read_text().splitlines() if x.strip()]          # the walk-on counts (interface M1) are in every plan and chapter record
     for call in ("plan", "generate"):
         rows = [x for x in records if x.get("call") == call and x.get("result") == "ok"]

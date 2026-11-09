@@ -128,8 +128,10 @@ def test_the_prompt_has_the_move_criterion_once_with_its_own_wording_in_chapter_
     for prompt in (first, second):
         assert prompt.count(w["decide_task"]) == 1 and "moves the story forward the most" in prompt.split("\n\n")[0]       # the job and the criterion, in the role line too
         assert not any(word in prompt.lower() for word in OLD_WORDS), [word for word in OLD_WORDS if word in prompt.lower()]
-        assert "best and worst" in prompt and "at most 600 characters" in prompt and "at most 400 characters" in prompt and "in English" in prompt
+        assert "best and worst" in prompt and f"at most {decide.HELD_MAX} characters" in prompt and f"at most {decide.PHRASE_ASK} characters" in prompt and "in English" in prompt
         assert "hook" not in prompt.lower() and "resistance" not in prompt.lower()
+        assert "at most 600 characters" in prompt.split("held (")[1].split("then one text")[0] and f"(what it adds that is new, or what it repeats, at most {decide.PHRASE_ASK} characters" in prompt
+        assert prompt.count(f"{decide.PHRASE_MAX} characters") == prompt.count(f"{decide.HELD_MAX} characters") == 1, "600 is only held's: the option texts are asked for PHRASE_ASK, never PHRASE_MAX"
     assert [decide.criteria_for(r) for r in (first_chapter(), request(), {"chapter": None}, {})] == [("move",)] * 4
 
 
@@ -172,6 +174,37 @@ def test_the_grammar_asks_for_held_then_a_text_per_letter_then_best_and_worst_an
     assert "pick" not in g["properties"]
 
 
+def test_the_prompt_asks_for_fewer_characters_than_the_check_allows():
+    assert decide.PHRASE_ASK < decide.PHRASE_MAX
+    assert decide.PHRASE_ASK == 400 and decide.PHRASE_MAX == 600 and decide.HELD_MAX == 600
+
+
+def test_the_prompt_never_states_the_checks_own_limit(monkeypatch):
+    monkeypatch.setattr(decide, "PHRASE_MAX", 777)
+    prompt = decide.build_decide_prompt(request(), OPTIONS, ORDER)
+    assert "777" not in prompt and f"at most {decide.PHRASE_ASK} characters" in prompt
+
+
+def test_a_text_longer_than_asked_but_within_the_check_passes_and_one_past_it_is_refused():
+    p = load_text("plan")["problems"]
+    for length in (decide.PHRASE_ASK + 1, 405, 422, 413, decide.PHRASE_MAX):
+        run_over = reply()
+        run_over["move"].update(A="x" * length, B="y" * length, C="z" * length)
+        assert decide.decide_problem(run_over, 3, decide.CRITERIA) is None, length
+    for letter in "ABC":
+        refused = reply()
+        refused["move"][letter] = "x" * (decide.PHRASE_MAX + 1)
+        assert decide.decide_problem(refused, 3, decide.CRITERIA) == p["decide_phrase"], letter
+    held = reply()
+    held["move"]["held"] = "x" * (decide.HELD_MAX + 1)
+    assert decide.decide_problem(held, 3, decide.CRITERIA) == p["decide_phrase"]
+
+
+def test_the_longest_reply_fits_the_output_cap_at_the_larger_of_the_two_measured_rates():
+    longest = decide.HELD_MAX + 3 * decide.PHRASE_MAX
+    assert longest == 2400 and longest * 990 / 1800 < decide.MAX_OUTPUT       # Chinese, the larger rate (tokens per character) measured for the old reply
+
+
 def test_the_check_wants_held_a_text_for_every_letter_and_a_different_best_and_worst():
     p = load_text("plan")["problems"]
     assert decide.decide_problem(reply(), 3, decide.CRITERIA) is None
@@ -192,6 +225,9 @@ def test_the_check_wants_held_a_text_for_every_letter_and_a_different_best_and_w
     ok = reply()
     ok["move"]["C"], ok["move"]["held"] = "x" * decide.PHRASE_MAX, "x" * decide.HELD_MAX
     assert decide.decide_problem(ok, 3, decide.CRITERIA) is None
+    over = reply()
+    over["move"]["C"] = "x" * (decide.PHRASE_MAX + 1)
+    assert decide.decide_problem(over, 3, decide.CRITERIA) == p["decide_phrase"]
     for best, worst in (("A", "A"), ("A", "Z"), ("Z", "A"), (None, "A")):
         same = reply()
         same["move"].update(best=best, worst=worst)

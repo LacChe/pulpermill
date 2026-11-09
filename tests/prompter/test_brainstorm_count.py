@@ -83,7 +83,7 @@ def test_two_bad_replies_end_in_the_fallback_and_the_plan_runs_without_a_brainst
     texts = plan.script(request, Kit(request))
     plan_reply = json.loads(texts[1])
     plan_reply.pop(plan.IDEA_USE, None)
-    flow, out, ctx, engine = run_plan(request, SIX_FLAT, SIX, json.dumps(plan_reply), texts[2])
+    flow, out, ctx, engine = run_plan(request, SIX_FLAT, SIX, json.dumps(plan_reply))
     assert ctx.notes["flow"]["brainstorm_fallback"] is True and ctx.notes["flow"]["decide"] == "none"
-    assert names_of_steps(ctx) == ["brainstorm", "plan", "advance_aim"] and COUNT_LINE in engine.prompts[1]
+    assert names_of_steps(ctx) == ["brainstorm", "plan"] and COUNT_LINE in engine.prompts[1]
     assert "Option 4" not in engine.prompts[2] and out == {"beat": plan_reply}

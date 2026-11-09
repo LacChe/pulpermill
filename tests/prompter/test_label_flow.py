@@ -107,17 +107,6 @@ def test_with_the_decider_the_results_after_the_label_step_stay_aligned():
         assert reply["outcome"] == "lost" and flow.decision is not None and flow.decision.position == 2
 
 
-def test_the_aim_gate_replan_still_finds_its_plan_after_the_label_step():
-    request = chaptered(base())
-    texts = plan.script(request, Kit(request))
-    again = json.loads(texts[2])
-    again["aim"] = "Get the second key from Marit before the noon bell rings in round 6."
-    gate = json.dumps({"reason": "Same aim, same obstacle.", "link": "continues", "new_obstacle": "no"})
-    flow, reply, ctx, engine = run_with(request, texts[0], texts[1], texts[2], gate, json.dumps(again), texts[3])
-    assert names_of_steps(ctx)[:6] == ["label", "brainstorm", "plan", "advance_aim", "plan", "advance_aim"]
-    assert reply["beat"]["aim"] == again["aim"] and ctx.notes["flow"]["aim_replanned"] is True
-
-
 # ---- the fallback ---------------------------------------------------------------------------------------------------------------------
 
 def test_a_label_step_that_fails_every_attempt_leaves_no_table_and_never_fails_the_call():
@@ -195,9 +184,9 @@ def test_the_worst_case_counts_the_label_step_and_the_longest_table():
     request = chaptered(base())
     flow = plan.build_flow(request, Kit(request))
     steps = flow.worst_case()
-    assert [s.name for s in steps] == ["label", "brainstorm", "label", "decide", "plan", "advance_aim"]
+    assert [s.name for s in steps] == ["label", "brainstorm", "label", "decide", "plan"]
     plain = plan.build_flow({**request, "earlier_events": []}, Kit(request)).worst_case()
-    assert [s.name for s in plain] == ["brainstorm", "decide", "plan", "advance_aim"]
+    assert [s.name for s in plain] == ["brainstorm", "decide", "plan"]
     assert len(steps[1].text(1.0)) > len(plain[0].text(1.0)) and len(steps[4].text(1.0)) > len(plain[2].text(1.0))
     assert len(steps[0].text(1.0)) > repeat.TEXT_LIMIT
 
