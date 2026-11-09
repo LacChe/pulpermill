@@ -696,7 +696,7 @@ class PlanFlow(Flow):
         self.notes["repeat"] = "on"
         self.notes.update({f"repeat_m{place}": one.matches for place, one in enumerate(found, 1)})
         self.notes["repeat_dropped"] = len(dropped)
-        self.notes["repeat_threshold"] = f"{repeat.T} of {len(repeat.FIELDS)}"      # T is 4 of seven since the motive joined the fields: to be tuned on a real run
+        self.notes["repeat_threshold"] = f"{repeat.T} of {len(repeat.FIELDS)}"      # T is 5 of seven (raised from 4 after test 18): to be tuned on a real run
         self.notes["repeat_avoid"] = False
         if len(dropped) == count:
             best = min(range(count), key=lambda i: (found[i].matches, i))

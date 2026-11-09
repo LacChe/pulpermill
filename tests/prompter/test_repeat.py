@@ -47,7 +47,7 @@ def test_the_vocabularies_are_the_planned_ones_and_end_in_other_where_the_plan_s
     assert repeat.MOTIVE_KINDS == ("recognition", "closeness", "protection", "avoidance", "duty", "order", "curiosity", "gain", "other")
     assert all(v[-1] == "other" for v in repeat.VALUES.values())
     assert set(repeat.FIELDS) | {repeat.NOTE} == set(repeat.KEYS) and repeat.NOTE not in repeat.FIELDS and len(repeat.FIELDS) == 7 and repeat.FIELDS[-1] == "motive_kind" and repeat.KEYS[-1] == repeat.NOTE
-    assert (repeat.K, repeat.T) == (3, 4)
+    assert (repeat.K, repeat.T) == (3, 5)
 
 
 # ---- matches ----------------------------------------------------------------------------------------------------------------------

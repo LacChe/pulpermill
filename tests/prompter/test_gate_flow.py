@@ -152,9 +152,9 @@ def test_in_choose_mode_a_single_survivor_keeps_its_own_combination():
 
 def test_when_every_idea_is_dropped_the_one_with_the_fewest_matches_stays_and_the_plan_must_change_what_it_shares():
     request = chaptered(base())
-    flow, reply, ctx, engine, texts = run(request, (5, 4, 4))
+    flow, reply, ctx, engine, texts = run(request, (6, 5, 5))
     assert flow.decision.position == 2 and reply["outcome"] == "lost"                      # a tie between 2 and 3 goes to the lower place
-    assert flow.avoid_fields == ["aim_kind", "obstacle_source", "obstacle_party", "turning_kind"]
+    assert flow.avoid_fields == ["aim_kind", "obstacle_source", "obstacle_party", "turning_kind", "closing_hook"]
     notes = ctx.notes["flow"]
     assert notes["repeat_avoid"] is True and notes["repeat_dropped"] == 3 and notes["decide"] == "single" and "decide" not in names_of_steps(ctx)
     prompt = engine.prompts[3]
@@ -164,7 +164,7 @@ def test_when_every_idea_is_dropped_the_one_with_the_fewest_matches_stays_and_th
 
 def test_the_avoid_line_is_in_the_plan_prompt_only_when_fields_were_kept():
     request = chaptered(base())
-    flow = run(request, (5, 4, 4))[0]
+    flow = run(request, (6, 5, 5))[0]
     kept = plan.build_prompt(flow.request, 1.0, flow.brainstorm, None, True, 2, flow.used, flow.avoid_fields)
     assert load_text("plan")["avoid_line"][:30] in kept
     assert load_text("plan")["avoid_line"][:30] not in plan.build_prompt(flow.request, 1.0, flow.brainstorm, None, True, 2, flow.used)
@@ -221,16 +221,16 @@ def test_the_invented_flags_count_only_the_options_judged():
 
 # ---- Plan 9 step 3: the motive joins the count -----------------------------------------------------------------------------------
 
-def test_an_idea_that_repeats_the_motive_and_three_other_fields_is_dropped_at_t_four_and_without_the_motive_it_stays():
-    assert repeat.T == 4 and len(repeat.FIELDS) == 7
+def test_an_idea_that_repeats_the_motive_and_three_other_fields_is_dropped_at_t_five_and_without_the_motive_it_stays():
+    assert repeat.T == 5 and len(repeat.FIELDS) == 7
     request = chaptered(base())
-    with_motive = idea_entry(request, 1, 3)                                  # aim_kind, obstacle_source, obstacle_party
-    with_motive["motive_kind"] = earlier_print(request)["motive_kind"]       # and the earlier chapters' motive: four in all
-    gate = json.dumps({"prints": [with_motive, idea_entry(request, 2, 3), idea_entry(request, 3, 3)]})
-    flow, reply, ctx, engine, texts = run(request, (4, 3, 3), gate=gate)
+    with_motive = idea_entry(request, 1, 4)                                  # aim_kind, obstacle_source, obstacle_party, turning_kind
+    with_motive["motive_kind"] = earlier_print(request)["motive_kind"]       # and the earlier chapters' motive: five in all
+    gate = json.dumps({"prints": [with_motive, idea_entry(request, 2, 4), idea_entry(request, 3, 4)]})
+    flow, reply, ctx, engine, texts = run(request, (5, 4, 4), gate=gate)
     notes = ctx.notes["flow"]
-    assert (notes["repeat_m1"], notes["repeat_m2"], notes["repeat_m3"]) == (4, 3, 3) and notes["repeat_dropped"] == 1 and flow._alive == [1, 2]
-    assert notes["repeat_threshold"] == "4 of 7" and notes["repeat_avoid"] is False
+    assert (notes["repeat_m1"], notes["repeat_m2"], notes["repeat_m3"]) == (5, 4, 4) and notes["repeat_dropped"] == 1 and flow._alive == [1, 2]
+    assert notes["repeat_threshold"] == "5 of 7" and notes["repeat_avoid"] is False
     assert "decide" in names_of_steps(ctx)                                    # the other two ideas go to the decider
 
 

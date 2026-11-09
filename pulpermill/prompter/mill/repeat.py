@@ -11,10 +11,10 @@ from pulpermill.prompter.base import Step
 
 from . import common
 
-VERSION = "repeat-2"
+VERSION = "repeat-3"
 
 K = 3          # an idea is compared with the last K earlier chapters
-T = 4          # an idea is too similar when it matches one of them on at least T labels (a starting value, tuned on a real run; with `motive_kind` it is 4 of seven, not of six: tune it on a real run)
+T = 5          # an idea is too similar when it matches one of them on at least T labels (a starting value, tuned on a real run; raised from 4 to 5 of seven after test 18, where 4 dropped two of three ideas in chapters 3 to 5 and left the decider nothing to judge)
 
 AIM_KINDS = ("obtain", "keep", "prevent", "persuade", "reach", "discover", "deliver", "repair", "escape", "protect", "other")
 OBSTACLE_SOURCES = ("person", "group", "rule", "object", "place", "self", "time", "other")

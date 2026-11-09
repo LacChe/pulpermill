@@ -146,7 +146,7 @@ def test_the_picked_want_is_the_one_the_prompt_shows_and_the_line_names_the_kind
 
 def test_when_the_gate_drops_an_idea_the_survivors_keep_their_own_driver_lines_and_nothing_is_renumbered():
     request = chaptered(full(), last=5)
-    flow, reply, ctx, engine, texts = run(request, (4, 0, 0))             # the first idea repeats four labels and is dropped
+    flow, reply, ctx, engine, texts = run(request, (5, 0, 0))             # the first idea repeats five labels and is dropped
     brainstorm = next(p for p in engine.prompts if W["driver_lead"] in p)
     kinds = driver.assign(request)
     assert lines_of(brainstorm) == [f"Idea {n}: the aim is drawn from {W['driver_kinds'][k]}." for n, k in enumerate(kinds, 1)]
