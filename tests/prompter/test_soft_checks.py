@@ -250,6 +250,7 @@ def test_a_plan_with_both_a_hard_problem_and_a_name_reports_the_hard_one_on_ever
 
 def test_the_plan_is_used_on_the_first_attempt_through_the_runner_and_the_counts_reach_the_run_record(monkeypatch, caplog):
     req = plan_request()
+    req["earlier_events"] = []                                                                                  # no label step: the brainstorm runs first
     named = {**good_plan(req), "plan": good_plan(req)["plan"] + NAMED}
     import json
     monkeypatch.setattr(plan, "build_prompt", lambda request, factor=1.0, *more: "Plan the chapter.")
@@ -303,7 +304,7 @@ def test_an_echo_still_sends_the_chapter_back_once_through_the_runner(monkeypatc
 
 def test_the_versions_were_bumped():
     from pulpermill.prompter.mill import VERSION
-    assert VERSION == "mill-0.2" and plan.VERSION == "plan-20" and gen.VERSION == "generate-14"
+    assert VERSION == "mill-0.2" and plan.VERSION == "plan-22" and gen.VERSION == "generate-14"
 
 
 # ---- helpers ---------------------------------------------------------------------------------------------------------------

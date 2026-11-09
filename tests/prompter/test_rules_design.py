@@ -24,7 +24,7 @@ STYLE = {"person": "first", "tense": "past", "humor": "dry", "pacing": "brisk"}
 
 
 def plan_with(**changes) -> dict:
-    request = plan_request(lambda q: q.update(style=STYLE))
+    request = plan_request(lambda q: q.update(style=STYLE, earlier_events=[]))       # no earlier events: the flow has no label step
     request.update(changes)
     return request
 
@@ -38,6 +38,7 @@ def gen_with(**changes) -> dict:
 
 
 def good_plan(request: dict) -> dict:
+    request = {**request, "earlier_events": []}          # no label step, so the plan reply is the second text
     return json.loads(mill_plan.script(request, Kit(request))[1])
 
 
@@ -255,7 +256,7 @@ def big_generate() -> dict:
 
 
 def big_plan() -> dict:
-    small = plan_with()
+    small = plan_request(lambda q: q.update(style=STYLE))          # with the contract's earlier event: inflate copies it, so the story has 18
     request = inflate(small, cast=6, each=5, ties=6, chapters=18, chars=900)
     request.update(ties=request["ties"][:2], style=STYLE, spotlight=small["spotlight"], chapter=19, chapter_count=20)
     assert len(request["earlier_events"]) == 18

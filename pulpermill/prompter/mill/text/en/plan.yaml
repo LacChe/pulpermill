@@ -19,6 +19,8 @@ headings:
   brainstorm: "Three ideas for this chapter"
   decide: "The options to judge"
   decided: "The idea for this chapter"
+  label_texts: "The texts to label"
+  label_names: "The names"
   task: "Your task"
 
 # One role and one task, stated first. The planner designs; it does not write the chapter.
@@ -70,6 +72,7 @@ brainstorm_parts: "Each idea says, in plain sentences: what the protagonist is a
 brainstorm_risk: "What the protagonist puts at risk is one specific thing the cards above show to matter: a tie's edge, something a person wants, fears, values or is blind to, a deadline, a rule's cost, an object's stake, or the disruption the story began from. Name it, and prefer something the earlier chapters have not put at risk yet, as the story so far shows. The cost is a concrete loss that would hurt and change what happens next, never a comfort or a convenience. Make the stakes real, and let them grow as the story goes on."
 brainstorm_variety: "Look at where the earlier chapters happened, who was on stage and what stood in their way. Each idea differs from them in at least one of these, drawing on the places of the world and the people of the cards that the earlier chapters used least."
 brainstorm_disruption: "At least one of the three ideas must advance what broke the story open, which is still unresolved: it changes what is known about it, what it costs, or how close it is to being resolved. That idea is still built on its own combination and keeps its fixed ending. The other ideas need not touch it."
+brainstorm_used: "Every idea must differ from every line of the kinds already used above in the kind of turning point, in the kind of consequence left standing at the end, and in who or what stands in the way. Changing only surface details, the place, the time or an object, does not count as different."
 brainstorm_continue: "The story so far shows the running aim. At most one idea may continue it. The other ideas start from something else the last chapter left standing: another tie, the disruption the story began from, a rule's cost, a promise or an object that is still open."
 brainstorm_output: "Reply in plain prose in {language}. Start each idea on its own line with its header, exactly Option 1, Option 2 or Option 3 (keep the headers in English whatever language the story is in), and write about 130 words for each idea. Keep every name exactly as it is written above."
 brainstorm_retry: "An earlier plan for this chapter was refused. Its aim was: {aim} These problems need fixing: {problems} Propose options that fix them and differ from that aim."
@@ -122,7 +125,7 @@ decide_role: "You are the judge of a story that is written one chapter at a time
 decide_role_unknown_total: "You are the judge of a story that is written one chapter at a time. Before chapter {chapter} is planned, you read the options proposed for it and choose the one that moves the story forward the most. You do not write or plan the chapter."
 decide_item: "Option {label}\n{text}"
 decide_built_on_lead: "It is built on:"
-decide_task: "Each option is a way to take the protagonist's aim its next step in this chapter, and each stands under a letter in an order that means nothing. An option moves the story forward when a reader could point at something in it that the story does not already hold: the tie in the spotlight is different afterwards (what one wants from the other, or what they are to each other, would have to be rewritten), something is lost or gained, a new obstacle or place, a deadline that now bites. Judge what the option sets up and changes, not how it ends: how each option ends is already fixed, and a loss moves the story as much as a win. An option that only repeats what the story has already done, or only brings in a new named person while nothing else changes, moves the story little. An option after which the tie could be described in the same words moves the story little."
+decide_task: "Each option is a way to take the protagonist's aim its next step in this chapter, and each stands under a letter in an order that means nothing. An option moves the story forward when a reader could point at something in it that the story does not already hold: the tie in the spotlight is different afterwards (what one wants from the other, or what they are to each other, would have to be rewritten), something is lost or gained, a new obstacle or place, a deadline that now bites. Judge what the option sets up and changes, not how it ends: how each option ends is already fixed, and a loss moves the story as much as a win. An option that only repeats what the story has already done, or only brings in a new named person while nothing else changes, moves the story little. An option after which the tie could be described in the same words moves the story little. An option does not rank higher only because it touches the story's main thread; rank it by what it changes and adds."
 decide_combos: "Under each option you see the tie and the rule or object it is built on, and why they may collide; use them to judge what the option sets up and changes."
 decide_move: "Work in this order. First say, in a few sentences, what the story holds now: where the last chapter left the protagonist's aim and the ties, as the story so far shows. Then, for each option, say what it adds that the story does not already hold, or what it repeats. Last, name the option that moves the story forward the most and the one that moves it the least."
 decide_move_first: "Work in this order. First say, in a few sentences, what the story holds now: this is the first chapter, so take it from the setup and the disruption the story began from. Then, for each option, say what it adds that the story does not already hold, or what it repeats. Last, name the option that moves the story forward the most and the one that moves it the least."
@@ -136,6 +139,36 @@ retry_lead: "A first attempt at this plan was refused. Its aim was: {aim} Its pl
 retry_close: "Plan the chapter again and make sure the new plan fixes every one of these problems."
 
 # The check's lines. They are shown to the model on the second attempt, so each says what to do.
+# The "already used" table (plan.py): one line for each labelled earlier chapter, shown in the story so far after the running aim.
+used_lead: "The kinds of chapter already used, one line for each of the latest earlier chapters: the kind of aim, what stood in the way, what gave way at the turning point, how the chapter ended, what it left standing, and a note on the turning point."
+used_item: "Chapter {chapter}: aim: {aim_kind}; in the way: {obstacle_source}{party}; turning point: {turning_kind}; ended: {outcome}; left standing: {closing_hook}. {note}"
+used_party: " ({party})"
+
+# When every idea repeated an earlier chapter (plan.py): the plan is built on the idea that repeats least and is told which aspects to change.
+avoid_line: "Earlier chapters were of the same kind as this idea in these respects: {aspects}. Change them: the chapter must differ from those earlier chapters in each of these respects."
+avoid_fields:
+  aim_kind: "the kind of aim"
+  obstacle_source: "the kind of obstacle"
+  obstacle_party: "who or what stands in the way"
+  turning_kind: "the kind of turning point"
+  outcome: "how the chapter ends"
+  closing_hook: "the kind of consequence left standing at the end"
+
+# The labeler (repeat.py): one call that describes each text it is given by a few fixed labels, so that code can tell which chapters and ideas are
+# of the same kind. It reads only the texts and the names; it never compares one text with another.
+label_role: "You are the labeler of a story that is written one chapter at a time. Your job is to describe each text below, an earlier chapter or an idea for a chapter, by a few fixed labels that say what kind of thing happens in it. You describe each text on its own and compare nothing."
+label_item: "Text {n}\n{text}"
+label_no_names: "No names are given."
+label_task: "For each text, read what happens in it and give the labels below. Choose the value that fits the text best from the values listed; when no listed value fits, give other."
+label_aim_kind: "For aim_kind, give the kind of thing the protagonist goes after in the text. Choose one of: {values}."
+label_obstacle_source: "For obstacle_source, give what mainly stands in the protagonist's way. Choose one of: {values}."
+label_obstacle_party: "For obstacle_party, give the one person, group, rule or object from the names above that stands in the protagonist's way, written exactly as the names give it. When the obstacle is none of them, give {none}."
+label_turning_kind: "For turning_kind, give what gives way, or what happens, at the climax where the collision is decided. Choose one of: {values}."
+label_outcome: "For outcome, give how the text ends for what the protagonist is after. Choose one of: {values}."
+label_closing_hook: "For closing_hook, give the kind of consequence left standing at the end of the text, for the next chapter to pick up. Choose one of: {values}."
+label_note: "For turning_note, write one plain sentence in {language} that says what happens at the climax, in facts a reader could watch."
+label_output: "Reply with a JSON object with one key, prints: a list of exactly {count} entries, one for each text, in the order the texts are given. Each entry holds n (the number of its text), then turning_note, aim_kind, obstacle_source, obstacle_party, turning_kind, outcome and closing_hook."
+
 problems:
   brainstorm_short: "Write three ideas headed Option 1, Option 2 and Option 3, about 130 words each: what the protagonist is after, what the other person wants, where the two clash, what it costs and how it ends."
   brainstorm_count: "Write exactly three ideas, each starting on its own line with the header Option 1, Option 2 or Option 3, one idea each (when combinations are shown, one for each combination, in order), and finish the last idea in full sentences."
@@ -157,6 +190,7 @@ problems:
   decide_shape: "Give the criterion with held (what the story holds now), one text for every lettered option, and a best and a worst letter, in that order."
   decide_phrase: "Write held (what the story holds now) in at most 600 characters, and for every option a text of at most 400 characters on what it adds that is new or what it repeats."
   decide_best_worst: "Name two different letters from the options shown, the one that moves the story forward the most and the one that moves it the least."
+  label_count: "Give exactly {count} entries in prints, one for each text, in the order the texts are given, each with the number n of its text."
 
 # Data for the aim check, not shown to the model. An aim whose first verb (after "wants to", "needs to" and the like) names a state of
 # mind is abstract; so is one that starts with an exact phrase below. The check is a net, not a proof; D tunes it against real plans.

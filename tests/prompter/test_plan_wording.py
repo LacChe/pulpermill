@@ -32,7 +32,15 @@ PLANS = [v for v in VECTORS if v["valid"] and v["data"]["call"] == "plan"]
 
 
 def base() -> dict:
-    return copy.deepcopy(next(v["data"] for v in PLANS if v["name"] == "a plan request"))
+    """The contract's plan request with no earlier events, so the flow has no label step (Plan 7; test_label_flow.py covers it)."""
+    request = copy.deepcopy(next(v["data"] for v in PLANS if v["name"] == "a plan request"))
+    request["earlier_events"] = []
+    return request
+
+
+def with_events(request: dict) -> dict:
+    vector = next(v["data"] for v in PLANS if v["name"] == "a plan request")
+    return {**request, "earlier_events": copy.deepcopy(vector["earlier_events"])}
 
 
 def ids_in(node, out=None):
@@ -49,7 +57,7 @@ def ids_in(node, out=None):
 
 
 def good(request=None) -> dict:
-    request = request or base()
+    request = {**(request or base()), "earlier_events": []}          # no label step, so the plan reply is the second text
     beat = json.loads(plan.script(request, Kit(request))[1])
     beat.pop(plan.IDEA_USE, None)          # the reply never carries it
     return beat
@@ -64,7 +72,7 @@ def plain(text: str) -> dict:
 
 def brain(request=None) -> str:
     """The scripted brainstorm text, the first reply of a plan call."""
-    request = request or base()
+    request = {**(request or base()), "earlier_events": []}          # no label step, so the brainstorm is the first reply
     return plan.script(request, Kit(request))[0]
 
 
@@ -76,7 +84,7 @@ def sections(prompt: str) -> dict[str, str]:
 # ---- the prompt -----------------------------------------------------------------------------------------------------------
 
 def test_the_prompt_names_the_collision_the_four_points_and_the_spotlight():
-    prompt = plan.build_prompt(base())
+    prompt = plan.build_prompt(with_events(base()))
     for needed in ("collision", "Act 1", "Act 2", "Act 3", "Act 4", "Marit toward Suvi", "What drives Marit in this tie", "distinctly new state",
                    "chapter 2 of 8", "Chapter 1 (the latest): aim: Suvi wants to learn who took the ledger.", "Suvi now knows the board is hunting her", "in English"):
         assert needed in prompt, needed
@@ -191,7 +199,7 @@ def with_idea_use(grammar: dict) -> dict:
 
 
 def big() -> dict:
-    request = inflate(base(), cast=6, each=5, ties=6, chapters=9, chars=900)
+    request = inflate(with_events(base()), cast=6, each=5, ties=6, chapters=9, chars=900)
     request["earlier_beats"] = [{"chapter": n, "where": "The Quay", "when": "Morning", "aim": f"Chase number {n} across the harbour", "plan": "x"} for n in range(1, 10)]
     return request
 
@@ -221,8 +229,8 @@ def test_the_planner_fits_the_context_at_some_squeeze_for_a_large_story():
     flow = plan.build_flow(big(), Kit(big()))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert all(m.ok for m in measures) and factor <= 1.0
-    assert [s.name for s in flow.worst_case()] == ["brainstorm", "decide", "plan", "advance_aim"]
-    assert flow.worst_case()[0].max_output == plan.BRAINSTORM_OUTPUT and flow.worst_case()[2].max_output == plan.MAX_OUTPUT
+    assert [s.name for s in flow.worst_case()] == ["label", "brainstorm", "label", "decide", "plan", "advance_aim"]
+    assert flow.worst_case()[1].max_output == plan.BRAINSTORM_OUTPUT and flow.worst_case()[4].max_output == plan.MAX_OUTPUT
 
 
 # ---- the check ------------------------------------------------------------------------------------------------------------
@@ -287,10 +295,10 @@ def test_the_plan_step_is_a_json_step_with_the_planner_grammar_and_the_check_on_
 
 def expected_calls(request: dict) -> int:
     """The model calls of a whole plan call: the brainstorm and the plan, plus the select step when the request chooses, the aim judge from the
-    second chapter on, and the pressure judge when a pressure is in play (the page's own, or any option in choose mode)."""
+    second chapter on (the label step when earlier events exist), and the pressure judge when a pressure is in play (the page's own, or any option in choose mode)."""
     chosen = select.is_on(request)
     pressure = bool(request.get("pressure_options")) if chosen else bool(request.get("pressure"))
-    return 2 + chosen + bool(advance.earlier_aims(request)) + pressure
+    return 2 + chosen + bool(plan.label_items(request)) + bool(advance.earlier_aims(request)) + pressure
 
 
 @pytest.mark.parametrize("vector", PLANS, ids=lambda v: v["name"])
@@ -304,7 +312,7 @@ def test_every_plan_vector_is_answered_through_the_real_server_on_the_mill_promp
         assert response.status_code == 200 and body["ok"] is True, body
         assert contract.parse_reply("plan", body).beat["where"]
         assert wait_idle(base_url)
-    plan_at = 1 + select.is_on(request)            # the select step, when it runs, comes first and the brainstorm second
+    plan_at = 1 + select.is_on(request) + bool(plan.label_items(request))     # the select step, when it runs, comes first, then the label step, then the brainstorm
     assert engine.calls == expected_calls(request) and "Act 1" in engine.prompts[plan_at] and engine.params[0] is not None
 
 
@@ -640,7 +648,7 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-20"
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-22"
 
 
 # ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------
@@ -811,7 +819,8 @@ def test_every_plan_vector_with_a_pressure_is_answered_through_the_real_server(v
         assert wait_idle(base_url)
     assert engine.calls == expected_calls(request)
     # One pair: the plan prompt carries the pressure sentence. Choose mode: the brainstorm carries the combinations instead, and the sentence is not used.
-    assert ("Combination 1" in engine.prompts[1]) if select.is_on(request) else (SENTENCE in engine.prompts[1])
+    at = 1 + bool(plan.label_items(request))         # the label step, when it runs, comes before the brainstorm
+    assert ("Combination 1" in engine.prompts[at]) if select.is_on(request) else (SENTENCE in engine.prompts[at])
 
 
 def test_the_plan_prompts_say_the_aim_starts_from_where_the_last_chapter_left_the_story():

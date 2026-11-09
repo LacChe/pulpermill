@@ -149,6 +149,7 @@ def plan_request():
 
 
 def good_plan(request):
+    request = {**request, "earlier_events": []}          # no label step, so the plan reply is the second text
     return json.loads(plan.script(request, __import__("pulpermill.backend.kit", fromlist=["Kit"]).Kit(request))[1])
 
 

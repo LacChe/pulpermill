@@ -15,9 +15,9 @@ from pulpermill.prompts import render as r
 from pulpermill.prompts import textfiles as tx
 from pulpermill.prompter.base import Flow, Step
 
-from . import advance, common, decide, select
+from . import advance, common, decide, repeat, select
 
-VERSION = "plan-20"
+VERSION = "plan-22"
 IDEA = "idea"            # in choose mode: the number (1 to 3) of the idea the plan builds on, which is also the number of its combination; the reply turns it into `picked`
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
@@ -120,6 +120,54 @@ def spotlight_candidates(request: dict, names: dict[str, str]) -> list[dict]:
     return out
 
 
+# ---- Earlier chapters, labelled (repeat.py) ---------------------------------------------------------------------------------------
+
+NAME_MAX = 100       # the longest a rule is written in the labeler's list of names: the labeler copies it back, so it is short
+
+
+def label_items(request: dict) -> list[tuple[int, str]]:
+    """The earlier chapters the labeler describes: the last K chapters before this one that have events, each as (chapter, what happened and what
+    changed). Empty in chapter 1 and for a request with no earlier events: the flow then has no label step."""
+    chapter = int(request.get("chapter") or 0)
+    rows = []
+    for e in cut_events(request.get("earlier_events"), chapter, 1.0):
+        text = " ".join(r.sentence(x) for x in (r.s(e.get("happened")), r.s(e.get("changed"))) if x)
+        if text:
+            rows.append((int(e["chapter"]), text))
+    return rows[-repeat.K:]
+
+
+def label_names(request: dict) -> list[str]:
+    """The names the labeler may give as an obstacle's party: the cast, the groups, the rules and the objects, in words (a rule is its statement, cut
+    short, as the planner sees it), without repeats."""
+    world = request.get("world") or {}
+    rows = [r.s(c.get("name")) for c in request.get("cast") or []] + [r.s(g.get("name")) for g in world.get("powers") or []]
+    rows += [r.s(x.get("statement"))[:NAME_MAX] for x in world.get("rules") or []] + [r.s(o.get("name")) for o in world.get("objects") or []]
+    return list(dict.fromkeys(n for n in (row.strip().rstrip(".!?…。！？").strip() for row in rows) if n))
+
+
+def used_text(used: list[dict] | None, w: dict) -> str:
+    """The "already used" table: one line for each labelled earlier chapter (its number, the six labels, the note), oldest first, under a lead. Empty
+    when no chapter was labelled."""
+    if not used:
+        return ""
+    def words(value: str) -> str:
+        return value.replace("_", " ")
+    lines = []
+    for row in used:
+        party = w["used_party"].format(party=row["obstacle_party"]) if row["obstacle_party"] != repeat.NO_PARTY else ""
+        lines.append(w["used_item"].format(chapter=row["chapter"], aim_kind=words(row["aim_kind"]), obstacle_source=words(row["obstacle_source"]), party=party,
+                                           turning_kind=words(row["turning_kind"]), outcome=words(row["outcome"]), closing_hook=words(row["closing_hook"]),
+                                           note=row["turning_note"]).strip())
+    return w["used_lead"] + "\n" + "\n".join(lines)
+
+
+def _used_stand_in() -> list[dict]:
+    """The longest "already used" table, for the worst case."""
+    longest = {k: max(v, key=len) for k, v in repeat.VALUES.items()}
+    return [{"chapter": 100 + i, **longest, "obstacle_party": "word " * 20, repeat.NOTE: "w" * repeat.NOTE_MAX} for i in range(repeat.K)]
+
+
 # ---- The prompt -----------------------------------------------------------------------------------------------------------
 
 def _section(heading: str, body: str) -> str:
@@ -160,10 +208,12 @@ def chain_text(request: dict, w: dict, factor: float = 1.0) -> str:
     return w["chain_lead"] + "\n" + "\n".join(lines)
 
 
-def _context(request: dict, factor: float, combos: list[dict] | None = None) -> dict:
+def _context(request: dict, factor: float, combos: list[dict] | None = None, used: list[dict] | None = None) -> dict:
     """What the brainstorm prompt and the plan prompt share: the names, the tie, the chapter's place in the story, and every section that
     comes before the task. The running aim (`chain_text`) closes the story so far. `combos`
-    (choose mode) puts the three combinations in the place of the spotlight section; `request` is then one with no spotlight and no pressure."""
+    (choose mode) puts the three combinations in the place of the spotlight section; `request` is then one with no spotlight and no pressure.
+    `used` (the labelled earlier chapters, from repeat.py) adds the "already used" table after the running aim; a squeeze drops it first of all,
+    as it does the pressure sentence."""
     w = common.load_text("plan")
     names = names_of(request)
     chapter, total = int(request["chapter"]), int(request.get("chapter_count") or 0)
@@ -192,11 +242,12 @@ def _context(request: dict, factor: float, combos: list[dict] | None = None) -> 
     beats = [{**b, "when_time": b.get("when_time") or b.get("when")} for b in request.get("earlier_beats") or []]
     timeline = r.render_earlier_beats(beats)
     chain = chain_text(request, w, history_ratio)
+    table = used_text(used, w) if factor >= 1.0 else ""
 
     origin = r.render_origin_history(request.get("setup") or {}, chapter) if request.get("origin_history", True) else ""      # chapters 2+ only, and only when the page asks
     setup = r.render_setup(request.get("setup") or {}, chapter, total or None, protagonist_name=protagonist_name(request, names), origin=origin)
     setup_block = _section(heads["setup"], setup)
-    history_block = _section(heads["history"], "\n\n".join(x for x in (history, timeline, chain) if x))
+    history_block = _section(heads["history"], "\n\n".join(x for x in (history, timeline, chain, table) if x))
     blocks = [
         _section(heads["tone"], r.render_style(request.get("style") or {}, scope="planner")),
         setup_block,
@@ -206,7 +257,7 @@ def _context(request: dict, factor: float, combos: list[dict] | None = None) -> 
         _section(spotlight_head, spotlight_text),
         history_block,
     ]
-    return {"w": w, "names": names, "chain": chain, "chapter": chapter, "total": total, "heads": heads, "tie": tie, "blocks": blocks,
+    return {"w": w, "names": names, "chain": chain, "table": table, "chapter": chapter, "total": total, "heads": heads, "tie": tie, "blocks": blocks,
             "setup_block": setup_block, "history_block": history_block}       # the decider reads only these two, not the cards
 
 
@@ -216,13 +267,14 @@ def _task_block(c: dict, method: str) -> list[str]:
     return [w[method], w["aim_rules"]]
 
 
-def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dict] | None = None) -> str:
+def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dict] | None = None, used: list[dict] | None = None) -> str:
     """The brainstorm step's prompt: the same cards and history as the plan, with the earlier aims shown as the kinds already used, and a task
     that asks for three chapters of different kinds. Free text out; nothing here asks for the plan's shape. With `combos` (choose mode) the
-    three chapters are one for each combination, and no single spotlight is shown."""
+    three chapters are one for each combination, and no single spotlight is shown. With `used` (and no squeeze) the history carries the "already
+    used" table and the task asks each idea to differ from every line of it."""
     if combos is not None:
         request = select.without_pair(request)
-    c = _context(request, factor, combos=combos)
+    c = _context(request, factor, combos=combos, used=used)
     w, names, chapter, total = c["w"], c["names"], c["chapter"], c["total"]
     role = w["brainstorm_role"].format(chapter=chapter, total=total) if total else w["brainstorm_role_unknown_total"].format(chapter=chapter)
     task = _task_block(c, "brainstorm_method")
@@ -234,6 +286,8 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dic
     task.append(w["brainstorm_risk"])
     if chapter > 1:
         task.append(w["brainstorm_variety"])
+        if c["table"]:
+            task.append(w["brainstorm_used"])
         task.append(w["brainstorm_continue"])
         if request.get("origin_history", True) and r.s((request.get("setup") or {}).get("disruption")):       # only when the prompt carries the disruption
             task.append(w["brainstorm_disruption"])
@@ -258,17 +312,19 @@ OUTCOMES = {n: "outcome_" + e for n, e in common.ENDINGS.items()}     # the numb
 
 
 def build_prompt(request: dict, factor: float = 1.0, brainstorm: str = "", combos: list[dict] | None = None, decided: bool = False,
-                 outcome: int = 0) -> str:
+                 outcome: int = 0, used: list[dict] | None = None, avoid: list[str] | None = None) -> str:
     """The plan step's prompt. `brainstorm` is the text of the brainstorm step: with it, the prompt carries it under its own heading and tells
     the planner to choose from it; without it (no brainstorm, or one that could not be had) the prompt is the plan prompt on its own. With `combos`
     (choose mode) the three combinations stand in the place of the spotlight, and the plan chooses one idea (or, with no brainstorm, one
     combination) and is built on its tie and its rule or object. With `decided` the brainstorm is the one idea the decider chose, shown as idea 1
     (and `combos` is its combination alone): the plan is told to build on it, not to choose among ideas. With `decided` and an `outcome` of 1, 2 or 3 (the
     picked idea's place in the brainstorm, which fixes how it ends: reached at a price, lost, given up) the prompt also says that ending stands.
-    Without a decision, or with outcome 0, no outcome line is added."""
+    Without a decision, or with outcome 0, no outcome line is added. With `used` the history carries the "already used" table (dropped under a squeeze).
+    With `avoid` (the names of the fingerprint fields the only idea left still shares with an earlier chapter) the task says the chapter must change
+    those aspects."""
     if combos is not None:
         request = select.without_pair(request)
-    c = _context(request, factor, combos=combos)
+    c = _context(request, factor, combos=combos, used=used)
     w, names, chapter, total, heads, tie = c["w"], c["names"], c["chapter"], c["total"], c["heads"], c["tie"]
     kind = "decided" if decided else None
     tail = "_chain" if c["chain"] else ""
@@ -283,6 +339,8 @@ def build_prompt(request: dict, factor: float = 1.0, brainstorm: str = "", combo
         task.append(w[("decided_use" if kind else "idea_use") + tail])
     if kind and brainstorm and outcome in OUTCOMES:
         task.append(w[OUTCOMES[outcome]])
+    if avoid:
+        task.append(w["avoid_line"].format(aspects=", ".join(w["avoid_fields"][f] for f in avoid if f in w["avoid_fields"])))
     task += [
         w["four_points"],
         w["other_person"].format(other=other_end(request, names)),
@@ -408,6 +466,14 @@ class PlanFlow(Flow):
         self.decision: decide.Decision | None = None          # the decider's pick, once it has run
         self._replanned = False                 # the aim gate sent the plan back once (never more): the plan that stands is then the second one
         self._shown: list[dict] | None = None   # once decided in choose mode: the one combination the plan carries (the picked option's), else None
+        self._label_items = label_items(request)    # the earlier chapters the label step describes (empty: no label step)
+        self.used: list[dict] = []              # the labelled earlier chapters, oldest first: {chapter, the seven labels}; empty after a fallback or with no label step
+        self.earlier_prints: list[repeat.Fingerprint | None] = []       # the same, one for each of the label step's chapters (None where it gave none)
+        self._labelled = False                  # the label step's result has been read
+        self._gated = False                     # a label step over the brainstorm's ideas is part of the chain (earlier chapters were labelled and the brainstorm gave its options)
+        self._gate_done = False                 # that step's result has been read
+        self._alive: list[int] = []             # the places (from 0) of the brainstorm's options the decider is to judge: all of them, or the ones the gate left
+        self.avoid_fields: list[str] = []       # when every idea repeated: the fields the one kept still shares with an earlier chapter
         self._select_on = select.is_on(request)   # the request asks to choose and has at least one tie to choose from
         if self._select_on:
             self.notes["pressure_on"] = bool(pressure_of(request) or request.get("pressure_options"))
@@ -436,14 +502,15 @@ class PlanFlow(Flow):
                 return p["brainstorm_count"]
         return None
 
-    def _brainstorm_step(self, combos: list[dict] | None = None) -> Step:
+    def _brainstorm_step(self, combos: list[dict] | None = None, used: list[dict] | None = None) -> Step:
         """Free text, thinking sampling, no grammar. Its last resort is no brainstorm at all (never an error). The runner does not check its
         language: it is the planner's own thinking, and the plan step that follows is the one whose language is checked."""
         def none():
             self.notes["brainstorm_fallback"] = True
             return ""
         use = combos if combos is not None else self.combos
-        return Step("brainstorm", lambda f: build_brainstorm_prompt(self.request, f, use), "text", BRAINSTORM_OUTPUT, None, self._brainstorm_check,
+        table = self.used if used is None else used
+        return Step("brainstorm", lambda f: build_brainstorm_prompt(self.request, f, use, table), "text", BRAINSTORM_OUTPUT, None, self._brainstorm_check,
                     "thinking", False, attempts=BRAINSTORM_ATTEMPTS, fallback=none)
 
     # -- the plan
@@ -482,12 +549,32 @@ class PlanFlow(Flow):
         grammar["required"] = [*extra, *grammar.get("required", [])]
         return grammar
 
-    def _step(self, brainstorm: str | None = None, combos: list[dict] | None = None, request: dict | None = None) -> Step:
+    def _step(self, brainstorm: str | None = None, combos: list[dict] | None = None, request: dict | None = None, used: list[dict] | None = None,
+              avoid: list[str] | None = None) -> Step:
         text = self.brainstorm if brainstorm is None else brainstorm
         use = combos if combos is not None else self._shown if self._shown is not None else self.combos
         decided = brainstorm is None and self.decision is not None       # the worst case (a brainstorm given) is the longest wording, the undecided one
-        return Step("plan", lambda f: build_prompt(request or self.request, f, text, use, decided, self.decision.position if decided else 0), "json", MAX_OUTPUT, self._grammar(text, use), self._check(),
+        table = self.used if used is None else used
+        avoiding = self.avoid_fields if avoid is None else avoid
+        return Step("plan", lambda f: build_prompt(request or self.request, f, text, use, decided, self.decision.position if decided else 0, table, avoiding), "json", MAX_OUTPUT, self._grammar(text, use), self._check(),
                     "thinking", True)
+
+    # -- the label step
+
+    def _label_step(self) -> Step:
+        return repeat.label_step(self.request, self._label_items, label_names(self.request))
+
+    def _take_label(self, value: Any) -> None:
+        """Reads the label step's result: the earlier chapters with their fingerprints, in `used` (the table) and `earlier_prints` (the later
+        comparison). A result with no labels (the fallback) leaves both empty: no table and no gate, never an error."""
+        if self._labelled:
+            return
+        self._labelled = True
+        prints = repeat.read(value, self._label_items, label_names(self.request))
+        self.earlier_prints = prints
+        self.used = [{"chapter": n, **p} for (n, _), p in zip(self._label_items, prints) if p]
+        self.notes["label"] = "on" if self.used else "fallback"
+        self.notes["label_chapters"] = len(self.used)
 
     # -- choose mode
 
@@ -537,20 +624,82 @@ class PlanFlow(Flow):
         """The request the decider reads: with combinations chosen, no single pair, as in the brainstorm."""
         return select.without_pair(self.request) if self.combos is not None else self.request
 
+    def _survivors(self) -> list[tuple[int, str]]:
+        """The options the decider judges, in the brainstorm's order: all of them, or the ones the gate left."""
+        return [self._options[i] for i in self._alive]
+
+    def _places(self) -> list[int] | None:
+        """The brainstorm's place (from 1) of each survivor, or None when all of the options stand (the decider then works as it always did)."""
+        return [i + 1 for i in self._alive] if len(self._alive) < len(self._options) else None
+
+    def _flags(self) -> list[bool]:
+        flags = decide.invented(self.request, self._options)
+        return [flags[i] for i in self._alive]
+
     def _decide_step(self) -> Step:
-        return decide.step(self._decide_request(), self._options, self._order, lambda: None, decide.criteria_for(self.request), self.combos)
+        return decide.step(self._decide_request(), self._survivors(), self._order, lambda: None, decide.criteria_for(self.request), self.combos)
 
     def _take_decide(self, value: Any) -> None:
         """Reads the decider's result: the plan then carries the picked option alone, as idea 1, with its own combination (in choose mode).
         An unusable result picks a random option and the notes say it fell back."""
         if self.decision is not None:
             return
-        self.decision = decide.decide(self._options, self._order, value, decide.criteria_for(self.request), decide.invented(self.request, self._options))
-        self.notes.update(self.decision.notes())
-        picked = self._options[self.decision.position - 1][1]
+        self._adopt(decide.decide(self._survivors(), self._order, value, decide.criteria_for(self.request), self._flags(), self._places()))
+
+    def _take_single(self) -> None:
+        """One option is left (the gate dropped the others): it is chosen directly and no decider call is made."""
+        if self.decision is None:
+            self._adopt(decide.only(self._survivors(), 0, self._places(), self._flags()))
+
+    def _adopt(self, decision: decide.Decision) -> None:
+        """The decision stands: its notes, the plan's idea (the picked option alone) and, in choose mode, its own combination. The decision's
+        position is the option's place in the whole brainstorm, so the ending and the combination follow the option's own number."""
+        self.decision = decision
+        self.notes.update(decision.notes())
+        picked = self._options[decision.position - 1][1]
         self.brainstorm = common.load_text("plan")["decided_item"].format(text=decide.unnumbered(picked))
         if self.combos is not None:
-            self._shown = [self.combos[self.decision.combo - 1]]
+            self._shown = [self.combos[decision.combo - 1]]
+
+    # -- the gate on the brainstorm's ideas
+
+    def _gate_items(self) -> list[tuple[int, str]]:
+        """The ideas the gate labels, each under its place in the brainstorm (from 1), without the numbers in its header."""
+        return [(i, decide.unnumbered(text)) for i, (_, text) in enumerate(self._options, 1)]
+
+    def _gate_step(self) -> Step:
+        return repeat.label_step(self.request, self._gate_items(), label_names(self.request))
+
+    def _take_gate(self, value: Any) -> None:
+        """Reads the gate's labels: each idea's outcome is set from its place (the brainstorm's contract), each is screened against the labelled
+        earlier chapters, and an idea that matches one of them on `repeat.T` labels or more is dropped. When every idea is dropped, the one with the
+        fewest matches stays (the lowest place on a tie) and the fields it still shares are kept in `avoid_fields`. A result with no labels (the
+        fallback) drops nothing."""
+        if self._gate_done:
+            return
+        self._gate_done = True
+        count = len(self._options)
+        prints = repeat.read(value, self._gate_items(), label_names(self.request))
+        self._alive = list(range(count))
+        if not any(prints):
+            self.notes["repeat"] = "fallback"
+            return
+        for place, found in enumerate(prints, 1):
+            if found:
+                found["outcome"] = common.ENDINGS.get(place, "other")
+        found = repeat.screen(prints, self.earlier_prints)
+        dropped = [i for i, one in enumerate(found) if repeat.too_similar(one)]
+        self.notes["repeat"] = "on"
+        self.notes.update({f"repeat_m{place}": one.matches for place, one in enumerate(found, 1)})
+        self.notes["repeat_dropped"] = len(dropped)
+        self.notes["repeat_avoid"] = False
+        if len(dropped) == count:
+            best = min(range(count), key=lambda i: (found[i].matches, i))
+            self._alive = [best]
+            self.avoid_fields = list(found[best].fields)
+            self.notes["repeat_avoid"] = True
+        else:
+            self._alive = [i for i in range(count) if i not in dropped]
 
     def _judges(self) -> bool:
         """The aim judge runs from the second chapter on, when there is an earlier aim to be a kind of."""
@@ -592,22 +741,40 @@ class PlanFlow(Flow):
                 return self._select_step()
             self._take_select(results[0])
             results = results[1:]
+        if self._label_items:               # the label step comes after select and before the brainstorm: its result is taken out here too
+            if not results:
+                return self._label_step()
+            self._take_label(results[0])
+            results = results[1:]
         if not results:
             return self._brainstorm_step()
         if len(results) == 1:
             self.brainstorm = _tidy_brainstorm(results[0])
             self._options = self._options_of(r.s(results[0]).strip())     # the reply as written: the tidy cut-back would make a cut-off option look whole
-            if self._options is not None:
-                self._order = decide.order_of(self._options, self.request)
-                return self._decide_step()
-        if self._options is not None:         # the decider ran: its result is the one after the brainstorm
-            self._take_decide(results[1])
-            results = results[1:]
-        return self._after_brainstorm(results[1:])
+        at = 1                                                              # where the results after the brainstorm's own begin
+        if self._options is not None:
+            self._gated = any(self.earlier_prints)                          # earlier chapters were labelled: the ideas are labelled and screened next
+            if self._gated:
+                if len(results) == at:
+                    return self._gate_step()
+                self._take_gate(results[at])
+                at += 1
+            else:
+                self._alive = list(range(len(self._options)))
+            if len(self._alive) >= 2:                                       # two or three ideas stand: the decider judges them
+                self._order = decide.order_of(self._survivors(), self.request)
+                if len(results) == at:
+                    return self._decide_step()
+                self._take_decide(results[at])
+                at += 1
+            else:                                                           # one idea stands: no call is made
+                self._take_single()
+        return self._after_brainstorm(results[at:])
 
     def _options_of(self, brainstorm: str) -> list[tuple[int, str]] | None:
-        """The options the decider is to judge: the brainstorm's, when there are exactly three and (in choose mode) each belongs to one of the
-        combinations. Else None, and the plan carries the whole brainstorm as it did before the decider (the notes say `none`)."""
+        """The brainstorm's options, when there are exactly three and (in choose mode) each belongs to one of the combinations. Else None, and the
+        plan carries the whole brainstorm as it did before the decider (the notes say `none`). Which of them the decider judges is the gate's call
+        (`_take_gate`): all three, two, or one that is chosen without a call."""
         if not decide.ON:
             return None
         options = decide.parse_options(brainstorm)
@@ -648,12 +815,18 @@ class PlanFlow(Flow):
         """The brainstorm, then the plan carrying a brainstorm of the longest size, then the judges."""
         stand = select.stand_in(self.request) if self._select_on else None       # choose mode: the select step first, and the combinations as large as they can get
         steps = [self._select_step()] if self._select_on else []
-        steps.append(self._brainstorm_step(stand))
+        table = _used_stand_in() if self._label_items else None       # the label step, and the "already used" table as long as it can get
+        if self._label_items:
+            steps.append(repeat.label_step(self.request, [(n, repeat.LABEL_STAND_IN) for n, _ in self._label_items], label_names(self.request)))
+        steps.append(self._brainstorm_step(stand, table))
+        if decide.ON and self._label_items:        # the gate labels the three ideas, each as long as the brainstorm allows
+            steps.append(repeat.label_step(self.request, [(n, "word " * (BRAINSTORM_OUTPUT // decide.OPTIONS_MAX)) for n in range(1, decide.OPTIONS_MAX + 1)],
+                                           label_names(self.request)))
         if decide.ON:        # whether the brainstorm gives options is not known until it is written: the call is fitted as if it did
             options = decide.stand_in(BRAINSTORM_OUTPUT)
             steps.append(decide.step(select.without_pair(self.request) if self._select_on else self.request, options, list(range(len(options))), lambda: None,
                                      decide.criteria_for(self.request), stand))
-        steps.append(self._step(brainstorm=BRAINSTORM_STAND_IN, combos=stand))
+        steps.append(self._step(brainstorm=BRAINSTORM_STAND_IN, combos=stand, used=table, avoid=list(repeat.FIELDS) if table else None))
         if self._judges():
             steps.append(self._aim_step(AIM_STAND_IN))
         if self.notes["pressure_on"]:
@@ -673,7 +846,9 @@ class PlanFlow(Flow):
     def reply(self, results):
         if self._select_on:
             results = results[1:]
-        at = 2 if self._options is not None else 1                  # the decider's result sits between the brainstorm and the plan
+        if self._label_items:
+            results = results[1:]
+        at = 1 + (self._options is not None and self._gated) + (self._options is not None and len(self._alive) >= 2)       # the gate's and the decider's results (each when it ran) sit between the brainstorm and the plan
         beat = results[at + 2 if self._replanned else at]           # the plan the aim gate asked for stands in place of the first
         out: dict[str, Any] = {}
         combo = self._combo_of(beat)
@@ -695,7 +870,7 @@ def build_flow(request, kit) -> Flow:
 
 def script(request: dict, kit: Any) -> list[str]:
     """What a fake engine must return for a valid reply: (in choose mode, first a select reply with three different picks, and the plan then builds
-    on idea 1, which is the first pick;) a brainstorm of three options, then a place, a concrete aim that differs per chapter and a plan of four points, then (from the second chapter) the aim judge's verdict (link and new_obstacle)."""
+    on idea 1, which is the first pick;) (from the second chapter, when earlier events exist, a label reply with one fingerprint for each of the last K of them;) a brainstorm of three options, then a place, a concrete aim that differs per chapter and a plan of four points, then (from the second chapter) the aim judge's verdict (link and new_obstacle)."""
     import json
     names = names_of(request)
     choose = select.is_on(request)
@@ -718,6 +893,11 @@ def script(request: dict, kit: Any) -> list[str]:
                   f"It costs {a} a favour. Option 2: a trade. {a} offers {b} something in return, {b} wants more than was offered, and they clash over the price. "
                   f"It costs {a} a secret. Option 3: a misunderstanding. {a} and {b} each think the other holds the key; they clash over who lied. It costs both their trust.")
     texts = [json.dumps({"picks": picks})] if choose else []
+    items = label_items(request)
+    if items:                                  # the label step: one valid fingerprint for each earlier chapter it describes
+        party = (label_names(request) or ["none"])[0]
+        texts.append(json.dumps({"prints": [{"n": c, "turning_note": f"Chapter {c} turns on a refusal at the door.", "aim_kind": "obtain", "obstacle_source": "person",
+                                             "obstacle_party": party, "turning_kind": "refusal", "outcome": "lost", "closing_hook": "new_task"} for c, _ in items]}))
     chosen = {"idea": 1} if choose else {}
     texts += [brainstorm, json.dumps({**chosen, "idea_use": f"I build on option 2, the trade, and take its price quarrel.", "where": place, "when_time": f"Day {n}, early morning", "aim": aim, "plan": plan})]
     if advance.earlier_aims(request):          # the advancement judge runs from the second chapter on

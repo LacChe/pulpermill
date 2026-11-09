@@ -31,7 +31,16 @@ VECTORS = json.loads((ROOT / "tests/shared/contract-vectors.json").read_text())[
 
 
 def base() -> dict:
-    return copy.deepcopy(next(v["data"] for v in VECTORS if v["valid"] and v["name"] == "a plan request"))
+    """The contract's plan request with no earlier events, so the flow has no label step (Plan 7); `with_events` gives it back its events."""
+    request = copy.deepcopy(next(v["data"] for v in VECTORS if v["valid"] and v["name"] == "a plan request"))
+    request["earlier_events"] = []
+    return request
+
+
+def with_events(request: dict) -> dict:
+    """The same request with the contract's earlier events, so a chapter 2+ flow runs the label step before the brainstorm."""
+    vector = next(v["data"] for v in VECTORS if v["valid"] and v["name"] == "a plan request")
+    return {**request, "earlier_events": copy.deepcopy(vector["earlier_events"])}
 
 
 def options_of(world: dict) -> list[dict]:
@@ -277,18 +286,18 @@ def test_the_notes_hold_only_numbers_and_short_words():
 @pytest.mark.skipif(not tokens.available(), reason="the tokenizer files are not installed")
 def test_the_worst_case_of_the_choose_flow_fits_the_context_for_a_large_story():
     from story_sizes import inflate
-    request = inflate(base(), cast=6, each=5, ties=6, chapters=9, chars=900)
+    request = inflate(with_events(base()), cast=6, each=5, ties=6, chapters=9, chars=900)
     request["choose"] = True
     request["pressure_options"] = options_of(request["world"])
     assert select.is_on(request)
     flow = plan.build_flow(request, Kit(request))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert all(m.ok for m in measures) and factor <= 1.0
-    assert [s.name for s in flow.worst_case()][:4] == ["select", "brainstorm", "decide", "plan"]
+    assert [s.name for s in flow.worst_case()][:6] == ["select", "label", "brainstorm", "label", "decide", "plan"]
 
 
 def test_the_select_prompt_carries_the_running_aim_and_asks_for_combinations_that_carry_its_next_step():
-    request = choose_request()
+    request = with_events(choose_request())
     prompt = select.build_select_prompt(request)
     assert "The protagonist's running aim, chapter by chapter" in prompt and "Chapter 1 (the latest): aim: Suvi wants to learn who took the ledger." in prompt
     assert "Where the aim stands now, at the end of chapter 1: Suvi now knows the board is hunting her." in prompt
@@ -303,7 +312,7 @@ def test_the_select_prompt_carries_the_running_aim_and_asks_for_combinations_tha
 def test_the_chain_at_its_longest_still_fits_the_select_the_brainstorm_and_the_plan_prompts():
     """Nine earlier chapters, each with an aim of 300 characters and an ending line of 600 (their caps): the chain block adds this much to every planner prompt."""
     from story_sizes import inflate
-    request = inflate(base(), cast=6, each=5, ties=6, chapters=9, chars=900)
+    request = inflate(with_events(base()), cast=6, each=5, ties=6, chapters=9, chars=900)
     request["choose"] = True
     request["pressure_options"] = options_of(request["world"])
     request["earlier_beats"] = [{"chapter": n, "where": "The Quay", "when": "Morning", "aim": ("aim " * 75).strip(), "plan": "x"} for n in range(1, 10)]
@@ -312,7 +321,7 @@ def test_the_chain_at_its_longest_still_fits_the_select_the_brainstorm_and_the_p
     assert len(plan.chain_text(request, load_text("plan"))) > 9 * 900
     flow = plan.build_flow(request, Kit(request))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
-    assert all(m.ok for m in measures) and factor <= 1.0 and [m.name for m in measures][:4] == ["select", "brainstorm", "decide", "plan"]
+    assert all(m.ok for m in measures) and factor <= 1.0 and [m.name for m in measures][:6] == ["select", "label", "brainstorm", "label", "decide", "plan"]
 
 
 # ---- Rules and objects the last chapters used are not offered ---------------------------------------------------------------

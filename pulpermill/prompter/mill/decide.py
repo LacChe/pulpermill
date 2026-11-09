@@ -224,14 +224,17 @@ class Decision:
     tied: int = 0                               # how many options shared the top total
     marks: dict[str, tuple[str, str]] = field(default_factory=dict)       # per criterion, the best and the worst: shown letter + brainstorm place, "A1"
     invented: int = 0                           # how many options named a person on no card and so lost a point
+    places: tuple[int, ...] = ()                # when only some of the brainstorm's options were judged: the place (from 1) of each judged option, in the order given; empty means all of them, places 1 to n
+    single: bool = False                        # True when one option was left and no call was made: it was chosen directly
 
     def notes(self) -> dict[str, Any]:
         """For the run log: numbers and short plain words only. It carries everything needed to adjust after a run, without the trace: the
         totals by place, and per criterion the best and the worst as the letter shown and the place it had (a habit of favoring a screen
         position shows in the letters, a habit of favoring an outcome in the places). The phrases stay in the trace."""
-        out: dict[str, Any] = {"decide": "fallback" if self.fell_back else "on", "decide_options": len(self.order), "decide_order": "-".join(map(str, self.order)),
+        places = self.places or tuple(range(1, len(self.order) + 1))
+        out: dict[str, Any] = {"decide": "fallback" if self.fell_back else "single" if self.single else "on", "decide_options": len(self.order), "decide_order": "-".join(map(str, self.order)),
                                "decide_pick": self.position, "decide_combo": self.combo, "decide_sampling": SAMPLING}
-        out.update({f"decide_s{place}": total for place, total in enumerate(self.scores, 1)})
+        out.update({f"decide_s{place}": total for place, total in zip(places, self.scores)})
         out["decide_tied"] = self.tied
         out["decide_invented"] = self.invented
         for criterion, (best, worst) in self.marks.items():
@@ -251,18 +254,22 @@ def scores(value: Any, n: int, criteria: tuple[str, ...] = CRITERIA) -> list[int
     return total
 
 
-def decide(options: list[tuple[int, str]], order: list[int], value: Any, criteria: tuple[str, ...] = CRITERIA, flagged: list[bool] | None = None) -> Decision:
+def decide(options: list[tuple[int, str]], order: list[int], value: Any, criteria: tuple[str, ...] = CRITERIA, flagged: list[bool] | None = None,
+           places: list[int] | None = None) -> Decision:
     """The picked option, from the step's result: the highest total, and among equal totals one chosen at random. `flagged` (from `invented`, one
     flag per option in the brainstorm's order) takes a point off each option that names a person on no card, before the winner is chosen. A result
     that is not usable (the fallback `{}`, or a reply the check would refuse) picks a random option and sets `fell_back`: nothing was compared, so
-    nothing is penalized, though the count of flagged options is still noted."""
+    nothing is penalized, though the count of flagged options is still noted. `places` (the brainstorm's place, from 1, of each of `options`) says
+    which of the brainstorm's options these are when some were dropped before the call: the picked place, the order shown and the marks then use
+    the brainstorm's places, never the ones among the survivors; `flagged` stays one flag per option given."""
     n = len(order)
-    shown = tuple(i + 1 for i in order)
+    kept = list(places) if places else list(range(1, len(options) + 1))
+    shown = tuple(kept[i] for i in order)
     flags = [bool(flagged[i]) if flagged and i < len(flagged) else False for i in range(len(options))]
     count = sum(flags[i] for i in order)
     if decide_problem(value, n, criteria) is not None:
         place = random.choice(order)
-        return Decision(options[place][0], place + 1, True, shown, (0,) * n, n, invented=count)
+        return Decision(options[place][0], kept[place], True, shown, (0,) * n, n, invented=count, places=tuple(kept) if places else ())
     by_letter = [total - PENALTY * flags[order[k]] for k, total in enumerate(scores(value, n, criteria))]
     top = max(by_letter)
     letter = random.choice([k for k, total in enumerate(by_letter) if total == top])
@@ -270,8 +277,15 @@ def decide(options: list[tuple[int, str]], order: list[int], value: Any, criteri
     by_place = [0] * n
     for k, total in enumerate(by_letter):
         by_place[order[k]] = total
-    marks = {k: tuple(f"{value[k][side]}{order[LABELS.index(value[k][side])] + 1}" for side in ("best", "worst")) for k in criteria}
-    return Decision(options[place][0], place + 1, False, shown, tuple(by_place), by_letter.count(top), marks, count)
+    marks = {k: tuple(f"{value[k][side]}{kept[order[LABELS.index(value[k][side])]]}" for side in ("best", "worst")) for k in criteria}
+    return Decision(options[place][0], kept[place], False, shown, tuple(by_place), by_letter.count(top), marks, count, tuple(kept) if places else ())
+
+
+def only(options: list[tuple[int, str]], place: int, places: list[int] | None = None, flagged: list[bool] | None = None) -> Decision:
+    """The decision when one option is left: it is chosen directly and no call is made. `place` is its index in `options`; `places` as for `decide`."""
+    kept = list(places) if places else list(range(1, len(options) + 1))
+    count = int(bool(flagged[place])) if flagged and place < len(flagged) else 0
+    return Decision(options[place][0], kept[place], False, (kept[place],), (0,), 1, invented=count, places=(kept[place],), single=True)
 
 
 def stand_in(words: int) -> list[tuple[int, str]]:
