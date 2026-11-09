@@ -14,9 +14,9 @@ from pulpermill.prompts import render as r
 from pulpermill.prompts import textfiles as tx
 from pulpermill.prompter.base import Flow, Step
 
-from . import advance, common, decide, repeat, select
+from . import advance, common, decide, driver, repeat, select
 
-VERSION = "plan-25"
+VERSION = "plan-28"
 IDEA = "idea"            # in choose mode: the number (1 to 3) of the idea the plan builds on, which is also the number of its combination; the reply turns it into `picked`
 IDEA_USE = "idea_use"      # the plan step's own account of which brainstorm idea it built on: for the run's trace only, never in the reply
 MAX_OUTPUT = 1000          # where + when + aim + about 150 words of plan, with room to spare; the context keeps this much free
@@ -123,11 +123,15 @@ NAME_MAX = 100       # the longest a rule is written in the labeler's list of na
 
 def label_items(request: dict) -> list[tuple[int, str]]:
     """The earlier chapters the labeler describes: the last K chapters before this one that have events, each as (chapter, what happened and what
-    changed). Empty in chapter 1 and for a request with no earlier events: the flow then has no label step."""
+    changed, then one more line with the chapter's planned aim when `earlier_beats` has it). Empty in chapter 1 and for a request with no earlier events: the flow then has no label step."""
     chapter = int(request.get("chapter") or 0)
+    aims = {int(b["chapter"]): r.s(b.get("aim")) for b in request.get("earlier_beats") or [] if isinstance(b, dict) and isinstance(b.get("chapter"), int) and r.s(b.get("aim"))}
     rows = []
     for e in cut_events(request.get("earlier_events"), chapter, 1.0):
         text = " ".join(r.sentence(x) for x in (r.s(e.get("happened")), r.s(e.get("changed"))) if x)
+        aim = aims.get(int(e["chapter"]))
+        if text and aim:                                       # the chapter's planned aim: it is where the reason for the pursuit is stated
+            text += "\n" + common.load_text("plan")["label_item_aim"].format(aim=r.sentence(aim))
         if text:
             rows.append((int(e["chapter"]), text))
     return rows[-repeat.K:]
@@ -143,7 +147,7 @@ def label_names(request: dict) -> list[str]:
 
 
 def used_text(used: list[dict] | None, w: dict) -> str:
-    """The "already used" table: one line for each labelled earlier chapter (its number, the six labels, the note), oldest first, under a lead. Empty
+    """The "already used" table: one line for each labelled earlier chapter (its number, the seven labels, the note), oldest first, under a lead. Empty
     when no chapter was labelled."""
     if not used:
         return ""
@@ -152,9 +156,11 @@ def used_text(used: list[dict] | None, w: dict) -> str:
     lines = []
     for row in used:
         party = w["used_party"].format(party=row["obstacle_party"]) if row["obstacle_party"] != repeat.NO_PARTY else ""
+        motive = row.get("motive_kind", "other")
+        driven = w["used_driven"].format(motive_kind=words(motive)) if motive != "other" else ""        # a motive that says nothing is left out
         lines.append(w["used_item"].format(chapter=row["chapter"], aim_kind=words(row["aim_kind"]), obstacle_source=words(row["obstacle_source"]), party=party,
                                            turning_kind=words(row["turning_kind"]), outcome=words(row["outcome"]), closing_hook=words(row["closing_hook"]),
-                                           note=row["turning_note"]).strip())
+                                           driven=driven, note=row["turning_note"]).strip())
     return w["used_lead"] + "\n" + "\n".join(lines)
 
 
@@ -278,6 +284,8 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dic
     task.append(w["brainstorm_outcomes"])
     if combos is not None:
         task.append(w["brainstorm_combos"])
+    if factor >= 1.0:                                          # a squeeze drops the driver lines with the "already used" table; with fewer than two kinds there are none
+        task.append(driver.text(request, w))
     task.append(w["brainstorm_parts"].format(other=other_end(request, names)))
     task.append(w["brainstorm_risk"])
     if chapter > 1:
@@ -454,6 +462,8 @@ class PlanFlow(Flow):
     def __init__(self, request: dict, kit: Any):
         self.request, self.kit = request, kit
         self.notes: dict[str, Any] = {"pressure_on": bool(pressure_of(request)), "origin_history": bool(request.get("origin_history", True))}      # for the run log: whether a pressure was sent, whether origin history was asked for, the judges' verdict words, whether a last resort stood in for a step, and the walk-on counts (minor_names, minor_new)
+        if driver.active(request):
+            self.notes["driver_kinds"] = driver.label(request)      # the kind each of the three ideas is driven by, in order (Plan 9)
         self.brainstorm = ""                    # the brainstorm's text once it has run ("" until then, and when it fell back)
         self.combos: list[dict] | None = None   # choose mode: the three combinations the select step picked (None until then, and when it fell back)
         self._options: list[tuple[int, str]] | None = None    # the brainstorm's options when the decider is to run (at least two), else None
@@ -461,7 +471,7 @@ class PlanFlow(Flow):
         self.decision: decide.Decision | None = None          # the decider's pick, once it has run
         self._shown: list[dict] | None = None   # once decided in choose mode: the one combination the plan carries (the picked option's), else None
         self._label_items = label_items(request)    # the earlier chapters the label step describes (empty: no label step)
-        self.used: list[dict] = []              # the labelled earlier chapters, oldest first: {chapter, the seven labels}; empty after a fallback or with no label step
+        self.used: list[dict] = []              # the labelled earlier chapters, oldest first: {chapter, the eight keys of a fingerprint}; empty after a fallback or with no label step
         self.earlier_prints: list[repeat.Fingerprint | None] = []       # the same, one for each of the label step's chapters (None where it gave none)
         self._labelled = False                  # the label step's result has been read
         self._gated = False                     # a label step over the brainstorm's ideas is part of the chain (earlier chapters were labelled and the brainstorm gave its options)
@@ -686,6 +696,7 @@ class PlanFlow(Flow):
         self.notes["repeat"] = "on"
         self.notes.update({f"repeat_m{place}": one.matches for place, one in enumerate(found, 1)})
         self.notes["repeat_dropped"] = len(dropped)
+        self.notes["repeat_threshold"] = f"{repeat.T} of {len(repeat.FIELDS)}"      # T is 4 of seven since the motive joined the fields: to be tuned on a real run
         self.notes["repeat_avoid"] = False
         if len(dropped) == count:
             best = min(range(count), key=lambda i: (found[i].matches, i))
@@ -829,7 +840,7 @@ def script(request: dict, kit: Any) -> list[str]:
     if items:                                  # the label step: one valid fingerprint for each earlier chapter it describes
         party = (label_names(request) or ["none"])[0]
         texts.append(json.dumps({"prints": [{"n": c, "turning_note": f"Chapter {c} turns on a refusal at the door.", "aim_kind": "obtain", "obstacle_source": "person",
-                                             "obstacle_party": party, "turning_kind": "refusal", "outcome": "lost", "closing_hook": "new_task"} for c, _ in items]}))
+                                             "obstacle_party": party, "turning_kind": "refusal", "outcome": "lost", "closing_hook": "new_task", "motive_kind": "recognition"} for c, _ in items]}))
     chosen = {"idea": 1} if choose else {}
     texts += [brainstorm, json.dumps({**chosen, "idea_use": f"I build on option 2, the trade, and take its price quarrel.", "where": place, "when_time": f"Day {n}, early morning", "aim": aim, "plan": plan})]
     return texts

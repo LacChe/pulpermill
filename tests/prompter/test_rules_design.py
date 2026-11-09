@@ -154,7 +154,7 @@ def test_rule6_the_shifts_check_rejects_a_chapter_that_leaves_the_edge_unchanged
 def test_rule6_the_writer_and_the_events_step_ask_for_the_change_the_check_looks_for():
     texts = prompts("generate", gen_with())
     assert "the protagonist wanting something new and the tie standing differently" in texts["write"]
-    assert "the one concrete thing the protagonist goes after next" in texts["events"] and "what drives the tie now" in texts["events"]
+    assert "the one concrete thing the protagonist goes after next" in texts["events"] and "what drives the tie now" not in texts["events"]
     assert "its edge was: to bring her daughter home" in texts["shifts"] and "The new edge must differ from the old one" in texts["shifts"]
     plan_text = prompts("plan", plan_with())["plan"]
     assert "must each have moved to a distinctly new state" in plan_text and "Show both in Act 4 through what people do and the facts that have changed" in plan_text and "what drives Marit in it" in plan_text

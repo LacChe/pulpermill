@@ -379,7 +379,7 @@ def test_the_brainstorm_prompt_asks_for_three_ways_to_take_the_next_step_with_th
     assert "idea 1 ends with the protagonist reaching what they are after, at a price, and the want is given; idea 2 ends with them losing it, and the want is refused; idea 3 ends with them giving it up for something else, and the want is dropped." in prompt
     assert "idea 1 ends with the protagonist reaching what they are after, at a price; idea 2" not in prompt          # the old outcome sentence is gone
     goes = "The aim goes beyond the tie's edge: it is the one thing the protagonist does in this chapter that forces an answer to what the person at the from end wants from the other person in the tie."
-    assert prompt.count(goes) == 1 and "that want has been given, refused or dropped, and the two of them are different to each other afterwards" in prompt
+    assert goes not in prompt and "drawn from what drives them" in prompt and "the two of them are different to each other: how the collision ends is the answer to the tie's edge" in prompt
     assert prompt.count("and what the tie is afterwards: its new edge in one clause and, if the two are now something else to each other, its new bond.") == 1
     assert "The new edge cannot be the old one in other words or made stronger" in prompt and "what that leaves behind that cannot be redone in a later chapter" in prompt
     assert "Act 1" not in prompt and "JSON" not in prompt and "four points" not in prompt        # no plan shape is asked for here
@@ -565,7 +565,7 @@ def test_a_brainstorm_that_fails_every_attempt_never_fails_the_call_and_the_plan
     texts = plan.script(request, Kit(request))
     reply, ctx, engine = run_plan(request, "no", "still no", json.dumps(plain(texts[1])))        # no brainstorm: the plan grammar has no `idea_use`
     assert reply == {"beat": plain(texts[1])} and engine.calls == 3
-    assert ctx.notes["flow"] == {"decide": "none", "brainstorm_fallback": True, "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": True}
+    assert ctx.notes["flow"] == {"decide": "none", "brainstorm_fallback": True, "minor_names": 0, "minor_new": 0, "pressure_on": False, "origin_history": True, "driver_kinds": "want-fear-flaw"}
     assert "Three ideas for this chapter" not in engine.prompts[2] and "Choose one of them" not in engine.prompts[2]
     brainstorm_pass = [p for p in ctx.notes["passes"] if p["step"] == "brainstorm"][0]
     assert len(brainstorm_pass["attempts"]) == 2 and brainstorm_pass["fallback"] is True
@@ -602,7 +602,7 @@ def test_the_whole_plan_flow_fits_the_context_at_a_full_cast_of_five_without_any
 
 def test_the_prompter_version_changes_with_the_plan_wording():
     version = load_prompter("mill").version
-    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-25"
+    assert f"+plan:{plan.VERSION}:" in version and plan.VERSION == "plan-28"
 
 
 # ---- what the planner did with the brainstorm (for the trace only) ----------------------------------------------------------------
@@ -714,7 +714,7 @@ def test_with_a_pressure_in_the_request_the_flow_runs_no_pressure_step_and_the_n
     reply, ctx, engine = run_pressed(request, *texts)
     assert reply == {"beat": plain(texts[1])} and engine.calls == 2
     assert [p["step"] for p in ctx.notes["passes"]] == ["brainstorm", "plan"]
-    assert ctx.notes["flow"] == {"decide": "none", "pressure_on": True, "origin_history": True, "minor_names": 0, "minor_new": 0}
+    assert ctx.notes["flow"] == {"decide": "none", "pressure_on": True, "origin_history": True, "minor_names": 0, "minor_new": 0, "driver_kinds": "want-fear-flaw"}
     assert element_of(request) in engine.prompts[1] and not any("pressure" in step for step in [p["step"] for p in ctx.notes["passes"]])
     first = with_pressure()
     first.update(chapter=1, earlier_beats=[], earlier_events=[])
@@ -852,3 +852,20 @@ def test_the_plan_is_the_last_step_in_every_chapter_and_nothing_runs_after_it():
         reply, ctx, engine = run_plan(chapter_request, *texts)
         assert engine.calls == len(texts) and [p["step"] for p in ctx.notes["passes"]][-1] == "plan"
         assert not any(key.startswith(("aim_", "pressure_judge", "edge_")) for key in ctx.notes["flow"])
+
+
+def test_the_brainstorm_aim_may_come_from_the_protagonists_own_card_and_not_only_the_ties_edge():
+    w = load_text("plan")
+    task = w["brainstorm_task"]
+    assert "drawn from what drives them" in task and "what the person at the from end of the tie the idea is built on wants from the other person" in task
+    assert all(part in task for part in ("a want", "what they avoid", "the false belief that works against them", "what they hold sacred"))
+    assert "meets the protagonist on the way, whatever the aim is drawn from" in task and "the two of them are different to each other" in task
+    assert "forces an answer to what the person at the from end wants" not in task and "taken from the tie the idea is built on" not in task
+    assert "no two ideas share the same reason for their aim" in task
+    outcomes = w["brainstorm_outcomes"]
+    assert "how the want behind its aim is answered" in outcomes and "Where the aim is not drawn from the tie's edge, the tie's edge is answered in the same way" in outcomes
+    for ending in ("reaching what they are after, at a price, and the want is given", "losing it, and the want is refused", "giving it up for something else, and the want is dropped"):
+        assert ending in outcomes
+    for combos in (None, combos_of()):
+        prompt = plan.build_brainstorm_prompt(base(), 1.0, combos)
+        assert prompt.count(task) == 1 and prompt.count(outcomes) == 1

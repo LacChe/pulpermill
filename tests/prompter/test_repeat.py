@@ -10,7 +10,7 @@ NAMES = ["Ada", "Bram", "The Guild", "The Gate"]
 
 def fp(**over):
     base = {"aim_kind": "obtain", "obstacle_source": "person", "obstacle_party": "Ada", "turning_kind": "refusal", "outcome": "lost",
-            "closing_hook": "new_task", "turning_note": "A door stays shut."}
+            "closing_hook": "new_task", "motive_kind": "recognition", "turning_note": "A door stays shut."}
     return {**base, **over}
 
 
@@ -24,7 +24,8 @@ def test_clean_keeps_a_valid_fingerprint_whole():
 def test_clean_sets_an_invalid_or_missing_value_to_other_and_a_bad_party_to_none():
     out = repeat.clean({"aim_kind": "wander", "turning_kind": 7, "obstacle_party": "Nobody", "outcome": "lost"}, NAMES)
     assert out["aim_kind"] == "other" and out["turning_kind"] == "other"
-    assert out["obstacle_source"] == "other" and out["closing_hook"] == "other"             # missing
+    assert out["obstacle_source"] == "other" and out["closing_hook"] == "other" and out["motive_kind"] == "other"             # missing
+    assert repeat.clean(fp(motive_kind="wanderlust"), NAMES)["motive_kind"] == "other" and repeat.clean(fp(motive_kind=3), NAMES)["motive_kind"] == "other"
     assert out["obstacle_party"] == "none"                                                   # not on the list
     assert out["outcome"] == "lost" and out["turning_note"] == ""
 
@@ -43,40 +44,46 @@ def test_clean_trims_and_cuts_the_note():
 
 def test_the_vocabularies_are_the_planned_ones_and_end_in_other_where_the_plan_says():
     assert repeat.OUTCOMES[:3] == ("reached", "lost", "gave_up")
+    assert repeat.MOTIVE_KINDS == ("recognition", "closeness", "protection", "avoidance", "duty", "order", "curiosity", "gain", "other")
     assert all(v[-1] == "other" for v in repeat.VALUES.values())
-    assert set(repeat.FIELDS) | {repeat.NOTE} == set(repeat.KEYS) and repeat.NOTE not in repeat.FIELDS and len(repeat.FIELDS) == 6
+    assert set(repeat.FIELDS) | {repeat.NOTE} == set(repeat.KEYS) and repeat.NOTE not in repeat.FIELDS and len(repeat.FIELDS) == 7 and repeat.FIELDS[-1] == "motive_kind" and repeat.KEYS[-1] == repeat.NOTE
     assert (repeat.K, repeat.T) == (3, 4)
 
 
 # ---- matches ----------------------------------------------------------------------------------------------------------------------
 
-def test_equal_fingerprints_match_on_all_six_fields_and_the_note_is_not_compared():
-    assert repeat.matches(fp(), fp(turning_note="A different sentence.")) == 6
+def test_equal_fingerprints_match_on_all_seven_fields_and_the_note_is_not_compared():
+    assert repeat.matches(fp(), fp(turning_note="A different sentence.")) == 7
     assert repeat.matched(fp(), fp()) == repeat.FIELDS
 
 
 def test_unequal_fields_do_not_match_and_the_names_of_the_matching_ones_come_back_in_order():
-    other = fp(aim_kind="keep", turning_kind="bargain", closing_hook="deadline")
+    other = fp(aim_kind="keep", turning_kind="bargain", closing_hook="deadline", motive_kind="duty")
     assert repeat.matches(fp(), other) == 3
     assert repeat.matched(fp(), other) == ("obstacle_source", "obstacle_party", "outcome")
 
 
 def test_other_and_none_never_match_even_when_both_sides_have_them():
-    a = fp(aim_kind="other", obstacle_party="none", closing_hook="other")
+    a = fp(aim_kind="other", obstacle_party="none", closing_hook="other", motive_kind="other")
     assert repeat.matches(a, a) == 3
-    assert not {"aim_kind", "obstacle_party", "closing_hook"} & set(repeat.matched(a, a))
+    assert not {"aim_kind", "obstacle_party", "closing_hook", "motive_kind"} & set(repeat.matched(a, a))
+
+
+def test_the_motive_matches_by_equality_like_the_other_fields_and_other_never_does():
+    assert repeat.matched(fp(), fp(aim_kind="keep"))[-1] == "motive_kind" and repeat.matches(fp(), fp(motive_kind="duty")) == 6
+    assert "motive_kind" not in repeat.matched(fp(motive_kind="other"), fp(motive_kind="other"))
 
 
 def test_matches_is_symmetric():
     a, b = fp(), fp(aim_kind="keep", outcome="reached")
-    assert repeat.matches(a, b) == repeat.matches(b, a) == 4
+    assert repeat.matches(a, b) == repeat.matches(b, a) == 5
 
 
 # ---- screen -----------------------------------------------------------------------------------------------------------------------
 
 def test_screen_gives_each_idea_its_best_match_and_the_fields_of_that_pairing():
-    near = fp(aim_kind="keep", outcome="reached", closing_hook="deadline")             # 3 with the idea
-    far = fp(aim_kind="keep", obstacle_source="rule", obstacle_party="Bram", turning_kind="bargain", outcome="reached", closing_hook="deadline")
+    near = fp(aim_kind="keep", outcome="reached", closing_hook="deadline", motive_kind="duty")             # 3 with the idea
+    far = fp(aim_kind="keep", obstacle_source="rule", obstacle_party="Bram", turning_kind="bargain", outcome="reached", closing_hook="deadline", motive_kind="duty")
     got = repeat.screen([fp()], [far, near])
     assert got == [repeat.Screen(3, ("obstacle_source", "obstacle_party", "turning_kind"))]
     assert repeat.screen([fp()], [far]) == [repeat.Screen(0, ())]
@@ -84,26 +91,26 @@ def test_screen_gives_each_idea_its_best_match_and_the_fields_of_that_pairing():
 
 def test_screen_looks_only_at_the_last_k_earlier_chapters():
     same = fp()
-    different = fp(aim_kind="keep", obstacle_source="rule", obstacle_party="Bram", turning_kind="bargain", outcome="reached", closing_hook="deadline")
+    different = fp(aim_kind="keep", obstacle_source="rule", obstacle_party="Bram", turning_kind="bargain", outcome="reached", closing_hook="deadline", motive_kind="duty")
     old = [same] + [different] * repeat.K                                              # the match is the K+1-th from the end
     assert repeat.screen([fp()], old)[0].matches == 0
-    assert repeat.screen([fp()], [same] + [different] * (repeat.K - 1))[0].matches == 6
+    assert repeat.screen([fp()], [same] + [different] * (repeat.K - 1))[0].matches == 7
 
 
 def test_screen_skips_chapters_with_no_fingerprint():
-    assert repeat.screen([fp()], [None, fp(), None])[0].matches == 6
+    assert repeat.screen([fp()], [None, fp(), None])[0].matches == 7
     assert repeat.screen([fp()], [None, None]) == [repeat.Screen(0, ())]
     assert repeat.screen([fp()], []) == [repeat.Screen(0, ())]
 
 
 def test_screen_gives_an_idea_with_no_fingerprint_nothing():
-    assert repeat.screen([None, fp()], [fp()]) == [repeat.Screen(0, ()), repeat.Screen(6, repeat.FIELDS)]
+    assert repeat.screen([None, fp()], [fp()]) == [repeat.Screen(0, ()), repeat.Screen(7, repeat.FIELDS)]
 
 
 def test_a_tie_between_two_chapters_keeps_the_more_recent_ones_fields():
     # both match the idea on three fields, but not the same three
-    older = fp(aim_kind="keep", obstacle_source="rule", obstacle_party="Bram")             # matches on turning_kind, outcome, closing_hook
-    newer = fp(turning_kind="bargain", outcome="reached", closing_hook="deadline")         # matches on aim_kind, obstacle_source, obstacle_party
+    older = fp(aim_kind="keep", obstacle_source="rule", obstacle_party="Bram", motive_kind="duty")             # matches on turning_kind, outcome, closing_hook
+    newer = fp(turning_kind="bargain", outcome="reached", closing_hook="deadline", motive_kind="duty")         # matches on aim_kind, obstacle_source, obstacle_party
     assert repeat.screen([fp()], [older, newer])[0] == repeat.Screen(3, ("aim_kind", "obstacle_source", "obstacle_party"))
     assert repeat.screen([fp()], [newer, older])[0] == repeat.Screen(3, ("turning_kind", "outcome", "closing_hook"))
 
@@ -125,6 +132,7 @@ def test_the_grammar_asks_for_exactly_count_entries_with_the_vocabularies_as_enu
     props = arr["items"]["properties"]
     assert list(props)[:2] == ["n", "turning_note"] and set(props) == {"n", *repeat.KEYS}
     assert props["turning_kind"]["enum"] == list(repeat.TURNING_KINDS) and "enum" not in props["obstacle_party"]
+    assert props["motive_kind"]["enum"] == list(repeat.MOTIVE_KINDS) and list(props)[-1] == "motive_kind" and arr["items"]["required"] == list(props)
 
 
 def test_the_check_wants_one_entry_per_text_and_does_not_refuse_odd_values():
@@ -167,6 +175,9 @@ def test_the_prompt_carries_the_texts_the_names_the_values_and_no_ids():
     for values in repeat.VALUES.values():
         assert ", ".join(values) in prompt
     assert "English" in prompt and "exactly 2 entries" in prompt
+    w = load_text("plan")
+    assert w["label_motive_kind"].format(values=", ".join(repeat.MOTIVE_KINDS)) in prompt and "why the protagonist wants what they go after" in prompt
+    assert "closing_hook and motive_kind" in prompt and prompt.index("For closing_hook") < prompt.index("For motive_kind") < prompt.index("For turning_note")
 
 
 def test_the_prompt_says_so_when_no_names_are_given_and_squeezes_the_texts():

@@ -17,12 +17,12 @@ from pulpermill.backend.kit import Kit  # noqa: E402
 from pulpermill.prompter.mill import decide, plan, repeat  # noqa: E402
 from pulpermill.prompter.mill.common import ENDINGS, load_text  # noqa: E402
 
-COMPARED = ("aim_kind", "obstacle_source", "obstacle_party", "turning_kind", "closing_hook")        # the five an idea can match (its outcome is set by its number)
+COMPARED = ("aim_kind", "obstacle_source", "obstacle_party", "turning_kind", "closing_hook", "motive_kind")        # the six an idea can match (its outcome is set by its number)
 
 
 def earlier_print(request: dict) -> dict:
     return {"aim_kind": "obtain", "obstacle_source": "person", "obstacle_party": plan.label_names(request)[0], "turning_kind": "refusal",
-            "outcome": "other", "closing_hook": "new_task", "turning_note": "A door stays shut."}
+            "outcome": "other", "closing_hook": "new_task", "motive_kind": "recognition", "turning_note": "A door stays shut."}
 
 
 def earlier_reply(request: dict) -> str:
@@ -52,9 +52,10 @@ def decide_reply(request: dict, survivors: list[tuple[int, str]], wanted_place: 
     return json.dumps({k: {"held": f"Held {k}.", **{letter: f"Phrase {k} {letter}." for letter in letters}, "best": best, "worst": worst} for k in decide.criteria_for(request)})
 
 
-def run(request: dict, matching: tuple[int, ...], wanted: int | None = None):
+def run(request: dict, matching: tuple[int, ...], wanted: int | None = None, gate: str | None = None):
     """A whole call: the label step over the earlier chapters, the brainstorm of three options, the gate's labels, the decider (when two or more ideas are
-    left; `wanted` is the place it picks), the plan. `matching` is how many labels each idea shares with the earlier chapters."""
+    left; `wanted` is the place it picks), the plan. `matching` is how many labels each idea shares with the earlier chapters (or `gate` is the label reply as written, and `matching` says how
+    many labels each idea is meant to share, so the scripted decider fits the survivors)."""
     texts = plan.script(request, Kit(request))
     at = (1 if request.get("choose") else 0) + 1                    # the brainstorm's place in the scripted texts
     beat = json.loads(texts[at + 1])
@@ -62,7 +63,7 @@ def run(request: dict, matching: tuple[int, ...], wanted: int | None = None):
         beat["idea"] = 1
     dropped = [p for p, m in enumerate(matching, 1) if m >= repeat.T]
     alive = [p for p in (1, 2, 3) if p not in dropped] or [min((1, 2, 3), key=lambda p: (matching[p - 1], p))]
-    middle = [BRAINSTORM, gate_reply(request, *matching)]
+    middle = [BRAINSTORM, gate or gate_reply(request, *matching)]
     if len(alive) >= 2:
         middle.append(decide_reply(request, [OPTIONS[p - 1] for p in alive], wanted or alive[0], alive))
     all_texts = texts[:at - 1] + [earlier_reply(request)] + middle + [everyone(request, json.dumps(beat))] + texts[at + 2:]
@@ -216,3 +217,26 @@ def test_the_invented_flags_count_only_the_options_judged():
     assert only.position == 3 and only.combo == OPTIONS[2][0] and only.single and only.invented == 1
     assert only.notes()["decide"] == "single" and only.notes()["decide_pick"] == 3 and only.notes()["decide_s3"] == 0
     assert decide.only(OPTIONS, 1).position == 2 and decide.only(OPTIONS, 1).places == (2,)
+
+
+# ---- Plan 9 step 3: the motive joins the count -----------------------------------------------------------------------------------
+
+def test_an_idea_that_repeats_the_motive_and_three_other_fields_is_dropped_at_t_four_and_without_the_motive_it_stays():
+    assert repeat.T == 4 and len(repeat.FIELDS) == 7
+    request = chaptered(base())
+    with_motive = idea_entry(request, 1, 3)                                  # aim_kind, obstacle_source, obstacle_party
+    with_motive["motive_kind"] = earlier_print(request)["motive_kind"]       # and the earlier chapters' motive: four in all
+    gate = json.dumps({"prints": [with_motive, idea_entry(request, 2, 3), idea_entry(request, 3, 3)]})
+    flow, reply, ctx, engine, texts = run(request, (4, 3, 3), gate=gate)
+    notes = ctx.notes["flow"]
+    assert (notes["repeat_m1"], notes["repeat_m2"], notes["repeat_m3"]) == (4, 3, 3) and notes["repeat_dropped"] == 1 and flow._alive == [1, 2]
+    assert notes["repeat_threshold"] == "4 of 7" and notes["repeat_avoid"] is False
+    assert "decide" in names_of_steps(ctx)                                    # the other two ideas go to the decider
+
+
+def test_when_every_idea_is_dropped_the_motive_is_one_of_the_aspects_the_plan_must_change():
+    request = chaptered(base())
+    gate = json.dumps({"prints": [{**idea_entry(request, n, 4), "motive_kind": earlier_print(request)["motive_kind"]} for n in (1, 2, 3)]})
+    flow, reply, ctx, engine, texts = run(request, (5, 5, 5), gate=gate)
+    assert flow.avoid_fields[-1] == "motive_kind" and ctx.notes["flow"]["repeat_avoid"] is True
+    assert load_text("plan")["avoid_fields"]["motive_kind"] in engine.prompts[3]

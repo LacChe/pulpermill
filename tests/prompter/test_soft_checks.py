@@ -216,7 +216,8 @@ def test_a_plan_with_only_an_unknown_person_passes_the_first_check_and_is_counte
     assert flow.notes["minor_names"] == 1 and flow.notes["minor_new"] == 1
     lines = [r.getMessage() for r in caplog.records if r.getMessage().startswith("call=plan step=plan soft problem accepted")]
     assert len(lines) == 1 and "Master Elmsworth" in lines[0]            # the trace line may carry the name; the run record never does
-    assert not any(isinstance(v, str) for v in flow.notes.values())
+    assert not any(isinstance(v, str) for k, v in flow.notes.items() if k != "driver_kinds")           # no story text; the driver kinds are a fixed vocabulary
+    assert set(flow.notes.get("driver_kinds", "edge").split("-")) <= {"edge", "want", "fear", "flaw", "value"}
 
 
 def test_a_plan_whose_only_name_is_in_the_history_is_counted_but_not_new_and_says_nothing(caplog):
@@ -303,7 +304,7 @@ def test_an_echo_still_sends_the_chapter_back_once_through_the_runner(monkeypatc
 
 def test_the_versions_were_bumped():
     from pulpermill.prompter.mill import VERSION
-    assert VERSION == "mill-0.2" and plan.VERSION == "plan-25" and gen.VERSION == "generate-16"
+    assert VERSION == "mill-0.2" and plan.VERSION == "plan-28" and gen.VERSION == "generate-17"
 
 
 # ---- helpers ---------------------------------------------------------------------------------------------------------------

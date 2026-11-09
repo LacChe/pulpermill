@@ -27,7 +27,7 @@ def chaptered(request: dict, last: int = 6, events=EVENTS) -> dict:
 
 def prints_reply(chapters, **over) -> str:
     entry = {"turning_note": "A door stays shut.", "aim_kind": "obtain", "obstacle_source": "person", "obstacle_party": "none", "turning_kind": "refusal",
-             "outcome": "lost", "closing_hook": "new_task", **over}
+             "outcome": "lost", "closing_hook": "new_task", "motive_kind": "recognition", **over}
     return json.dumps({"prints": [{"n": n, **entry} for n in chapters]})
 
 
@@ -47,7 +47,7 @@ def test_no_earlier_events_means_no_label_step_and_chapter_one_neither():
 def test_the_label_step_describes_the_last_k_earlier_chapters_each_by_its_number():
     request = chaptered(base())
     assert [n for n, _ in plan.label_items(request)] == [3, 4, 5]
-    assert plan.label_items(request)[0][1] == "Things happened in chapter 3. Ending number 3."
+    assert plan.label_items(request)[0][1] == "Things happened in chapter 3. Ending number 3.\nThe aim the chapter was planned around: Chase number 3 across the harbour."
     flow = plan.build_flow(request, Kit(request))
     step = flow.next([])
     assert step.name == "label" and step.kind == "json" and step.attempts <= 2 and step.fallback() == {}
@@ -93,7 +93,7 @@ def decided_texts(request: dict, wanted: int = 2) -> list[str]:
     beat = json.loads(texts[at + 2])
     if "idea" in beat:
         beat["idea"] = 1
-    gate = prints_reply([1, 2, 3], aim_kind="other", obstacle_source="other", turning_kind="other", closing_hook="other")       # no idea repeats anything
+    gate = prints_reply([1, 2, 3], aim_kind="other", obstacle_source="other", turning_kind="other", closing_hook="other", motive_kind="other")       # no idea repeats anything
     return texts[:at + 1] + [BRAINSTORM, gate, reply_for(request, wanted), everyone(request, json.dumps(beat))] + texts[at + 3:]
 
 
@@ -199,3 +199,45 @@ def test_the_script_has_a_valid_label_reply_for_each_chapter_the_step_describes(
     prints = repeat.read(value, items, plan.label_names(request))
     assert all(p and p["obstacle_party"] != "none" for p in prints)
     assert len(plan.script({**request, "earlier_events": []}, Kit(request))) == len(plan.script(request, Kit(request))) - 1
+
+
+# ---- Plan 9 step 3: the motive and the aim ----------------------------------------------------------------------------------------
+
+def test_an_earlier_chapters_text_ends_with_its_planned_aim_when_the_beats_have_it_and_has_none_when_they_do_not():
+    request = chaptered(base())
+    items = dict(plan.label_items(request))
+    assert all(text.endswith(f"The aim the chapter was planned around: Chase number {n} across the harbour.") for n, text in items.items())
+    assert load_text("plan")["label_item_aim"].format(aim="x") == "The aim the chapter was planned around: x"
+    no_beats = {**request, "earlier_beats": [b for b in request["earlier_beats"] if b["chapter"] != 4]}
+    items = dict(plan.label_items(no_beats))
+    assert "planned around" not in items[4] and "planned around" in items[3] and "planned around" in items[5]
+    assert all("planned around" not in text for _, text in plan.label_items({**request, "earlier_beats": []}))
+
+
+def test_the_label_call_over_the_earlier_chapters_reads_each_aim_and_asks_for_the_motive():
+    request = chaptered(base())
+    flow, reply, ctx, engine = run_with(request, *plan.script(request, Kit(request)))
+    first = engine.prompts[0]
+    assert "The aim the chapter was planned around: Chase number 3 across the harbour." in first and "For motive_kind" in first and "motive_kind" in first.split("## Your task")[1]
+    assert all(row["motive_kind"] == "recognition" for row in flow.used)
+
+
+def test_the_script_label_reply_carries_a_valid_motive_kind_for_each_earlier_chapter():
+    request = chaptered(base())
+    items = plan.label_items(request)
+    prints = json.loads(plan.script(request, Kit(request))[0])["prints"]
+    assert len(prints) == len(items) and all(p["motive_kind"] in repeat.MOTIVE_KINDS for p in prints) and repeat.label_problem({"prints": prints}, len(items)) is None
+    assert all(print_["motive_kind"] != "other" for print_ in repeat.read({"prints": prints}, items, plan.label_names(request)))
+
+
+def test_the_table_line_carries_the_motive_unless_it_says_other_and_the_brainstorm_asks_for_a_different_reason():
+    request = chaptered(base())
+    w = load_text("plan")
+    row = {"chapter": 5, **repeat.clean({"aim_kind": "keep", "obstacle_source": "group", "obstacle_party": "Marit", "turning_kind": "bargain", "outcome": "gave_up",
+                                         "closing_hook": "new_task", "motive_kind": "duty", "turning_note": "Note 5."}, ["Marit"])}
+    lines = table_lines(plan.build_brainstorm_prompt(request, 1.0, None, [row]))
+    assert lines == ["Chapter 5: aim: keep; in the way: group (Marit); turning point: bargain; ended: gave up; left standing: new task; driven by: duty. Note 5."]
+    assert "driven by" not in plan.used_text([{**row, "motive_kind": "other"}], w) and "driven by" not in plan.used_text([{k: v for k, v in row.items() if k != "motive_kind"}], w)
+    assert "driven by: closeness" in plan.used_text([{**row, "motive_kind": "closeness"}], w)
+    assert "why the protagonist wanted it" in w["used_lead"] and "in why the protagonist wants it" in w["brainstorm_used"]
+    assert w["avoid_fields"]["motive_kind"] == "why the protagonist wants it" and set(repeat.FIELDS) <= set(w["avoid_fields"])

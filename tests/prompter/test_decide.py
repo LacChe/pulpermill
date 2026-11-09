@@ -450,3 +450,10 @@ def test_the_notes_carry_how_many_options_were_flagged_as_a_number():
     got = decide.decide(OPTIONS, ORDER, reply(), decide.CRITERIA, [True, False, True])
     assert got.notes()["decide_invented"] == 2 and isinstance(got.notes()["decide_invented"], int)
     assert decide.decide(OPTIONS, ORDER, reply(), decide.CRITERIA).notes()["decide_invented"] == 0
+
+
+def test_the_decider_ranks_a_change_in_wants_fears_or_values_as_movement_even_when_the_ties_wording_stays():
+    w = load_text("plan")
+    task = decide.build_decide_prompt(request(), OPTIONS, ORDER).split("## Your task\n")[1]
+    assert "A change in what a person wants, fears or holds sacred moves the story as much as a change in the tie" in task
+    assert "does not rank lower because the tie's wording stays the same" in task and w["decide_task"] in task

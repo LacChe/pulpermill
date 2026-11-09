@@ -18,7 +18,7 @@ from pulpermill.prompter.base import Flow, Step
 from . import common
 from .plan import cut_events, in_names, names_of, pressure_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-16"
+VERSION = "generate-17"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -222,7 +222,7 @@ def _words(text: str, limit: int) -> str:
 
 
 def repair_events(value: Any) -> dict:
-    """`changed` as its first two sentences (the outcome and the aim, then what drives the tie), cut to CHANGED_WORDS words. Everything else is left as it came."""
+    """`changed` as its first two sentences (the outcome and the aim; the tie's new state is recorded by the shifts step), cut to CHANGED_WORDS words. Everything else is left as it came."""
     out = dict(value or {})
     kept = sentences(out.get("changed"))[:2]
     out["changed"] = _words(" ".join(kept), CHANGED_WORDS) if kept else r.s(out.get("changed"))

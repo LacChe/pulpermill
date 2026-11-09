@@ -460,7 +460,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-16:" in load_prompter("mill").version
+    assert "+generate:generate-17:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------
@@ -759,3 +759,10 @@ def test_with_a_pressure_in_the_request_the_flow_runs_no_pressure_step_and_the_n
     assert flow.notes["pressure_on"] is True and "advance_pressure" not in [s.name for s in flow.worst_case()]
     plain = gen.build_flow(base(), Kit(base()))
     assert plain.notes["pressure_on"] is False and "advance_pressure" not in [s.name for s in plain.worst_case()]
+
+
+def test_the_new_edge_names_what_is_wanted_or_feared_and_stops_there_and_events_no_longer_asks_for_the_ties_drive():
+    w = load_text("generate")
+    assert "names the thing the person wants from the other person, or fears from them, and stops there, without saying what the want is for or what it will show" in w["shifts_form"]
+    assert w["events_format"].rstrip().endswith("at the end of the chapter.") and "what drives the tie now" not in w["events_format"]
+    assert "what drives the tie now" not in gen.events_prompt(one_tie(), CHAPTER)

@@ -1,6 +1,6 @@
 """Repeat avoidance (Plan 7). Chapters repeat the same kind of beat with different surface details, so a chapter is described by a FINGERPRINT of
 discrete labels that a model sets, and code compares the labels by equality only: the model never compares texts, and code never compares text.
-An idea that matches the recent chapters on too many labels is too similar (`T` of the six compared labels against any of the last `K` chapters).
+An idea that matches the recent chapters on too many labels is too similar (`T` of the seven compared labels against any of the last `K` chapters).
 
 This module holds the vocabulary (the one place the allowed values live; they are structural, never story content), the validator, the comparison
 (`matches`, `screen`), the label call's grammar and its step (`label_step`). Wording lives in text/en/plan.yaml (the `label_*` keys). Nothing here
@@ -11,29 +11,30 @@ from pulpermill.prompter.base import Step
 
 from . import common
 
-VERSION = "repeat-1"
+VERSION = "repeat-2"
 
 K = 3          # an idea is compared with the last K earlier chapters
-T = 4          # an idea is too similar when it matches one of them on at least T labels (a starting value, tuned on a real run)
+T = 4          # an idea is too similar when it matches one of them on at least T labels (a starting value, tuned on a real run; with `motive_kind` it is 4 of seven, not of six: tune it on a real run)
 
 AIM_KINDS = ("obtain", "keep", "prevent", "persuade", "reach", "discover", "deliver", "repair", "escape", "protect", "other")
 OBSTACLE_SOURCES = ("person", "group", "rule", "object", "place", "self", "time", "other")
 TURNING_KINDS = ("refusal", "concession", "discovery", "reversal", "arrival", "loss", "bargain", "breakage", "confrontation", "other")
 OUTCOMES = ("reached", "lost", "gave_up", "other")
 CLOSING_HOOKS = ("new_task", "arrival", "discovery", "loss", "deadline", "decision", "nothing", "other")
+MOTIVE_KINDS = ("recognition", "closeness", "protection", "avoidance", "duty", "order", "curiosity", "gain", "other")      # why the protagonist wants what they go after
 NO_PARTY = "none"           # the obstacle_party of a chapter whose obstacle is no one on the list
 
-VALUES = {"aim_kind": AIM_KINDS, "obstacle_source": OBSTACLE_SOURCES, "turning_kind": TURNING_KINDS, "outcome": OUTCOMES, "closing_hook": CLOSING_HOOKS}
-FIELDS = ("aim_kind", "obstacle_source", "obstacle_party", "turning_kind", "outcome", "closing_hook")      # the six labels code compares
+VALUES = {"aim_kind": AIM_KINDS, "obstacle_source": OBSTACLE_SOURCES, "turning_kind": TURNING_KINDS, "outcome": OUTCOMES, "closing_hook": CLOSING_HOOKS, "motive_kind": MOTIVE_KINDS}
+FIELDS = ("aim_kind", "obstacle_source", "obstacle_party", "turning_kind", "outcome", "closing_hook", "motive_kind")      # the seven labels code compares
 NOTE = "turning_note"                                                                                       # one plain sentence: for the prompt table, never compared
 KEYS = FIELDS + (NOTE,)
 NEUTRAL = ("other", NO_PARTY)       # a label that says nothing never counts as a match
 NOTE_MAX = 240                      # the longest turning_note kept, in characters
 
-Fingerprint = dict[str, str]        # the seven keys of KEYS, each a string
+Fingerprint = dict[str, str]        # the eight keys of KEYS, each a string
 
 LABEL_ATTEMPTS = 2                  # then no labels, no gate: labelling is a help to the plan, never a reason to fail a call
-LABEL_MAX_OUTPUT = 700              # K entries of about 70 tokens (the note and seven short values, JSON included), with room to spare
+LABEL_MAX_OUTPUT = 700              # K entries of about 80 tokens (the note and seven short values, JSON included), with room to spare
 TEXT_LIMIT = 1500                   # the most characters of one text the labeler reads
 LABEL_STAND_IN = "word " * 300      # the longest text as the labeler can be shown it (1,500 characters), for the worst case
 SAMPLING = "structured"
@@ -63,7 +64,7 @@ def matched(a: Fingerprint, b: Fingerprint) -> tuple[str, ...]:
 
 
 def matches(a: Fingerprint, b: Fingerprint) -> int:
-    """How many of the six compared fields are equal and say something (not `other`, not `none`). The note is never compared."""
+    """How many of the seven compared fields are equal and say something (not `other`, not `none`). The note is never compared."""
     return len(matched(a, b))
 
 
@@ -142,6 +143,7 @@ def build_label_prompt(request: dict, items: list[tuple[int, str]], names: list[
               w["label_turning_kind"].format(values=", ".join(TURNING_KINDS)),
               w["label_outcome"].format(values=", ".join(OUTCOMES)),
               w["label_closing_hook"].format(values=", ".join(CLOSING_HOOKS)),
+              w["label_motive_kind"].format(values=", ".join(MOTIVE_KINDS)),
               w["label_note"].format(language=plan.language_name(request.get("language")))]
     task = [w["label_task"], *fields, w["label_output"].format(count=len(items))]
     blocks = [w["label_role"], plan._section(heads["label_texts"], shown), plan._section(heads["label_names"], named),
