@@ -1,4 +1,5 @@
-"""The `generate` call, three steps: `write` (the chapter as prose), `events` (what happened, what changed) and `shifts` (the new edge of ties). Wording lives in text/en/generate.yaml, where the reasoning behind the writer prompt is recorded.
+"""The `generate` call: `write` (the chapter as prose), `events` (what happened, what changed), `shifts` (the new edge of the spotlight tie) and, when other ties
+are on stage, `ties_touched` (which of them the chapter touched; nothing is written for them yet). Wording lives in text/en/generate.yaml, where the reasoning behind the writer prompt is recorded.
 
 Rules served: R3 (an interesting story, craft guidance in prose), R5 (minor characters by role, never the plot), R6 (the spotlight tie's edge
 and the protagonist's aim end in a new state; the shifts check demands the edge), R7 (the chapter follows the plan's four points unlabelled).
@@ -7,6 +8,7 @@ The generate request carries the spotlight tie's id inside the beat (`beat.spotl
 without it, or with an id that is not among its ties, falls back to the old reading: the planner is told to name both ends of the tie in the
 plan, so the tie is the one whose two ends the beat's plan names, and if none or several are named, any of the named ties (or any tie)
 satisfies the edge check. The id never reaches a prompt: the model sees the tie's names and its handle."""
+import copy
 import json
 import re
 from dataclasses import replace
@@ -19,7 +21,7 @@ from pulpermill.prompter.base import Flow, Step
 from . import advance, common
 from .plan import cut_events, in_names, names_of, pressure_of, protagonist_name, spotlight_candidates, spotlight_in_words, spotlight_of, tiers, _norm
 
-VERSION = "generate-14"
+VERSION = "generate-16"
 
 # The chapter's length (decided 3 Nov): at most 1,200 words, or 2,400 Han characters for Chinese (twice the word figure, as in tools/trial_checks.mjs).
 # WRITE_TOKENS is a safety net so a chapter is never cut mid-sentence, not a target. Measured with pulpermill/prompts/tokens.py on ordinary narrative
@@ -35,6 +37,9 @@ RESEND_STAND_IN = "word " * 90        # the longest line the judge can send the 
 EDGE_STAND_IN = "word " * 60       # the longest an edge is shown to a model (300 characters), for the worst case
 HAPPENED_STAND_IN = "word " * 100      # the longest a chapter's `happened` is shown to the pressure judge, for the worst case
 EVENTS_ATTEMPTS, SHIFTS_ATTEMPTS = 4, 3          # after the chapter is written, each of these steps is retried on its own and then falls back
+TOUCH_CAP = 4            # the most ties besides the spotlight tie that one chapter can touch (the first ones, in list order), to bound the cost
+TIE_EDGE_TOKENS = 300      # a new edge (at most 300 characters shown) and a bond, with room to spare
+TOUCHED_TOKENS = 400     # a short reason for each of at most TOUCH_CAP ties, with room to spare
 CHANGED_WORDS, HAPPENED_WORDS = 100, 60         # the most words `changed` keeps (its first two sentences, which have room for the outcome, the aim and the tie) and the fallback's `happened` keeps
 
 
@@ -342,6 +347,123 @@ def replaced_bond(request: dict, kit: Any, shifts: Any) -> str:
     return r.s(found[1].get("bond")) if found else ""
 
 
+# ---- ties touched ----------------------------------------------------------------------------------------------------------
+
+def touch_candidates(request: dict) -> list[dict]:
+    """The ties besides the spotlight tie that a chapter may have touched, at most TOUCH_CAP, in list order: the tie's from end is a person on
+    stage and its to end is a person on stage or a group of the world. A tie that starts at a group is skipped (an edge is what a person wants).
+    The people on stage are the request's `cast` (and the beat's `cast` ids when the beat carries them); the groups are the world's `powers`."""
+    beat = request.get("beat") or {}
+    people = {c.get("id") for c in request.get("cast") or [] if isinstance(c, dict)} | {i for i in beat.get("cast") or [] if isinstance(i, str)}
+    groups = {g.get("id") for g in (request.get("world") or {}).get("powers") or [] if isinstance(g, dict)}
+    spotlight, identified = _spot(request, names_of(request))
+    skip = {t.get("id") for t in spotlight} if identified else set()
+    found = [t for t in request.get("ties") or []
+             if t.get("id") and t["id"] not in skip and t.get("tie_from") in people and (t.get("tie_to") in people or t.get("tie_to") in groups)]
+    return found[:TOUCH_CAP]
+
+
+def _candidate_handles(request: dict, kit: Any) -> list[tuple[str, dict]]:
+    """[(handle, tie)] for the touch candidates; none when the kit has no entanglements card."""
+    scopes = kit.handles.of_card("entanglements")
+    return [(scopes[0].of("ties", t["id"]), t) for t in touch_candidates(request)] if scopes else []
+
+
+def touched_prompt(request: dict, kit: Any, events: Any) -> str:
+    """The chapter's facts (`happened`, `changed`) and the candidate ties with their handles; the chapter's prose is never shown."""
+    w = common.load_text("generate")
+    facts = repair_events(events)
+    names = names_of(request)
+    items = []
+    for handle, tie in _candidate_handles(request, kit):
+        bond = r.bare(tie.get("bond"))
+        items.append(w["touched_item" if bond else "touched_item_plain"].format(handle=handle, tie_from=names.get(tie["tie_from"], ""), tie_to=names.get(tie["tie_to"], ""),
+                                                                                bond=bond, edge=r.bare(tie.get("edge"))))
+    parts = [w["touched_task"].format(chapter=request["chapter"]),
+             w["shifts_happened_lead"] + "\n" + r.s(facts.get("happened")),
+             w["shifts_changed_lead"] + "\n" + r.s(facts.get("changed")) if r.s(facts.get("changed")) else "",
+             w["touched_ties_lead"] + "\n" + "\n".join(items),
+             w["touched_rules"], w["touched_format"]]
+    return "\n\n".join(p for p in parts if p)
+
+
+def touched_grammar() -> dict:
+    """{touched: [{tie, reason}]}: the handle of each tie the chapter touched and one sentence why; the list may be empty."""
+    text = {"type": "string"}
+    item = {"type": "object", "properties": {"tie": text, "reason": text}, "required": ["tie", "reason"], "additionalProperties": False}
+    return {"type": "object", "properties": {"touched": {"type": "array", "items": item}}, "required": ["touched"], "additionalProperties": False}
+
+
+def touched_found(request: dict, kit: Any, value: Any) -> list[tuple[str, str]]:
+    """[(handle, reason)] for the handles the reply names that are among the candidates, each once, in the reply's order; any other handle is dropped."""
+    wanted = {h for h, _ in _candidate_handles(request, kit)}
+    found: list[tuple[str, str]] = []
+    for item in (value or {}).get("touched") or [] if isinstance(value, dict) else []:
+        handle = item.get("tie") if isinstance(item, dict) else None
+        if isinstance(handle, str) and handle in wanted and handle not in [h for h, _ in found]:
+            found.append((handle, r.s(item.get("reason"))))
+    return found
+
+
+def touched_handles(request: dict, kit: Any, value: Any) -> list[str]:
+    """The handles the reply names that are among the candidates (see `touched_found`)."""
+    return [h for h, _ in touched_found(request, kit, value)]
+
+
+# ---- rewriting a touched tie -----------------------------------------------------------------------------------------------
+
+def tie_edge_prompt(request: dict, tie: dict, reason: str, events: Any, extra: str = "") -> str:
+    """One touched tie: the tie, its old edge and bond, the chapter's facts and why the tie was touched. Asks for the edge and bond as the chapter leaves them.
+    The model never sees or writes a handle: code builds the operation."""
+    w = common.load_text("generate")
+    facts = repair_events(events)
+    names = names_of(request)
+    bond = r.bare(tie.get("bond"))
+    ends = dict(tie_from=names.get(tie.get("tie_from"), ""), tie_to=names.get(tie.get("tie_to"), ""), edge=r.bare(tie.get("edge")), bond=bond)
+    parts = [w["tie_edge_task"].format(chapter=request["chapter"]),
+             w["tie_edge_tie" if bond else "tie_edge_tie_plain"].format(**ends),
+             w["shifts_happened_lead"] + "\n" + r.s(facts.get("happened")),
+             w["shifts_changed_lead"] + "\n" + r.s(facts.get("changed")) if r.s(facts.get("changed")) else "",
+             w["tie_edge_reason"].format(reason=r.sentence(reason)) if r.s(reason) else "",
+             w["tie_edge_rules"].format(tie_from=ends["tie_from"], tie_to=ends["tie_to"]), w["shifts_form"], w["tie_edge_bond"], extra, w["tie_edge_format"]]
+    return "\n\n".join(p for p in parts if p)
+
+
+def tie_edge_grammar() -> dict:
+    """{edge, bond}: the edge as the chapter leaves it, and the bond (empty when it did not change)."""
+    text = {"type": "string"}
+    return {"type": "object", "properties": {"edge": text, "bond": text}, "required": ["edge", "bond"], "additionalProperties": False}
+
+
+def tie_edge_problem(value: Any) -> str | None:
+    return None if isinstance(value, dict) and r.s(value.get("edge")) else common.load_text("generate")["tie_edge_problems"]["empty_edge"]
+
+
+def tie_operation(handle: str, tie: dict, edge: str, bond: str) -> dict:
+    """The replace operation for a touched tie. The bond rides along only when it is there and differs from the old one."""
+    values = {"edge": r.s(edge)}
+    if r.s(bond) and _norm(bond) != _norm(tie.get("bond")):
+        values["bond"] = r.s(bond)
+    return {"op": "replace", "id": handle, "values": values}
+
+
+def merge_ties(entries: Any, operations: list[dict]) -> list[dict]:
+    """The shifts' entries with `operations` added to the one entanglements entry (a new entry when there is none). An operation for a handle the entries
+    already replace is left out. The entries are copied, never changed."""
+    merged = copy.deepcopy([e for e in entries if isinstance(e, dict)]) if isinstance(entries, list) else []
+    ties_of = lambda e: e["patch"].get("ties") if isinstance(e.get("patch"), dict) else None
+    present = {op.get("id") for e in merged if e.get("card") == "entanglements" for op in ties_of(e) or [] if isinstance(op, dict)}
+    fresh = [op for op in operations if op["id"] not in present]
+    if not fresh:
+        return merged
+    target = next((e for e in merged if e.get("card") == "entanglements" and isinstance(e.get("patch"), dict) and isinstance(e["patch"].setdefault("ties", []), list)), None)
+    if target:
+        target["patch"]["ties"].extend(fresh)
+    else:
+        merged.append({"card": "entanglements", "patch": {"ties": fresh}})
+    return merged
+
+
 # ---- the flow --------------------------------------------------------------------------------------------------------------
 
 class GenerateFlow(Flow):
@@ -354,6 +476,15 @@ class GenerateFlow(Flow):
         self._check_runs = self._judge_runs = 0
         self._check_resent = self._edge_resent = False      # each of the two sends the shifts back at most once
         self._resend_failed = False             # the last pass the shifts were sent back for could not be used: the first shifts stand
+        self._touched_done = False              # the step that finds the other ties the chapter touched has run (or was not needed)
+        self.touched: list[str] = []            # the handles of those ties, in the reply's order
+        self._reasons: dict[str, str] = {}      # why each of them was touched
+        self._ti = 0                            # which touched tie is being rewritten
+        self._tie_new: tuple[str, str] = ("", "")       # that tie's new (edge, bond) so far
+        self._tie_retried = False               # its edge was sent back once for the check's line
+        self._events: Any = {}                  # the chapter's events, once the touched step has them
+        self.tie_ops: list[dict] = []           # the replace operations kept for touched ties
+        self.merged: list[dict] | None = None   # the reply's shifts with those operations merged in, when there are any
 
     def _write_check(self):
         """A check for one write step instance: strict on its first call, soft-tolerant on its second (the runner's last attempt). Only the
@@ -445,11 +576,74 @@ class GenerateFlow(Flow):
         aim = r.s((self.request.get("beat") or {}).get("aim"))
         return replace(advance.pressure_step(self.request, happened, "happened", aim), attempts=JUDGE_ATTEMPTS, fallback=unclear)
 
-    def _end(self, results: list):
-        """The chain of steps is over: the pressure judge is the one step left, and only when a pressure was sent."""
+    def _touched_step(self, events: Any) -> Step:
+        """Which of the other ties on stage did the chapter touch? A step of its own after the spotlight tie's check and judge. Its last resort is an empty list."""
+        def none():
+            self.notes["ties_touched_fallback"] = True
+            return {"touched": []}
+        return Step("ties_touched", lambda f: touched_prompt(self.request, self.kit, events), "json", TOUCHED_TOKENS, touched_grammar(), None, "structured", False,
+                    JUDGE_ATTEMPTS, none)
+
+    def _touched_tie(self) -> dict:
+        return dict(_candidate_handles(self.request, self.kit))[self.touched[self._ti]]
+
+    def _tie_edge_step(self, tie: dict, reason: str, events: Any, extra: str = "", first: tuple[str, str] | None = None) -> Step:
+        """The new edge and bond of one touched tie. Its last resort is no edge (the tie stays as it is), or, for the pass sent back, the first reply."""
+        def none():
+            self.notes["tie_edge_fallback"] = True
+            return {"edge": first[0], "bond": first[1]} if first else {"edge": "", "bond": ""}
+        return Step("tie_edge", lambda f: tie_edge_prompt(self.request, tie, reason, events, extra), "json", TIE_EDGE_TOKENS, tie_edge_grammar(), tie_edge_problem,
+                    "structured", False, SHIFTS_ATTEMPTS, none)
+
+    def _tie_check_step(self, tie: dict, edge: str, bond: str) -> Step:
+        """The check of the touched tie's new edge and bond: the spotlight tie's check, on this tie. Its last resort is a neutral verdict (ok)."""
+        def neutral():
+            self.notes["tie_check_fallback"] = True
+            return {}
+        return replace(advance.edge_check_step(self.request, edge, bond, tie=tie), attempts=JUDGE_ATTEMPTS, fallback=neutral)
+
+    def _tie_judge_step(self, tie: dict, edge: str, events: Any) -> Step:
+        """The judge of the touched tie's new edge: the spotlight tie's judge, on this tie, reading the chapter's facts without the planned outcome (that is the
+        spotlight tie's). Its last resort is a neutral verdict (none)."""
+        def neutral():
+            self.notes["tie_judge_fallback"] = True
+            return {}
+        facts = {k: v for k, v in self._edge_facts(events).items() if k != "outcome"}
+        return replace(advance.edge_step(self.request, r.s(tie.get("edge")), edge, facts, tie=tie), attempts=JUDGE_ATTEMPTS, fallback=neutral)
+
+    def _next_tie(self, results: list):
+        """The next touched tie is rewritten, or, when they are all done, the chain ends."""
+        self._tie_new, self._tie_retried = ("", ""), False
+        if self._ti >= len(self.touched):
+            self._merge(results)
+            return self._pressure(results)
+        return self._go("tie_edge", self._tie_edge_step(self._touched_tie(), self._reasons.get(self.touched[self._ti], ""), self._events))
+
+    def _merge(self, results: list) -> None:
+        """The kept operations go into the entanglements entry of the shifts that stand. If the kit finds a problem in the merged entries, only the operations for
+        touched ties are dropped."""
+        if not self.tie_ops:
+            return
+        merged = merge_ties(self._shifts_of(results).get("shifts"), self.tie_ops)
+        if self.kit.shifts_problem(merged):
+            self.notes["ties_dropped"], self.notes["ties_rewritten"] = True, 0
+            return
+        self.merged = merged
+
+    def _pressure(self, results: list):
         if not self.notes["pressure_on"]:
             return None
         return self._go("pressure", self._pressure_step(results[1]))
+
+    def _end(self, results: list):
+        """The spotlight tie is done: the step that finds the other touched ties runs once when there are candidates; each tie it names is rewritten; then the
+        pressure judge when a pressure was sent."""
+        if not self._touched_done:
+            self._touched_done = True
+            if _candidate_handles(self.request, self.kit):
+                self._events = results[1]
+                return self._go("touched", self._touched_step(results[1]))
+        return self._pressure(results)
 
     def _shifts_of(self, results: list) -> Any:
         """The shifts the reply carries: the ones that stand after any pass the check or the judge asked for."""
@@ -481,11 +675,42 @@ class GenerateFlow(Flow):
         """write, events, shifts, then for the spotlight tie's new edge and bond: a check (a model: is it a want with a concrete target, and a plain
         bond) and the edge judge. A check that says no sends the shifts back once with its reason; so does a judge that says `same` (when
         `advance.ENFORCE`); each of the two at most once. What a pass sent back for is then checked again for the record and accepted, whatever the
-        verdicts say. The judge runs on the shifts that stand after the check, and once more after its own pass."""
+        verdicts say. The judge runs on the shifts that stand after the check, and once more after its own pass. Then, when other ties on stage are candidates, one step names
+        the ones the chapter touched (`ties_touched`), and the pressure judge runs last."""
         n = len(results)
         if n < 3:
             return self._step(n, results)
         kind, value = "shifts" if n == 3 else self._last, results[-1]
+        if kind == "touched":                                               # the touched ties are found: each is rewritten in turn, then the pressure judge
+            found = touched_found(self.request, self.kit, value)
+            self.touched, self._reasons = [h for h, _ in found], dict(found)
+            self.notes["ties_touched"] = len(self.touched)
+            self.notes["ties_rewritten"] = self.notes["ties_same"] = 0
+            return self._next_tie(results)
+        if kind == "tie_edge":                                              # a touched tie's new edge and bond
+            edge, bond = r.s((value or {}).get("edge")), r.s((value or {}).get("bond"))
+            self._tie_new = (edge, bond)
+            if not edge:                                                    # none could be made: the tie stays as it is
+                self._ti += 1
+                return self._next_tie(results)
+            if self._tie_retried:
+                return self._go("tie_judge", self._tie_judge_step(self._touched_tie(), edge, self._events))
+            return self._go("tie_check", self._tie_check_step(self._touched_tie(), edge, bond))
+        if kind == "tie_check":                                             # a no sends the edge back once, and what comes back is accepted whatever the check says
+            if not advance.check_ok(value):
+                self._tie_retried = True
+                self.notes["tie_check_resent"] = self.notes.get("tie_check_resent", 0) + 1
+                return self._go("tie_edge", self._tie_edge_step(self._touched_tie(), self._reasons.get(self.touched[self._ti], ""), self._events,
+                                                                advance.resend_line("edge_check", value), self._tie_new))
+            return self._go("tie_judge", self._tie_judge_step(self._touched_tie(), self._tie_new[0], self._events))
+        if kind == "tie_judge":                                             # `same` keeps the old edge and bond: no operation
+            if advance.edge_ok(value):
+                self.tie_ops.append(tie_operation(self.touched[self._ti], self._touched_tie(), *self._tie_new))
+                self.notes["ties_rewritten"] += 1
+            else:
+                self.notes["ties_same"] += 1
+            self._ti += 1
+            return self._next_tie(results)
         if kind == "pressure":                                              # the pressure judge has run: record its word and stop
             self.notes.update(advance.notes(pressure_value=value))
             return None
@@ -535,6 +760,12 @@ class GenerateFlow(Flow):
             steps += once
             if advance.ENFORCE:
                 steps += [self._shifts_step(events, RESEND_STAND_IN, None)] + once
+        candidates = _candidate_handles(self.request, self.kit)
+        if candidates:
+            steps.append(self._touched_step(events))
+            for _, tie in candidates:                  # each candidate could be touched: its edge, the check, the edge sent back once, and the judge
+                steps += [self._tie_edge_step(tie, "word " * 40, events), self._tie_check_step(tie, EDGE_STAND_IN, EDGE_STAND_IN),
+                          self._tie_edge_step(tie, "word " * 40, events, RESEND_STAND_IN, (EDGE_STAND_IN, EDGE_STAND_IN)), self._tie_judge_step(tie, EDGE_STAND_IN, events)]
         if self.notes["pressure_on"]:
             steps.append(self._pressure_step({"happened": HAPPENED_STAND_IN}))
         return steps
@@ -545,7 +776,7 @@ class GenerateFlow(Flow):
             text, dropped = common.trim_echo(text, r.s(self.request.get("previous_ending")))
             if dropped:
                 common.note_soft("generate", "write", f"{dropped} repeated opening sentence(s) dropped", what="trimmed")
-        return {"chapter_text": text, "events": repair_events(results[1]), "shifts": self._shifts_of(results)["shifts"]}
+        return {"chapter_text": text, "events": repair_events(results[1]), "shifts": self.merged if self.merged is not None else self._shifts_of(results)["shifts"]}
 
 
 def build_flow(request, kit) -> Flow:
@@ -553,7 +784,7 @@ def build_flow(request, kit) -> Flow:
 
 
 def script(request: dict, kit: Any) -> list[str]:
-    """What a fake engine must return for a valid reply: a chapter, events, and shifts that replace the spotlight tie's edge."""
+    """What a fake engine must return for a valid reply: a chapter, events, and shifts that replace the spotlight tie's edge; then, when other ties are on stage, the touched step (naming the first) and that tie's edge, check and judge."""
     shifts = []
     targets = edge_targets(request, kit)
     if targets:
@@ -567,6 +798,13 @@ def script(request: dict, kit: Any) -> list[str]:
                f"What was said at the table cost something, and what was left unsaid cost more, until the last choice of the night changed the room.")
     texts = [chapter, json.dumps({"happened": "The people met and quarrelled, and one of them gave something up.", "changed": "The tie and the aim now stand somewhere new."}),
              json.dumps({"shifts": shifts})] + ([json.dumps({"reason": "The edge names a target and the bond is a noun phrase.", "ok": "yes"}), json.dumps({"old_object": "object_a", "new_object": "object_b", "reason": "The want is now a different kind of want.", "move": "complicates"})] if targets else [])
+    candidates = _candidate_handles(request, kit)
+    if candidates:        # the touched-ties step runs after the edge judge: the fake engine names the first candidate, whose edge is then rewritten, checked and judged
+        handle, tie = candidates[0]
+        texts += [json.dumps({"touched": [{"tie": handle, "reason": "The two ends dealt with each other in this chapter."}]}),
+                  json.dumps({"edge": f"to hold on to what this chapter changed ({tie.get('edge')})", "bond": ""}),
+                  json.dumps({"reason": "The edge names a target.", "ok": "yes"}),
+                  json.dumps({"old_object": "object_a", "new_object": "object_c", "reason": "The want now points at something else.", "move": "redirects"})]
     if request.get("pressure"):                # the pressure judge runs last, whenever a pressure was sent
         texts.append(json.dumps({"reason": "The element cost one of them something.", "effect": "acts"}))
     return texts

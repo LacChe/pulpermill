@@ -1,4 +1,4 @@
-# Wording for the generate call (mill): three steps, write (prose), events (JSON) and shifts (JSON: the new edge of ties). Read through common.load_text("generate").
+# Wording for the generate call (mill): write (prose), events (JSON), shifts (JSON: the new edge of ties) and ties_touched (JSON: which other ties the chapter touched) and tie_edge (JSON: the new edge and bond of one touched tie). Read through common.load_text("generate").
 # English always; the story's language is named inside the prompts. Wording is positive. R3 to R7 mark the design rule a block serves.
 #
 # WHY THE WRITER PROMPT IS BUILT THIS WAY (Gemma 3 27B, instruction-tuned, 16k context, abliterated):
@@ -92,3 +92,23 @@ shifts_format: "Reply with a JSON object with one key, shifts, holding the list 
 shifts_problems:
   edge_not_moved: "Add an entanglements entry whose ties list replaces the edge of {handle} ({tie_from} toward {tie_to}) with its new state, different from {edge}."
   edge_not_moved_any: "Add an entanglements entry whose ties list replaces the edge of the tie the chapter was about with its new state, different from its old edge."
+
+# ---- ties touched step: which of the other ties on stage did the chapter touch? (code keeps only handles it was given) ----
+touched_task: "Below are the facts of chapter {chapter} of a story and some ties between people. Decide which of these ties the chapter touched."
+touched_ties_lead: "The ties, each with the handle you can point at:"
+touched_item: "{handle}: {tie_from} toward {tie_to}, bond: {bond}. Edge: {edge}"
+touched_item_plain: "{handle}: {tie_from} toward {tie_to}. Edge: {edge}"
+touched_rules: "A tie was touched when something happened in this chapter between its two ends that bears on what the person at the from end wants or fears from the other end: the person at the from end acted toward the other, withheld something from the other, told the other something, or learned something about the other, or the other end is a group and the group acted on the person. Standing in the same scene is not enough. Name only the ties the chapter touched, each by its handle, with one short sentence saying what happened between the two ends. An empty list is a valid answer when no tie was touched. Point at ties only by the handles shown."
+touched_format: "Reply with a JSON object with one key, touched, holding a list. Each item has two keys: tie, the handle of the tie, and reason, one short sentence."
+
+# ---- tie edge step: the new edge and bond of one touched tie (code builds the replace operation with the tie's handle; the model never writes handles) ----
+# Not the spotlight tie's shifts wording: no "must differ" line, because a touched tie may stay as it is (the edge judge's `same` then leaves it untouched).
+tie_edge_task: "Below are the facts of chapter {chapter} of a story and one tie between two people that the chapter touched. Record what the person at the from end of the tie wants or fears from the other end as the chapter leaves it."
+tie_edge_tie: "The tie is {tie_from} toward {tie_to}. Its bond was: {bond}. Its edge was: {edge}"
+tie_edge_tie_plain: "The tie is {tie_from} toward {tie_to}. Its edge was: {edge}"
+tie_edge_reason: "Why the chapter touched this tie: {reason}"
+tie_edge_rules: "Write the edge of this tie as the chapter leaves it: what {tie_from} wants or fears from {tie_to} now. Start from what happened between the two in the chapter and what it left standing. When what happened gave {tie_from} a new want or fear, write that. When it changed nothing about what {tie_from} wants or fears from {tie_to}, write the old edge again."
+tie_edge_bond: "Leave the bond empty unless the chapter changed what the two are to each other. When it did, write what they are to each other now, keeping what is still true of the old bond, and write the edge so that it fits the new bond."
+tie_edge_format: "Reply with a JSON object with two keys: edge, the edge of the tie as the chapter leaves it, and bond, the bond as the chapter leaves it or an empty string when it did not change."
+tie_edge_problems:
+  empty_edge: "Write the edge of the tie as the chapter leaves it: what the person at the from end wants or fears from the other end."

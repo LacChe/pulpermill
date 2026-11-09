@@ -34,6 +34,13 @@ EVENTS = {"happened": "Suvi hid the ledger from Marit on the stairs.", "changed"
 CHAPTER = "Suvi shut the ledger and listened to Marit on the stairs, counting each step as it came."
 
 
+@pytest.fixture(autouse=True)
+def _spotlight_only(monkeypatch):
+    """The tests in this module cover the spotlight tie's steps, so the step that finds the other touched ties is off here (no candidates). The tests of that step
+    (`touching` below, and test_generate_touched.py) turn it on."""
+    monkeypatch.setattr(gen, "TOUCH_CAP", 0)
+
+
 def base() -> dict:
     return copy.deepcopy(next(v["data"] for v in GENERATES if v["name"] == "a generate request"))
 
@@ -463,7 +470,7 @@ def test_the_chapter_is_the_writers_text_and_nothing_else():
 
 
 def test_the_version_follows_the_wording():
-    assert "+generate:generate-14:" in load_prompter("mill").version
+    assert "+generate:generate-16:" in load_prompter("mill").version
 
 
 # ---- A5: the spotlight tie is named by id -------------------------------------------------------------------------------
