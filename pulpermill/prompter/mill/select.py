@@ -21,13 +21,28 @@ REASON_STAND_IN = "word " * 140      # the longest a reason is shown to a model 
 
 # ---- What may be chosen -------------------------------------------------------------------------------------------------------
 
+def offered_ids(all_ids: list[str], used: list[str]) -> list[str]:
+    """The ids of the rules and objects to offer, in their order. `used` holds the pressure id of each earlier chapter's chosen plan, oldest
+    first (a blank for a chapter with none). Leave out those of the last two chapters; when fewer than PICKS remain, leave out only the last
+    chapter's; never relax further. A world whose only option is the last chapter's gets the full list, because nothing can be chosen from nothing."""
+    def without(n: int) -> list[str]:
+        gone = {u for u in used[-n:] if u}
+        return [i for i in all_ids if i not in gone]
+    offered = without(2)
+    if len(offered) < PICKS:
+        offered = without(1)
+    return offered or list(all_ids)
+
+
 def candidates(request: dict) -> tuple[list[dict], list[dict]]:
     """(the ties, the pressure options). The ties are those whose two ends are both people of the cast (a tie to a group is no candidate); the
-    options are the rules and objects the page sent, in words with ids. Both keep the request's order, which the numbers in the prompt follow."""
+    options are the rules and objects the page sent, in words with ids, less those the last chapters used (`offered_ids`). Both keep the request's
+    order, which the numbers in the prompt follow, so every number is read back through this same filtered list."""
     people = {c.get("id") for c in request.get("cast") or [] if isinstance(c, dict) and c.get("id")}
     ties = [t for t in request.get("ties") or [] if t.get("tie_from") in people and t.get("tie_to") in people]
     options = [o for o in request.get("pressure_options") or [] if isinstance(o, dict) and o.get("id")]
-    return ties, options
+    keep = set(offered_ids([o["id"] for o in options], [u for u in request.get("pressure_used") or [] if isinstance(u, str)] if options else []))
+    return ties, [o for o in options if o["id"] in keep]
 
 
 def is_on(request: dict) -> bool:

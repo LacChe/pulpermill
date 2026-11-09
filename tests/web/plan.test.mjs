@@ -350,7 +350,9 @@ test("a plan request asks to choose only when told to, and then carries every ru
   assert.deepEqual(asked.pressure_options.map((o) => [o.id, o.kind]), [["r0000001", "rule"], ["o0000001", "object"]]);
   assert.equal(asked.pressure_options[1].name, "The ledger");
   assert.equal(asked.spotlight, beat.spotlight, "the page's own pair stays as the fallback");
-  assert.deepEqual({ ...asked, choose: undefined, pressure_options: undefined }, { ...plain, choose: undefined, pressure_options: undefined });
+  assert.deepEqual(asked.pressure_used, [p.outline.beats[0].pressure ?? ""], "one entry per earlier chapter, the id of the pressure its plan chose, blank when it had none");
+  assert.equal("pressure_used" in plain, false);
+  assert.deepEqual({ ...asked, choose: undefined, pressure_options: undefined, pressure_used: undefined }, { ...plain, choose: undefined, pressure_options: undefined, pressure_used: undefined });
 });
 
 test("a valid pick sets the beat's tie and pressure before the plan's hash is taken", () => {

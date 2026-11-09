@@ -361,6 +361,13 @@ export function spotlightEdges(project, spotlightId, chapter) {
   return run.slice(0, -1).filter((edge) => edge !== "");
 }
 
+// The id of the rule or object each earlier chapter's own plan put to work, one entry per chapter before `chapter`, oldest first, "" for a
+// chapter with none (the contract's `pressure_used`). Only the chosen plan counts, never an option that was merely offered.
+export function pressureUsed(project, chapter) {
+  return beatsOf(project).filter((b) => Number(b.chapter) < chapter).sort((a, b) => a.chapter - b.chapter)
+    .map((b) => (typeof b.pressure === "string" ? b.pressure : ""));
+}
+
 // ---- The plan request --------------------------------------------------------------------
 
 // Plan chapter `beat.chapter`. `beat` holds the spotlight and the cast (the page's own picks, which the writer may have changed).
@@ -384,7 +391,7 @@ export function planRequest(schema, project, beat, { retry = null, choose = fals
   const pressure = pressureInWords(eff, beat);
   if (pressure) request.pressure = pressure;
   if (retry) request.retry = { beat: copyOf(retry.beat), problems: [...retry.problems] };
-  if (choose) { request.choose = true; request.pressure_options = pressureOptions(eff); }
+  if (choose) { request.choose = true; request.pressure_options = pressureOptions(eff); request.pressure_used = pressureUsed(eff, chapter); }
   if (!originHistory) request.origin_history = false;
   return request;
 }

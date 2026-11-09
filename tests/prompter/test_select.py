@@ -246,7 +246,8 @@ def test_the_earlier_chapters_tie_and_pressure_reach_all_three_prompts_and_only_
     select_prompt, brainstorm, planned = engine.prompts[:3]
     for prompt in (select_prompt, brainstorm, planned):
         assert "It was about Marit and Suvi." in prompt and "It put this to work: Debts are written, never spoken." in prompt
-    assert "the least lately" in select_prompt and "only when the story gives a reason to" in select_prompt
+    assert "prefer a tie that the story has used the least lately" in select_prompt and "a rule or object that the story has used" not in select_prompt
+    assert "only when the story gives a reason to" in select_prompt
     assert "the least lately" not in brainstorm and "the least lately" not in planned
     assert "the least lately" in select.build_select_prompt(choose_request(options=False)), "the variant with no rules or objects asks for variety too"
 
@@ -312,3 +313,60 @@ def test_the_chain_at_its_longest_still_fits_the_select_the_brainstorm_and_the_p
     flow = plan.build_flow(request, Kit(request))
     made, factor, measures = budget.fit(lambda f: [budget.Sized(s.name, s.text(f), s.max_output) for s in flow.worst_case()])
     assert all(m.ok for m in measures) and factor <= 1.0 and [m.name for m in measures][:4] == ["select", "brainstorm", "decide", "plan"]
+
+
+# ---- Rules and objects the last chapters used are not offered ---------------------------------------------------------------
+
+ALL = ["p1", "p2", "p3", "p4", "p5"]
+
+
+@pytest.mark.parametrize("used,expected", [
+    ([], ALL),                                         # chapter 1: nothing left out
+    (["p1"], ["p2", "p3", "p4", "p5"]),                # one chapter: its pressure is left out
+    (["p1", "p2"], ["p3", "p4", "p5"]),                # two chapters: both left out, three remain
+    (["p9", "p1", "p2"], ["p3", "p4", "p5"]),          # only the last two count
+    (["", "p2"], ["p1", "p3", "p4", "p5"]),            # a chapter with no pressure leaves nothing out
+])
+def test_the_last_two_chapters_pressures_are_left_out_when_three_remain(used, expected):
+    assert select.offered_ids(ALL, used) == expected
+
+
+def test_with_fewer_than_three_left_only_the_last_chapters_pressure_is_left_out_and_it_does_not_relax_further():
+    four = ["p1", "p2", "p3", "p4"]
+    assert select.offered_ids(four, ["p1", "p2"]) == ["p1", "p3", "p4"]         # two-chapter leaves two, so only p2 (the last) goes
+    three = ["p1", "p2", "p3"]
+    assert select.offered_ids(three, ["p1", "p2"]) == ["p1", "p3"]              # one-chapter leaves two, which stays: fewer than three is allowed
+    assert "p2" not in select.offered_ids(three, ["p1", "p2"])                  # never re-admit the last chapter's pressure
+    assert select.offered_ids(["p1", "p2"], ["p1", "p2"]) == ["p1"]
+
+
+def test_a_world_with_one_option_offers_it_whatever_was_used():
+    assert select.offered_ids(["p1"], ["p1", "p1"]) == ["p1"]
+    assert select.offered_ids([], ["p1"]) == []
+
+
+def request_with(n: int, used: list[str]) -> dict:
+    request = choose_request()
+    request["pressure_options"] = [{"id": f"x{i}", "kind": "rule", "statement": f"statement {i}", "cost": f"cost {i}", "when_broken": f"broken {i}"} for i in range(1, n + 1)]
+    request["pressure_used"] = used
+    return request
+
+
+def test_the_select_prompt_lists_only_the_offered_options_and_numbers_read_back_through_the_filtered_list():
+    request = request_with(5, ["x1", "x2"])
+    ties, options = select.candidates(request)
+    assert [o["id"] for o in options] == ["x3", "x4", "x5"]
+    prompt = select.build_select_prompt(request)
+    rules = prompt.split("The rules and objects you may choose:")[1]
+    assert "1. (rule) " in rules and "statement 3" in rules and "statement 1" not in rules and "statement 2" not in rules
+    value = {"picks": [{"reason": "r", "tie": 1, "pressure": 1}, {"reason": "r", "tie": 2, "pressure": 2}, {"reason": "r", "tie": 3, "pressure": 3}]}
+    assert select.select_problem(value, len(ties), len(options)) is None
+    assert [c["pressure_id"] for c in select.combos(request, value)] == ["x3", "x4", "x5"]       # number 1 is the first offered, not the first of the world
+    assert select.select_problem({"picks": [{**value["picks"][0], "pressure": 4}] + value["picks"][1:]}, len(ties), len(options))     # 4 is outside the filtered list
+    assert select.grammar(len(ties), len(options))["properties"]["picks"]["items"]["properties"]["pressure"]["enum"] == [1, 2, 3]
+
+
+def test_a_request_without_a_history_is_offered_everything():
+    request = request_with(3, [])
+    request.pop("pressure_used")
+    assert [o["id"] for o in select.candidates(request)[1]] == ["x1", "x2", "x3"]

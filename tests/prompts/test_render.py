@@ -215,8 +215,8 @@ def test_chapter_one_carries_the_normal_and_the_break_and_later_chapters_do_not(
 def test_origin_history_is_the_disruption_alone_for_chapters_after_the_first():
     setup = dict(generate_request()["setup"], normal="The shop opened at six.", disruption="Someone broke in.")
     two = render_origin_history(setup, 2)
-    assert two.startswith("Where the story began: Someone broke in.")
-    assert "origin history" in two and "story so far" in two and "begins from where the story so far leaves off" in two
+    assert two.startswith("What broke the story open, and is still unresolved: Someone broke in.")
+    assert "origin history" not in two and "remains in effect until the story resolves it" in two and "shows how far it has moved" in two and "begins from where the story so far leaves off" in two
     assert "shop opened" not in two
     assert render_origin_history(setup, 8) == render_origin_history(setup, 2)
     assert not NEGATIVE.search(two) and not re.search(r"\b(goal|stakes)\b", two)

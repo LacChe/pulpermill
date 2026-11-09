@@ -235,6 +235,8 @@ def build_brainstorm_prompt(request: dict, factor: float = 1.0, combos: list[dic
     if chapter > 1:
         task.append(w["brainstorm_variety"])
         task.append(w["brainstorm_continue"])
+        if request.get("origin_history", True) and r.s((request.get("setup") or {}).get("disruption")):       # only when the prompt carries the disruption
+            task.append(w["brainstorm_disruption"])
     task.append(w["brainstorm_people"])
     if chapter == 1:
         task.append(w["brainstorm_first"])

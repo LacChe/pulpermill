@@ -179,7 +179,7 @@ def test_the_story_requests_the_page_builds_are_golden_and_the_others_keep_their
 
 def test_the_story_requests_carry_the_fields_the_spec_lists():
     plan = {"call", "schema_version", "language", "job_id", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
-            "holdings", "spotlight", "spotlight_edges", "pressure", "earlier_beats", "earlier_events", "retry", "choose", "pressure_options", "origin_history"}
+            "holdings", "spotlight", "spotlight_edges", "pressure", "earlier_beats", "earlier_events", "retry", "choose", "pressure_options", "pressure_used", "origin_history"}
     generate = {"call", "schema_version", "language", "job_id", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
                 "holdings", "earlier_events", "previous_ending", "beat", "spotlight_edges", "pressure"}
     assert set(PlanRequest.model_fields) == plan

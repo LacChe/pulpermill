@@ -182,6 +182,9 @@ class PlanRequest(_StoryRequest):
     choose: bool = False
     # Every rule and object of the world in words with ids, sent only when `choose` is true (a later addition, 2026-11-05).
     pressure_options: list[PressureChoice] = Field(default_factory=list)
+    # The id of the rule or object each earlier chapter's own plan put to work, one entry per earlier chapter, oldest first, a blank for a chapter
+    # that had none (a later addition, so older requests stay valid). The select step leaves the most recent ones out of the list it offers.
+    pressure_used: list[str] = Field(default_factory=list)
     # Pass the Setup's disruption to the planning prompts (select, brainstorm, plan) of chapters 2 and later, as origin history that the story
     # so far extends from (a later addition, 2026-11-07). On by default; `false` leaves the prompts as they were before it.
     origin_history: bool = True

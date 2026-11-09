@@ -17,6 +17,7 @@ from pulpermill.prompter.mill import generate, plan, select  # noqa: E402
 
 VECTORS = json.loads((ROOT / "tests/shared/contract-vectors.json").read_text())["requests"]
 DISRUPTION = "A fog rolled in and the town's oven went cold."
+LEAD = "What broke the story open, and is still unresolved:"
 NORMAL = "Every dawn the baker lit the Hearthstone oven."
 
 
@@ -45,17 +46,17 @@ def test_a_request_without_the_field_gets_origin_history(chapter):
     request = plan_request(chapter)
     assert "origin_history" not in request
     for step, prompt in prompts(request).items():
-        assert prompt == prompts({**request, "origin_history": True})[step] and f"Where the story began: {DISRUPTION}" in prompt, step
+        assert prompt == prompts({**request, "origin_history": True})[step] and f"{LEAD} {DISRUPTION}" in prompt, step
     assert plan.build_flow(request, None).notes["origin_history"] is True
 
 
 @pytest.mark.parametrize("chapter", [2, 3, 6])
 def test_on_the_block_sits_between_the_protagonist_line_and_the_chapter_line_in_all_three_prompts(chapter):
     for step, prompt in prompts(plan_request(chapter, origin_history=True)).items():
-        began = prompt.index(f"Where the story began: {DISRUPTION}")
+        began = prompt.index(f"{LEAD} {DISRUPTION}")
         assert prompt.index("The story follows") < began < prompt.index(f"This is chapter {chapter} of"), step
-        assert "origin history" in prompt and NORMAL not in prompt, step
-        assert prompt.count("Where the story began") == 1, step
+        assert "origin history" not in prompt and "remains in effect until the story resolves it" in prompt and NORMAL not in prompt, step
+        assert prompt.count(LEAD) == 1, step
 
 
 @pytest.mark.parametrize("chapter", [2, 3, 6])
@@ -64,7 +65,7 @@ def test_off_the_prompts_of_chapters_2_and_later_ignore_the_disruption_entirely(
     bare["setup"] = {**bare["setup"], "disruption": ""}
     for step, prompt in prompts({**plan_request(chapter), "origin_history": False}).items():
         assert prompt == prompts({**bare, "origin_history": False})[step], step
-        assert "Where the story began" not in prompt and DISRUPTION not in prompt, step
+        assert LEAD not in prompt and DISRUPTION not in prompt, step
 
 
 def test_chapter_one_is_the_same_with_the_flag_on():
@@ -88,3 +89,28 @@ def test_the_run_notes_log_the_flag_state():
     for flag in (True, False):
         flow = plan.build_flow(plan_request(3, origin_history=flag), None)      # building the flow only reads the request
         assert flow.notes["origin_history"] is flag
+
+
+RULE = "At least one of the three ideas must advance what broke the story open, which is still unresolved"
+
+
+@pytest.mark.parametrize("chapter", [2, 3, 6])
+def test_the_brainstorm_alone_must_advance_the_disruption_in_chapters_2_and_later(chapter):
+    on = prompts(plan_request(chapter))
+    assert on["brainstorm"].count(RULE) == 1 and "keeps its fixed ending" in on["brainstorm"]
+    assert all(RULE not in p for step, p in on.items() if step != "brainstorm")
+    assert RULE not in plan.build_brainstorm_prompt(plan_request(chapter, origin_history=False))
+    no_disruption = plan_request(chapter)
+    no_disruption["setup"]["disruption"] = ""
+    assert RULE not in plan.build_brainstorm_prompt(no_disruption)
+
+
+def test_chapter_one_has_no_such_rule():
+    assert RULE not in plan.build_brainstorm_prompt(plan_request(1))
+
+
+def test_the_decide_prompt_carries_the_same_unresolved_block():
+    from pulpermill.prompter.mill import decide
+    request = plan_request(3)
+    prompt = decide.build_decide_prompt(request, [(1, "first idea"), (2, "second idea"), (3, "third idea")], [0, 1, 2])
+    assert f"{LEAD} {DISRUPTION}" in prompt and "remains in effect until the story resolves it" in prompt

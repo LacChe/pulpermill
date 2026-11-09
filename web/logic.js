@@ -686,7 +686,7 @@ export function flagsUsed(card) {
 //              chapter_count, style, setup, protagonist, cast, world, ties, holdings, spotlight, earlier_beats,
 //              earlier_events, retry?, choose?, pressure_options?}. Reply {ok, beat, picked?}. The beat is by field key, links
 //              in words. With `choose` the planner may pick the tie and the pressure itself from the ties sent and the
-//              `pressure_options` (every rule and object, in words with ids); `picked` {spotlight, pressure} names its choice
+//              `pressure_options` (every rule and object, in words with ids) and `pressure_used` (the pressure id of each earlier chapter); `picked` {spotlight, pressure} names its choice
 //              by id, and `spotlight` and `pressure` are then only the page's default pair.
 //   generate   Write the chapter, say what happened, and propose the shifts. Request as plan, without the top-level spotlight
 //              and with previous_ending and the beat. The spotlight tie's id is sent inside the beat (beat.spotlight), one of the
