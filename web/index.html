@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="app-header">
-    <header class="bar">
+    <header class="bar" data-locks>
       <h1 data-text="page.title"></h1>
       <label class="project-name">
         <span class="visually-hidden" data-text="page.projectName"></span>
@@ -27,11 +27,11 @@
       </div>
     </header>
     <div class="backend-bar">
-      <label class="backend">
+      <label class="backend" data-locks>
         <span data-text="page.modelConnection"></span>
         <input type="text" id="backend" class="text-control" autocomplete="off" spellcheck="false">
       </label>
-      <label class="backend token">
+      <label class="backend token" data-locks>
         <span data-text="page.tokenLabel"></span>
         <input type="password" id="token" class="text-control" autocomplete="off" spellcheck="false" data-text-attrs="title:page.tokenHelp">
       </label>
@@ -42,23 +42,24 @@
   </div>
   <div id="recovery" class="notice" hidden></div>
   <div id="notice" class="notice" role="status" hidden></div>
-  <section id="welcome" class="welcome" data-text-attrs="aria-label:page.welcomeLabel" hidden></section>
-  <section id="column-switcher" class="column-switcher" role="group" data-text-attrs="aria-label:page.columnSwitcher">
+  <section id="welcome" class="welcome" data-locks data-text-attrs="aria-label:page.welcomeLabel" hidden></section>
+  <section id="column-switcher" class="column-switcher" role="group" data-locks data-text-attrs="aria-label:page.columnSwitcher">
     <button type="button" class="column-switch active" data-column="cards" data-text="page.cardsColumn"></button>
     <button type="button" class="column-switch" data-column="planning" data-text="page.planningColumn"></button>
   </section>
   <div id="workspace" class="workspace" data-column="cards">
     <section class="cards-column" data-text-attrs="aria-label:page.cardsColumn">
-      <div class="cards-nav">
+      <div class="cards-nav" data-locks>
         <nav id="cards" class="tabs" data-text-attrs="aria-label:page.cardsLabel"></nav>
         <nav id="people" class="tabs people" data-text-attrs="aria-label:page.peopleLabel" hidden></nav>
       </div>
-      <section id="import-panel" class="import-panel" data-text-attrs="aria-label:import.title" hidden></section>
-      <main id="card"></main>
+      <section id="import-panel" class="import-panel" data-locks data-text-attrs="aria-label:import.title" hidden></section>
+      <main id="card" data-locks></main>
     </section>
     <section class="planning-column" data-text-attrs="aria-label:page.planningColumn">
-      <nav id="chapters" class="tabs chapter-tabs" data-text-attrs="aria-label:page.chaptersLabel" hidden></nav>
-      <div id="story-bar" class="story-bar"></div>
+      <nav id="chapters" class="tabs chapter-tabs" data-locks data-text-attrs="aria-label:page.chaptersLabel" hidden></nav>
+      <div id="planning-panels" data-locks></div>
+      <div id="story-bar" class="story-bar" data-locks></div>
     </section>
   </div>
   <script type="module" src="app.js"></script>

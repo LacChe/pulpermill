@@ -65,20 +65,6 @@ test("the button asks for that chapter again and says how many later chapters it
   assert.deepEqual(asked.map(([p, number, later]) => [p === project, number, later]), [[true, 1, 1], [true, 2, 0]]);
 });
 
-test("the button is off while the model works and on again after", () => {
-  const client = idleClient();
-  const { panel, draw } = chapterPanel(twoWritten(), client);
-  const root = draw(1);
-  const [button] = buttons(root);
-  assert.equal(button.disabled, false);
-  client.state.working = true;
-  panel.refresh();
-  assert.equal(button.disabled, true);
-  client.state.working = false;
-  panel.refresh();
-  assert.equal(button.disabled, false);
-});
-
 test("a locked Outline shows the reason in place of the button", () => {
   const project = twoWritten();
   setWriterLock(project, "outline", true);

@@ -28,8 +28,6 @@ export function createChapterPanel(hooks) {
   let busy = null;                      // the number of the chapter this panel is writing again
 
   function refresh() {
-    const { working } = hooks.client.state;
-    if (redoButton) redoButton.disabled = working;
     tag?.update();
   }
 

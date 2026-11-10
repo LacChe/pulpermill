@@ -91,7 +91,7 @@ export function createStoryBar(root, hooks) {
       root.replaceChildren(...parts);
       return;
     }
-    const begin = node("button", { type: "button", className: "validate", textContent: STRINGS.start, disabled: checking || hooks.client.state.working });
+    const begin = node("button", { type: "button", className: "validate", textContent: STRINGS.start, disabled: checking });
     begin.addEventListener("click", press);
     const parts = [node("p", { textContent: checking ? STRINGS.checking : STRINGS.intro }), begin];
     if (message) parts.push(node("p", { className: "story-fix", textContent: message.text }), stopList(message.stops));

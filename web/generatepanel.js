@@ -41,8 +41,7 @@ export function createGeneratePanel(hooks) {
   let mine = false;                     // this panel pressed the button and is waiting
 
   function refresh() {
-    const { working } = hooks.client.state;
-    if (button) button.disabled = working || button.dataset.blocked === "true";
+    if (button) button.disabled = button.dataset.blocked === "true";
     tag?.update();
   }
 

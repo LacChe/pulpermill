@@ -30,6 +30,7 @@ import { createMock } from "./mock.js";
 import {
   BACKEND_KEY, TOKEN_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
 } from "./client.js";
+import { createLock, applyLock } from "./busy.js";
 import { section, fill, msg, joinList, setText, applyStaticText, TEXT_FILE, BOOT_FAILURE } from "./text.js";
 
 const LABELS = section("labels");     // labels.tabNames: a tab holds all of a many-per-project card, so it is named in the plural
@@ -54,6 +55,7 @@ const noticeNode = document.getElementById("notice");
 const recoveryNode = document.getElementById("recovery");
 const storyNode = document.getElementById("story-bar");
 const planningColumn = document.querySelector(".planning-column");
+const panelsHost = document.getElementById("planning-panels");     // where the plan, write, end and export panels are drawn
 const chaptersNav = document.getElementById("chapters");
 const workspace = document.getElementById("workspace");
 const columnSwitches = [...document.querySelectorAll(".column-switch")];
@@ -101,7 +103,7 @@ function goToWrite() {
   selectColumn("planning");
   show();
   // Before the story starts the Start button is what to see; after, the panel of the chapter in hand.
-  const target = storyStarted(project) ? planningColumn.querySelector(".plan-panel, .generate-panel, .chapter-view") : storyNode;
+  const target = storyStarted(project) ? panelsHost.querySelector(".plan-panel, .generate-panel, .chapter-view") : storyNode;
   target?.scrollIntoView({ block: "nearest" });
 }
 
@@ -327,7 +329,7 @@ titleInput.addEventListener("input", () => {
 document.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
     event.preventDefault();
-    save();
+    if (!lock?.locked) save();
   }
 });
 
@@ -373,11 +375,13 @@ function offerRecovery(recovered) {
 // "mock" is the built-in sample model, so the page works with nothing running. Anything else is an address.
 const backendWhere = () => (client.state.setting.kind === "mock" ? STRINGS.whereMock : settingText(client.state.setting));
 
+let lock = null;
+function drawLock() { if (lock) applyLock(document, lock.reason); }
+
 function drawConnection() {
   const { working, connection, stopping } = client.state;
-  stopButton.hidden = !(working || stopping || connection === "busy");     // also for a job this page no longer tracks
+  stopButton.hidden = !(working || stopping || connection === "busy" || lock?.locked);     // also for a job this page no longer tracks, and a run between calls
   stopButton.disabled = stopping;
-  importButton.disabled = working;     // one job at a time: a card is not brought in while the model is working
   connectionNode.textContent = stopping ? STRINGS.stopping : working ? STRINGS.working : STRINGS.connection[connection];
   connectionNode.dataset.state = working || stopping ? "busy" : connection;
 }
@@ -403,6 +407,7 @@ tokenInput.addEventListener("change", () => {
 });
 document.getElementById("check").addEventListener("click", () => client.checkStatus());
 stopButton.addEventListener("click", async () => {
+  runAll?.stop();     // a run of several chapters ends with the call, not on to the next
   const { idle, cancelFailed } = await client.stop();
   if (cancelFailed) showNotice(STRINGS.stopFailed, "notice-bad");
   else if (!idle) showNotice(STRINGS.stopStillBusy, "notice-bad");
@@ -616,7 +621,7 @@ function drawNav() {
 function show() {
   const card = schema.cards[view.card];
   const held = ensureCard(project, card);
-  planningColumn.querySelectorAll(".plan-panel, .generate-panel, .end-panel, .export-panel, .chapter-view").forEach((panel) => panel.remove());
+  panelsHost.querySelectorAll(".plan-panel, .generate-panel, .end-panel, .export-panel, .chapter-view").forEach((panel) => panel.remove());
   let values;
   if (card.many_per_project) {
     if (!findInstance(project, card, view.characterId)) view.characterId = held[0]?.id ?? null;
@@ -655,20 +660,21 @@ function show() {
   }
   const chapter = chapterState();
   if (chapter && view.chapter <= chapter.written) {
-    chapterPanel?.draw(planningColumn, view.chapter);
+    chapterPanel?.draw(panelsHost, view.chapter);
     // Once every chapter is written no tab is left to plan, so the steps that come after the last chapter (ending the story,
     // exporting) are drawn under the chapter itself. Writing a chapter again is the chapter's own button.
     if (chapter.written >= chapter.count) {
-      endPanel?.draw(planningColumn);
-      exportPanel?.draw(planningColumn);
+      endPanel?.draw(panelsHost);
+      exportPanel?.draw(panelsHost);
     }
   } else {
-    planPanel?.draw(planningColumn);
-    generatePanel?.draw(planningColumn);
-    endPanel?.draw(planningColumn);
-    exportPanel?.draw(planningColumn);
+    planPanel?.draw(panelsHost);
+    generatePanel?.draw(panelsHost);
+    endPanel?.draw(panelsHost);
+    exportPanel?.draw(panelsHost);
   }
   planningColumn.prepend(storyNode);
+  drawLock();     // what was just drawn is locked or not by the one answer, not by anything the panels decided
   storyBar?.draw();
   welcome?.draw();
   restoreRadioSelections(main);
@@ -702,6 +708,9 @@ try {
     notice: (text, kind) => showNotice(text, kind),
   });
   runAll.onChange(() => planPanel.refresh());
+  lock = createLock({ client, runAll });
+  lock.onChange(() => { drawLock(); drawConnection(); });
+  drawLock();
   planPanel = createPlanPanel({
     runAll,
     schema, client, getProject: () => project, backendWhere, errorText,

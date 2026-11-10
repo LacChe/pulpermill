@@ -28,7 +28,6 @@ export function createImportPanel(root, hooks) {
   }
 
   function refresh() {
-    if (bring) bring.disabled = hooks.client.state.working;
   }
 
   function failureText(failure) {

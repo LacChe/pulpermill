@@ -64,10 +64,9 @@ export function createPlanPanel(hooks) {
   }
 
   function refresh() {
-    const { working: busy } = hooks.client.state;
     const running = Boolean(hooks.runAll?.running);
-    if (button) button.disabled = busy || running || button.dataset.blocked === "true";
-    if (runButton) runButton.disabled = busy || running || runButton.dataset.blocked === "true";
+    if (button) button.disabled = button.dataset.blocked === "true";
+    if (runButton) runButton.disabled = runButton.dataset.blocked === "true";
     if (runStop) runStop.hidden = !running;
     if (runLine) runLine.textContent = running ? hooks.runAll.progressText() : "";
     tag?.update();
