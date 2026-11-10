@@ -63,7 +63,31 @@ function whyTip(why) {
   const id = `why-tip-${++whyCount}`;
   const button = el("button", { type: "button", class: "why-button", text: "?", "aria-label": STRINGS.why, "aria-describedby": id });
   button.addEventListener("keydown", (event) => { if (event.key === "Escape") button.blur(); });
-  return el("span", { class: "why" }, button, el("span", { class: "why-tip", id, role: "tooltip", text: why }));
+  const tip = el("span", { class: "why-tip", id, role: "tooltip", text: why });
+  const wrap = el("span", { class: "why" }, button, tip);
+  // The tip is fixed to the window, not to the column it is in, so the column's edge cannot cut it off. It sits under the
+  // button, goes above it when there is no room below, and slides sideways to stay inside the window.
+  const place = () => {
+    const at = button.getBoundingClientRect();
+    const gap = 6, edge = 8;
+    const left = Math.max(edge, Math.min(at.left, window.innerWidth - tip.offsetWidth - edge));
+    const roomBelow = window.innerHeight - at.bottom - gap - edge;
+    const top = tip.offsetHeight > roomBelow && at.top - gap - tip.offsetHeight >= edge ? at.top - gap - tip.offsetHeight : at.bottom + gap;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+  };
+  let hovered = false;
+  let focused = false;
+  const sync = () => {
+    const on = hovered || focused;
+    wrap.classList.toggle("open", on);
+    if (on) { place(); window.addEventListener("scroll", place, true); } else window.removeEventListener("scroll", place, true);
+  };
+  wrap.addEventListener("mouseenter", () => { hovered = true; sync(); });
+  wrap.addEventListener("mouseleave", () => { hovered = false; sync(); });
+  wrap.addEventListener("focusin", () => { focused = true; sync(); });
+  wrap.addEventListener("focusout", () => { focused = false; sync(); });
+  return wrap;
 }
 
 // ---- Problems ----------------------------------------------------------------
