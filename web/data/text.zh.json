@@ -25,6 +25,13 @@
     "chaptersLabel": "章节",
     "language": "语言"
   },
+  "theme": {
+    "label": "主题",
+    "groupLabel": "选择主题",
+    "pick": "使用{name}主题",
+    "timbermill": "Timbermill",
+    "circuit": "Circuit"
+  },
   "common": {
     "elapsed": "{n}秒",
     "comma": "、",

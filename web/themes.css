@@ -1,0 +1,63 @@
+/* The themes. A theme is one block of tokens on <html data-theme="...">: the colours, the shadow, and (where a theme wants
+   them) the knobs that style.css declares under "Theme knobs". style.css holds no colour of its own, so a theme is
+   complete when it defines every token below.
+
+   Tokens every theme defines: color-scheme, --bg, --surface-1, --surface-2, --surface-3, --input, --line, --line-strong,
+   --text, --muted, --faint, --accent, --accent-soft, --good, --bad, --warn, --shadow-color.
+
+   The selector ties are on purpose: each block is exactly one attribute selector, so no block beats another and source
+   order does not matter. Circuit is also what the page shows when <html> has no data-theme. */
+
+/* Circuit: the original dark sci-fi look. Kept exactly as it was. */
+:root:not([data-theme]),
+[data-theme="circuit"] {
+  color-scheme: dark;
+
+  /* Palette generator: one hue, surfaces step up in lightness per nesting depth. */
+  --hue: 255;
+  --bg:           oklch(0.17 0.012 var(--hue));   /* page */
+  --surface-1:    oklch(0.21 0.014 var(--hue));   /* bars, panels */
+  --surface-2:    oklch(0.25 0.016 var(--hue));   /* items inside panels */
+  --surface-3:    oklch(0.29 0.018 var(--hue));   /* anything inside those */
+  --input:        oklch(0.14 0.012 var(--hue));   /* text wells, darker than every surface */
+  --line:         oklch(0.34 0.018 var(--hue));
+  --line-strong:  oklch(0.44 0.020 var(--hue));
+  --text:         oklch(0.94 0.008 var(--hue));
+  --muted:        oklch(0.76 0.015 var(--hue));
+  --faint:        oklch(0.60 0.016 var(--hue));   /* disabled, placeholder, read-only only */
+  --accent:       oklch(0.82 0.12 200);
+  --accent-soft:  oklch(0.30 0.05 205);
+  --good:         oklch(0.80 0.14 155);
+  --bad:          oklch(0.74 0.15 25);
+  --warn:         oklch(0.82 0.13 85);
+
+  --shadow-color: rgb(0 0 0 / 0.4);               /* under tooltips */
+}
+
+/* Timbermill: dark oak, cream text, a river-teal accent. The default. Warm where Circuit is cool. */
+[data-theme="timbermill"] {
+  color-scheme: dark;
+
+  --bg: #231B14;
+  --surface-1: #2D241B;
+  --surface-2: #352B21;
+  --surface-3: #3D3227;
+  --input: #17110C;
+  --line: #4B3D2E;
+  --line-strong: #66543F;
+  --text: #F0E6D6;
+  --muted: #BFAE96;
+  --faint: #988A75;
+  --accent: #5FBFB2;
+  --accent-soft: #24443F;
+  --good: #9CC46B;
+  --bad: #E57C63;
+  --warn: #E3B95A;
+
+  --shadow-color: rgb(0 0 0 / 0.5);
+  --font-head: var(--font-prose);
+}
+
+/* The dot on each footer button shows that theme's background and accent. A test keeps these equal to the real tokens. */
+.theme-swatch[data-theme-id="timbermill"] { --sw-1: #231B14; --sw-2: #5FBFB2; }
+.theme-swatch[data-theme-id="circuit"] { --sw-1: #0C1015; --sw-2: #4CDBE3; }

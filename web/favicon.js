@@ -104,13 +104,15 @@ function ticker(callback, ms, win) {
 }
 
 // Ties the icon to a client: generating while a model call runs, then done or failed if the tab is hidden, until the
-// writer comes back to it or does anything on the page. `onChange(state)` lets the page mark its title.
+// writer comes back to it or does anything on the page. `onChange(state)` lets the page mark its title. The icon is painted
+// from the page's colour tokens, so it is painted again when the theme changes (theme.js says so with a "themechange" event);
+// `refresh()` does the same on request.
 export function mountTabIcon(client, { doc = document, onChange = () => {} } = {}) {
   const win = doc.defaultView;
   const canvas = doc.createElement("canvas");
   canvas.width = canvas.height = SIZE;
   const ctx = canvas.getContext?.("2d");
-  if (!ctx || !ctx.roundRect) return { state: () => "default", mark: () => "default" };   // no canvas here: the static icon stays
+  if (!ctx || !ctx.roundRect) return { state: () => "default", mark: () => "default", refresh: () => {} };   // no canvas here: the static icon stays
   let state = "default";
   let shown = null;
   let wasWorking = false;
@@ -126,6 +128,12 @@ export function mountTabIcon(client, { doc = document, onChange = () => {} } = {
     link.rel = "icon"; link.type = "image/png"; link.href = canvas.toDataURL("image/png");
     const old = doc.querySelector('link[rel~="icon"]');
     if (old) old.replaceWith(link); else doc.head.append(link);
+  }
+
+  // Forgets the picture on show, so the next paint replaces it even though the state is the same: used when the colours changed.
+  function refresh() {
+    shown = null;
+    paint();
   }
 
   function move(event) {
@@ -148,6 +156,8 @@ export function mountTabIcon(client, { doc = document, onChange = () => {} } = {
   const seen = () => move({ type: "seen" });
   doc.addEventListener("visibilitychange", () => { if (!doc.hidden) seen(); });
   for (const name of ["pointerdown", "keydown", "focus"]) win.addEventListener(name, seen, true);
+  doc.addEventListener("themechange", refresh);
+  refresh();                                      // the static icon in index.html is only what shows until this runs
 
-  return { state: () => state, mark: () => state };
+  return { state: () => state, mark: () => state, refresh };
 }

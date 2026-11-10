@@ -27,6 +27,7 @@ import { pruneNotes } from "./modelnotes.js";
 import { writtenBeatIds, staleBeatIds } from "./plan.js";
 import { mountTabIcon } from "./favicon.js";
 import { createMock } from "./mock.js";
+import { mountThemeBar } from "./theme.js";
 import {
   BACKEND_KEY, TOKEN_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
 } from "./client.js";
@@ -66,6 +67,7 @@ let project;
 let client;
 let mock;
 let tabIcon;
+let themeBar;
 let storyBar;
 let planPanel;
 let generatePanel;
@@ -719,6 +721,7 @@ async function changeLanguage(code) {
   pageLanguage = wanted;
   drawLanguageSwitch();
   applyStaticText(document);
+  themeBar?.relabel();     // the footer is drawn by theme.js, not by data-text, so it is worded again here
   if (project) redrawAll();
   return true;
 }
@@ -766,6 +769,7 @@ async function chooseLanguage(code) {
 
 try {
   await setLanguage(storedLanguage());
+  themeBar = mountThemeBar(document.getElementById("theme-bar"));     // needs the text, which the line above has loaded
   let stored = null;
   try { stored = localStorage.getItem(BACKEND_KEY); } catch { /* no storage: the built-in model is used */ }
   let setting = readStoredSetting(stored);

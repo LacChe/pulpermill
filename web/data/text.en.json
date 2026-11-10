@@ -25,6 +25,13 @@
     "chaptersLabel": "Chapters",
     "language": "Language"
   },
+  "theme": {
+    "label": "Theme",
+    "groupLabel": "Choose a theme",
+    "pick": "Use the {name} theme",
+    "timbermill": "Timbermill",
+    "circuit": "Circuit"
+  },
   "common": {
     "elapsed": "{n} s",
     "comma": ", ",

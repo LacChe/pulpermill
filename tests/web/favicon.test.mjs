@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createMock } from "../../web/mock.js";
 import { createClient } from "../../web/client.js";
-import { nextIconState, frameAt, FLIP } from "../../web/favicon.js";
+import { nextIconState, frameAt, FLIP, mountTabIcon } from "../../web/favicon.js";
 import { schema } from "./helpers.mjs";
 
 test("a call starting makes the icon generating, whatever it was", () => {
@@ -52,4 +52,62 @@ test("the client tells listeners how each model call ended, but not status check
   await client.start({ call: "fill" }).done;
   assert.equal(replies.length, 2);
   assert.equal(replies[1].ok, false);
+});
+
+// ---- Painting from the page's colours -----------------------------------------------------------
+// A stand-in page with a canvas that records the colour the letter P is drawn in, and tokens the test can change like a theme would.
+
+function fakePage({ canvas = true } = {}) {
+  const tokens = { "--accent": "#111111", "--surface-1": "#222222", "--line": "#333333", "--bad": "#444444" };
+  const drawn = [];                                          // the fill colour at each fillText: the idle icon's letter
+  const ctx = new Proxy({ roundRect() {}, fillText() { drawn.push(ctx.fillStyle); } }, {
+    get: (target, key) => (key in target ? target[key] : () => {}),
+    set: (target, key, value) => { target[key] = value; return true; },
+  });
+  let painted = 0;
+  const listeners = {};
+  const makeLink = () => ({ rel: "", replaceWith(next) { page.icon = next; } });   // a real <link> can be swapped for another
+  const page = {
+    icon: makeLink(), tokens, drawn, listeners,
+    get painted() { return painted; },
+    hidden: false,
+    head: { append(link) { page.icon = link; } },
+    defaultView: { getComputedStyle: () => ({ getPropertyValue: (name) => tokens[name] ?? "" }), addEventListener() {} },
+    createElement: (tag) => (tag === "canvas" ? { getContext: () => (canvas ? ctx : null), toDataURL: () => `data:image/png;base64,${++painted}` } : makeLink()),
+    querySelector: () => page.icon,
+    addEventListener: (name, fn) => { (listeners[name] ??= []).push(fn); },
+    fire: (name) => { for (const fn of listeners[name] ?? []) fn({ type: name }); },
+  };
+  return page;
+}
+const idleClient = () => ({ onChange() {}, onFinish() {} });
+
+test("the icon is painted as soon as it is mounted, from the page's colours, replacing the static one", () => {
+  const page = fakePage();
+  mountTabIcon(idleClient(), { doc: page });
+  assert.equal(page.painted, 1);
+  assert.match(page.icon.href, /^data:image\/png/);
+  assert.deepEqual(page.drawn, ["#111111"]);
+});
+
+test("a theme change paints the icon again in the new colours, though its state did not change", () => {
+  const page = fakePage();
+  const icon = mountTabIcon(idleClient(), { doc: page });
+  page.tokens["--accent"] = "#abcdef";
+  page.fire("themechange");
+  assert.equal(page.painted, 2);
+  assert.deepEqual(page.drawn, ["#111111", "#abcdef"]);
+  page.tokens["--accent"] = "#fedcba";
+  icon.refresh();                                            // the same thing on request
+  assert.equal(page.painted, 3);
+  assert.equal(page.drawn.at(-1), "#fedcba");
+  assert.equal(icon.state(), "default");
+});
+
+test("without canvas support the static icon stays, and refresh is still there to call", () => {
+  const page = fakePage({ canvas: false });
+  const icon = mountTabIcon(idleClient(), { doc: page });
+  assert.equal(page.painted, 0);
+  assert.doesNotThrow(() => icon.refresh());
+  assert.equal(icon.state(), "default");
 });
