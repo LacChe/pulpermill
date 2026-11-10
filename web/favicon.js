@@ -1,5 +1,8 @@
 // The tab icon. Four states: default, generating (animated), done, failed.
 //
+// Generating is two frames only: a solid dot, then a hollow ring, swapped every FLIP ms. Two frames at a slow rate
+// mean a late swap is not noticeable, where a smooth spinner showed every late tick as a stutter.
+//
 // Why it is drawn by code: browsers do not animate a favicon themselves, so each frame is painted on a canvas and the
 // <link rel="icon"> is replaced with it. Why the clock and a worker: a hidden tab has its page timers slowed (to once a
 // second, and after about five minutes to once a minute), and a story call can run ten minutes with the tab hidden. So
@@ -7,9 +10,8 @@
 // Web Worker, whose timers the browser does not slow the same way. If a worker cannot be made, a plain interval is used.
 
 export const SIZE = 64;
-export const STEPS = 8;           // segments in the ring
-export const TURN = 1200;         // ms for the bright head to go once round
-const TICK = 150;                 // ms between checks while generating
+export const FLIP = 1000;         // ms each frame (solid dot, hollow ring) stays up
+const TICK = 250;                 // ms between checks while generating; a swap is at most this late
 
 // ---- The state machine (no page needed) ----------------------------------------------------------------------
 
@@ -25,9 +27,9 @@ export function nextIconState(state, event) {
   return state;
 }
 
-// Which frame of the ring is brightest, from the clock alone.
-export function headAt(now) {
-  return Math.floor(((now % TURN) / TURN) * STEPS);
+// Which of the two frames is up (0 solid dot, 1 hollow ring), from the clock alone.
+export function frameAt(now) {
+  return Math.floor(now / FLIP) % 2;
 }
 
 // ---- Drawing -------------------------------------------------------------------------------------------------
@@ -72,17 +74,10 @@ export function drawIcon(ctx, colours, state, now = Date.now()) {
     ctx.beginPath(); ctx.arc(32, 47, 4.5, 0, Math.PI * 2); ctx.fill();
   } else if (state === "generating") {
     square(ctx, colours.surface, colours.line);
-    const head = headAt(now);
-    const slice = (Math.PI * 2) / STEPS;
-    ctx.lineWidth = 7; ctx.lineCap = "butt"; ctx.strokeStyle = colours.accent;
-    for (let i = 0; i < STEPS; i++) {
-      const behind = (head - i + STEPS) % STEPS;                       // 0 is the head, then the tail fading away
-      ctx.globalAlpha = 0.16 + 0.84 * Math.pow(1 - behind / STEPS, 1.6);
-      ctx.beginPath();
-      ctx.arc(32, 32, 19, i * slice - Math.PI / 2 + 0.08, (i + 1) * slice - Math.PI / 2 - 0.08);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
+    ctx.strokeStyle = colours.accent; ctx.fillStyle = colours.accent;
+    ctx.beginPath();
+    if (frameAt(now) === 0) { ctx.arc(32, 32, 20, 0, Math.PI * 2); ctx.fill(); }                  // solid dot
+    else { ctx.lineWidth = 8; ctx.arc(32, 32, 16, 0, Math.PI * 2); ctx.stroke(); }                // hollow ring, same outer size
   } else {
     square(ctx, colours.surface, colours.line);
     ctx.fillStyle = colours.accent;
@@ -123,7 +118,7 @@ export function mountTabIcon(client, { doc = document, onChange = () => {} } = {
 
   function paint() {
     const now = Date.now();
-    const key = state === "generating" ? `generating:${headAt(now)}` : state;
+    const key = state === "generating" ? `generating:${frameAt(now)}` : state;
     if (key === shown) return;                    // the same picture: nothing to replace
     shown = key;
     drawIcon(ctx, palette(doc, ctx), state, now);

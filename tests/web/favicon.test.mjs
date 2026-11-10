@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createMock } from "../../web/mock.js";
 import { createClient } from "../../web/client.js";
-import { nextIconState, headAt, STEPS, TURN } from "../../web/favicon.js";
+import { nextIconState, frameAt, FLIP } from "../../web/favicon.js";
 import { schema } from "./helpers.mjs";
 
 test("a call starting makes the icon generating, whatever it was", () => {
@@ -28,11 +28,12 @@ test("coming back to the tab or touching the page clears done and failed, and le
   assert.equal(nextIconState("default", { type: "seen" }), "default");
 });
 
-test("the bright segment is worked out from the clock, so a late tick still shows the right frame", () => {
-  assert.equal(headAt(0), 0);
-  assert.equal(headAt(TURN / STEPS), 1);
-  assert.equal(headAt(TURN - 1), STEPS - 1);
-  assert.equal(headAt(10 * 60 * 1000 + TURN / STEPS), 1);         // ten minutes later, the same position
+test("the frame is worked out from the clock, so a late tick still shows the right frame", () => {
+  assert.equal(frameAt(0), 0);
+  assert.equal(frameAt(FLIP - 1), 0);
+  assert.equal(frameAt(FLIP), 1);
+  assert.equal(frameAt(2 * FLIP), 0);
+  assert.equal(frameAt(10 * 60 * 1000 + FLIP), 1);                // ten minutes later, the same alternation
 });
 
 test("the client tells listeners how each model call ended, but not status checks", async () => {
