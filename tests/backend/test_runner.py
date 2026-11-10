@@ -187,6 +187,14 @@ def test_a_reply_in_the_wrong_language_is_retried_once():
     assert e.value.kind == "bad_output"
 
 
+def test_an_english_passage_inside_chinese_is_retried_once_and_the_chinese_reply_is_used():
+    mixed = CHINESE * 8 + " She did not look back at the house that had been her home." + CHINESE * 2
+    ctx, engine, _ = make()
+    engine.script(mixed, CHINESE * 8)
+    assert run(ctx, text_step(), language="zh") == [CHINESE * 8]
+    assert engine.calls == 2 and "language" in engine.prompts[1]
+
+
 def test_a_step_that_says_it_is_not_in_the_story_language_is_not_checked():
     ctx, engine, _ = make()
     engine.script(json.dumps({"fits": False, "message": FRENCH}))

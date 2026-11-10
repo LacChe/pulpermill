@@ -2,6 +2,7 @@
 // Everything here works on plain objects: the schema JSON and the project object.
 
 import { msg, joinList, section } from "./text.js";
+import { DEFAULT_LANGUAGE, normalizeLanguage } from "./lang.js";
 
 // A value counts as filled when the writer has put something in it.
 export function isFilled(value) {
@@ -242,9 +243,10 @@ export function instanceName(instance) {
   return typeof instance.name === "string" ? instance.name.trim() : "";
 }
 
-// A blank project: a title and the schema version. The cards fill themselves in as they are shown.
-export function newProject(schema) {
-  return { title: "", schema_version: schema.schema_version };
+// A blank project: a title, the schema version and the language it is in (the page's language and the story's, one setting).
+// The cards fill themselves in as they are shown.
+export function newProject(schema, language = DEFAULT_LANGUAGE) {
+  return { title: "", schema_version: schema.schema_version, output_language: normalizeLanguage(language) };
 }
 
 // ---- Saving, opening and the recovery copy -------------------------------
@@ -303,6 +305,7 @@ export function readProject(text, schema) {
     const fine = card.many_per_project ? Array.isArray(held) && held.every(isObject) : isObject(held);
     if (!fine) return { ok: false, reason: "damaged", card: id };
   }
+  data.output_language = normalizeLanguage(data.output_language);     // an older file has none; a stray code becomes the default
   return { ok: true, project: data };
 }
 
@@ -336,10 +339,16 @@ export function readRecovery(text, schema) {
   };
 }
 
-// Only offer the copy back if it holds something. A copy of a blank project is not worth interrupting for.
+// A project with nothing in it: the same as a blank one in its own language.
+export function isBlankProject(schema, project) {
+  return projectSnapshot(schema, project) === projectSnapshot(schema, newProject(schema, project.output_language));
+}
+
+// Only offer the copy back if it holds something. A copy of a blank project is not worth interrupting for, and it is compared with a
+// blank project in its own language, so a language chosen on an empty project never counts as work.
 export function worthRecovering(schema, recovered) {
   return Boolean(recovered) &&
-    projectSnapshot(schema, recovered.project) !== projectSnapshot(schema, newProject(schema));
+    projectSnapshot(schema, recovered.project) !== projectSnapshot(schema, newProject(schema, recovered.project.output_language));
 }
 
 // ---- Links to other cards ------------------------------------------------

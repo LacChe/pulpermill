@@ -77,7 +77,15 @@ def _norm(text: Any) -> str:
 
 
 def _words(text: Any) -> set[str]:
-    return {w for w in _norm(text).split() if len(w) > 3}
+    """The words of a text that tell it from another (over three letters). Han text has no spaces, so its pieces are character pairs."""
+    out: set[str] = set()
+    for w in _norm(text).split():
+        if common.han_count(w):
+            runs = re.findall(r"[\u3400-\u4dbf\u4e00-\u9fff]+", w)
+            out.update(run[i:i + 2] for run in runs for i in range(max(1, len(run) - 1)))
+        elif len(w) > 3:
+            out.add(w)
+    return out
 
 
 _FILLER = {"the", "and", "for"}
@@ -381,7 +389,7 @@ def _first_verb_text(aim: str, phrases: list[str]) -> str:
 def aim_is_abstract(aim: str) -> bool:
     w = common.load_text("plan")
     core = _first_verb_text(aim, w["aim_lead_phrases"])
-    if len(_norm(aim).split()) < 3:
+    if common.size(_norm(aim)) < 3:
         return True
     first = core.split()[0] if core else ""
     return first in w["abstract_verbs"] or any(core.startswith(s) for s in w["abstract_starts"])
@@ -393,7 +401,7 @@ def plan_points(text: str) -> list[str]:
     out = []
     for i, m in enumerate(marks):
         end = marks[i + 1].start() if i + 1 < len(marks) else len(text)
-        if len(re.sub(r"[^\w\s]", " ", text[m.end():end]).split()) >= 3:
+        if common.size(re.sub(r"[^\w\s]", " ", text[m.end():end])) >= 3:
             out.append(m.group(1))
     return out
 

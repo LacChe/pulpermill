@@ -1,16 +1,14 @@
 // The page's words. Every sentence, label and button text the page shows lives in one bundle per language
-// (web/data/text.en.json), so a translation is one file and nothing is worded in code. No DOM here, so Node can test it.
+// (web/data/text.<language>.json), so a translation is one file and nothing is worded in code. No DOM here, so Node can test it.
 //
 //   msg(key, values)        the text at a dotted key ("section.key"), with {name} marks filled from values
 //   section(name)           a live view of one section, for a module that reads many keys (STRINGS.title)
 //   joinList(items, how)    items joined the way the language joins them: "comma" (the default), "semicolon", "sentence"
 //                           (what separates one sentence from the next), or "dotted" (a separator inside one line)
-//   setText(bundle)         what the page (and the tests) call once the bundle has been read
+//   setText(bundle)         what the page (and the tests) call once the bundle has been read, and again when the language changes
 //   applyStaticText(root)   fills in the text and attributes that index.html marks with data-text and data-text-attrs
 //
-// The bundle is read once at start, so a section is looked up each time it is used and never copied.
-
-export const TEXT_FILE = "data/text.en.json";
+// The bundle can be swapped while the page is open, so a section is looked up each time it is used and never copied.
 
 // The one sentence kept in code: if the bundle itself failed to load, there is nothing else to say it with.
 export const BOOT_FAILURE = "The page couldn't load its text or schema.";

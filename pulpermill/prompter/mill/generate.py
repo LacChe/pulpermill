@@ -126,7 +126,7 @@ def write_findings(request: dict, text: Any) -> tuple[str | None, list[tuple[str
         return p["too_long"].format(cap=common.load_text("generate")["length"][cap]["cap"]), []
     soft: list[tuple[str, str]] = []
     ending = r.s(request.get("previous_ending"))
-    if ending and not is_zh(request) and common.echoes_ending(body, ending):
+    if ending and common.echoes_ending(body, ending):
         soft.append(("echo", p["echo"]))
     return None, soft
 
@@ -193,7 +193,7 @@ def events_prompt(request: dict, chapter_text: str, factor: float = 1.0) -> str:
 def events_problem(value: Any) -> str | None:
     p = common.load_text("generate")["events_problems"]
     happened, changed = r.s((value or {}).get("happened")), r.s((value or {}).get("changed"))
-    if len(happened.split()) < 4:
+    if common.size(happened) < 4:
         return p["empty_happened"]
     if not changed:
         return p["empty_changed"]
@@ -216,8 +216,16 @@ def sentences(text: str) -> list[str]:
 
 
 def _words(text: str, limit: int) -> str:
-    """At most `limit` words of the text, ended with a full stop when it was cut."""
-    words = r.s(text).split()
+    """At most `limit` words of the text, ended with a full stop when it was cut. Han text is cut by characters (two to a word), at a sentence
+    end when one falls in the second half, and ended with 。."""
+    text = r.s(text)
+    if common.han_count(text) > len(text.split()):
+        if common.size(text) <= limit:
+            return text
+        cut = text[:limit * 2]
+        ends = [m.end() for m in re.finditer(r"[。！？]+[”’」』）]*", cut) if m.end() >= limit]
+        return cut[:ends[-1]] if ends else cut.rstrip("，、；：—… ") + "。"
+    words = text.split()
     return " ".join(words) if len(words) <= limit else " ".join(words[:limit]).rstrip(",;:—–- ") + "."
 
 
@@ -281,7 +289,7 @@ def shifts_prompt(request: dict, kit: Any, events: Any, factor: float = 1.0) -> 
              w["shifts_changed_lead"] + "\n" + r.s(facts.get("changed")) if r.s(facts.get("changed")) else "",
              w["shifts_cards_lead"] + "\n" + _reference(request, kit, names, factor),
              w["shifts_rules"],
-             w["shifts_example"], edge, w["shifts_edge_move"] if edge else "", w["shifts_bond"] if edge else "", w["shifts_form"] if edge else "", w["shifts_format"]]
+             w["shifts_example"], edge, w["shifts_edge_move"] if edge else "", w["shifts_bond"] if edge else "", w["shifts_form"] if edge else "", w["shifts_format"].format(language=_lang(request))]
     return "\n\n".join(p for p in parts if p)
 
 
@@ -362,7 +370,7 @@ class GenerateFlow(Flow):
     def _shifts_step(self, events: Any, fallback) -> Step:
         g = self.kit.grammar
         return Step("shifts", lambda f: shifts_prompt(self.request, self.kit, events, f), "json", SHIFTS_TOKENS,
-                    g.obj({"shifts": g.shifts()}), lambda v: shifts_problem(self.request, self.kit, v), "structured", False,
+                    g.obj({"shifts": g.shifts()}), lambda v: shifts_problem(self.request, self.kit, v), "structured", True,
                     SHIFTS_ATTEMPTS, fallback)
 
     def next(self, results):

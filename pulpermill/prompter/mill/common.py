@@ -155,12 +155,33 @@ def minor_people(request: dict, texts: list[str], allowed: list[Any], earlier: l
     return len(everyone), new
 
 
+_HAN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
+_LATIN_WORD = re.compile(r"[\w'’-]+")
+HAN_MIN_SENTENCE = 12            # a Han sentence of fewer characters than this is never an echo (the short-phrase rule, in characters)
+
+
+def han_count(text: str) -> int:
+    return len(_HAN.findall(text or ""))
+
+
+def size(text: str) -> float:
+    """How long a text is, in words: the Latin words plus half the Han characters (two characters are about one English word). Chinese has no
+    spaces, so counting what a split finds would call a whole chapter one word. For text with no Han it is the plain word count."""
+    text = text or ""
+    return len(_LATIN_WORD.findall(_HAN.sub(" ", text))) + han_count(text) / 2
+
+
 def _norm_words(text: str) -> str:
     return " ".join(re.sub(r"[^\w\s]", " ", text.lower().replace("’", "'").replace("'", "")).split())
 
 
+# A sentence ends at .!?… and then white space, or at 。！？ (which need no space after them); closing quotes stay with the sentence.
+_CLOSE = "”’」』）\"'"
+_SPLIT = re.compile(rf"(?<=[.!?…])[\"”’']*\s+|(?<=[。！？])(?![{_CLOSE}])|(?<=[。！？][{_CLOSE}])(?![{_CLOSE}])|\n+")
+
+
 def _sentences(text: str) -> list[str]:
-    return [s for s in re.split(r"(?<=[.!?…])[\"”’']*\s+|\n+", text.strip()) if s.strip()]
+    return [s for s in _SPLIT.split(text.strip()) if s.strip()]
 
 
 def echoes_ending(opening: str, ending: str, first: int = 2, min_words: int = 6) -> bool:
@@ -168,12 +189,21 @@ def echoes_ending(opening: str, ending: str, first: int = 2, min_words: int = 6)
     same sentence, one inside the other, nearly the same (ratio 0.9), or sharing a run of 8 words (the ending may be cut mid-sentence, and
     the opening may carry on past it). A sentence of fewer than `min_words` words is never an echo: a name or a short phrase may come back."""
     from difflib import SequenceMatcher
-    old = [n for n in (_norm_words(x) for x in _sentences(ending)) if len(n.split()) >= min_words]
+
+    def long_enough(norm: str) -> bool:
+        return han_count(norm) >= HAN_MIN_SENTENCE if han_count(norm) else len(norm.split()) >= min_words
+
+    old = [n for n in (_norm_words(x) for x in _sentences(ending)) if long_enough(n)]
     for sentence in _sentences(opening)[:first]:
         new = _norm_words(sentence)
-        if len(new.split()) < min_words:
+        if not long_enough(new):
             continue
         for n in old:
+            if han_count(new) or han_count(n):
+                x, y = new.replace(" ", ""), n.replace(" ", "")      # Han sentences are compared as strings of characters
+                if x == y or x in y or y in x or SequenceMatcher(None, x, y).ratio() >= 0.9:
+                    return True
+                continue
             if new == n or new in n or n in new or SequenceMatcher(None, new, n).ratio() >= 0.9:
                 return True
             a, b = new.split(), n.split()
@@ -215,7 +245,7 @@ def note_soft(call: str, step: str, line: str, what: str = "accepted") -> None:
     log.warning("call=%s step=%s soft problem %s: %s", call, step, what, one, extra={"pulpermill_soft": {"call": call, "step": step, "what": what, "line": one}})
 
 
-_SENTENCE_END = re.compile(r"(?<=[.!?…])[\"”’']*\s+|\n+")
+_SENTENCE_END = _SPLIT
 _WORD = re.compile(r"[\w'’-]+")
 MIN_TRIMMED_WORDS = 400
 
@@ -234,6 +264,6 @@ def trim_echo(opening: str, ending: str, first: int = 2, min_words: int = MIN_TR
     if not drop:
         return opening, 0
     kept = "".join(piece for i, piece in enumerate(pieces) if i not in drop).lstrip()
-    if len(_WORD.findall(kept)) < min_words:
+    if size(kept) < min_words:
         return opening, 0
     return kept, len(drop)

@@ -67,6 +67,48 @@ def test_a_few_foreign_words_and_names_do_not_trip_it():
     assert language.check(mixed, "en") is None
 
 
+# ---- Chinese is held to a stricter line, and a Latin-script language to a sprinkle of Han at most ----------------------
+
+ENGLISH_SENTENCE = " She did not look back at the house that had been her home."          # thirteen words, in the middle of Chinese
+NAMES_IN_CHINESE = "Suvi对Ola说，你怎么还不走，我已经等了你很久，" * 6                         # many names, little else Latin
+
+
+def test_chinese_passes_with_names_in_it_even_when_the_names_are_many():
+    assert language.check(CHINESE, "zh") is None
+    assert language.check(CHINESE + " “Élodie Marchetti”" + CHINESE, "zh") is None
+    assert language.check(NAMES_IN_CHINESE, "zh") is None                  # 8 Latin letters to 16 Han in every clause, all of them names
+
+
+def test_an_english_paragraph_is_not_chinese():
+    assert language.check(ENGLISH, "zh") == "the text is not written in Chinese"
+    assert language.check(CHINESE * 4 + ENGLISH + CHINESE * 4, "zh") == "the text is not written in Chinese"
+
+
+def test_one_english_sentence_in_the_middle_of_chinese_fails_though_the_share_is_high():
+    text = CHINESE * 8 + ENGLISH_SENTENCE + CHINESE * 2
+    han = sum(1 for c in text if "\u3400" <= c <= "\u9fff")
+    assert han / sum(1 for c in text if c.isalpha()) > 0.8                # the old, looser line would have let it through
+    assert language.check(text, "zh") == "the text has a passage that is not written in Chinese"
+
+
+def test_a_short_English_phrase_or_a_list_of_names_is_not_a_passage():
+    assert language.check(CHINESE * 3 + " she did not look back " + CHINESE * 3, "zh") is None        # five words
+    assert language.check(CHINESE * 3 + " Suvi, Ola, Mira, Tomas, Jun, Eli " + CHINESE * 3, "zh") is None   # six, all names
+
+
+def test_a_latin_script_language_may_hold_a_name_in_han_but_not_a_chinese_sentence():
+    assert language.check(ENGLISH + " Li Wei (李伟) nodded.", "en") is None
+    assert language.check(ENGLISH * 2 + CHINESE, "en") == "the text has Chinese, Japanese or Korean characters in it, which en does not use"
+    assert language.check(FRENCH * 2 + CHINESE, "fr")
+
+
+def test_a_short_chinese_string_in_a_reply_is_read_though_chinese_has_no_spaces():
+    short = "她走到河边水很冷她没有回头看那座房子"                                     # 18 Han characters, under 40 characters
+    assert list(language.strings_in({"a": short, "b": "苏维走了"})) == [short]
+    reply = {"a": short, "b": short, "c": short}
+    assert language.check_value(reply, "en") and language.check_value(reply, "zh") is None
+
+
 def test_check_value_only_reads_the_longer_strings():
     reply = {"fits": False, "name": "Élodie", "message": FRENCH}
     assert language.check_value(reply, "en") and language.check_value(reply, "fr") is None

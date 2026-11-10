@@ -4,7 +4,7 @@
 import {
   addInstance, ensureCard, findInstance, instanceName, newProject, removeInstance,
   hasUnsavedChanges, projectSnapshot, projectFileName, readProject,
-  RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering, projectStatus,
+  RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering, projectStatus, isBlankProject,
   noteFor, setNote, setExample, fillUse, setFillUse, setCardValues,
 } from "./logic.js";
 import { renderCard, errorText, makeReadOnly, restoreRadioSelections, freezeItems, flagItems, STRINGS as CARD_STRINGS } from "./render.js";
@@ -31,7 +31,8 @@ import {
   BACKEND_KEY, TOKEN_KEY, createClient, readStoredSetting, parseBackendSetting, settingText, blockedByPage, fillCard, judgeCard,
 } from "./client.js";
 import { createLock, applyLock } from "./busy.js";
-import { section, fill, msg, joinList, setText, applyStaticText, TEXT_FILE, BOOT_FAILURE } from "./text.js";
+import { section, fill, msg, joinList, setText, applyStaticText, hasText, BOOT_FAILURE } from "./text.js";
+import { LANGUAGES, DEFAULT_LANGUAGE, normalizeLanguage, loadBundles, replaceContents, applyLanguageToProject } from "./lang.js";
 
 const LABELS = section("labels");     // labels.tabNames: a tab holds all of a many-per-project card, so it is named in the plural
 const STRINGS = section("app");
@@ -42,6 +43,7 @@ const main = document.getElementById("card");
 const openInput = document.getElementById("open-file");
 const importInput = document.getElementById("import-file");
 const importButton = document.getElementById("import");
+const languageNode = document.getElementById("language");
 const importNode = document.getElementById("import-panel");
 const welcomeNode = document.getElementById("welcome");
 const guideButton = document.getElementById("guide");
@@ -277,7 +279,7 @@ async function startNew() {
   if (!schema) return;
   if (isDirty() && !(await ask(STRINGS.confirmNew))) return;
   noticeNode.hidden = true;
-  replaceProject(newProject(schema));
+  replaceProject(newProject(schema, pageLanguage));
 }
 
 document.getElementById("save").addEventListener("click", save);
@@ -300,6 +302,7 @@ openInput.addEventListener("change", async () => {
   const read = readProject(text, schema);
   if (!read.ok) { showNotice(failureText(read), "notice-bad"); return; }
   if (isDirty() && !(await ask(STRINGS.confirmOpen))) return;
+  await showLanguage(read.project.output_language);     // the page follows the project it opens
   replaceProject(read.project);
   showNotice(joinList([fill(STRINGS.opened, { name: file.name }), ...(read.older ? [STRINGS.older] : [])], "sentence"));
 });
@@ -358,7 +361,8 @@ function offerRecovery(recovered) {
   const restore = button(STRINGS.restore, async () => {
     if (isDirty() && !(await ask(STRINGS.confirmRestore))) return;
     resolve();
-    replaceProject(recovered.project, newProject(schema));   // saved as "blank", so it counts as unsaved until saved
+    await showLanguage(recovered.project.output_language);
+    replaceProject(recovered.project, newProject(schema, recovered.project.output_language));   // saved as "blank", so it counts as unsaved until saved
     showNotice(STRINGS.restored);
   }, { className: "validate" });
   const discard = button(STRINGS.throwAway, async () => {
@@ -680,10 +684,88 @@ function show() {
   restoreRadioSelections(main);
 }
 
-try {
-  setText(await (await fetch(TEXT_FILE)).json());
+// ---- The page's language ---------------------------------------------------
+// The page's words and the schema (card labels, help, messages) come in one pair of files per language. Showing the page in another
+// language loads both, swaps them in where the page already holds them, and draws everything again. Cards, ids and values are the
+// same in every language, so nothing the writer typed is touched.
+let pageLanguage = null;
+let switching = Promise.resolve();
+const getJson = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url}: ${response.status}`);
+  return response.json();
+};
+
+function redrawAll() {
+  show();
+  drawConnection();
+  refreshState();
+  for (const part of [planPanel, generatePanel, chapterPanel, endPanel, importPanel]) part?.refresh();
+}
+
+async function changeLanguage(code) {
+  const wanted = normalizeLanguage(code);
+  if (wanted === pageLanguage) return true;
+  let loaded;
+  try {
+    loaded = await loadBundles(wanted, getJson);
+  } catch (error) {
+    if (!hasText()) throw error;                         // at start there is nothing to say it with: the boot failure shows
+    showNotice(STRINGS.languageFailed, "notice-bad");    // later the page stays as it was
+    return false;
+  }
+  setText(loaded.text);
+  if (schema) replaceContents(schema, loaded.schema); else schema = loaded.schema;
+  pageLanguage = wanted;
+  drawLanguageSwitch();
   applyStaticText(document);
-  schema = await (await fetch("data/schema.en.json")).json();
+  if (project) redrawAll();
+  return true;
+}
+
+// One change at a time, in the order pressed, so two quick presses end in the language pressed last.
+function setLanguage(code) {
+  switching = switching.then(() => changeLanguage(code));
+  return switching;
+}
+
+// The top-bar switch: one button for each language, shown by its own name (a language's name is never translated). The bar is a
+// locked area, so the switch is inert while a model call runs.
+const LANGUAGE_KEY = "pulpermill-language";
+languageNode.replaceChildren(...LANGUAGES.map(({ code, name, short }) => {
+  const node = button(short, () => chooseLanguage(code));
+  node.dataset.language = code;
+  node.lang = code;
+  node.title = name;
+  node.setAttribute("aria-label", name);
+  return node;
+}));
+
+function drawLanguageSwitch() {
+  for (const node of languageNode.children) node.setAttribute("aria-pressed", String(node.dataset.language === pageLanguage));
+}
+
+const storedLanguage = () => { try { return normalizeLanguage(localStorage.getItem(LANGUAGE_KEY)); } catch { return DEFAULT_LANGUAGE; } };
+
+// Shows the page in `code` and keeps it for the next visit and the next new project.
+async function showLanguage(code) {
+  if (!(await setLanguage(code))) return false;
+  try { localStorage.setItem(LANGUAGE_KEY, pageLanguage); } catch { /* the choice is just not remembered */ }
+  return true;
+}
+
+// The writer's choice. The project follows the page, so chapters written from now on are in that language; chapters already
+// written stay as they are. A blank project is not changed work: its saved copy moves with it.
+async function chooseLanguage(code) {
+  const wasBlank = isBlankProject(schema, project);
+  if (!(await showLanguage(code))) return;
+  const result = applyLanguageToProject(project, pageLanguage, wasBlank);
+  if (result === "rebase") { savedSnapshot = projectSnapshot(schema, project); refreshState(); }
+  else if (result === "changed") touchState();
+}
+
+try {
+  await setLanguage(storedLanguage());
   let stored = null;
   try { stored = localStorage.getItem(BACKEND_KEY); } catch { /* no storage: the built-in model is used */ }
   let setting = readStoredSetting(stored);
@@ -747,7 +829,7 @@ try {
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.
   const recovered = readRecovery(store.get() ?? "", schema);
   offerPending = worthRecovering(schema, recovered);
-  replaceProject(newProject(schema));
+  replaceProject(newProject(schema, pageLanguage));
   if (offerPending) offerRecovery(recovered);
   client.checkStatus();   // only asks whether the backend is free; no model runs
 } catch (error) {

@@ -23,8 +23,8 @@
   --panel: var(--surface-1);
 
   /* Type: one scale, three families. */
-  --font-ui:    system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-prose: ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+  --font-ui:    system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-prose: ui-serif, Charter, "Iowan Old Style", Georgia, "Songti SC", "Noto Serif CJK SC", "SimSun", serif;
   --font-mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --fs-title:   1.5rem;
   --fs-heading: 1.0625rem;
@@ -70,6 +70,10 @@ body {
 }
 .bar h1 { margin: 0; font-size: var(--fs-heading); }
 .bar-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-left: auto; }
+.language-switch { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-s); overflow: hidden; }
+.language-switch button { border: 0; border-radius: 0; padding: var(--sp-2) var(--sp-3); }
+.language-switch button + button { border-left: 1px solid var(--line); }
+.language-switch button[aria-pressed="true"] { background: var(--accent-soft); font-weight: 600; }
 .project-name { flex: 1 1 200px; max-width: 420px; margin: 0 var(--sp-4); }
 .project-name .text-control { font-weight: 600; }
 .save-state { color: var(--muted); font-size: var(--fs-small); margin-right: auto; white-space: nowrap; }

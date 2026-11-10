@@ -22,7 +22,8 @@
     "columnSwitcher": "Workspace section",
     "cardsColumn": "Design",
     "planningColumn": "Write",
-    "chaptersLabel": "Chapters"
+    "chaptersLabel": "Chapters",
+    "language": "Language"
   },
   "common": {
     "elapsed": "{n} s",
@@ -100,6 +101,7 @@
     "tabAria": "{name}: {words}"
   },
   "app": {
+    "languageFailed": "The page couldn't load that language, so it stays as it was.",
     "untitled": "Untitled story",
     "clean": "No unsaved changes",
     "dirty": "Unsaved changes",

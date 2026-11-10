@@ -85,6 +85,14 @@ def test_full_project_round_trips_through_json_with_ids_intact():
     assert back.shifts.entries[0].id == p.shifts.entries[0].id and back.shifts.entries[0].patch == {"fear": "being left behind"}
 
 
+@pytest.mark.parametrize("language", ["en", "zh"])
+def test_the_output_language_is_saved_and_loaded_unchanged(language):
+    p = sample(Project)
+    p.output_language = language
+    back = Project.model_validate_json(p.model_dump_json())
+    assert back.output_language == language
+
+
 def test_a_story_in_progress_has_no_after_story():
     assert sample(Project).after_story is None
 

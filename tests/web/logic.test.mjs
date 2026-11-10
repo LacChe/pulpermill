@@ -795,7 +795,7 @@ const { settledProject, projectSnapshot, hasUnsavedChanges, projectFileName, rea
 test("a settled project has every card in full, and settling does not change the original", () => {
   const project = newProject(schema);
   const settled = settledProject(schema, project);
-  assert.deepEqual(Object.keys(project), ["title", "schema_version"]);
+  assert.deepEqual(Object.keys(project), ["title", "schema_version", "output_language"]);
   for (const id of schema.order) assert.ok(id in settled, id);
   assert.deepEqual(settled.characters, []);
 });
