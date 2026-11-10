@@ -313,7 +313,6 @@
     "chapterOf": "Chapter {n} of {total}",
     "chapterOnly": "Chapter {n}",
     "button": "Write chapter {n} with the model",
-    "working": "The model is working…",
     "sends": "Pressing the button sends the cast, the cards in play (as the shifts so far have left them), the beat and the summaries of earlier chapters to {where}. Nothing is saved unless the whole chapter comes back.",
     "reasons": {
       "not_started": "Start the story first (the bar above).",
@@ -501,15 +500,23 @@
     "kept": "Every chapter written before it is kept."
   },
   "progress": {
-    "generic": "The model is working…",
-    "step": "{label} (step {index} of {of})",
-    "names": {
-      "think": "The model is thinking it through…",
-      "beat": "The model is filling in the beat…",
-      "retry": "The model is trying the beat again…",
-      "write": "The model is writing the chapter…",
-      "events": "The model is noting what happened…",
-      "shifts": "The model is noting what changed…"
+    "generic": "Working…",
+    "slow": "slow",
+    "slowHelp": "taking longer than usual",
+    "steps": {
+      "style_fit": "Checking: style fit",
+      "select": "Planning: choosing the focus",
+      "labelEarlier": "Planning: earlier chapters",
+      "brainstorm": "Planning: brainstorming",
+      "labelIdeas": "Planning: checking for repeats",
+      "decide": "Planning: picking an idea",
+      "plan": "Planning: drafting the plan",
+      "write": "Writing: the chapter",
+      "events": "Recording: what happened",
+      "shifts": "Recording: what changed",
+      "fill": "Filling: the {card} card",
+      "judge": "Checking: the card's rules",
+      "finish": "Wrapping up: how people changed"
     }
   }
 }

@@ -15,6 +15,7 @@ import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
 import { createGeneratePanel } from "./generatepanel.js";
 import { createRunAll } from "./runall.js";
+import { createProgressBar } from "./progressbar.js";
 import { forgetFolds } from "./folds.js";
 import { createEndPanel } from "./endpanel.js";
 import { createExportPanel } from "./exportpanel.js";
@@ -685,6 +686,7 @@ try {
   let token = "";
   try { token = localStorage.getItem(TOKEN_KEY) ?? ""; } catch { /* no storage: no token */ }
   client = createClient({ setting, token, mock });
+  createProgressBar({ client, host: document.querySelector(".backend-bar"), cardName: tabName });
   backendInput.value = settingText(setting);
   tokenInput.value = token;
   storyBar = createStoryBar(storyNode, {

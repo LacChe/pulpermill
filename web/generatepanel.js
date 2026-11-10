@@ -7,7 +7,6 @@ import { generateChapter, regenerateChapter } from "./client.js";
 import { generateGate, applyGenerated, commitChapter, applyRegenerated, commitRegenerated } from "./generate.js";
 import { chapterInfo } from "./plan.js";
 import { setChapterNote, copyNote, putNote } from "./modelnotes.js";
-import { stageText } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
@@ -38,14 +37,12 @@ export function reviewNodes(review) {
 // hooks: {schema, client, getProject, backendWhere, changed(), redraw(), notice(text, kind), errorText(error)}
 export function createGeneratePanel(hooks) {
   let button = null;
-  let stageLine = null;
   let tag = null;                       // the seconds beside the button
   let mine = false;                     // this panel pressed the button and is waiting
 
   function refresh() {
-    const { working, stage } = hooks.client.state;
+    const { working } = hooks.client.state;
     if (button) button.disabled = working || button.dataset.blocked === "true";
-    if (stageLine) stageLine.textContent = working && mine ? stageText(stage) || STRINGS.working : "";
     tag?.update();
   }
 
@@ -117,7 +114,6 @@ export function createGeneratePanel(hooks) {
   function draw(container) {
     const project = hooks.getProject();
     button = null;
-    stageLine = null;
     tag = null;
     if (!project) return;
     const panel = node("section", { className: "generate-panel" }, node("h3", { textContent: STRINGS.title }));
@@ -133,13 +129,12 @@ export function createGeneratePanel(hooks) {
     } else {
       button = node("button", { type: "button", className: "validate", textContent: fill(STRINGS.button, { n: info.next }) });
       button.addEventListener("click", () => press(project));
-      stageLine = node("span", { className: "note", textContent: "" });
       tag = elapsedTag(hooks.client, () => mine);
-      panel.append(node("div", { className: "plan-actions" }, button, tag.node, stageLine),
+      panel.append(node("div", { className: "plan-actions" }, button, tag.node),
         node("p", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) }));
     }
     refresh();
   }
 
-  return { draw, refresh, again, reset() { button = null; stageLine = null; tag = null; mine = false; } };
+  return { draw, refresh, again, reset() { button = null; tag = null; mine = false; } };
 }

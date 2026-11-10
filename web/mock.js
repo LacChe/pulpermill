@@ -173,9 +173,9 @@ export function createMock(schema, options = {}) {
     : call === "generate" ? { ok: true, chapter_text: "", events: {}, shifts: [] } : { ok: true, fits: "maybe" });
 
   // The stages a story call goes through, so status can say where it is: {name, index, of}. Each takes an equal share of the delay.
-  const STAGES_OF = { plan: ["think", "beat"], generate: ["write", "events", "shifts"] };
-  async function through(call, signal, retrying) {
-    const list = retrying && call === "plan" ? ["retry", "beat"] : STAGES_OF[call] ?? [];
+  const STAGES_OF = { plan: ["brainstorm", "plan"], generate: ["write", "events", "shifts"] };
+  async function through(call, signal) {
+    const list = STAGES_OF[call] ?? [];
     if (!list.length) return wait(delay, signal);
     for (const [i, name] of list.entries()) { stage = { name, index: i + 1, of: list.length }; await wait(delay / list.length, signal); }
   }
@@ -190,7 +190,7 @@ export function createMock(schema, options = {}) {
         throw new TypeError("Failed to fetch");
       }
       if (scripted === "timeout") await wait(Infinity, signal);
-      await through(request?.call, signal, Boolean(request?.retry));
+      await through(request?.call, signal);
       const nth = served;
       served += 1;
       if (scripted === "bad_output") return garbled(request.call);

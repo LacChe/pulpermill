@@ -15,6 +15,7 @@ import {
   failure, STORY_CALLS, readStatus, fillRequest, readFillReply, planFill, judgeRequest, readJudgeReply, styleFitRequest,
   readStyleFitReply,
 } from "./logic.js";
+import { jobOf } from "./progress.js";
 import { generateGate, generateRequest, applyGenerated, inputsKey, regenerateGate, regenerateKey, applyRegenerated } from "./generate.js";
 import { msg } from "./text.js";
 import { planGate, planRequest, landBeat, beatBlockers } from "./plan.js";
@@ -118,6 +119,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
   let secret = token;
   let running = null;                 // the model call this page has going, if any
   let since = null;                   // when that call began (ms), so a button can show how long it has run
+  let job = null;                     // what that call is ({call, card, rules, chapter, choose}), so the progress bar can lay out its steps
   let connection = "unknown";         // unknown | idle | busy | unreachable
   let stage = null;                   // what the backend says it is doing, while a story call runs
   let stopping = null;                // the Stop in progress (a promise), if any
@@ -231,7 +233,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
         return jobId ? cancelOnBackend(jobId) : Promise.resolve(null);
       },
     };
-    if (!isStatus) { running = handle; since = Date.now(); changed(); }
+    if (!isStatus) { running = handle; since = Date.now(); job = jobOf(request); changed(); }
     const unwatch = STORY_CALLS.includes(call) ? watch(() => { lost = true; attempt.abort(); }) : () => {};
     const done = (async () => {
       let reply;
@@ -249,7 +251,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
       } finally {
         clearTimeout(timer);
         unwatch();
-        if (!isStatus) { running = null; since = null; }
+        if (!isStatus) { running = null; since = null; job = null; }
       }
       if (!isStatus) {
         // A call that ended without an answer may still be running on the backend. The page stays locked until the
@@ -297,7 +299,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
     // Called with the reply each time a model call ends (not status checks): the tab icon uses it to say done or failed.
     onFinish(listener) { finishers.add(listener); return () => finishers.delete(listener); },
     // What the page needs to draw: whether this page is waiting on a call, and what the backend last said.
-    get state() { return { working: Boolean(running), stopping: Boolean(stopping), since, connection, setting: current, stage }; },
+    get state() { return { working: Boolean(running), stopping: Boolean(stopping), since, connection, setting: current, stage, job }; },
   };
   return client;
 }

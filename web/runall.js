@@ -15,7 +15,6 @@ import { planChapter, generateChapter } from "./client.js";
 import { chapterInfo, beatForChapter, newBeat, commitPlan, CAST_MAX } from "./plan.js";
 import { commitChapter } from "./generate.js";
 import { setChapterNote } from "./modelnotes.js";
-import { stageText } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
 
 export const STRINGS = section("runall");
@@ -28,10 +27,10 @@ export function createRunAll(hooks) {
   const listeners = new Set();
   const tell = () => { for (const listener of listeners) listener(); };
 
-  // "Chapter 3 of 6: The model is writing the chapter… (step 2 of 3)": the backend's own stage when it names one.
+  // "Chapter 3 of 6: The model is writing…". Which step of the call it is on is the progress bar's to say.
   function progressText() {
     if (!run) return "";
-    const what = stageText(client.state.stage) || (run.phase === "plan" ? STRINGS.planning : STRINGS.writing);
+    const what = run.phase === "plan" ? STRINGS.planning : STRINGS.writing;
     return fill(STRINGS.progress, { n: run.chapter, total: run.total, what });
   }
 

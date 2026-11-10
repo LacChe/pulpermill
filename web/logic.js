@@ -804,19 +804,6 @@ export function readStage(stage) {
   return { name, index, of };
 }
 
-// How a stage is put in words: its name when the page knows it, a generic line when it does not, and "step i of n" when the
-// number of steps is known.
-const STAGE_TEXT = {
-  think: "progress.names.think", beat: "progress.names.beat", retry: "progress.names.retry",
-  write: "progress.names.write", events: "progress.names.events", shifts: "progress.names.shifts",
-};
-
-export function stageText(stage) {
-  if (!stage) return "";
-  const label = Object.hasOwn(STAGE_TEXT, stage.name) ? msg(STAGE_TEXT[stage.name]) : msg("progress.generic");
-  return stage.of ? msg("progress.step", { label, index: stage.index, of: stage.of }) : label;
-}
-
 export function readStatus(reply) {
   const checked = readReply(reply);
   if (!checked.ok) return checked;

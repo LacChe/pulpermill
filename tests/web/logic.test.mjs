@@ -1302,13 +1302,6 @@ test("a busy status may name its stage as {name, index, of}; an idle one never h
   assert.deepEqual(vectorsApi.STORY_CALLS, ["plan", "generate"]);
 });
 
-test("a stage is put in words: a known name by its label, an unknown one generically, with the step when it is known", () => {
-  assert.equal(vectorsApi.stageText(null), "");
-  assert.match(vectorsApi.stageText({ name: "write", index: 1, of: 3 }), /writing the chapter.*step 1 of 3/);
-  assert.equal(vectorsApi.stageText({ name: "dreaming", index: 1, of: null }), "The model is working…");
-  assert.match(vectorsApi.stageText({ name: "dreaming", index: 2, of: 4 }), /working.*step 2 of 4/);
-});
-
 test("a chapter reply is tidied: text kept, events trimmed, the shifts read as they are", () => {
   const read = vectorsApi.readGenerateReply({
     ok: true, chapter_text: "Text.", events: { happened: " Happened. ", changed: "  " },

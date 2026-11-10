@@ -9,7 +9,6 @@ import { withSpotlight, tieInWords, requiredCast, castProblem, CAST_MAX } from "
 import { effectiveProject } from "../../web/effective.js";
 import { lockStaticCards, storyStarted, cardLocked, STATIC_CARDS } from "../../web/gate.js";
 import { makeAfterStory, afterStoryChanges } from "../../web/endstory.js";
-import { stageText } from "../../web/logic.js";
 import { fill } from "../../web/text.js";
 
 const WEB = new URL("../../web/", import.meta.url);
@@ -112,16 +111,6 @@ test("the end needs every chapter written, and asks the model for nothing", () =
   assert.equal(typeof bundle.end.reasons.not_done, "string");
 });
 
-// ---- Progress ---------------------------------------------------------------------------------
-
-test("a stage shows its name and step i of n when n is known, and an unknown name gets the generic line", () => {
-  assert.match(stageText({ name: "write", index: 1, of: 3 }), /writing the chapter.*step 1 of 3/);
-  assert.match(stageText({ name: "think", index: 2, of: null }), /thinking/);
-  assert.doesNotMatch(stageText({ name: "think", index: 2, of: null }), /step/);
-  assert.equal(stageText({ name: "brand-new", index: 1, of: null }), bundle.progress.generic);
-  assert.match(stageText({ name: "brand-new", index: 2, of: 4 }), /step 2 of 4/);
-});
-
 // ---- The wording the panels read ---------------------------------------------------------------------
 
 // Every `STRINGS.key` (and STRINGS.group.key) a panel file reads is a key of its section in the bundle, so no panel shows a bare key.
@@ -144,7 +133,7 @@ test("planpanel.js reads only strings the runall section has for its run-all but
 
 test("every run-all message fills all its marks from the values the code gives", () => {
   assert.match(fill(bundle.runall.button, { from: 3, to: 6 }), /^Plan and write chapters 3 to 6$/);
-  assert.match(fill(bundle.runall.progress, { n: 3, total: 6, what: stageText({ name: "write", index: 2, of: 3 }) }), /^Chapter 3 of 6: .*writing the chapter.*step 2 of 3/);
+  assert.match(fill(bundle.runall.progress, { n: 3, total: 6, what: bundle.runall.writing }), /^Chapter 3 of 6: .*writing/);
   assert.doesNotMatch(fill(bundle.runall.failedWrite, { n: 3, why: "x" }), /\{/);
 });
 

@@ -105,7 +105,7 @@ test("no answer in time is a timeout, and the page waits for the backend to be i
   mock.queue("timeout");
   const result = await fillCard(client, schema, project(), "world").done;
   assert.equal(result.error.kind, "timeout");
-  assert.deepEqual(client.state, { working: false, stopping: false, since: null, connection: "idle", setting: { kind: "mock" }, stage: null });
+  assert.deepEqual(client.state, { working: false, stopping: false, since: null, connection: "idle", setting: { kind: "mock" }, stage: null, job: null });
 });
 
 test("Stop ends the call with a stopped failure and the page is free again", async () => {
@@ -305,15 +305,6 @@ test("while a story call runs the page asks status and shows the stage the backe
   assert.deepEqual(seen, ["write", "events", "shifts"]);
   assert.equal(client.state.stage, null);
   assert.equal(client.state.working, false);
-});
-
-test("a plan that is retried names the retry stage", async () => {
-  const mock = createMock(schema, { delay: 80 });
-  const client = createClient({ setting: { kind: "mock" }, mock, sleep: realSleep, pollEvery: 5 });
-  const seen = new Set();
-  client.onChange((state) => { if (state.stage) seen.add(state.stage.name); });
-  await client.start({ call: "plan", schema_version: 4, language: "en", chapter: 1, chapter_count: 3, retry: { beat: {}, problems: ["y"] } }).done;
-  assert.ok(seen.has("retry"));
 });
 
 test("short calls do not poll status", async () => {

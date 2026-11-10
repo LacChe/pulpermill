@@ -11,7 +11,7 @@ import {
   planIsStale, commitPlan,
 } from "./plan.js";
 import { effectiveProject } from "./effective.js";
-import { stageText, instanceName } from "./logic.js";
+import { instanceName } from "./logic.js";
 import { section, fill, msg, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
@@ -32,7 +32,6 @@ function node(tag, props = {}, ...children) {
 export function createPlanPanel(hooks) {
   let draft = null;                     // {project, chapter, beat}: the beat for the next chapter until it is planned (nothing is added to the Outline before)
   let button = null;
-  let stageLine = null;
   let mine = false;                     // this panel pressed the button and is waiting
   let tag = null;                       // the seconds beside the button
   let runButton = null;                 // the run-all button, its Stop and its progress line
@@ -65,13 +64,12 @@ export function createPlanPanel(hooks) {
   }
 
   function refresh() {
-    const { working: busy, stage } = hooks.client.state;
+    const { working: busy } = hooks.client.state;
     const running = Boolean(hooks.runAll?.running);
     if (button) button.disabled = busy || running || button.dataset.blocked === "true";
     if (runButton) runButton.disabled = busy || running || runButton.dataset.blocked === "true";
     if (runStop) runStop.hidden = !running;
     if (runLine) runLine.textContent = running ? hooks.runAll.progressText() : "";
-    if (stageLine) stageLine.textContent = busy && mine ? stageText(stage) || STRINGS.working : "";
     tag?.update();
   }
 
@@ -131,7 +129,6 @@ export function createPlanPanel(hooks) {
     runButton = null;
     runStop = null;
     runLine = null;
-    stageLine = null;
     tag = null;
     shownIn = container;
     shownKey = null;
@@ -188,8 +185,7 @@ export function createPlanPanel(hooks) {
     button.dataset.blocked = String(Boolean(problem));
     button.addEventListener("click", () => press(project, chapter));
     tag = elapsedTag(hooks.client, () => mine);
-    stageLine = node("span", { className: "note", textContent: "" });
-    panel.append(node("div", { className: "plan-actions" }, button, tag.node, stageLine),
+    panel.append(node("div", { className: "plan-actions" }, button, tag.node),
       node("p", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) }));
     if (hooks.runAll && info.count) {
       runButton = node("button", { type: "button", className: "validate", textContent: fill(chapter >= info.count ? RUN.buttonOne : RUN.button, { n: chapter, from: chapter, to: info.count }) });
@@ -204,5 +200,5 @@ export function createPlanPanel(hooks) {
     refresh();
   }
 
-  return { draw, refresh, sync, reset() { draft = null; button = null; runButton = null; runStop = null; runLine = null; stageLine = null; tag = null; mine = false; shownIn = null; shownKey = null; } };
+  return { draw, refresh, sync, reset() { draft = null; button = null; runButton = null; runStop = null; runLine = null; tag = null; mine = false; shownIn = null; shownKey = null; } };
 }

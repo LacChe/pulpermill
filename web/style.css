@@ -293,6 +293,16 @@ select.text-control[hidden], .checks[hidden] { display: none; }
 .connection[data-state="unreachable"] { color: var(--bad); }
 .connection[data-state="unreachable"]::before { color: var(--bad); }
 .backend-bar button { padding: var(--sp-1) var(--sp-3); font-size: var(--fs-small); }
+/* What the model is doing and how far along, at the right end of the bar; only while a call runs. */
+.run-progress { margin-left: auto; display: flex; align-items: center; gap: var(--sp-2); min-width: 0; color: var(--muted); }
+.run-progress[hidden] { display: none; }
+.run-progress-label { flex: 0 0 17em; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* a fixed width, so the bar does not move as the step changes */
+.run-progress-track { position: relative; flex: 0 0 120px; height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+.run-progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.25s linear; }
+.run-progress-mark { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--surface-1); }   /* the gaps between steps */
+.run-progress[data-slow] .run-progress-fill { animation: run-progress-wait 1.6s ease-in-out infinite; }
+@keyframes run-progress-wait { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .run-progress-fill { transition: none; } .run-progress[data-slow] .run-progress-fill { animation: none; } }
 .stop { border-color: var(--bad); color: var(--bad); }
 .stop[hidden] { display: none; }
 

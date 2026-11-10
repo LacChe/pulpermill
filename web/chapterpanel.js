@@ -5,7 +5,7 @@
 import { section, fill, joinList } from "./text.js";
 import { effectiveProject } from "./effective.js";
 import { tieInWords } from "./plan.js";
-import { instanceName, stageText } from "./logic.js";
+import { instanceName } from "./logic.js";
 import { chapterNoteFor } from "./modelnotes.js";
 import { regenerateGate } from "./generate.js";
 import { elapsedTag } from "./elapsed.js";
@@ -24,14 +24,12 @@ function node(tag, props = {}, ...children) {
 // hooks: {schema, client, getProject, redo(project, number, later)}
 export function createChapterPanel(hooks) {
   let redoButton = null;
-  let stageLine = null;
   let tag = null;                       // the seconds beside the button
   let busy = null;                      // the number of the chapter this panel is writing again
 
   function refresh() {
-    const { working, stage } = hooks.client.state;
+    const { working } = hooks.client.state;
     if (redoButton) redoButton.disabled = working;
-    if (stageLine) stageLine.textContent = working && busy !== null ? stageText(stage) || GENERATE.working : "";
     tag?.update();
   }
 
@@ -45,7 +43,6 @@ export function createChapterPanel(hooks) {
 
   function draw(container, chapter) {
     redoButton = null;
-    stageLine = null;
     tag = null;
     const project = hooks.getProject();
     if (!project) return;
@@ -94,9 +91,8 @@ export function createChapterPanel(hooks) {
     if (gate?.ok) {
       redoButton = node("button", { type: "button", className: "validate again", textContent: fill(GENERATE.again, { n: chapter }) });
       redoButton.addEventListener("click", () => redo(project, chapter, gate.later));
-      stageLine = node("span", { className: "note", textContent: "" });
       tag = elapsedTag(hooks.client, () => busy === chapter);
-      panel.append(node("div", { className: "plan-actions" }, redoButton, tag.node, stageLine));
+      panel.append(node("div", { className: "plan-actions" }, redoButton, tag.node));
     } else if (gate?.reason === "outline_locked") {
       panel.append(node("p", { className: "help", textContent: GENERATE.reasonsAgain.outline_locked }));
     }
@@ -104,5 +100,5 @@ export function createChapterPanel(hooks) {
     refresh();
   }
 
-  return { draw, refresh, reset() { redoButton = null; stageLine = null; tag = null; busy = null; } };
+  return { draw, refresh, reset() { redoButton = null; tag = null; busy = null; } };
 }
