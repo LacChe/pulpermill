@@ -1,17 +1,16 @@
 // The generate panel: shown on the Outline card under the plan panel. One button asks the model to write the planned
-// chapter; the page then applies the result and commits it as one unit. The panel also lists the written chapters and, for
-// each, the shifts that were applied (who or what, which field, before and after) and what the page left out and noticed. The
-// list is read-only: shifts are edited by writing the chapter again. Nothing here calls the model except that one button.
+// chapter; the page then applies the result and commits it as one unit. Nothing here calls the model except that one button
+// and `again`, which the chapter's own tab (chapterpanel.js) runs from its Write again button: shifts are edited by writing the
+// chapter again. The panel shows nothing about chapters already written; each chapter's tab shows its own.
 // Stopping is the Stop button the page already has: a stopped or failed chapter leaves nothing behind.
 import { generateChapter, regenerateChapter } from "./client.js";
-import { generateGate, applyGenerated, commitChapter, regenerateGate, applyRegenerated, commitRegenerated } from "./generate.js";
+import { generateGate, applyGenerated, commitChapter, applyRegenerated, commitRegenerated } from "./generate.js";
 import { chapterInfo } from "./plan.js";
-import { chapterNoteFor, setChapterNote, copyNote, putNote } from "./modelnotes.js";
+import { setChapterNote, copyNote, putNote } from "./modelnotes.js";
 import { stageText } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
-import { remember } from "./folds.js";
 import { removeNote } from "./modelnotes.js";
 
 export const STRINGS = section("generate");
@@ -23,7 +22,7 @@ function node(tag, props = {}, ...children) {
 }
 
 // What a chapter's note says, read-only: the shifts that were applied (who or what, which field, before and after), and what was left
-// out or noticed, each with its reason. Drawn under the chapter in the generate panel and in the chapter's own view.
+// out or noticed, each with its reason. Drawn in the chapter's own view.
 export function reviewNodes(review) {
   const parts = [node("h5", { textContent: STRINGS.changes })];
   parts.push(review.changes.length
@@ -41,12 +40,10 @@ export function createGeneratePanel(hooks) {
   let button = null;
   let stageLine = null;
   let tag = null;                       // the seconds beside the button
-  let againButtons = [];
   let mine = false;                     // this panel pressed the button and is waiting
 
   function refresh() {
     const { working, stage } = hooks.client.state;
-    for (const b of againButtons) b.disabled = working;
     if (button) button.disabled = working || button.dataset.blocked === "true";
     if (stageLine) stageLine.textContent = working && mine ? stageText(stage) || STRINGS.working : "";
     tag?.update();
@@ -116,47 +113,12 @@ export function createGeneratePanel(hooks) {
     hooks.redraw();
   }
 
-  function chapterList(project) {
-    const written = project.chapters ?? [];
-    const box = node("div", { className: "chapter-list" }, node("h4", { textContent: STRINGS.chapters }));
-    if (!written.length) { box.append(node("p", { className: "help", textContent: STRINGS.noChapters })); return box; }
-    const numberOf = (c) => Number((project.outline?.beats ?? []).find((b) => b.id === c.beat)?.chapter) || 0;
-    const ordered = [...written].sort((a, b) => numberOf(a) - numberOf(b));
-    ordered.forEach((c, at) => {
-      const parts = [node("summary", { textContent: fill(STRINGS.chapterTitle, { n: numberOf(c) }) })];
-      const paragraphs = (text) => text.split(/\n\s*\n/).map((paragraph) => node("p", { className: "chapter-text", textContent: paragraph.trim() }));
-      const review = chapterNoteFor(project, c.id);
-      if (review?.before !== undefined) {
-        parts.push(node("div", { className: "chapter-compare" },
-          node("div", {}, node("h5", { textContent: STRINGS.before }), ...paragraphs(review.before)),
-          node("div", {}, node("h5", { textContent: STRINGS.after }), ...paragraphs(c.text))));
-      } else {
-        parts.push(...paragraphs(c.text));
-      }
-      if (review) parts.push(...reviewNodes(review));
-      const gate = regenerateGate(hooks.schema, project, numberOf(c));
-      if (gate.ok) {
-        const redo = node("button", { type: "button", className: "validate again", textContent: fill(STRINGS.again, { n: numberOf(c) }) });
-        redo.addEventListener("click", () => again(project, numberOf(c), gate.later));
-        parts.push(node("div", { className: "plan-actions" }, redo));
-        againButtons.push(redo);
-      } else if (gate.reason === "outline_locked") {
-        parts.push(node("p", { className: "help", textContent: STRINGS.reasonsAgain.outline_locked }));
-      }
-      const made = node("details", { className: "chapter" }, ...parts);
-      remember(made, `chapter:${c.id}`, at === ordered.length - 1);
-      box.append(made);
-    });
-    return box;
-  }
-
   // Draws the panel into the planning column, under the plan panel.
   function draw(container) {
     const project = hooks.getProject();
     button = null;
     stageLine = null;
     tag = null;
-    againButtons = [];
     if (!project) return;
     const panel = node("section", { className: "generate-panel" }, node("h3", { textContent: STRINGS.title }));
     container.append(panel);
@@ -176,9 +138,8 @@ export function createGeneratePanel(hooks) {
       panel.append(node("div", { className: "plan-actions" }, button, tag.node, stageLine),
         node("p", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) }));
     }
-    panel.append(chapterList(project));
     refresh();
   }
 
-  return { draw, refresh, reset() { button = null; stageLine = null; tag = null; mine = false; } };
+  return { draw, refresh, again, reset() { button = null; stageLine = null; tag = null; mine = false; } };
 }

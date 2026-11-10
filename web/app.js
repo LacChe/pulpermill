@@ -223,6 +223,7 @@ function replaceProject(next, savedAs = next) {
   forgetFolds();
   planPanel?.reset();
   generatePanel?.reset();
+  chapterPanel?.reset();
   runAll?.reset();
   endPanel?.reset();
   importPanel?.reset();
@@ -654,10 +655,9 @@ function show() {
   const chapter = chapterState();
   if (chapter && view.chapter <= chapter.written) {
     chapterPanel?.draw(planningColumn, view.chapter);
-    // Once every chapter is written no tab is left to plan, so the steps that come after the last chapter (writing one again, ending
-    // the story, exporting) are drawn under the chapter itself.
+    // Once every chapter is written no tab is left to plan, so the steps that come after the last chapter (ending the story,
+    // exporting) are drawn under the chapter itself. Writing a chapter again is the chapter's own button.
     if (chapter.written >= chapter.count) {
-      generatePanel?.draw(planningColumn);
       endPanel?.draw(planningColumn);
       exportPanel?.draw(planningColumn);
     }
@@ -729,9 +729,9 @@ try {
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),
   });
-  chapterPanel = createChapterPanel({ schema, getProject: () => project });
+  chapterPanel = createChapterPanel({ schema, client, getProject: () => project, redo: (written, number, later) => generatePanel.again(written, number, later) });
   tabIcon = mountTabIcon(client, { onChange: drawTitle });
-  client.onChange(() => { drawConnection(); welcome?.draw(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); endPanel.refresh(); importPanel.refresh(); });
+  client.onChange(() => { drawConnection(); welcome?.draw(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); chapterPanel.refresh(); endPanel.refresh(); importPanel.refresh(); });
   drawConnection();
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.
   const recovered = readRecovery(store.get() ?? "", schema);

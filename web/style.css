@@ -344,15 +344,14 @@ main.locked input:disabled, main.locked select:disabled, main.locked textarea:di
 .story-card { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); align-items: baseline; }
 .story-card.is-open .story-card-name { font-weight: 600; }
 
-/* The generate panel and the written chapters */
+/* The generate panel; the redo control and the before and after text of a written chapter */
 .generate-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-l); padding: var(--sp-4) var(--sp-4); margin-bottom: var(--sp-4); display: grid; gap: var(--sp-3); }
 .generate-panel h3 { margin: 0; font-size: var(--fs-heading); }
-.generate-panel h4 { margin: 0 0 var(--sp-1); font-size: var(--fs-label); color: var(--muted); font-weight: 600; }
-.generate-panel h5 { margin: var(--sp-2) 0 var(--sp-1); font-size: var(--fs-label); color: var(--muted); font-weight: 600; }
+.chapter-view h5 { margin: var(--sp-2) 0 var(--sp-1); font-size: var(--fs-label); color: var(--muted); font-weight: 600; }
 .generate-panel p { margin: 0; }
-.chapter > summary { cursor: pointer; font-weight: 600; }
 .chapter-text { margin-top: var(--sp-2); white-space: pre-wrap; font-family: var(--font-prose); font-size: 1.0625rem; line-height: 1.7; max-width: 66ch; }
 .chapter-changes, .chapter-warnings { margin: var(--sp-1) 0 0; padding-left: 20px; }
+.chapter-view .plan-actions { margin-top: var(--sp-3); }
 .chapter-compare { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-top: var(--sp-2); }
 .item.frozen { opacity: 0.85; }
 .item.flagged { border-left: 3px solid var(--warn); }

@@ -125,7 +125,7 @@ test("a stage shows its name and step i of n when n is known, and an unknown nam
 // ---- The wording the panels read ---------------------------------------------------------------------
 
 // Every `STRINGS.key` (and STRINGS.group.key) a panel file reads is a key of its section in the bundle, so no panel shows a bare key.
-const PANELS = { "planpanel.js": "plan", "generatepanel.js": "generate", "runall.js": "runall", "endpanel.js": "end", "story.js": "story", "welcomestrip.js": "welcome" };
+const PANELS = { "planpanel.js": "plan", "generatepanel.js": "generate", "chapterpanel.js": "app", "runall.js": "runall", "endpanel.js": "end", "story.js": "story", "welcomestrip.js": "welcome" };
 for (const [file, name] of Object.entries(PANELS)) {
   test(`${file} reads only strings the ${name} section has`, () => {
     const code = readFileSync(new URL(file, WEB), "utf8").split("\n").map((line) => line.split("//")[0]).join("\n");
