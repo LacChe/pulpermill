@@ -579,11 +579,14 @@ function drawNav() {
   } else {
     items.push(Object.assign(document.createElement("span"), { textContent: LABELS.noCharacters }));
   }
-  items.push(button(LABELS.addCharacter, () => {
+  const addPerson = button(LABELS.addCharacter, () => {
     view.characterId = addInstance(project, card).id;
     show();
     touchState();
-  }, { className: "add" }));
+  }, { className: "add" });
+  addPerson.setAttribute("aria-label", LABELS.addCharacterHelp);   // the button only says "+ Add"; this says what it adds
+  addPerson.title = LABELS.addCharacterHelp;
+  items.push(addPerson);
   if (view.characterId) {
     const removePerson = button("×", async () => {
       if (!(await ask(LABELS.deleteCharacter))) return;

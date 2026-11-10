@@ -76,7 +76,8 @@
     "partOf": "{field}, {title}: {part}"
   },
   "labels": {
-    "addCharacter": "+ Add a character",
+    "addCharacter": "+ Add",
+    "addCharacterHelp": "Add a character",
     "deleteCharacter": "Delete this character?",
     "remove": "Delete this character",
     "unnamed": "Unnamed character",
