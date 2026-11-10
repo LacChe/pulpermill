@@ -48,16 +48,61 @@ function* strings(value, path) {
   else if (value && typeof value === "object") for (const [k, v] of Object.entries(value)) yield* strings(v, path ? `${path}.${k}` : k);
 }
 
-test("the bundle names its language and holds no empty text", () => {
-  assert.equal(typeof bundle._meta.language, "string");
-  assert.equal(typeof bundle._meta.name, "string");
-  for (const [path, text] of strings(bundle, "")) assert.ok(text.trim() !== "" || path === "common.sentence", `${path} is empty`);
+// The Chinese bundle sits beside the English one. Every test in this block runs against both.
+const zhBundle = JSON.parse(readFileSync(new URL("../../web/data/text.zh.json", import.meta.url), "utf8"));
+const BUNDLES = { en: bundle, zh: zhBundle };
+
+for (const [code, one] of Object.entries(BUNDLES)) {
+  test(`the ${code} bundle names its language and holds no empty text`, () => {
+    assert.equal(one._meta.language, code);
+    assert.equal(typeof one._meta.name, "string");
+    for (const [path, text] of strings(one, "")) assert.ok(text.trim() !== "" || path === "common.sentence", `${path} is empty`);
+  });
+
+  test(`every {mark} in the ${code} bundle is a plain word, so fill can find it`, () => {
+    for (const [path, text] of strings(one, "")) {
+      for (const [, inside] of text.matchAll(/\{([^}]*)\}/g)) assert.match(inside, /^\w+$/, `${path} has a mark that is not a word: {${inside}}`);
+      assert.equal((text.match(/\{/g) ?? []).length, (text.match(/\}/g) ?? []).length, `${path} has an unmatched brace`);
+    }
+  });
+}
+
+// ---- The Chinese bundle matches the English one ----------------------------------------------
+
+const marksOf = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+const englishStrings = new Map(strings(bundle, ""));
+const chineseStrings = new Map(strings(zhBundle, ""));
+
+test("the zh bundle has exactly the key tree of the English bundle", () => {
+  const missing = [...englishStrings.keys()].filter((path) => !chineseStrings.has(path));
+  const extra = [...chineseStrings.keys()].filter((path) => !englishStrings.has(path));
+  assert.deepEqual(missing, [], "keys the zh bundle lacks");
+  assert.deepEqual(extra, [], "keys only the zh bundle has");
 });
 
-test("every {mark} in the bundle is a plain word, so fill can find it", () => {
-  for (const [path, text] of strings(bundle, "")) {
-    for (const [, inside] of text.matchAll(/\{([^}]*)\}/g)) assert.match(inside, /^\w+$/, `${path} has a mark that is not a word: {${inside}}`);
-    assert.equal((text.match(/\{/g) ?? []).length, (text.match(/\}/g) ?? []).length, `${path} has an unmatched brace`);
+test("every string in the zh bundle carries the same {marks} as its English twin", () => {
+  const differ = [];
+  for (const [path, text] of englishStrings) {
+    const twin = chineseStrings.get(path);
+    if (twin !== undefined && marksOf(twin).join() !== marksOf(text).join()) differ.push(`${path}: {${marksOf(text)}} became {${marksOf(twin)}}`);
+  }
+  assert.deepEqual(differ, []);
+});
+
+test("the zh bundle says it is zh, which is the one code the page writes", () => {
+  assert.equal(zhBundle._meta.language, "zh");
+  assert.equal(zhBundle._meta.name, "中文");
+});
+
+test("the zh stop words are single Han characters, which is how the similarity measure strips them", () => {
+  const words = zhBundle.language.stopWords.split(" ");
+  assert.ok(words.length > 0);
+  for (const w of words) assert.match(w, /^[\u3400-\u4dbf\u4e00-\u9fff]$/, `"${w}" is not one Han character`);
+});
+
+test("the zh file-name pieces stay valid in a file name", () => {
+  for (const [path, text] of chineseStrings) {
+    if (path.startsWith("files.") && path !== "files.wrongVersion") assert.doesNotMatch(text, /[\\/:*?"<>|]/, `${path} has a character a file name cannot hold`);
   }
 });
 
