@@ -280,6 +280,9 @@ function toggleBlock(group, index, values, path, ctx, scope) {
 // One field of one object (a card, or one item in a list). `values` is that object; it is changed in place.
 function fieldBlock(field, values, path, ctx, scope) {
   const block = el("div", { class: isCodeFilled(field) ? "field field-system" : "field", "data-path": path });
+  // A plain value only the system sets (a chapter number, a fingerprint) has nothing for the writer to read or edit.
+  // The "may no longer fit" flag is a checkbox and stays: it shows when it is on.
+  if (isCodeFilled(field) && field.input !== "checkbox") { block.hidden = true; return block; }
   const parentGuidance = ctx.parentGuidance && ctx.card?.id !== "outline";
   const heading = el("div", { class: "field-heading" }, el("span", { class: "field-label", text: field.label }));
   if (showsOptionalTag(scope.owner, field)) heading.append(el("span", { class: "tag", text: STRINGS.optional }));
