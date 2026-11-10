@@ -148,10 +148,12 @@ test("every run-all message fills all its marks from the values the code gives",
   assert.doesNotMatch(fill(bundle.runall.failedWrite, { n: 3, why: "x" }), /\{/);
 });
 
-test("the welcome steps name the five cards and no longer mention anything removed", () => {
+test("the welcome guide names the two phases and no longer mentions anything removed", () => {
   const text = JSON.stringify(bundle.welcome);
-  for (const word of ["Entanglements", "Outline", "shift"]) assert.match(text, new RegExp(word, "i"));
+  for (const word of ["Design", "Write", "Entanglements"]) assert.match(text, new RegExp(word, "i"));
   assert.doesNotMatch(text, /pressure|knowledge|reveal|plant|offstage|goal/i);
+  assert.equal(bundle.page.cardsColumn, "Design");
+  assert.equal(bundle.page.planningColumn, "Write");
   assert.match(bundle.story.intro, /Style, Characters, World, Entanglements and Setup/);
 });
 

@@ -1,50 +1,42 @@
 // Where the writer is on the way from a blank page to a finished story, worked out from the project alone. No DOM, so Node can
 // test it. The welcome strip (welcomestrip.js) draws it; nothing here calls a model or changes the project.
 //
-// The way has five steps. The first three come one after another, and the first one not yet done is the "next" step. The
-// last two (ending the story, and downloading the work) are open once every chapter is written. A step is one of:
+// The way has two phases. Design is the cards. Starting the story moves the writer on to Write: planning and writing the chapters.
+// A phase is one of:
 //   done   it has been done
-//   next   it is the one to do now
+//   next   it is the one the writer is in
 //   later  it is not open yet
-import { startGate, storyStarted } from "./gate.js";
+import { startGate, storyStarted, STATIC_CARDS } from "./gate.js";
 import { chapterInfo } from "./plan.js";
 
-export const STEP_IDS = ["cards", "start", "chapters", "end", "download"];
+export const PHASE_IDS = ["design", "write"];
 
-// [{id, state, ...}] in the order above. Extra facts, only where they help the strip say something useful:
-//   cards     {stop}: the first card (or character) the story cannot start from yet: {card, id, name} or null
-//   chapters  {written, count}
-export function welcomeSteps(schema, project) {
+// {phases, cards, stop, canStart, started, written, count, allWritten, finished}
+//   phases      [{id, state}] in the order above
+//   cards       [{id, ready, stopId}] for the five cards the story starts from: ready means nothing on it stops the story yet;
+//               stopId is the character that stops it, for the Characters card
+//   stop        the first card (or character) the story cannot start from yet: {card, id, name}, or null
+//   canStart    every card is sound and the story has not started
+//   written, count   chapters written, and the chapter count the Setup card holds (0 before it is set)
+//   allWritten  every chapter is written
+//   finished    the story was finished (the after-story copy exists)
+export function welcomePhases(schema, project) {
   const gate = startGate(schema, project);
   const started = storyStarted(project);
   const info = chapterInfo(project);
-  const written = info.written;
-  const done = {
-    cards: started || gate.ok,
-    start: started,
-    chapters: info.done,
-    end: Boolean(project.after_story),
-    download: false,
-  };
-  const open = {
-    cards: true,
-    start: gate.ok || started,
-    chapters: started,
-    end: info.done,
-    download: written > 0,
-  };
-  const sequence = ["cards", "start", "chapters"];
-  const firstOpen = sequence.find((id) => !done[id]) ?? null;
-  const state = (id) => {
-    if (done[id]) return "done";
-    if (sequence.includes(id)) return id === firstOpen ? "next" : "later";
-    return open[id] ? "next" : "later";
-  };
-  const stop = gate.stops[0] ? { card: gate.stops[0].card, id: gate.stops[0].id, name: gate.stops[0].name } : null;
-  return STEP_IDS.map((id) => {
-    const step = { id, state: state(id) };
-    if (id === "cards") step.stop = stop;
-    if (id === "chapters") Object.assign(step, { written, count: info.count });
-    return step;
+  const phases = [
+    { id: "design", state: started ? "done" : "next" },
+    { id: "write", state: !started ? "later" : info.done ? "done" : "next" },
+  ];
+  const cards = STATIC_CARDS.map((id) => {
+    const stop = gate.stops.find((s) => s.card === id);
+    return { id, ready: !stop, stopId: stop?.id ?? null };
   });
+  const first = gate.stops[0];
+  return {
+    phases, cards,
+    stop: first ? { card: first.card, id: first.id, name: first.name } : null,
+    canStart: gate.ok && !started,
+    started, written: info.written, count: info.count, allWritten: info.done, finished: Boolean(project.after_story),
+  };
 }

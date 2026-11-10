@@ -95,11 +95,13 @@ function goToCard(cardId, instanceId) {
   show();
 }
 
-function goToPlanning() {
+function goToWrite() {
   view = { ...view, chapter: null };      // null: the chapter to plan or write now
   selectColumn("planning");
   show();
-  planningColumn.querySelector(".plan-panel, .generate-panel, .chapter-view")?.scrollIntoView({ block: "nearest" });
+  // Before the story starts the Start button is what to see; after, the panel of the chapter in hand.
+  const target = storyStarted(project) ? planningColumn.querySelector(".plan-panel, .generate-panel, .chapter-view") : storyNode;
+  target?.scrollIntoView({ block: "nearest" });
 }
 
 for (const switchButton of columnSwitches) switchButton.addEventListener("click", () => selectColumn(switchButton.dataset.column));
@@ -711,7 +713,7 @@ try {
   });
   welcome = createWelcomeStrip(welcomeNode, {
     schema, getProject: () => project,
-    goTo: goToCard, goToPlanning,
+    goTo: goToCard, goToWrite, usingSample: () => client.state.setting.kind === "mock",
     shownChanged: (shown) => guideButton.setAttribute("aria-expanded", String(shown)),
   });
   exportPanel = createExportPanel({ schema, getProject: () => project });
@@ -729,7 +731,7 @@ try {
   });
   chapterPanel = createChapterPanel({ schema, getProject: () => project });
   tabIcon = mountTabIcon(client, { onChange: drawTitle });
-  client.onChange(() => { drawConnection(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); endPanel.refresh(); importPanel.refresh(); });
+  client.onChange(() => { drawConnection(); welcome?.draw(); storyBar.draw(); planPanel.refresh(); generatePanel.refresh(); endPanel.refresh(); importPanel.refresh(); });
   drawConnection();
   // Read the earlier copy before anything can tidy it away: a blank, clean project clears the copy it finds.
   const recovered = readRecovery(store.get() ?? "", schema);

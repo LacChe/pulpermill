@@ -20,8 +20,8 @@
     "cardsLabel": "Cards",
     "peopleLabel": "Characters",
     "columnSwitcher": "Workspace section",
-    "cardsColumn": "Cards",
-    "planningColumn": "Planning and generation",
+    "cardsColumn": "Design",
+    "planningColumn": "Write",
     "chaptersLabel": "Chapters"
   },
   "common": {
@@ -424,47 +424,47 @@
   },
   "welcome": {
     "title": "Welcome to Pulpermill",
-    "intro": "You write the story. The model drafts the parts you ask it for, and you decide what stays.",
-    "way": "The way from a blank page to a finished story",
-    "steps": {
-      "cards": {
-        "title": "Fill in the cards",
-        "detail": "Style, Characters, World, Entanglements and Setup describe your story. Fill them in yourself, or write a note on a card (or paste an example chapter, which every card can use) and press Fill with the model to have it draft the fields. The model asks before it replaces your words, and its drafts stay marked until you edit them. Setup needs a protagonist and a chapter count. Validate shows what stops generation, and Import card brings in a saved Style, character or World."
-      },
-      "start": {
-        "title": "Start the story",
-        "detail": "When no card has a problem that stops generation, press Start the story. The model first checks that the protagonist suits the voice you chose. That is only its opinion, and you can go on anyway. Then Style, Characters, World, Entanglements and Setup lock, so every chapter is written from the same foundations. Only the Outline stays open. Until the first chapter is written you can unlock the cards and change them."
-      },
-      "chapters": {
-        "title": "Plan and write each chapter",
-        "detail": "This happens in the Planning and generation column, one chapter tab at a time. Choose who is in the chapter (the protagonist is always in, up to five people in all) and press Plan. The model picks a tie to put in the spotlight, and the rule or object that bears on it, and writes the chapter's beat, which appears on the Outline card, where you can change anything. Then press Write chapter. Or press Plan and write chapters to run every chapter that is left in turn; it stops at the first problem and keeps what is written. After each chapter you can read its shifts: how its ties changed. Plans and chapters can be undone, and a written chapter can be written again, which marks the later chapters stale."
-      },
-      "end": {
-        "title": "Finish the story (optional)",
-        "detail": "Once every chapter is written, Finish the story folds the shifts into a separate after-story copy of Style, Characters, World and Entanglements. It needs no model. You can edit the copy. Your cards stay as they are."
-      },
-      "download": {
-        "title": "Download your work",
-        "detail": "At the bottom of the Planning and generation column, Export gives you the story as a text file and Style, each character and World as card files you can bring into another project. Save at the top downloads the whole project, and you can do that at any time."
-      }
+    "intro": "Pulpermill turns a few cards that describe your story into chapters. First you design the cards, then it writes.",
+    "sample": "You are on the sample model, which writes placeholder text. Type your own model’s address at the top and press Check to get real writing.",
+    "design": {
+      "title": "Design your story",
+      "detail": "Describe your story on five cards. For each one, give the model your notes or an example chapter and let it draft the fields, then edit the values until they are right.",
+      "hinge": "When the cards are right, start the story. That locks them and moves you on to Write. You can unlock them until the first chapter is written."
     },
+    "write": {
+      "title": "Write your story",
+      "detail": "Choose how to write.",
+      "allLead": "All at once:",
+      "allText": "the model plans and writes every chapter in one run. It takes a long time. You can stop at any point and keep what is written, then revise a plan and run it again to carry on.",
+      "eachLead": "Chapter by chapter:",
+      "eachText": "plan the chapter, revise the plan, then write it.",
+      "fixed": "Chapters can’t be edited by hand. To change one, change its plan and write it again.",
+      "finished": "Every chapter is written. Export your story, or finish it to get an after-story copy of your cards."
+    },
+    "cards": {
+      "style": "How it is written: voice, tense and tone.",
+      "characters": "Who is in it.",
+      "world": "Where it happens, and its rules.",
+      "entanglements": "How people are tied to each other and to what they hold.",
+      "setup": "Who it follows, what disrupts them, and how many chapters."
+    },
+    "cardReady": "ready",
+    "cardFix": "needs work",
+    "startGo": "Next: Start the story",
+    "writeGo": "Next: Write",
     "cardsGo": "Next: {card}",
     "cardsGoPerson": "Next: {card}, {name}",
     "noCharacter": "Add a character",
-    "chaptersCount": "{written} of {count} written",
-    "chaptersOnly": "{written} written",
     "states": {
       "done": "done",
-      "next": "do this now",
+      "next": "you are here",
       "later": "later"
     },
-    "know": "Good to know",
-    "knowItems": [
-      "Nothing happens by itself. The model works only when you press a button, one job at a time, and Stop ends it. Planning and writing can take a while.",
-      "What the model writes is shown to you and can be changed. Its drafts are marked until you edit them, and Fill, Plan and Write can be undone.",
-      "Save downloads your project as a file. That file is your story and your cards, so keep it somewhere safe. This page keeps only a short-term safety copy in this browser.",
-      "Until you give a model connection, the page uses a built-in sample model that writes placeholder text, so you can try everything first. To use a real model, type its address (and its access token, if it asks for one) at the top and press Check."
-    ],
+    "compact": "Write: chapter {n} of {count} is next.",
+    "compactDone": "Write: every chapter is written.",
+    "showFull": "Show the whole guide",
+    "showLess": "Show less",
+    "save": "Save at the top downloads your project as a file. Keep it: this page only keeps a short-term safety copy in this browser.",
     "hide": "Hide this guide"
   },
   "patch": {

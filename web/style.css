@@ -413,13 +413,23 @@ main.locked input:disabled, main.locked select:disabled, main.locked textarea:di
 .welcome p { margin: 0; }
 .welcome-head { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); }
 .welcome-hide { color: var(--muted); padding: var(--sp-1) var(--sp-3); font-size: var(--fs-small); }
-.welcome-steps { margin: 0; padding-left: 22px; display: grid; gap: var(--sp-2); }
-.welcome-step-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); }
-.welcome-step-title { font-weight: 600; }
-.welcome-step-done .welcome-step-title, .welcome-step-later .welcome-step-title { font-weight: 400; color: var(--muted); }
-.welcome-step-next .help { margin: var(--sp-1) 0; }
-.welcome-know summary { cursor: pointer; font-weight: 600; }
-.welcome-know ul { margin: var(--sp-2) 0 0; padding-left: 20px; display: grid; gap: var(--sp-1); }
+.welcome-phases { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-3); }
+.welcome-phase-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); }
+.welcome-phase-title { font-weight: 600; font-size: var(--fs-heading); }
+.welcome-phase-later .welcome-phase-title, .welcome-phase-done .welcome-phase-title { font-weight: 400; color: var(--muted); }
+.welcome-phase-next, .welcome-phase-done:has(.welcome-way) { display: grid; gap: var(--sp-2); }
+.welcome-phase .help { margin: var(--sp-1) 0; }
+.welcome-way { margin: 0; }
+.welcome-cards { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--sp-2); }
+.welcome-card { width: 100%; height: 100%; text-align: left; display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-2) var(--sp-3); }
+.welcome-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); }
+.welcome-card-name { font-weight: 600; }
+.welcome-card-ready .tag { color: var(--good); border-color: var(--good); }
+.welcome-card-fix .tag { color: var(--warn); border-color: var(--warn); }
+.welcome-card .note { margin: 0; }
+.welcome-sample { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--warn); border-radius: var(--radius-m); color: var(--warn); }
+.welcome-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+.welcome-more { color: var(--muted); font-size: var(--fs-small); justify-self: start; }
 .welcome-next { color: var(--accent); border-color: var(--accent); }
 .welcome-done { color: var(--good); border-color: var(--good); }
 
