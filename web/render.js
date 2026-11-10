@@ -483,7 +483,7 @@ function fillPanel(card, values, ctx) {
   // Each text shows how much of its limit it uses; the button waits while either text is over (nothing is cut off while the writer types).
   let sync = () => {};
   const meters = [];
-  const area = (label, placeholder, rows, get, set, limit) => {
+  const area = (label, placeholder, rows, get, set, limit, used = () => true) => {
     const box = el("textarea", { class: "text-control", rows, placeholder, "aria-label": label });
     box.value = get() ?? "";
     const { words, chars } = limitInWords(limit);
@@ -492,13 +492,20 @@ function fillPanel(card, values, ctx) {
       const { pct, over } = fillSize(box.value, limit);
       size.textContent = fill(over ? STRINGS.fillSizeOver : STRINGS.fillSize, { pct: over ? pct - 100 : pct, words: words.toLocaleString("en"), chars: chars.toLocaleString("en") });
       size.classList.toggle("over", over);
-      return over;
+      return over && used();   // a text left unticked for this card is not sent, so its size cannot stop the fill
     };
     meters.push(update);
     update();
     box.addEventListener("input", () => { set(box.value); sync(); });
     box.setAttribute("aria-label", label);
     return el("div", { class: "fill-field" }, box, size);
+  };
+  // A tick for whether the model may use this text when it fills this card. Both are ticked unless the writer says otherwise.
+  const useBox = (which, label) => {
+    const box = el("input", { type: "checkbox" });
+    box.checked = ctx.fillUse.get(which);
+    box.addEventListener("change", () => { ctx.fillUse.set(which, box.checked); sync(); });
+    return el("label", { class: "fill-use" }, box, el("span", { text: label }));
   };
   // Each text sits in a fold of its own, open to start with.
   const section = (title, body) => {
@@ -521,8 +528,8 @@ function fillPanel(card, values, ctx) {
     el("summary", {}, el("span", { class: "group-label", text: STRINGS.fillTitle })),
     el("div", { class: "fill-body" },
       el("p", { class: "help", text: STRINGS.fillHelp }),
-      section(STRINGS.exampleLabel, area(STRINGS.exampleLabel, STRINGS.examplePlaceholder, 6, ctx.example.get, ctx.example.set, FILL_LIMITS.chapter)),
-      section(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, area(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, STRINGS.notePlaceholder, 4, ctx.notes.get, ctx.notes.set, FILL_LIMITS.note)),
+      section(STRINGS.exampleLabel, el("div", {}, useBox("example", STRINGS.useExample), area(STRINGS.exampleLabel, STRINGS.examplePlaceholder, 6, ctx.example.get, ctx.example.set, FILL_LIMITS.chapter, () => ctx.fillUse.get("example")))),
+      section(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, el("div", {}, useBox("note", card.many_per_project ? STRINGS.useNotePerson : STRINGS.useNote), area(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, STRINGS.notePlaceholder, 4, ctx.notes.get, ctx.notes.set, FILL_LIMITS.note, () => ctx.fillUse.get("note")))),
       el("div", { class: "fill-actions" }, button, timer.node),
       el("p", { class: "note", text: STRINGS.fillSends.replace("{where}", backend) })));
   remember(panel, where, filledFieldKeys(card, values).length === 0);
@@ -537,6 +544,7 @@ function fillPanel(card, values, ctx) {
 //               answer is kept in review.model and shown under the fields it is about.
 //   onFill      called when the writer presses the Fill button. The page does the rest (see app.js).
 //   notes, example  {get(), set(text)}: the writer's note for this card, and the example chapter shared by all.
+//   fillUse     {get(which), set(which, on)}: whether the model may use the example chapter ("example") and this card's note ("note") to fill this card.
 //   drafts      Set of field keys the model just wrote; each is tagged until edited.
 //   backendWhere  words for where a model call goes, shown under the Fill button.
 //   reviewChanged  called whenever what the card shows may have changed (an edit, leaving a field, Validate), so

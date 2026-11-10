@@ -473,3 +473,5 @@ button:disabled { opacity: 0.5; }
 
 /* Both columns share one content edge: everything in the planning column lines up with its tabs, as the cards column does. */
 .planning-column > * { max-width: var(--content-width); margin-left: auto; margin-right: auto; }
+
+.fill-use { display: flex; align-items: center; gap: var(--sp-2); margin: var(--sp-1) 0 var(--sp-2); color: var(--muted); }

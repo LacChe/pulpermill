@@ -635,6 +635,35 @@ test("a note for a character only counts for that character", () => {
   assert.equal(fillRequest(schema, project, "characters", a.id).request.instance, a.id);
 });
 
+test("a text the writer unticks for a card is left out of that card's fill, and only that card's", async () => {
+  const { fillUse, setFillUse } = await import("../../web/logic.js");
+  const project = projectWith({ example_chapter: "A chapter.", card_notes: [{ id: "n1", card: "world", text: "Salt city." }] });
+  assert.deepEqual(fillUse(project, "world"), { example: true, note: true });
+  setFillUse(project, "world", null, "example", false);
+  const request = fillRequest(schema, project, "world").request;
+  assert.deepEqual([request.example_chapter, request.note], [null, "Salt city."]);
+  assert.equal(fillRequest(schema, project, "style").request.example_chapter, "A chapter.");   // another card still uses it
+  setFillUse(project, "world", null, "note", false);
+  assert.equal(fillRequest(schema, project, "world").reason, "no_source");
+  setFillUse(project, "world", null, "example", true);
+  setFillUse(project, "world", null, "note", true);
+  assert.equal("fill_sources" in project, false);   // everything ticked again leaves nothing behind
+});
+
+test("each character has its own ticks, and they go with the character", async () => {
+  const { fillUse, setFillUse } = await import("../../web/logic.js");
+  const project = projectWith({ example_chapter: "A chapter." });
+  const a = addInstance(project, characters);
+  const b = addInstance(project, characters);
+  setFillUse(project, "characters", a.id, "example", false);
+  assert.equal(fillUse(project, "characters", a.id).example, false);
+  assert.equal(fillUse(project, "characters", b.id).example, true);
+  assert.equal(fillRequest(schema, project, "characters", a.id).reason, "no_source");
+  assert.equal(fillRequest(schema, project, "characters", b.id).request.example_chapter, "A chapter.");
+  removeInstance(project, characters, a.id);
+  assert.equal("fill_sources" in project, false);
+});
+
 test("a request carries a copy of the card's values and only the cards it reads", () => {
   const project = projectWith({ example_chapter: "x" });
   project.setup.goal = "Find the ledger";

@@ -177,6 +177,10 @@ export function removeInstance(project, card, id) {
     project.card_notes = project.card_notes.filter((n) => !(n.card === "characters" && n.character === id));
     if (!project.card_notes.length) delete project.card_notes;
   }
+  if (card.id === "characters" && project.fill_sources) {
+    project.fill_sources = project.fill_sources.filter((s) => !(s.card === "characters" && s.character === id));
+    if (!project.fill_sources.length) delete project.fill_sources;
+  }
   return removeItem(project[card.id] ?? [], id);
 }
 
@@ -201,6 +205,27 @@ export function setNote(project, cardId, instanceId, text) {
   }
   if (kept.length) project.card_notes = kept;
   else delete project.card_notes;
+}
+
+// Whether the model may use the example chapter and this card's note when it fills the card (for Characters, this
+// character). Both are on unless the writer switched one off, so only a card with something off has an entry.
+export function fillUse(project, cardId, instanceId = null) {
+  const entry = (project.fill_sources ?? []).find((s) => s.card === cardId && (cardId !== "characters" || s.character === instanceId));
+  return { example: entry?.example !== false, note: entry?.note !== false };
+}
+
+export function setFillUse(project, cardId, instanceId, which, on) {
+  const same = (s) => s.card === cardId && (cardId !== "characters" || s.character === instanceId);
+  const sources = project.fill_sources ?? [];
+  const kept = sources.filter((s) => !same(s));
+  const use = { ...fillUse(project, cardId, instanceId), [which]: on };
+  if (!use.example || !use.note) {
+    const existing = sources.find(same);
+    const entry = existing ?? { id: newId(sources.map((s) => s.id)), card: cardId, ...(cardId === "characters" ? { character: instanceId } : {}) };
+    kept.push({ ...entry, example: use.example, note: use.note });
+  }
+  if (kept.length) project.fill_sources = kept;
+  else delete project.fill_sources;
 }
 
 export function setExample(project, text) {
@@ -821,7 +846,8 @@ export function readCancelReply(reply) {
 }
 
 // Fill: {ok: true, request} or {ok: false, reason}. The model may only fill a card when there is something to fill it
-// from: the example chapter, or a note for that card (for a character, a note about that character).
+// from: the example chapter, or a note for that card (for a character, a note about that character), and only a text
+// the writer left ticked for that card counts.
 export function fillRequest(schema, project, cardId, instanceId = null) {
   const card = schema.cards[cardId];
   if (!card) return { ok: false, reason: "unknown_card" };
@@ -834,8 +860,9 @@ export function fillRequest(schema, project, cardId, instanceId = null) {
     values = project[cardId] ?? blankCard(card);
   }
   const note = (project.card_notes ?? []).find((n) => n.card === cardId && (!card.many_per_project || n.character === instanceId));
-  const noteText = isFilled(note?.text?.trim()) ? note.text : null;
-  const example = isFilled(project.example_chapter?.trim()) ? project.example_chapter : null;
+  const use = fillUse(project, cardId, instanceId);
+  const noteText = use.note && isFilled(note?.text?.trim()) ? note.text : null;
+  const example = use.example && isFilled(project.example_chapter?.trim()) ? project.example_chapter : null;
   if (!noteText && !example) return { ok: false, reason: "no_source" };
   if (estimateTokens(noteText) > FILL_LIMITS.note || estimateTokens(example) > FILL_LIMITS.chapter) return { ok: false, reason: "too_long" };
   return {

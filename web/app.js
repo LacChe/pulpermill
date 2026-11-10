@@ -5,7 +5,7 @@ import {
   addInstance, ensureCard, findInstance, instanceName, newProject, removeInstance,
   hasUnsavedChanges, projectSnapshot, projectFileName, readProject,
   RECOVERY_KEY, recoveryRecord, readRecovery, worthRecovering, projectStatus,
-  noteFor, setNote, setExample, setCardValues,
+  noteFor, setNote, setExample, fillUse, setFillUse, setCardValues,
 } from "./logic.js";
 import { renderCard, errorText, makeReadOnly, restoreRadioSelections, freezeItems, flagItems, STRINGS as CARD_STRINGS } from "./render.js";
 import { cardLocked, lockedByStory, lockedByWriter, setWriterLock, storyStarted } from "./gate.js";
@@ -627,6 +627,7 @@ function show() {
       onFill: () => runFill(card, values),
       notes: { get: () => noteFor(project, card.id, instanceId), set: (text) => { setNote(project, card.id, instanceId, text); touchState(); } },
       example: { get: () => project.example_chapter ?? "", set: (text) => { setExample(project, text); touchState(); } },
+      fillUse: { get: (which) => fillUse(project, card.id, instanceId)[which], set: (which, on) => { setFillUse(project, card.id, instanceId, which, on); touchState(); } },
       backendWhere,
       changed: touchState,
       reviewChanged: updateMarks,

@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from helpers import *
 from typing import get_args
 from pulpermill.schema.project import (
+    FillSource,
     Project, AfterStory, Chapter, CardNote, Lock, UserCard, CARD_FIELDS, PROJECT_RULES, SCHEMA_VERSION,
     ChangeLine, ChapterNote, EndNote,
 )
@@ -12,7 +13,7 @@ from pulpermill.schema.common import MAX_ITEMS
 
 PROJECT_CHECKS = {"chapter_sequence", "chapter_markers", "links_resolve",
                   "after_story_ready", "ids_match", "required_if", "unique_across_items", "lock_target_exists"}
-PROJECT_UNCAPPED = {"characters", "chapters", "after_story.characters", "card_notes", "chapter_notes", "locks"}   # any number of characters, notes and locks
+PROJECT_UNCAPPED = {"characters", "chapters", "after_story.characters", "card_notes", "fill_sources", "chapter_notes", "locks"}   # any number of characters, notes and locks
 
 
 def sample(model):
@@ -44,7 +45,7 @@ def test_every_registered_card_has_a_home_in_the_project():
         model = item_model(fields[name]) if is_list_field(fields[name]) else fields[name].annotation
         assert model is CARDS[cid][0], cid
     extra = set(fields) - set(CARD_FIELDS.values())
-    assert extra == {"title", "schema_version", "output_language", "example_chapter", "card_notes", "chapters", "after_story", "locks",
+    assert extra == {"title", "schema_version", "output_language", "example_chapter", "card_notes", "fill_sources", "chapters", "after_story", "locks",
                      "chapter_notes", "end_note"}
 
 
@@ -128,6 +129,16 @@ def test_notes_and_locks_round_trip_with_ids_intact():
     p.locks = [Lock(card="style"), Lock(card="characters", owner=char_id, field="wants", item="w1", part="text")]
     back = Project.model_validate_json(p.model_dump_json())
     assert back == p and back.card_notes[1].character == char_id and back.locks[1].part == "text"
+
+
+def test_fill_choices_are_optional_default_on_and_round_trip():
+    p = sample(Project)
+    assert p.fill_sources == [] and not fields_of(Project)["fill_sources"].is_required()
+    char_id = p.characters[0].id
+    assert FillSource(card="style").example is True and FillSource(card="style").note is True
+    p.fill_sources = [FillSource(card="world", example=False), FillSource(card="characters", character=char_id, note=False)]
+    back = Project.model_validate_json(p.model_dump_json())
+    assert back == p and back.fill_sources[1].character == char_id and back.fill_sources[0].note is True
 
 
 def test_notes_and_locks_point_only_at_cards_the_user_fills_in():

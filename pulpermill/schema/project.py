@@ -41,6 +41,16 @@ class CardNote(Item):
     text: str = spec("textarea", None, "note")
 
 
+class FillSource(Item):
+    """Whether the model may fill one card from the example chapter and from that card's note. Both are on unless the
+    user switched one off, so only a card with something switched off has an entry here (a character has its own).
+    Characters is many per project, so an entry for it names the character it is about."""
+    card: UserCard = spec("select", None, "note")
+    character: str | None = spec("select", None, "note", required=False, ref=["characters"])   # only when card is "characters"
+    example: bool = spec("checkbox", None, "note", required=False, default=True)
+    note: bool = spec("checkbox", None, "note", required=False, default=True)
+
+
 class Lock(Item):
     """A lock the user puts on something editable: while it exists no one can change the value, the human included
     (removing the lock is how it is edited again).
@@ -114,6 +124,7 @@ class Project(Item):
     # when there is an example chapter or a note for that card.
     example_chapter: str | None = spec("textarea", "generation", "note", required=False)
     card_notes: list[CardNote] = spec(None, "generation", "pairs", required=False, default=[], repeat=True, uncapped=True)
+    fill_sources: list[FillSource] = spec(None, "generation", "pairs", required=False, default=[], repeat=True, uncapped=True)
 
     # The cards, as they stand now
     style: Style = spec(None, "cards", "card", card_of="style")
@@ -153,7 +164,7 @@ PROJECT_RULES = [
          check="chapter_markers"),
     Rule(id="links_resolve", severity="block",
          fields=["characters", "world", "setup", "entanglements", "outline", "summary_events", "shifts",
-                 "chapters", "card_notes", "chapter_notes", "locks"],
+                 "chapters", "card_notes", "fill_sources", "chapter_notes", "locks"],
          when="a link in any card, note or lock points at something that does not exist in this project (for example a protagonist who is not among the characters)",
          check="links_resolve"),
     Rule(id="after_story_ready", severity="block", fields=["after_story", "chapters", "setup"],
@@ -168,6 +179,12 @@ PROJECT_RULES = [
          check="required_if", params={"field": "character", "when": {"card": "characters"}}),
     Rule(id="note_unique_per_target", severity="block", fields=["card_notes"],
          when="two notes are for the same card (or, for Characters, the same character)",
+         check="unique_across_items", params={"fields": ["card", "character"]}),
+    Rule(id="fill_source_character_for_characters", severity="block", fields=["fill_sources"],
+         when="a fill choice for the Characters card does not say which character it is about",
+         check="required_if", params={"field": "character", "when": {"card": "characters"}}),
+    Rule(id="fill_source_unique_per_target", severity="block", fields=["fill_sources"],
+         when="two fill choices are for the same card (or, for Characters, the same character)",
          check="unique_across_items", params={"fields": ["card", "character"]}),
     Rule(id="chapter_note_unique", severity="block", fields=["chapter_notes"],
          when="two chapter notes are for the same chapter",
