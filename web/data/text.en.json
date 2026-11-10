@@ -166,6 +166,7 @@
     "failedMark": "! ",
     "undoBlocked": "Undo would throw away words you changed since the fill, so nothing was put back.",
     "undonePartly": "Put back what the fill changed, except {fields}, which you edited since.",
+    "collapseCard": "Fold everything on this card",
     "lockCard": "🔒 Lock this card",
     "unlockCard": "Unlock this card",
     "lockCardHelp": "Lock this card so nothing in it can be changed or erased by accident. You can unlock it at any time.",

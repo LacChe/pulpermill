@@ -479,6 +479,23 @@ function drawLockButton(card) {
   main.querySelector(".card-title-row")?.prepend(bar);
 }
 
+// Next to the lock button: folds every list item and group on the card being shown (for a many-per-project card, the
+// character being shown). It only changes the view, so it is offered on a locked card too. The folds are remembered in
+// folds.js, so the card stays folded when it is drawn again, and each character keeps its own.
+function drawCollapseButton() {
+  const row = main.querySelector(".card-title-row");
+  if (!row) return;
+  const toggle = button("−", () => {
+    for (const fold of main.querySelectorAll('.fold[aria-expanded="true"]')) fold.click();
+    for (const group of main.querySelectorAll("details.group[open]")) group.open = false;
+  }, { className: "collapse-all" });
+  toggle.setAttribute("aria-label", STRINGS.collapseCard);
+  toggle.title = STRINGS.collapseCard;
+  let bar = row.querySelector(".lock-bar");
+  if (!bar) { bar = Object.assign(document.createElement("div"), { className: "lock-bar" }); row.prepend(bar); }
+  bar.append(toggle);
+}
+
 // ---- Navigation ---------------------------------------------------------------
 const countWords = (one, many, n) => (n === 1 ? one : many.replace("{n}", String(n)));
 
@@ -616,6 +633,7 @@ function show() {
     });
     if (cardLocked(project, card.id)) makeReadOnly(main, lockedByStory(project, card.id) ? STRINGS.lockedBanner : STRINGS.writerLockedBanner);
     drawLockButton(card);
+    drawCollapseButton();
   } else main.replaceChildren();
   if (card.id === "outline" && values) {
     flagItems(main, staleBeatIds(project), STRINGS.staleBeat, STRINGS.staleBadge);

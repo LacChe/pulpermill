@@ -426,8 +426,8 @@ dialog.ask::backdrop { background: rgba(0, 0, 0, 0.6); }
 .ask-words { margin: 0 0 var(--sp-4); white-space: pre-line; overflow-wrap: anywhere; }
 .ask-buttons { display: flex; justify-content: flex-end; gap: var(--sp-3); }
 
-.lock-bar { display: flex; flex: 0 0 auto; }
-.lock-toggle { font-size: 1rem; line-height: 1; padding: var(--sp-1); color: var(--muted); }
+.lock-bar { display: flex; flex: 0 0 auto; gap: var(--sp-1); }
+.lock-toggle, .collapse-all { font-size: 1rem; line-height: 1; padding: var(--sp-1); color: var(--muted); }
 .lock-toggle[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
 
 .fold { border: 0; background: none; color: var(--muted); padding: 0 var(--sp-2) 0 0; cursor: pointer; }
