@@ -354,7 +354,6 @@
   },
   "end": {
     "title": "End of the story",
-    "notDone": "Available once every chapter is written.",
     "help": "Finishing the story needs no model. The page folds every shift into the cards and keeps the result as a separate after-story copy of Style, Characters, World and Entanglements. Your own cards stay as they are.",
     "button": "Finish the story",
     "buttonAgain": "Finish it again",

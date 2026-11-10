@@ -119,10 +119,11 @@ export function createEndPanel(hooks) {
     const project = hooks.getProject();
     button = null;
     if (!project) return;
+    // The section is not there at all until the last chapter is written; there is nothing to do with it before then.
+    const gate = endGate(project);
+    if (!gate.ok) return;
     const panel = node("section", { className: "end-panel" }, node("h3", { textContent: STRINGS.title }));
     container.append(panel);
-    const gate = endGate(project);
-    if (!gate.ok) { panel.append(node("p", { className: "help", textContent: STRINGS.notDone })); return; }
     panel.append(node("p", { className: "help", textContent: STRINGS.help }));
     button = node("button", { type: "button", className: "validate", textContent: gate.replaces ? STRINGS.buttonAgain : STRINGS.button });
     button.addEventListener("click", () => press(project, gate.replaces));
