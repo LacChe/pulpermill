@@ -1313,9 +1313,25 @@ function stopWords() {
   return stopSet.set;
 }
 
+const HAN = /[\u3400-\u4dbf\u4e00-\u9fff]/;
+
+// Chinese has no spaces, so a Han run is compared as character bigrams after the stop characters are removed.
 function words(text) {
   const stop = stopWords();
-  return new Set((String(text).toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length > 2 && !stop.has(w)));
+  let lower = String(text).toLowerCase();
+  if (!HAN.test(lower)) {
+    return new Set((lower.match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length > 2 && !stop.has(w)));
+  }
+  for (const w of stop) if (w && HAN.test(w)) lower = lower.split(w).join("");
+  const set = new Set();
+  for (const piece of lower.match(/[\u3400-\u4dbf\u4e00-\u9fff]+|[^\u3400-\u4dbf\u4e00-\u9fff]+/g) ?? []) {
+    if (HAN.test(piece)) {
+      for (let i = 0; i + 1 < piece.length; i++) set.add(piece.slice(i, i + 2));
+    } else {
+      for (const w of piece.match(/[\p{L}\p{N}]+/gu) ?? []) if (w.length > 2 && !stop.has(w)) set.add(w);
+    }
+  }
+  return set;
 }
 
 export function similarity(a, b) {

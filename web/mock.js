@@ -15,6 +15,7 @@
 // model's warning appear on demand.
 
 import { isVisible, failure } from "./logic.js";
+import { msg } from "./text.js";
 
 export const MOCK_FLAG = "FLAG ME";
 
@@ -52,7 +53,7 @@ function sampleValue(field, related, nth, taken = new Set()) {
   }
   if (field.input === "number") return field.key === "chapter_count" ? 8 : 34;
   if (field.input === "checkbox") return undefined;
-  return `Sample ${(field.label ?? field.key).toLowerCase()}.`;
+  return msg("mock.sample", { label: (field.label ?? field.key).toLowerCase() });
 }
 
 // A set of fields filled in order. A field that is hidden by an earlier answer is skipped, and only the first half
@@ -103,21 +104,19 @@ export function createMock(schema, options = {}) {
     const card = schema.cards[request.card];
     if (!card) return failure("bad_request", `No card called ${request.card}.`);
     const values = sampleFields(card, card.fields, request.related ?? {}, nth);
-    if (request.card === "characters" && request.instance) values.name = `Mock character ${nth + 1}`;
+    if (request.card === "characters" && request.instance) values.name = msg("mock.character", { n: nth + 1 });
     return { ok: true, values };
   };
 
   // ---- The story calls: plain samples that are valid for the shapes ----
-  const AIMS = ["find who took the ledger", "get past the harbour clerk", "keep a promise to an old friend", "reach the island before the tide", "burn the evidence", "ask forgiveness",
-    "cross the border unseen", "win back the shop", "learn what the letter says", "stand up to the board"];
-
   const plan = (request) => {
+    const aims = msg("mock.aims").split("|");
     const place = (request.world?.places ?? [])[0]?.name;
     const tie = (request.ties ?? []).find((t) => t.id === request.spotlight);
     const beat = {
-      when_time: `Mock time ${request.chapter}`,
-      aim: `Mock aim: ${AIMS[(request.chapter - 1) % AIMS.length]}`,
-      plan: `Mock plan for chapter ${request.chapter}${tie ? `, about ${tie.bond}` : ""}.`,
+      when_time: msg("mock.time", { n: request.chapter }),
+      aim: msg("mock.aim", { aim: aims[(request.chapter - 1) % aims.length] }),
+      plan: tie ? msg("mock.plan_about", { n: request.chapter, bond: tie.bond }) : msg("mock.plan", { n: request.chapter }),
     };
     if (place) beat.where = place;
     if (!request.choose) return { ok: true, beat };
@@ -134,9 +133,9 @@ export function createMock(schema, options = {}) {
     const tie = (request.ties ?? []).find((t) => t.id === beat.spotlight) ?? (request.ties ?? [])[0];
     return {
       ok: true,
-      chapter_text: `Mock chapter ${request.chapter} of ${request.chapter_count}. ${beat.aim ?? ""}`.trim(),
-      events: { happened: `Mock events of chapter ${request.chapter}.`, changed: "Mock change." },
-      shifts: tie ? [{ card: "entanglements", target: null, patch: { ties: [{ op: "replace", id: tie.id, values: { edge: `Mock edge after chapter ${request.chapter}` } }] } }] : [],
+      chapter_text: msg("mock.chapter", { n: request.chapter, total: request.chapter_count, aim: beat.aim ?? "" }).trim(),
+      events: { happened: msg("mock.events_happened", { n: request.chapter }), changed: msg("mock.events_changed") },
+      shifts: tie ? [{ card: "entanglements", target: null, patch: { ties: [{ op: "replace", id: tie.id, values: { edge: msg("mock.edge", { n: request.chapter }) } }] } }] : [],
     };
   };
 
@@ -162,7 +161,7 @@ export function createMock(schema, options = {}) {
   const styleFit = (request) => {
     const flagged = JSON.stringify(request.protagonist ?? "").includes(MOCK_FLAG);
     return flagged
-      ? { ok: true, fits: false, message: "This is a mock answer: the protagonist's personality is flagged, so the chosen voice may not suit them." }
+      ? { ok: true, fits: false, message: msg("mock.style_fit") }
       : { ok: true, fits: true, message: "" };
   };
 

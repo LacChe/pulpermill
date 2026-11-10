@@ -11,6 +11,8 @@ import {
 import { isSupported } from "../../web/render.js";
 import { story, opening } from "./fixture.mjs";
 import { validate, ruleKind, modelRules, problemsFor, CHECKS, PENDING_CHECKS, similarity, SIMILARITY_LIMIT } from "../../web/logic.js";
+import { setText } from "../../web/text.js";
+import { bundle as enBundle } from "./text-setup.mjs";
 import { filledPaths, problemPath, problemTriggers, shownProblems, problemCounts } from "../../web/logic.js";
 
 const schema = JSON.parse(readFileSync(new URL("../../web/data/schema.en.json", import.meta.url), "utf8"));
@@ -515,6 +517,27 @@ test("the outline has no reveal, plant or payoff fields or rules any more", () =
   const keys = beatsField.item_fields.map((f) => f.key);
   for (const gone of ["sibling", "payoff", "planted", "ends_on", "goal_now", "collision_goal", "when_gap", "offstage_did", "offstage_reach"]) assert.ok(!keys.includes(gone), gone);
   assert.ok(!outline.rules.some((r) => /reveal|payoff|plant|offstage|when_gap/.test(r.id)));
+});
+
+test("similarity works for Chinese aims", () => {
+  const stops = "的 了 是 在 和 与 也 都 就 而 及 着 过 并 或 把 被";
+  setText({ ...enBundle, language: { ...enBundle.language, stopWords: stops } });
+  try {
+    assert.equal(similarity("伊内斯发现了房东的秘密", "伊内斯发现房东的秘密！") >= SIMILARITY_LIMIT, true);
+    assert.equal(similarity("伊内斯发现了房东的秘密", "公会烧毁了东边的市场") < SIMILARITY_LIMIT, true);
+    assert.equal(similarity("", "伊内斯发现房东的秘密"), 0);
+    assert.equal(similarity("的了是", "伊内斯发现房东的秘密"), 0);
+    // A mixed line keeps its English words and its Han bigrams.
+    assert.equal(similarity("Ines 发现房东的秘密 landlord", "Ines 发现房东的秘密 landlord again") >= SIMILARITY_LIMIT, true);
+  } finally {
+    setText(enBundle);
+  }
+});
+
+test("names: a Chinese character name is found inside Chinese text", () => {
+  const project = { characters: [{ id: "c1", name: "伊内斯" }], world: { places: [], objects: [], powers: [] } };
+  const world = { era_and_technology: "", everyday_life: "伊内斯从不去那里。", history: "", places: [], objects: [], powers: [], rules: [], terms: [] };
+  assert.deepEqual(run("world", "world_names_people", world, project), [["everyday_life", null, null]]);
 });
 
 test("an aim too close to an earlier aim or changed line is flagged", () => {

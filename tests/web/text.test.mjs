@@ -64,7 +64,7 @@ test("every {mark} in the bundle is a plain word, so fill can find it", () => {
 // ---- The bundle and the code agree -------------------------------------------------------
 
 const WEB = new URL("../../web/", import.meta.url);
-const sourceFiles = readdirSync(WEB).filter((f) => f.endsWith(".js") && !["text.js", "mock.js"].includes(f));
+const sourceFiles = readdirSync(WEB).filter((f) => f.endsWith(".js") && !["text.js"].includes(f));
 const read = (name) => readFileSync(new URL(name, WEB), "utf8");
 const sources = Object.fromEntries(sourceFiles.map((f) => [f, read(f)]));
 const html = read("index.html");
@@ -157,6 +157,7 @@ const DIAGNOSTICS = new Set([
   "The chapter's shifts are missing.", "A shift does not say who moved.", "A shift's ${key} is not text.", "The proposed changes are missing.",
   "A proposed change does not say what to change.", "The shown entanglements are not a list of ids.", "Rules this page cannot run yet:",
   "Two files are called ${file.name}", "A file name is too long for a zip", "The files are too big for a zip",
+  "The request was stopped.", "Failed to fetch", "No card called ${request.card}.", "This is a mock ${scripted} answer.", "The mock does not know the call ${request?.call}.",
 ]);
 
 test("no sentence is worded in the code except the diagnostics nobody is shown", () => {

@@ -520,5 +520,19 @@
       "judge": "Checking: the card's rules",
       "finish": "Wrapping up: how people changed"
     }
+  },
+  "mock": {
+    "sample": "Sample {label}.",
+    "character": "Mock character {n}",
+    "time": "Mock time {n}",
+    "aims": "find who took the ledger|get past the harbour clerk|keep a promise to an old friend|reach the island before the tide|burn the evidence|ask forgiveness|cross the border unseen|win back the shop|learn what the letter says|stand up to the board",
+    "aim": "Mock aim: {aim}",
+    "plan": "Mock plan for chapter {n}.",
+    "plan_about": "Mock plan for chapter {n}, about {bond}.",
+    "chapter": "Mock chapter {n} of {total}. {aim}",
+    "events_happened": "Mock events of chapter {n}.",
+    "events_changed": "Mock change.",
+    "edge": "Mock edge after chapter {n}",
+    "style_fit": "This is a mock answer: the protagonist's personality is flagged, so the chosen voice may not suit them."
   }
 }

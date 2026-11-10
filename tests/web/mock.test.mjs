@@ -7,6 +7,8 @@ import {
   readJudgeReply, styleFitRequest, readStyleFitReply, readStatus, modelRules, validate, FILLABLE,
 } from "../../web/logic.js";
 import { createMock, MOCK_FLAG } from "../../web/mock.js";
+import { setText } from "../../web/text.js";
+import { bundle } from "./text-setup.mjs";
 
 const schema = JSON.parse(readFileSync(new URL("../../web/data/schema.en.json", import.meta.url), "utf8"));
 const characters = schema.cards.characters;
@@ -232,4 +234,18 @@ test("a busy mock names the stage it is in as {name, index, of}, and says nothin
   await running;
   assert.ok(stages.has("write") && stages.has("events"), [...stages].join());
   assert.deepEqual(readStatus(await mock.send({ call: "status" })), { ok: true, state: "idle" });
+});
+
+test("the sample chapter, events and aims come from the text bundle, so they follow the page language", async () => {
+  const send = () => quick().send({ call: "generate", chapter: 3, chapter_count: 8, cast: [], beat: { aim: "x" } });
+  assert.match((await send()).chapter_text, /^Mock chapter 3 of 8\./);
+  try {
+    setText({ ...bundle, mock: { ...bundle.mock, chapter: "示例第{n}章，共{total}章。{aim}", events_happened: "示例：第{n}章" } });
+    const reply = await send();
+    assert.equal(reply.chapter_text, "示例第3章，共8章。x");
+    assert.equal(reply.events.happened, "示例：第3章");
+  } finally {
+    setText(bundle);
+  }
+  assert.match((await send()).chapter_text, /^Mock chapter 3 of 8\./);
 });
