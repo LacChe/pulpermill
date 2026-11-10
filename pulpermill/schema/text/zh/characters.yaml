@@ -1,0 +1,127 @@
+# 简体中文文本。结构与 text/en/ 完全相同：键、{标记}不变；expand、lead_in、lead_in_one、item_template、item_join、judge_prompt 保持英文原文。术语见 docs/zh-glossary.md。
+card: {label: 人物, summary: 一个独立的个体：这个人是谁、想要什么、怎样自相矛盾、事情出错时怎么表现。它不提到其他人、地点或物件，所以可以在不同项目之间搬用。}
+groups:
+  identity: {label: 身份, help: 故事绝不能改动的事实，外加一段简短的速写。}
+  drive: {label: 驱动力, help: 他们想要什么，回避什么。}
+  inner_conflict: {label: 内心冲突, help: 什么在妨碍他们自己，以及他们绝不会背叛什么。}
+  texture: {label: 特质, help: 本事、软肋和说话方式。}
+  past: {label: 过往, help: 成长背景。}
+fields:
+  name: {label: 名字, help: 叙述里怎么称呼这个人。, placeholder: 例如：林夕, why: 每一章都用这个名字称呼他们，所以选一个你不想改的名字。, lead_in: 'The character''s name is {value}.'}
+  age: {label: 年龄, help: 写一个具体数字，这样故事不会前后飘移。, placeholder: 例如：34, why: 固定的数字能防止故事飘移，比如三十岁的人慢慢变得“年轻”。, lead_in: '{name} is {value} years old.'}
+  sex:
+    label: 性别
+    help: 固定叙述中的代词，避免前后矛盾。
+    why: 决定每一章里使用的代词。
+    options:
+      female: {label: 女, expand: '{name} is a woman, referred to as she and her.', description: 叙述中称“她”}
+      male: {label: 男, expand: '{name} is a man, referred to as he and him.', description: 叙述中称“他”}
+      other: {label: 其他, expand: '{name} is referred to as they and them.', description: 叙述中称“TA”}
+  appearance:
+    label: 外貌
+    help: 具体、可核对的细节：体型、头发、面容、特征标记、常穿的衣服。写事实，不写印象。
+    placeholder: 例如：个子高而瘦，灰白的短发，左手腕有一道烧伤的疤，总穿一件帆布工作服。
+    why: 这里没写的细节，模型可能在后面的章节里另编一个。
+    examples:
+      good: [个子高而瘦，灰白的短发，左手腕有一道烧伤的疤]
+      avoid: [引人注目, 看起来很危险]
+    lead_in: '{name}''s appearance: {value}'
+  sketch:
+    label: 速写
+    help: 用一两句话说说这个人是什么样的。写人，而不只是写一个角色定位；可能的话，加入一处不合类型的矛盾（一个凶狠的打手，却养着蜜蜂）。
+    placeholder: 例如：一个轻声细语的伪造高手，以为没人在时会对着猫说话。
+    why: 最快的办法，让模型得到的是一个人，而不是一个类型。
+    examples:
+      good: [一个凶狠的打手，却养着蜜蜂, 一个轻声细语的伪造高手，以为没人在时会对着猫说话]
+      avoid: [一个小偷, 那个侦探]
+  wants:
+    label: 渴望
+    help: 两到五个抽象的愿望，不可能同时全部满足（在学校出人头地、想一个人清净）。不写具体的东西，也不写别人：指向某个人的目标放在“关系网”里。它们之间的冲突，正是推动这个人物的力量。
+    why: 彼此拉扯的渴望，才会逼这个人物做选择、去挣扎。
+    empty: 还没有渴望。至少添加两个彼此拉扯的。
+    add: 添加渴望
+    delete_confirm: 删除这个渴望？
+    item_title: '{text}'
+    lead_in: '{name} wants several things that cannot all be satisfied at once: {items}.'
+    lead_in_one: 'In this chapter {name} is driven by this want: {items}.'
+    item_template: '{text}'
+    item_join: '; '
+    item_fields:
+      text:
+        label: 渴望
+        help: 一个愿望，几个字即可。
+        placeholder: 例如：想一个人清净
+        examples:
+          good: [想一个人清净, 想在学校里出人头地, 想被人欣赏]
+          avoid: [向他哥哥复仇, 找到丢失的项链]
+  fear: {label: 恐惧, help: 他们回避什么，或保护自己不受什么伤害。, placeholder: 例如：被人依赖，然后辜负了依赖自己的人。, why: 恐惧体现为人物回避的事，比起一种感受，这更容易写。, lead_in: '{name} avoids and protects themselves from: {value}'}
+  flaw: {label: 缺陷, help: 一个会破坏他们所渴望之事的错误信念或盲点。, placeholder: 例如：认为求人帮忙就欠下一笔永远还不清的债。, why: 一个与渴望对着干的缺陷，才会把事件变成性格。, lead_in: '{name} holds a false belief or blind spot that sabotages what they want: {value}'}
+  values:
+    label: 价值观
+    help: 他们视为神圣或绝不背弃的东西，用正面的方式表述（“信守诺言，哪怕因此倾家荡产”）。
+    why: 价值观让人物有东西可失去，也有不会越过的底线。
+    empty: 还没有价值观。这个人绝不会背弃什么？
+    add: 添加价值观
+    delete_confirm: 删除这条价值观？
+    item_title: '{text}'
+    lead_in: '{name} holds sacred, and keeps faith with: {items}.'
+    lead_in_one: '{name} holds this sacred, and keeps faith with it: {items}.'
+    item_template: '{text}'
+    item_join: '; '
+    item_fields:
+      text:
+        label: 价值观
+        help: 一件他们守护的事，用正面的方式表述。
+        placeholder: 例如：信守诺言，哪怕因此倾家荡产
+        examples:
+          good: [信守诺言，哪怕因此倾家荡产]
+          avoid: [从不撒谎, 不伤害无辜]
+  behaviors:
+    label: 行为模式
+    help: 他们在不同内心状态下怎么做。至少包含一种平静或快乐的状态。
+    why: 给模型一个会随心境不同而有不同举动的人，而不是一副固定的情绪。
+    empty: 还没有行为模式。先写他们安心时是什么样子。
+    add: 添加行为模式
+    delete_confirm: 删除这条行为模式？
+    item_title: 当{state}时，他们会{tendency}
+    lead_in: '{name} has these dispositions: {items}.'
+    item_template: when {state}, they {tendency}
+    item_join: '; '
+    item_fields:
+      state:
+        label: 当
+        help: 一种内心状态，或宽泛的社交状态，比如“感到被注视”“正被夸奖”“力不从心”。不是某个具体情境。
+        placeholder: 例如：感到被注视
+        examples:
+          good: [感到被注视, 正被夸奖, 力不从心]
+          avoid: [正在酒吧打架, 警察到了]
+      tendency:
+        label: 他们会
+        help: 一种倾向或习惯，比如“沉默下来”“让手里忙个不停”。不是某一个具体的举动。
+        placeholder: 例如：沉默下来，手里忙个不停
+        examples:
+          good: [沉默下来, 让手里忙个不停]
+          avoid: [一拳打在最近的墙上, 从窗户离开]
+  competence: {label: 擅长, help: 他们擅长什么。, placeholder: 例如：能读懂人的小动作；几乎什么机关都能修好。, why: 知道他们擅长什么，故事才能让这份本事派上用场。, lead_in: '{name} is good at: {value}'}
+  vulnerability: {label: 软肋, help: 他们哪里会受伤或被抓住把柄，包括影响行为的羞耻感。, placeholder: 例如：为自己没读完书而羞愧；受不了被人嘲笑。, why: 给其他人物，也给情节，一个可以施压的地方。, lead_in: '{name} can be hurt or caught out by: {value}'}
+  speech: {label: 说话方式, help: 他们怎么说话：节奏、用词、绝不会说的话。, placeholder: 例如：句子短，语气干；从不说对不起。, why: 让对话听起来像这个人，而不像叙述者。, lead_in: '{name} speaks like this: {value}'}
+  history:
+    label: 过往
+    help: 简短的成长背景，用来解释缺陷和渴望。不写任何故事里有名有姓的人、地点或物件。
+    placeholder: 例如：在一间寄宿公寓里长大，那里没有一样东西是属于她的。
+    why: 解释缺陷和渴望。写短一些，否则会挤占篇幅。
+    examples:
+      good: [在一间寄宿公寓里长大，那里没有一样东西是属于她的]
+      avoid: [她的哥哥阿川在榕镇那场火之后走了]
+    lead_in: 'Formative background: {value}'
+rules:
+  char_other_names: {message: '这里提到了{names}。人物必须能用在任何项目里，所以不应点名其他人、地点或物件。', fix: 改写成一种特质（比如“不信任家人”）。关系写在“关系网”里，共同的过往写在“世界观”里。}
+  char_no_relationships: {message: 这里描述了与另一个人的关系。人物必须能独立成立。, fix: 改写成这个人自身的一种特质，比如“不信任家人”。人与人之间的关系记录在“关系网”里。, judge_prompt: 'A feeling or habit about people in general (''feels overlooked'', ''being told her methods are wrong'', ''distrusts family'') is a trait of this person. Is this text free of any particular relative, partner, boss, friend or rival in the character''s life? Answer yes or no. If no, rewrite it as a trait of this person alone.'}
+  sketch_describes_person: {message: 这读起来像一个角色定位，而不是一个人。, fix: 说说这个人是什么样的。只写定位，模型就会退回到刻板印象。, judge_prompt: 'Does this sketch describe what the person is like, beyond naming a role or occupation? Answer yes or no. If no, suggest a rewrite that describes the person.'}
+  appearance_concrete: {message: 这里给的是印象。外貌最好写成具体细节。, fix: 列出可以核对的内容：体型、头发、面容、标记、常穿的衣服。, judge_prompt: 'Does this text give concrete, checkable details of appearance, with impressions kept to a minimum? Answer yes or no. If no, suggest a rewrite as concrete details.'}
+  wants_count: {message: “渴望”至少需要两项，它们才能互相拉扯。, fix: 再加一个与第一个拉扯的渴望。}
+  wants_conflict: {message: 这些渴望之间没有明显的拉扯。, fix: 加一个与其他渴望冲突的渴望。系统可以给出建议，由你决定接受或拒绝。, judge_prompt: 'Does pursuing this want make at least one of the other wants harder to pursue, because they compete for the character''s time, effort, safety or loyalty? Answer yes or no. If no for every want, propose one opposing want that cannot be satisfied alongside the others.'}
+  values_positive: {message: 有一条价值观读起来像一条禁令。, fix: 改成他们守护的东西，比如“信守诺言，哪怕因此倾家荡产”。, judge_prompt: 'Is each value phrased as something the character protects or keeps faith with? Answer yes or no for each. Rewrite any that fail.'}
+  behavior_state_is_inner: {message: “当”一栏写的是某个具体情境。, fix: 用内心状态或宽泛的社交状态，比如“感到被注视”或“正被夸奖”。, judge_prompt: 'Is each ''when'' an inner or broad social state rather than a specific situation? Answer yes or no for each. Rewrite any that fail.'}
+  behaviors_include_calm: {message: 每一种状态都带着压力。请加一种平静或快乐的状态。, fix: 加一种状态，比如“感到安心”或“和信任的人在一起”。, judge_prompt: 'Is the ''when'' of this item a calm or happy state, as opposed to a stressful one? Answer yes or no. If no for every item, suggest a calm or happy state to add.'}
+  behavior_is_tendency: {message: “他们会”一栏写的是某一个具体举动。, fix: 用一种习惯或倾向，这样每次都能写出新的版本。, judge_prompt: 'Is each ''they'' a tendency or habit rather than one specific act? Answer yes or no for each. Rewrite any that fail.'}

@@ -1,0 +1,177 @@
+# 简体中文文本。结构与 text/en/ 完全相同：键、{标记}不变；expand、lead_in、lead_in_one、item_template、item_join、judge_prompt 保持英文原文。术语见 docs/zh-glossary.md。
+card: {label: 世界观, summary: 存在什么、什么是真的：地点、物件、势力和规则。它不提到任何人物，也从不说谁持有、知道或想要什么，所以任何人物阵容都能在其中生活。}
+groups:
+  overview: {label: 概览, help: 设定的基本情况。}
+  places: {label: 地点, help: 会对身处其中的人起作用的地方。}
+  things: {label: 物件, help: 重要的物件。没有主人，也没有位置。}
+  powers: {label: 势力, help: 机构、组织、国家和人群。}
+  truths: {label: 规则, help: 世界如何运转，以及每条规则的代价。}
+  vocabulary: {label: 术语, help: 自造的或本地的词。}
+fields:
+  name: {label: 名字, help: 这个世界或设定叫什么。, placeholder: 例如：盐岸, why: 模型借此每次都用同一个说法称呼这个设定。, lead_in: 'The setting is called {value}.'}
+  era_and_technology:
+    label: 时代与科技
+    help: 是什么时候，人们能做什么、不能做什么，以及规模（一个街区、一座城、一片大陆）。写事实，不写情绪；情绪属于“文风”。
+    placeholder: 例如：1890年代的一座河滨城市：煤气灯和电报，没有汽车，大约四万人。
+    why: 告诉模型什么是可能的，这样它就不会在没有电话的世界里编出一部电话。
+    examples:
+      good: [1890年代的一座河滨城市：煤气灯和电报，没有汽车，大约四万人]
+      avoid: [阴郁压抑, 一个昏暗沉闷的年代]
+    lead_in: 'Era and technology in {name}: {value}'
+  everyday_life:
+    label: 日常生活
+    help: 对大多数人来说，普通的一天是什么样，以及什么东西稀缺、昂贵或有争议。这就是“开局”里的变故将要打破的日常。
+    placeholder: 例如：大多数人在码头做工。淡水定量供应，按桶出售。
+    why: 这是故事将要打破的日常。没有摩擦，就没有什么可打破的。
+    examples:
+      good: [大多数人在码头做工。淡水定量供应，按桶出售。]
+      avoid: [人们过着普通的生活]
+    lead_in: 'Everyday life in {name}: {value}'
+  history:
+    label: 历史
+    help: 故事开始之前发生过、人们至今仍活在其影响里的事（一场战争、一场火灾、一份条约）。不写人物；凡涉及具体的人，都放进“关系网”。
+    placeholder: 例如：十年前的一场饥荒掏空了村庄，也挤满了城市。
+    why: 不需要任何一个具体的人，就能让这个世界有分量。
+    examples:
+      good: [十年前的一场饥荒掏空了村庄，也挤满了城市]
+      avoid: [饥荒那年春天，老国王的儿子毒死了他]
+    lead_in: 'History that people still live with: {value}'
+  places:
+    label: 地点
+    help: 几处地点。每处都需要名字、具体的描述，以及这个地方对身处其中的人有什么作用。
+    why: 会对人起作用的地方，让一场戏有东西可以顶着发力。
+    empty: 还没有地点。添加会发生场景的地方。
+    add: 添加地点
+    delete_confirm: 删除这个地点？
+    item_title: '{name}'
+    lead_in: 'Places in {name}, each shaping the people in it:
+
+      {items}'
+    item_template: '{name}: {description} What it does to people there: {effect}'
+    item_join: '
+
+      '
+    item_fields:
+      name: {label: 名字, help: 这个地方叫什么。, placeholder: 例如：账房}
+      description:
+        label: 描述
+        help: 一段能在脑海里浮现的具体描述。
+        placeholder: 例如：一座窄窄的砖房，窗上有铁栏，门上挂着一口钟。
+        examples:
+          good: [一座窄窄的砖房，窗上有铁栏，门上挂着一口钟]
+          avoid: [一个阴森的老地方]
+      effect:
+        label: 对人的影响
+        help: 这个地方如何改变身处其中的人（“这里的人都压低声音”）。只是布景的地方，给不了故事任何可用的东西。
+        placeholder: 例如：人人都压低声音，靠左行走。
+        examples:
+          good: [人人都压低声音，靠左行走, 天黑以后没人留下]
+          avoid: [黑暗而有氛围]
+  objects:
+    label: 物件
+    help: 几件重要的物件。
+    why: 一件东西之所以重要，是因为有人想要它。在这里说明为什么。
+    empty: 还没有物件。添加有人可能想要的东西。
+    add: 添加物件
+    delete_confirm: 删除这件物件？
+    item_title: '{name}'
+    lead_in: 'Things that matter in {name}:
+
+      {items}'
+    item_template: '{name}: {description} Why it matters: {significance}'
+    item_join: '
+
+      '
+    item_fields:
+      name: {label: 名字, help: 这件东西叫什么。, placeholder: 例如：账本}
+      description: {label: 描述, help: 具体的描述。, placeholder: 例如：一本被水浸过的书，绿布封面。}
+      significance:
+        label: 为何重要
+        help: 它能做什么，或对想要它的人意味着什么。没有主人，也没有位置；这些记录在“关系网”里。
+        placeholder: 例如：谁持有它，谁就能证明谁欠行会的钱。
+        examples:
+          good: [谁持有它，谁就能证明谁欠行会的钱]
+          avoid: [它属于行会，放在金库里]
+  powers:
+    label: 势力
+    help: 机构、组织、国家和人群。说明普通人每天怎样遇到它们（一项税、一道宵禁、一句耳语）。
+    why: 势力是世界向普通人施压的方式。
+    empty: 还没有势力。添加对普通人握有权力的一方。
+    add: 添加势力
+    delete_confirm: 删除这个势力？
+    item_title: '{name}'
+    lead_in: 'Groups with power in {name}:
+
+      {items}'
+    item_template: '{name}: {nature} How it holds power: {hold} How ordinary people feel it: {felt}'
+    item_join: '
+
+      '
+    item_fields:
+      name: {label: 名字, help: 这个势力叫什么。, placeholder: 例如：水行会}
+      nature: {label: 是什么, help: 一个机构、一个组织、一个国家、一群人。, placeholder: 例如：一个持牌井守人的行会。}
+      hold: {label: 如何掌权, help: 武力、金钱、法律、信仰、人数。, placeholder: 例如：控制城里的每一口井，以及给井发牌照的法律。}
+      felt:
+        label: 人们的感受
+        help: 普通人每天怎样遇到它。不写这个势力眼下想要什么；那属于“关系网”。
+        placeholder: 例如：每周一道水税，还有来查你水桶的井守人。
+        examples:
+          good: [每周一道水税, 宵禁钟声，和随之而来的巡逻队]
+          avoid: [它打算夺下港口]
+  rules:
+    label: 规则
+    help: 这里为真的事情。给每条规则一个代价，以及违反它的后果；没有代价的规则只是一个事实。
+    why: 有代价的规则让人物有得选，而戏剧正是从选择里来的。
+    empty: 还没有规则。添加一条在这里为真、又要付出点什么的事。
+    add: 添加规则
+    delete_confirm: 删除这条规则？
+    item_title: '{statement}'
+    lead_in: 'What is true in {name}:
+
+      {items}'
+    item_template: '{statement} Cost: {cost} When broken: {when_broken}'
+    item_join: '
+
+      '
+    item_fields:
+      statement: {label: 内容, help: 什么是真的。, placeholder: 例如：谁也不得拒绝客人一口水。}
+      cost:
+        label: 代价
+        help: 遵守或依靠这条规则要付出什么。
+        placeholder: 例如：遇上干旱，主人自己要渴着。
+        examples:
+          good: [遇上干旱，主人自己要渴着]
+          avoid: [事情本来就是这样]
+      when_broken:
+        label: 被打破时
+        help: 违反它是不可能的、会受惩罚、会蒙羞，还是会有副作用。硬性的限制和有代价的选择，作用不同。
+        placeholder: 例如：受惩罚：全家被人躲着。
+        examples:
+          good: [受惩罚：全家被人躲着, 不可能：被拒绝的陌生人面前，门打不开]
+          avoid: [会发生坏事]
+  terms:
+    label: 术语
+    help: 自造的或本地的词和名字，各配一行释义，让故事保持一致。
+    why: 让自造的词在每一章里写法和用法都一致。
+    empty: 还没有术语。添加自造的或本地的词。
+    add: 添加术语
+    delete_confirm: 删除这条术语？
+    item_title: '{term}：{meaning}'
+    lead_in: 'Words and names used in {name}: {items}'
+    item_template: '{term}: {meaning}'
+    item_join: '; '
+    item_fields:
+      term: {label: 词语, help: 这个词或名字。, placeholder: 例如：桶誓者}
+      meaning: {label: 含义, help: 一行即可。, placeholder: 例如：把自己的水许给了行会的人}
+rules:
+  world_names_people: {message: '这里提到了{names}。世界观必须适用于任何人物阵容，所以不应点名人物。', fix: 改写成一般性的事实。凡涉及具体的人，都放进“关系网”。}
+  history_no_people: {message: 这段历史涉及具体的个人。, fix: 描述事件和力量，凡与具体的人相关的，放进“关系网”。, judge_prompt: 'Things, places, institutions and groups of people are not specific individuals. Is this history free of any particular named person or character? Answer yes or no. If no, rewrite it without the individuals.'}
+  era_is_fact_not_mood: {message: 这读起来像情绪。时代与科技最好写成事实。, fix: 说说人们能做什么、不能做什么，以及规模。情绪属于“文风”。, judge_prompt: 'Does this text state facts about the era, technology and scale, with mood left out? Answer yes or no. If no, rewrite it as facts.'}
+  everyday_has_friction: {message: 这里没有什么东西稀缺、昂贵或有争议。, fix: 说说人们为什么挣扎、争夺什么。这就是故事将要打破的日常。, judge_prompt: 'Does this text say what is scarce, expensive or contested in ordinary life? Answer yes or no. If no, suggest one.'}
+  place_acts_on_people: {message: 有一处地点只描述了景物。, fix: 说说这个地方对身处其中的人有什么作用，比如“这里的人都压低声音”。, judge_prompt: 'For each place, does the effect say what the place does to the people in it? Answer yes or no for each. Rewrite any that fail.'}
+  object_has_stakes: {message: 有一件物件没有说明为什么重要。, fix: 说说它能做什么，或对想要它的人意味着什么。, judge_prompt: 'For each thing, does the significance say what it can do or what it means to whoever wants it? Answer yes or no for each. Rewrite any that fail.'}
+  object_unowned: {message: 有一件物件写了主人或位置。, fix: 删掉。谁持有它、它在哪里，记录在“关系网”里。, judge_prompt: 'Does any thing''s text say who owns it or where it currently is? Answer yes or no for each. Rewrite any that do so that they describe only the thing.'}
+  power_felt_daily: {message: 有一个势力在日常生活中感受不到。, fix: 说说普通人怎样遇到它：一项税、一道宵禁、一句耳语。, judge_prompt: 'For each group, does the text say how an ordinary person meets it day to day? Answer yes or no for each. Rewrite any that fail.'}
+  power_no_current_goals: {message: 有一个势力写了它眼下想要什么。, fix: 删掉。势力眼下想要的，记录在“关系网”里。, judge_prompt: 'Does any group''s text state what it currently wants or is about to do? Answer yes or no for each. Rewrite any that do so that they describe only what the group is.'}
+  rule_has_cost: {message: 有一条规则没有真正的代价。, fix: 加上它的代价。有代价的规则才让人有得选。, judge_prompt: 'For each rule, does the cost name something real that is lost or risked? Answer yes or no for each. Suggest a cost for any that fail.'}
+  rule_when_broken_clear: {message: “被打破时”没有说明会发生什么。, fix: 说明违反它是不可能的、会受惩罚、会蒙羞，还是会有副作用。, judge_prompt: 'For each rule, does ''when broken'' say whether breaking it is impossible, punished, shameful, or has a side effect? Answer yes or no for each. Rewrite any that fail.'}

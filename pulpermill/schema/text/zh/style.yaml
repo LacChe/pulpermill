@@ -1,0 +1,159 @@
+# 简体中文文本。结构与 text/en/ 完全相同：键、{标记}不变；expand、lead_in、lead_in_one、item_template、item_join、judge_prompt 保持英文原文。术语见 docs/zh-glossary.md。
+card: {label: 文风, summary: 故事怎样被讲述：声音、态度，以及叙述者留意事物的习惯。它不提到任何人、地点或情节，所以可以用于任何故事。}
+groups:
+  narration: {label: 叙述, help: 整个故事通用的固定规则。}
+  narrator: {label: 叙述者, help: 叙述有多近、多幽默、多快。}
+  sentences: {label: 句式与用词, help: 行文落在纸面上是什么声音。}
+  stance: {label: 立场, help: 叙述者对故事的态度。}
+  dialogue: {label: 对话, help: 人们彼此怎么说话。}
+  free: {label: 类型与视角, help: 两个自由填写的项，影响很大。}
+fields:
+  person:
+    label: 人称
+    help: 用谁的声音讲这个故事。这是对每一章都适用的规则，你在“开局”里选的主角必须与它相符。
+    why: 它会改变每一句话，所以整个故事固定不变，“开局”会拿你的主角来对照检查。
+    options:
+      first: {label: 第一人称, expand: 'Narrate in the first person, from inside the protagonist''s own voice, knowing only what they know.', description: “我走进去，屋里一下子安静了。”}
+      third: {label: 第三人称, expand: 'Narrate in the third person, staying with the protagonist''s point of view and knowing only what they could know.', description: “她走进去，屋里一下子安静了。”}
+  tense:
+    label: 时态
+    help: 中文没有时态变化，这里决定的是叙述的时间口吻：过去时像在讲一件已经发生的事，现在时让人觉得事情就在眼前。适用于每一章。
+    why: 每一章都固定，所以选一个你能为整个故事坚持下去的。
+    options:
+      past: {label: 过去时, expand: Tell the story in the past tense., description: “那天夜里，他推开了门。”}
+      present: {label: 现在时, expand: 'Tell the story in the present tense, as it unfolds.', description: “此刻，他推开门。”}
+  distance:
+    label: 叙述距离
+    help: 叙述者与主角内心想法之间隔多远。
+    why: 决定读者能读到主角多少内心生活。
+    options:
+      external: {label: 外部, expand: 'The narrator watches from outside: actions, speech and surfaces are shown, and the reader infers what goes on within.', description: “她把信读了两遍，折好，放在桌上。”}
+      close: {label: 贴近, expand: 'The narrator stays close to the protagonist, sharing what they notice, think and feel in plain terms.', description: “她把信读了两遍。这不可能是真的，可她知道它是真的。”}
+      deep: {label: 深入, expand: 'The narrator sinks fully into the protagonist''s mind, so perception, memory and feeling colour every line.', description: “读了两遍，字还是定不下来。他的笔迹。他的外套还搭在椅子上。这不可能。”}
+  humor:
+    label: 幽默
+    help: 叙述有多爱开玩笑，是哪一种。
+    why: 决定读者是否被邀请去笑所发生的事。
+    options:
+      none: {label: 无, expand: 'The tone stays serious, with levity rare and never at the moment''s expense.', description: 没有笑话，语气始终严肃。}
+      dry: {label: 冷幽默, expand: 'Humor is dry: understated, deadpan, found in precise observation.', description: “会议开得很长，长得像冰河期那样。”}
+      absurd: {label: 荒诞, expand: 'Humor is absurd: logic bends playfully and ridiculous situations are met with a straight face.', description: “那只山羊被任命为财务主管，没有人觉得有什么不妥。”}
+      dark: {label: 黑色幽默, expand: 'Humor is dark: jokes grow out of grim situations, and laughter sits close to unease.', description: “葬礼来了很多人，比他活着时来得还多。”}
+  pacing:
+    label: 叙事节奏
+    help: 叙述推进得有多快。快一些，一般更容易读得下去。
+    why: 决定每个时刻分到多少篇幅，所以也影响章节写多长。
+    options:
+      lingering: {label: 舒缓, expand: 'Linger on moments: scenes breathe, with room for detail, atmosphere and reflection.', description: 一场戏可以在一道门口停上一整页。}
+      balanced: {label: 张弛有度, expand: 'Balance action and reflection, slowing for what matters and moving on quickly otherwise.', description: 重要的地方放慢，其余的一笔带过。}
+      brisk: {label: 紧凑, expand: 'Move briskly: scenes start late and end early, and momentum carries the reader forward.', description: 场景切入得晚，收得早，很少停下来四处张望。}
+  narrator_note: {label: 叙述者备注, help: 关于叙述者的其他说明。会原样传给模型。, placeholder: 例如：知道的比说出来的多；偶尔会对读者说话。}
+  rhythm:
+    label: 句式节奏
+    help: 句子读起来的节奏。
+    why: 句子的长短决定逐行阅读的快慢。
+    options:
+      terse: {label: 简短, expand: 'Sentences are short and clipped, and each one carries weight.', description: “她跑。门砰地关上。没有动静。”}
+      varied: {label: 错落, expand: 'Sentence length follows the moment: short in action, longer when thought wanders.', description: “她跑。下楼梯，经过那个灯总是坏的楼梯平台，在门关上之前冲了出去。”}
+      flowing: {label: 绵长, expand: 'Sentences run long and connect, carrying the reader along.', description: “她跑下楼梯，经过那个灯总是坏的楼梯平台，穿过那扇在她身后还晃着合拢的门，一路向外跑去。”}
+  diction:
+    label: 措辞
+    help: 用词：日常的还是讲究的。
+    why: 朴素的词让读者一路读下去；华丽的词让他们放慢脚步，留意语言本身。
+    options:
+      plain: {label: 朴素, expand: 'Word choice is plain and concrete: everyday words, strong verbs, precise nouns.', description: “屋里很冷，有股潮味。”}
+      ornate: {label: 华丽, expand: 'Word choice is rich and elaborate, with unusual words and layered phrasing.', description: “这间屋子里的冷比房子本身还要老，潮气从墙灰里渗出来，像一桩没了结的旧怨。”}
+  formality:
+    label: 语体
+    help: 叙述听起来有多正式。
+    why: 决定叙述者听起来像一个人在对你说话，还是一份在存档的记录。
+    options:
+      formal: {label: 书面, expand: 'The register is formal: composed and grammatical, with a measured distance.', description: “他谢绝了这一邀请，情势使然。”}
+      casual: {label: 口语, expand: 'The register is casual: conversational, with contractions, idiom and an easy tone.', description: “他给推了。反正也没得选。”}
+  imagery:
+    label: 意象
+    help: 行文用多少比喻和修辞。
+    why: 修辞越多，质感越足，读起来也越慢。
+    options:
+      literal: {label: 直白, expand: 'Description is direct: things are named as they are.', description: “风很大，很冷。”}
+      occasional: {label: 偶尔, expand: 'Figurative language appears occasionally, placed where it lands hardest.', description: “风很冷，推着她，像是想要点什么。”}
+      lush: {label: 浓烈, expand: 'Imagery is lush: metaphor and sensory detail are frequent and vivid.', description: “风从水面上一整片一整片银白地卷来，冷得像一把平贴在皮肤上的刀。”}
+  edge:
+    label: 语言尺度
+    help: 语言的力度：脏话、直白、粗糙。
+    why: 决定粗粝的事件是否也用粗粝的语言来叙述。
+    options:
+      clean: {label: 干净, expand: 'Language stays clean: gentle in vocabulary even when events are rough.', description: “出去，”她说，“我是认真的。”}
+      coarse: {label: 粗粝, expand: 'Language is coarse where it fits: characters swear and the narration is blunt and earthy.', description: “给我滚出去，”她说，“我是认真的，你这混蛋。”}
+  explicitness:
+    label: 描写尺度
+    help: 激烈的时刻（暴力、亲密）是发生在纸面上，还是发生在纸面之外。
+    why: 决定读者直接看到什么，又必须自己去想象什么。
+    options:
+      implied: {label: 含蓄, expand: 'Intense moments are implied: the narration cuts away, suggests and lets the reader fill in the rest.', description: 门在最糟的时刻关上，下一场戏从那之后开始。}
+      shown: {label: 直白呈现, expand: 'Intense moments are shown on the page, with physical and emotional detail rendered plainly.', description: 最糟的时刻就发生在读者眼前，写得直白具体。}
+  sentences_note: {label: 句式与用词备注, help: 关于行文的其他说明。会原样传给模型。, placeholder: 例如：少用分号；多用具体的名词。}
+  attitude:
+    label: 态度
+    help: 叙述者对故事和其中人物的感情。
+    why: 叙述者的感情，体现在它留意什么，以及怎样描述同一件事。
+    options:
+      earnest: {label: 郑重, expand: 'The narrator is earnest: sincere, invested, and takes the characters'' stakes seriously.', description: “他错过了火车，这很要紧：她会在那里等他。”}
+      warm: {label: 温暖, expand: 'The narrator is warm: affectionate toward the characters and generous with their flaws.', description: “他错过了火车，可怜的人，还一直客客气气的。”}
+      wry: {label: 戏谑, expand: 'The narrator is wry: amused, observant, with a sideways view of events.', description: “他错过了火车，从容得像是特意练过。”}
+      sardonic: {label: 嘲讽, expand: 'The narrator is sardonic: sharp, quick to puncture pretence.', description: “他错过了火车，那还用说。宇宙对时机向来很有分寸感。”}
+      clinical: {label: 冷静客观, expand: 'The narrator is clinical: detached and precise, recording events like an observer taking notes.', description: “8点14分，他到了站台。火车8点12分已经开走。”}
+      melancholic: {label: 忧郁, expand: 'The narrator is melancholic: tinged with loss and the passing of things.', description: “他错过了火车，就像错过了那么多事一样，在安静里站了一会儿。”}
+      wondering: {label: 惊叹, expand: 'The narrator is wondering: curious and open, finding the strange and beautiful in what it sees.', description: “他错过了火车，而在空下来的车站里，光落下的样子，是他从没停下来看过的。”}
+  stance_note: {label: 立场备注, help: 关于叙述者态度的其他说明。会原样传给模型。, placeholder: 例如：喜欢这些人物，但从不煽情。}
+  amount:
+    label: 对话量
+    help: 故事有多少是靠对话推进的。
+    why: 对话多，场景读起来更快；对话少，给叙述者留出空间。
+    options:
+      sparse: {label: 少, expand: 'Dialogue is sparse: characters say little and narration carries most of each scene.', description: 两句话的对话，接一整段叙述。}
+      abundant: {label: 多, expand: 'Dialogue is abundant: scenes move through conversation.', description: 场景靠一来一往的对话推进。}
+  directness:
+    label: 表达方式
+    help: 人物是不是有话直说。
+    why: 潜台词让人物显得不那么像照着剧本说话，但对读者的要求更高。
+    options:
+      direct: {label: 直说, expand: Characters say what they mean and speak plainly to each other., description: “你没告诉我，我很生气。”}
+      subtext: {label: 潜台词, expand: 'Characters rarely say what they mean: feeling shows through action, deflection and what goes unsaid.', description: “你总算肯露面了，真是难为你。”}
+  polish:
+    label: 修饰程度
+    help: 说话听着像真的，还是经过打磨的台词。
+    why: 自然的说话听起来真实；打磨过的台词会留在读者心里。
+    options:
+      naturalistic: {label: 自然, expand: 'Dialogue is naturalistic: halting, interrupted and overlapping, as people really speak.', description: “我——不，你听我说——我的意思是——”}
+      stylised: {label: 风格化, expand: 'Dialogue is stylised: crafted lines with rhythm and wit.', description: “你把我当成需要你原谅的人了。”}
+  voice_difference:
+    label: 声音差异
+    help: 人物说话是否各不相同。
+    why: 各具特色的声音，让读者不用说话标签也知道是谁在说。
+    options:
+      distinct: {label: 各具特色, expand: Each character has a recognisably distinct way of speaking., description: 一个人说话干脆正式；另一个人絮絮叨叨，爱开玩笑。}
+      uniform: {label: 统一, expand: 'Characters share one speaking style, which keeps the voice consistent across the cast.', description: 所有人都用故事自己的声音说话。}
+  dialogue_note: {label: 对话备注, help: 关于对话的其他说明。会原样传给模型。, placeholder: 例如：人们会互相打断；没有长篇大论。}
+  lens:
+    label: 视角
+    help: 一种留意事物的习惯，而不是一个主题。写“留意谁欠谁、东西值多少钱”，而不是“一个关于债务的故事”。主题是从叙述者留意的东西里长出来的。
+    placeholder: 例如：留意谁欠谁、东西值多少钱
+    why: 视角让叙述者不断留意同一类事物，主题就从这里长出来。
+    examples:
+      good: [留意谁欠谁、东西值多少钱, 留意出口，以及谁站在出口附近, 留意人们回避去看的东西]
+      avoid: [一个关于债务的故事, 背叛与救赎]
+    lead_in: 'The narrator''s habit of attention: {value}. Meaning emerges from what the narrator notices and how it is weighed, and themes stay implicit in the telling.'
+  genre:
+    label: 类型
+    help: 一种传统或一种感觉（黑色悬疑、治愈系推理、太空歌剧）。它设定氛围和惯例，不要求特定的事件。
+    placeholder: 例如：黑色悬疑、治愈系推理、太空歌剧
+    why: 一个有名目的传统，告诉模型该用哪些惯例、略去哪些。
+    examples:
+      good: [黑色悬疑, 治愈系推理, 忧郁的太空歌剧]
+      avoid: [第一章里侦探发现一具尸体, 一场带有背叛的劫案]
+    lead_in: 'The genre and feeling of this story: {value}. Let it shape mood, conventions and texture, while events follow from the characters and situation.'
+rules:
+  style_agnostic: {message: '这里提到了{names}。文风要能在不同故事之间通用，所以不应点名故事里的人、地点或物件。', fix: 改写成对叙述的一般性特点，故事专属的细节放到“人物”或“世界观”里。}
+  lens_is_habit: {message: 这读起来像一个主题或话题。视角最好写成一种留意事物的习惯。, fix: 试试类似“留意谁欠谁、东西值多少钱”的写法。, judge_prompt: 'Does this text describe a habit of attention, meaning what a narrator notices and how it weighs things? Answer yes or no. If no, suggest a rewrite as a habit of attention.'}
+  genre_not_plot: {message: 这里要求了具体的事件。类型应当设定氛围和惯例。, fix: 改写一个传统或一种感觉，比如“黑色悬疑”或“治愈系推理”。, judge_prompt: 'Does this text name a genre, tradition or feeling, with no specific events required? Answer yes or no. If no, suggest a rewrite as a tradition or feeling.'}

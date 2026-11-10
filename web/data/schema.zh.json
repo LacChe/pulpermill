@@ -1,0 +1,2345 @@
+{
+ "schema_version": 4,
+ "lang": "zh",
+ "max_items": 5,
+ "common": {
+  "missing": {
+   "message": "{label}还没有填写。",
+   "fix": "请填写，或让模型给出建议。草稿可以先保存，但填写完整之前无法生成故事。"
+  },
+  "not_allowed": {
+   "message": "{label}的值不在可选项之内。",
+   "fix": "请从列出的选项中选择。"
+  },
+  "too_many": {
+   "message": "{label}最多只能有{max}项。",
+   "fix": "请删掉一项，或把相近的几项合并。"
+  },
+  "invalid": {
+   "message": "{label}的值无法使用。",
+   "fix": "请检查输入后重试。"
+  }
+ },
+ "order": [
+  "style",
+  "characters",
+  "world",
+  "entanglements",
+  "setup",
+  "outline"
+ ],
+ "cards": {
+  "style": {
+   "id": "style",
+   "type": "root",
+   "reads": [],
+   "portable": true,
+   "between_chapters": "static",
+   "label": "文风",
+   "summary": "故事怎样被讲述：声音、态度，以及叙述者留意事物的习惯。它不提到任何人、地点或情节，所以可以用于任何故事。",
+   "groups": [
+    {
+     "id": "narration",
+     "collapsed": false,
+     "label": "叙述",
+     "help": "整个故事通用的固定规则。"
+    },
+    {
+     "id": "narrator",
+     "collapsed": true,
+     "label": "叙述者",
+     "help": "叙述有多近、多幽默、多快。"
+    },
+    {
+     "id": "sentences",
+     "collapsed": true,
+     "label": "句式与用词",
+     "help": "行文落在纸面上是什么声音。"
+    },
+    {
+     "id": "stance",
+     "collapsed": false,
+     "label": "立场",
+     "help": "叙述者对故事的态度。"
+    },
+    {
+     "id": "dialogue",
+     "collapsed": true,
+     "label": "对话",
+     "help": "人们彼此怎么说话。"
+    },
+    {
+     "id": "free",
+     "collapsed": false,
+     "label": "类型与视角",
+     "help": "两个自由填写的项，影响很大。"
+    }
+   ],
+   "fields": [
+    {
+     "key": "person",
+     "label": "人称",
+     "help": "用谁的声音讲这个故事。这是对每一章都适用的规则，你在“开局”里选的主角必须与它相符。",
+     "input": "select",
+     "kind": "rule",
+     "group": "narration",
+     "required": true,
+     "why": "它会改变每一句话，所以整个故事固定不变，“开局”会拿你的主角来对照检查。",
+     "options": [
+      {
+       "value": "first",
+       "label": "第一人称",
+       "description": "“我走进去，屋里一下子安静了。”"
+      },
+      {
+       "value": "third",
+       "label": "第三人称",
+       "description": "“她走进去，屋里一下子安静了。”"
+      }
+     ]
+    },
+    {
+     "key": "tense",
+     "label": "时态",
+     "help": "中文没有时态变化，这里决定的是叙述的时间口吻：过去时像在讲一件已经发生的事，现在时让人觉得事情就在眼前。适用于每一章。",
+     "input": "select",
+     "kind": "rule",
+     "group": "narration",
+     "required": true,
+     "why": "每一章都固定，所以选一个你能为整个故事坚持下去的。",
+     "options": [
+      {
+       "value": "past",
+       "label": "过去时",
+       "description": "“那天夜里，他推开了门。”"
+      },
+      {
+       "value": "present",
+       "label": "现在时",
+       "description": "“此刻，他推开门。”"
+      }
+     ]
+    },
+    {
+     "key": "distance",
+     "label": "叙述距离",
+     "help": "叙述者与主角内心想法之间隔多远。",
+     "input": "select",
+     "kind": "axis",
+     "group": "narrator",
+     "required": true,
+     "why": "决定读者能读到主角多少内心生活。",
+     "options": [
+      {
+       "value": "external",
+       "label": "外部",
+       "description": "“她把信读了两遍，折好，放在桌上。”"
+      },
+      {
+       "value": "close",
+       "label": "贴近",
+       "description": "“她把信读了两遍。这不可能是真的，可她知道它是真的。”"
+      },
+      {
+       "value": "deep",
+       "label": "深入",
+       "description": "“读了两遍，字还是定不下来。他的笔迹。他的外套还搭在椅子上。这不可能。”"
+      }
+     ]
+    },
+    {
+     "key": "humor",
+     "label": "幽默",
+     "help": "叙述有多爱开玩笑，是哪一种。",
+     "input": "select",
+     "kind": "axis",
+     "group": "narrator",
+     "required": true,
+     "why": "决定读者是否被邀请去笑所发生的事。",
+     "options": [
+      {
+       "value": "none",
+       "label": "无",
+       "description": "没有笑话，语气始终严肃。"
+      },
+      {
+       "value": "dry",
+       "label": "冷幽默",
+       "description": "“会议开得很长，长得像冰河期那样。”"
+      },
+      {
+       "value": "absurd",
+       "label": "荒诞",
+       "description": "“那只山羊被任命为财务主管，没有人觉得有什么不妥。”"
+      },
+      {
+       "value": "dark",
+       "label": "黑色幽默",
+       "description": "“葬礼来了很多人，比他活着时来得还多。”"
+      }
+     ]
+    },
+    {
+     "key": "pacing",
+     "label": "叙事节奏",
+     "help": "叙述推进得有多快。快一些，一般更容易读得下去。",
+     "input": "select",
+     "kind": "axis",
+     "group": "narrator",
+     "required": true,
+     "why": "决定每个时刻分到多少篇幅，所以也影响章节写多长。",
+     "options": [
+      {
+       "value": "lingering",
+       "label": "舒缓",
+       "description": "一场戏可以在一道门口停上一整页。"
+      },
+      {
+       "value": "balanced",
+       "label": "张弛有度",
+       "description": "重要的地方放慢，其余的一笔带过。"
+      },
+      {
+       "value": "brisk",
+       "label": "紧凑",
+       "description": "场景切入得晚，收得早，很少停下来四处张望。"
+      }
+     ]
+    },
+    {
+     "key": "narrator_note",
+     "label": "叙述者备注",
+     "help": "关于叙述者的其他说明。会原样传给模型。",
+     "input": "textarea",
+     "kind": "note",
+     "group": "narrator",
+     "required": false,
+     "placeholder": "例如：知道的比说出来的多；偶尔会对读者说话。"
+    },
+    {
+     "key": "rhythm",
+     "label": "句式节奏",
+     "help": "句子读起来的节奏。",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "why": "句子的长短决定逐行阅读的快慢。",
+     "options": [
+      {
+       "value": "terse",
+       "label": "简短",
+       "description": "“她跑。门砰地关上。没有动静。”"
+      },
+      {
+       "value": "varied",
+       "label": "错落",
+       "description": "“她跑。下楼梯，经过那个灯总是坏的楼梯平台，在门关上之前冲了出去。”"
+      },
+      {
+       "value": "flowing",
+       "label": "绵长",
+       "description": "“她跑下楼梯，经过那个灯总是坏的楼梯平台，穿过那扇在她身后还晃着合拢的门，一路向外跑去。”"
+      }
+     ]
+    },
+    {
+     "key": "diction",
+     "label": "措辞",
+     "help": "用词：日常的还是讲究的。",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "why": "朴素的词让读者一路读下去；华丽的词让他们放慢脚步，留意语言本身。",
+     "options": [
+      {
+       "value": "plain",
+       "label": "朴素",
+       "description": "“屋里很冷，有股潮味。”"
+      },
+      {
+       "value": "ornate",
+       "label": "华丽",
+       "description": "“这间屋子里的冷比房子本身还要老，潮气从墙灰里渗出来，像一桩没了结的旧怨。”"
+      }
+     ]
+    },
+    {
+     "key": "formality",
+     "label": "语体",
+     "help": "叙述听起来有多正式。",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "why": "决定叙述者听起来像一个人在对你说话，还是一份在存档的记录。",
+     "options": [
+      {
+       "value": "formal",
+       "label": "书面",
+       "description": "“他谢绝了这一邀请，情势使然。”"
+      },
+      {
+       "value": "casual",
+       "label": "口语",
+       "description": "“他给推了。反正也没得选。”"
+      }
+     ]
+    },
+    {
+     "key": "imagery",
+     "label": "意象",
+     "help": "行文用多少比喻和修辞。",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "why": "修辞越多，质感越足，读起来也越慢。",
+     "options": [
+      {
+       "value": "literal",
+       "label": "直白",
+       "description": "“风很大，很冷。”"
+      },
+      {
+       "value": "occasional",
+       "label": "偶尔",
+       "description": "“风很冷，推着她，像是想要点什么。”"
+      },
+      {
+       "value": "lush",
+       "label": "浓烈",
+       "description": "“风从水面上一整片一整片银白地卷来，冷得像一把平贴在皮肤上的刀。”"
+      }
+     ]
+    },
+    {
+     "key": "edge",
+     "label": "语言尺度",
+     "help": "语言的力度：脏话、直白、粗糙。",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "why": "决定粗粝的事件是否也用粗粝的语言来叙述。",
+     "options": [
+      {
+       "value": "clean",
+       "label": "干净",
+       "description": "“出去，”她说，“我是认真的。”"
+      },
+      {
+       "value": "coarse",
+       "label": "粗粝",
+       "description": "“给我滚出去，”她说，“我是认真的，你这混蛋。”"
+      }
+     ]
+    },
+    {
+     "key": "explicitness",
+     "label": "描写尺度",
+     "help": "激烈的时刻（暴力、亲密）是发生在纸面上，还是发生在纸面之外。",
+     "input": "select",
+     "kind": "axis",
+     "group": "sentences",
+     "required": true,
+     "why": "决定读者直接看到什么，又必须自己去想象什么。",
+     "options": [
+      {
+       "value": "implied",
+       "label": "含蓄",
+       "description": "门在最糟的时刻关上，下一场戏从那之后开始。"
+      },
+      {
+       "value": "shown",
+       "label": "直白呈现",
+       "description": "最糟的时刻就发生在读者眼前，写得直白具体。"
+      }
+     ]
+    },
+    {
+     "key": "sentences_note",
+     "label": "句式与用词备注",
+     "help": "关于行文的其他说明。会原样传给模型。",
+     "input": "textarea",
+     "kind": "note",
+     "group": "sentences",
+     "required": false,
+     "placeholder": "例如：少用分号；多用具体的名词。"
+    },
+    {
+     "key": "attitude",
+     "label": "态度",
+     "help": "叙述者对故事和其中人物的感情。",
+     "input": "select",
+     "kind": "axis",
+     "group": "stance",
+     "required": true,
+     "why": "叙述者的感情，体现在它留意什么，以及怎样描述同一件事。",
+     "options": [
+      {
+       "value": "earnest",
+       "label": "郑重",
+       "description": "“他错过了火车，这很要紧：她会在那里等他。”"
+      },
+      {
+       "value": "warm",
+       "label": "温暖",
+       "description": "“他错过了火车，可怜的人，还一直客客气气的。”"
+      },
+      {
+       "value": "wry",
+       "label": "戏谑",
+       "description": "“他错过了火车，从容得像是特意练过。”"
+      },
+      {
+       "value": "sardonic",
+       "label": "嘲讽",
+       "description": "“他错过了火车，那还用说。宇宙对时机向来很有分寸感。”"
+      },
+      {
+       "value": "clinical",
+       "label": "冷静客观",
+       "description": "“8点14分，他到了站台。火车8点12分已经开走。”"
+      },
+      {
+       "value": "melancholic",
+       "label": "忧郁",
+       "description": "“他错过了火车，就像错过了那么多事一样，在安静里站了一会儿。”"
+      },
+      {
+       "value": "wondering",
+       "label": "惊叹",
+       "description": "“他错过了火车，而在空下来的车站里，光落下的样子，是他从没停下来看过的。”"
+      }
+     ]
+    },
+    {
+     "key": "stance_note",
+     "label": "立场备注",
+     "help": "关于叙述者态度的其他说明。会原样传给模型。",
+     "input": "textarea",
+     "kind": "note",
+     "group": "stance",
+     "required": false,
+     "placeholder": "例如：喜欢这些人物，但从不煽情。"
+    },
+    {
+     "key": "amount",
+     "label": "对话量",
+     "help": "故事有多少是靠对话推进的。",
+     "input": "select",
+     "kind": "axis",
+     "group": "dialogue",
+     "required": true,
+     "why": "对话多，场景读起来更快；对话少，给叙述者留出空间。",
+     "options": [
+      {
+       "value": "sparse",
+       "label": "少",
+       "description": "两句话的对话，接一整段叙述。"
+      },
+      {
+       "value": "abundant",
+       "label": "多",
+       "description": "场景靠一来一往的对话推进。"
+      }
+     ]
+    },
+    {
+     "key": "directness",
+     "label": "表达方式",
+     "help": "人物是不是有话直说。",
+     "input": "select",
+     "kind": "axis",
+     "group": "dialogue",
+     "required": true,
+     "why": "潜台词让人物显得不那么像照着剧本说话，但对读者的要求更高。",
+     "options": [
+      {
+       "value": "direct",
+       "label": "直说",
+       "description": "“你没告诉我，我很生气。”"
+      },
+      {
+       "value": "subtext",
+       "label": "潜台词",
+       "description": "“你总算肯露面了，真是难为你。”"
+      }
+     ]
+    },
+    {
+     "key": "polish",
+     "label": "修饰程度",
+     "help": "说话听着像真的，还是经过打磨的台词。",
+     "input": "select",
+     "kind": "axis",
+     "group": "dialogue",
+     "required": true,
+     "why": "自然的说话听起来真实；打磨过的台词会留在读者心里。",
+     "options": [
+      {
+       "value": "naturalistic",
+       "label": "自然",
+       "description": "“我——不，你听我说——我的意思是——”"
+      },
+      {
+       "value": "stylised",
+       "label": "风格化",
+       "description": "“你把我当成需要你原谅的人了。”"
+      }
+     ]
+    },
+    {
+     "key": "voice_difference",
+     "label": "声音差异",
+     "help": "人物说话是否各不相同。",
+     "input": "select",
+     "kind": "axis",
+     "group": "dialogue",
+     "required": true,
+     "why": "各具特色的声音，让读者不用说话标签也知道是谁在说。",
+     "options": [
+      {
+       "value": "distinct",
+       "label": "各具特色",
+       "description": "一个人说话干脆正式；另一个人絮絮叨叨，爱开玩笑。"
+      },
+      {
+       "value": "uniform",
+       "label": "统一",
+       "description": "所有人都用故事自己的声音说话。"
+      }
+     ]
+    },
+    {
+     "key": "dialogue_note",
+     "label": "对话备注",
+     "help": "关于对话的其他说明。会原样传给模型。",
+     "input": "textarea",
+     "kind": "note",
+     "group": "dialogue",
+     "required": false,
+     "placeholder": "例如：人们会互相打断；没有长篇大论。"
+    },
+    {
+     "key": "lens",
+     "label": "视角",
+     "help": "一种留意事物的习惯，而不是一个主题。写“留意谁欠谁、东西值多少钱”，而不是“一个关于债务的故事”。主题是从叙述者留意的东西里长出来的。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "free",
+     "required": true,
+     "placeholder": "例如：留意谁欠谁、东西值多少钱",
+     "why": "视角让叙述者不断留意同一类事物，主题就从这里长出来。",
+     "examples": {
+      "good": [
+       "留意谁欠谁、东西值多少钱",
+       "留意出口，以及谁站在出口附近",
+       "留意人们回避去看的东西"
+      ],
+      "avoid": [
+       "一个关于债务的故事",
+       "背叛与救赎"
+      ]
+     }
+    },
+    {
+     "key": "genre",
+     "label": "类型",
+     "help": "一种传统或一种感觉（黑色悬疑、治愈系推理、太空歌剧）。它设定氛围和惯例，不要求特定的事件。",
+     "input": "text",
+     "kind": "free",
+     "group": "free",
+     "required": true,
+     "placeholder": "例如：黑色悬疑、治愈系推理、太空歌剧",
+     "why": "一个有名目的传统，告诉模型该用哪些惯例、略去哪些。",
+     "examples": {
+      "good": [
+       "黑色悬疑",
+       "治愈系推理",
+       "忧郁的太空歌剧"
+      ],
+      "avoid": [
+       "第一章里侦探发现一具尸体",
+       "一场带有背叛的劫案"
+      ]
+     }
+    }
+   ],
+   "rules": [
+    {
+     "id": "style_agnostic",
+     "severity": "warn",
+     "fields": [
+      "narrator_note",
+      "sentences_note",
+      "stance_note",
+      "dialogue_note",
+      "lens",
+      "genre"
+     ],
+     "check": "mentions_known_names",
+     "params": {},
+     "context": [
+      "character_names",
+      "world_names"
+     ],
+     "needs_model": false,
+     "message": "这里提到了{names}。文风要能在不同故事之间通用，所以不应点名故事里的人、地点或物件。",
+     "fix": "改写成对叙述的一般性特点，故事专属的细节放到“人物”或“世界观”里。"
+    },
+    {
+     "id": "lens_is_habit",
+     "severity": "warn",
+     "fields": [
+      "lens"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这读起来像一个主题或话题。视角最好写成一种留意事物的习惯。",
+     "fix": "试试类似“留意谁欠谁、东西值多少钱”的写法。"
+    },
+    {
+     "id": "genre_not_plot",
+     "severity": "warn",
+     "fields": [
+      "genre"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这里要求了具体的事件。类型应当设定氛围和惯例。",
+     "fix": "改写一个传统或一种感觉，比如“黑色悬疑”或“治愈系推理”。"
+    }
+   ]
+  },
+  "characters": {
+   "id": "characters",
+   "type": "root",
+   "reads": [],
+   "portable": true,
+   "between_chapters": "static",
+   "many_per_project": true,
+   "label": "人物",
+   "summary": "一个独立的个体：这个人是谁、想要什么、怎样自相矛盾、事情出错时怎么表现。它不提到其他人、地点或物件，所以可以在不同项目之间搬用。",
+   "groups": [
+    {
+     "id": "identity",
+     "collapsed": false,
+     "label": "身份",
+     "help": "故事绝不能改动的事实，外加一段简短的速写。"
+    },
+    {
+     "id": "drive",
+     "collapsed": false,
+     "label": "驱动力",
+     "help": "他们想要什么，回避什么。"
+    },
+    {
+     "id": "inner_conflict",
+     "collapsed": false,
+     "label": "内心冲突",
+     "help": "什么在妨碍他们自己，以及他们绝不会背叛什么。"
+    },
+    {
+     "id": "texture",
+     "collapsed": true,
+     "label": "特质",
+     "help": "本事、软肋和说话方式。"
+    },
+    {
+     "id": "past",
+     "collapsed": true,
+     "label": "过往",
+     "help": "成长背景。"
+    }
+   ],
+   "fields": [
+    {
+     "key": "name",
+     "label": "名字",
+     "help": "叙述里怎么称呼这个人。",
+     "input": "text",
+     "kind": "free",
+     "group": "identity",
+     "required": true,
+     "fixed": true,
+     "placeholder": "例如：林夕",
+     "why": "每一章都用这个名字称呼他们，所以选一个你不想改的名字。"
+    },
+    {
+     "key": "age",
+     "label": "年龄",
+     "help": "写一个具体数字，这样故事不会前后飘移。",
+     "input": "number",
+     "kind": "free",
+     "group": "identity",
+     "required": true,
+     "fixed": true,
+     "placeholder": "例如：34",
+     "why": "固定的数字能防止故事飘移，比如三十岁的人慢慢变得“年轻”。"
+    },
+    {
+     "key": "sex",
+     "label": "性别",
+     "help": "固定叙述中的代词，避免前后矛盾。",
+     "input": "select",
+     "kind": "axis",
+     "group": "identity",
+     "required": true,
+     "fixed": true,
+     "why": "决定每一章里使用的代词。",
+     "options": [
+      {
+       "value": "female",
+       "label": "女",
+       "description": "叙述中称“她”"
+      },
+      {
+       "value": "male",
+       "label": "男",
+       "description": "叙述中称“他”"
+      },
+      {
+       "value": "other",
+       "label": "其他",
+       "description": "叙述中称“TA”"
+      }
+     ]
+    },
+    {
+     "key": "appearance",
+     "label": "外貌",
+     "help": "具体、可核对的细节：体型、头发、面容、特征标记、常穿的衣服。写事实，不写印象。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "identity",
+     "required": true,
+     "fixed": true,
+     "placeholder": "例如：个子高而瘦，灰白的短发，左手腕有一道烧伤的疤，总穿一件帆布工作服。",
+     "why": "这里没写的细节，模型可能在后面的章节里另编一个。",
+     "examples": {
+      "good": [
+       "个子高而瘦，灰白的短发，左手腕有一道烧伤的疤"
+      ],
+      "avoid": [
+       "引人注目",
+       "看起来很危险"
+      ]
+     }
+    },
+    {
+     "key": "sketch",
+     "label": "速写",
+     "help": "用一两句话说说这个人是什么样的。写人，而不只是写一个角色定位；可能的话，加入一处不合类型的矛盾（一个凶狠的打手，却养着蜜蜂）。",
+     "input": "textarea",
+     "kind": "note",
+     "group": "identity",
+     "required": true,
+     "placeholder": "例如：一个轻声细语的伪造高手，以为没人在时会对着猫说话。",
+     "why": "最快的办法，让模型得到的是一个人，而不是一个类型。",
+     "examples": {
+      "good": [
+       "一个凶狠的打手，却养着蜜蜂",
+       "一个轻声细语的伪造高手，以为没人在时会对着猫说话"
+      ],
+      "avoid": [
+       "一个小偷",
+       "那个侦探"
+      ]
+     }
+    },
+    {
+     "key": "wants",
+     "label": "渴望",
+     "help": "两到五个抽象的愿望，不可能同时全部满足（在学校出人头地、想一个人清净）。不写具体的东西，也不写别人：指向某个人的目标放在“关系网”里。它们之间的冲突，正是推动这个人物的力量。",
+     "input": null,
+     "kind": "items",
+     "group": "drive",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "why": "彼此拉扯的渴望，才会逼这个人物做选择、去挣扎。",
+     "empty": "还没有渴望。至少添加两个彼此拉扯的。",
+     "add": "添加渴望",
+     "delete_confirm": "删除这个渴望？",
+     "item_title": "{text}",
+     "item_fields": [
+      {
+       "key": "text",
+       "label": "渴望",
+       "help": "一个愿望，几个字即可。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：想一个人清净",
+       "examples": {
+        "good": [
+         "想一个人清净",
+         "想在学校里出人头地",
+         "想被人欣赏"
+        ],
+        "avoid": [
+         "向他哥哥复仇",
+         "找到丢失的项链"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "key": "fear",
+     "label": "恐惧",
+     "help": "他们回避什么，或保护自己不受什么伤害。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "drive",
+     "required": true,
+     "placeholder": "例如：被人依赖，然后辜负了依赖自己的人。",
+     "why": "恐惧体现为人物回避的事，比起一种感受，这更容易写。"
+    },
+    {
+     "key": "flaw",
+     "label": "缺陷",
+     "help": "一个会破坏他们所渴望之事的错误信念或盲点。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "inner_conflict",
+     "required": true,
+     "placeholder": "例如：认为求人帮忙就欠下一笔永远还不清的债。",
+     "why": "一个与渴望对着干的缺陷，才会把事件变成性格。"
+    },
+    {
+     "key": "values",
+     "label": "价值观",
+     "help": "他们视为神圣或绝不背弃的东西，用正面的方式表述（“信守诺言，哪怕因此倾家荡产”）。",
+     "input": null,
+     "kind": "items",
+     "group": "inner_conflict",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "why": "价值观让人物有东西可失去，也有不会越过的底线。",
+     "empty": "还没有价值观。这个人绝不会背弃什么？",
+     "add": "添加价值观",
+     "delete_confirm": "删除这条价值观？",
+     "item_title": "{text}",
+     "item_fields": [
+      {
+       "key": "text",
+       "label": "价值观",
+       "help": "一件他们守护的事，用正面的方式表述。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：信守诺言，哪怕因此倾家荡产",
+       "examples": {
+        "good": [
+         "信守诺言，哪怕因此倾家荡产"
+        ],
+        "avoid": [
+         "从不撒谎",
+         "不伤害无辜"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "key": "behaviors",
+     "label": "行为模式",
+     "help": "他们在不同内心状态下怎么做。至少包含一种平静或快乐的状态。",
+     "input": null,
+     "kind": "pairs",
+     "group": "inner_conflict",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "why": "给模型一个会随心境不同而有不同举动的人，而不是一副固定的情绪。",
+     "empty": "还没有行为模式。先写他们安心时是什么样子。",
+     "add": "添加行为模式",
+     "delete_confirm": "删除这条行为模式？",
+     "item_title": "当{state}时，他们会{tendency}",
+     "item_fields": [
+      {
+       "key": "state",
+       "label": "当",
+       "help": "一种内心状态，或宽泛的社交状态，比如“感到被注视”“正被夸奖”“力不从心”。不是某个具体情境。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：感到被注视",
+       "examples": {
+        "good": [
+         "感到被注视",
+         "正被夸奖",
+         "力不从心"
+        ],
+        "avoid": [
+         "正在酒吧打架",
+         "警察到了"
+        ]
+       }
+      },
+      {
+       "key": "tendency",
+       "label": "他们会",
+       "help": "一种倾向或习惯，比如“沉默下来”“让手里忙个不停”。不是某一个具体的举动。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：沉默下来，手里忙个不停",
+       "examples": {
+        "good": [
+         "沉默下来",
+         "让手里忙个不停"
+        ],
+        "avoid": [
+         "一拳打在最近的墙上",
+         "从窗户离开"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "key": "competence",
+     "label": "擅长",
+     "help": "他们擅长什么。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "texture",
+     "required": true,
+     "placeholder": "例如：能读懂人的小动作；几乎什么机关都能修好。",
+     "why": "知道他们擅长什么，故事才能让这份本事派上用场。"
+    },
+    {
+     "key": "vulnerability",
+     "label": "软肋",
+     "help": "他们哪里会受伤或被抓住把柄，包括影响行为的羞耻感。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "texture",
+     "required": true,
+     "placeholder": "例如：为自己没读完书而羞愧；受不了被人嘲笑。",
+     "why": "给其他人物，也给情节，一个可以施压的地方。"
+    },
+    {
+     "key": "speech",
+     "label": "说话方式",
+     "help": "他们怎么说话：节奏、用词、绝不会说的话。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "texture",
+     "required": true,
+     "placeholder": "例如：句子短，语气干；从不说对不起。",
+     "why": "让对话听起来像这个人，而不像叙述者。"
+    },
+    {
+     "key": "history",
+     "label": "过往",
+     "help": "简短的成长背景，用来解释缺陷和渴望。不写任何故事里有名有姓的人、地点或物件。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "past",
+     "required": true,
+     "placeholder": "例如：在一间寄宿公寓里长大，那里没有一样东西是属于她的。",
+     "why": "解释缺陷和渴望。写短一些，否则会挤占篇幅。",
+     "examples": {
+      "good": [
+       "在一间寄宿公寓里长大，那里没有一样东西是属于她的"
+      ],
+      "avoid": [
+       "她的哥哥阿川在榕镇那场火之后走了"
+      ]
+     }
+    }
+   ],
+   "rules": [
+    {
+     "id": "char_other_names",
+     "severity": "warn",
+     "fields": [
+      "appearance",
+      "sketch",
+      "wants",
+      "fear",
+      "flaw",
+      "values",
+      "behaviors",
+      "competence",
+      "vulnerability",
+      "speech",
+      "history"
+     ],
+     "check": "mentions_known_names",
+     "params": {},
+     "context": [
+      "character_names",
+      "world_names"
+     ],
+     "needs_model": false,
+     "message": "这里提到了{names}。人物必须能用在任何项目里，所以不应点名其他人、地点或物件。",
+     "fix": "改写成一种特质（比如“不信任家人”）。关系写在“关系网”里，共同的过往写在“世界观”里。"
+    },
+    {
+     "id": "char_no_relationships",
+     "severity": "warn",
+     "fields": [
+      "appearance",
+      "sketch",
+      "wants",
+      "fear",
+      "flaw",
+      "values",
+      "behaviors",
+      "competence",
+      "vulnerability",
+      "speech",
+      "history"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这里描述了与另一个人的关系。人物必须能独立成立。",
+     "fix": "改写成这个人自身的一种特质，比如“不信任家人”。人与人之间的关系记录在“关系网”里。"
+    },
+    {
+     "id": "sketch_describes_person",
+     "severity": "warn",
+     "fields": [
+      "sketch"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这读起来像一个角色定位，而不是一个人。",
+     "fix": "说说这个人是什么样的。只写定位，模型就会退回到刻板印象。"
+    },
+    {
+     "id": "appearance_concrete",
+     "severity": "warn",
+     "fields": [
+      "appearance"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这里给的是印象。外貌最好写成具体细节。",
+     "fix": "列出可以核对的内容：体型、头发、面容、标记、常穿的衣服。"
+    },
+    {
+     "id": "wants_count",
+     "severity": "warn",
+     "fields": [
+      "wants"
+     ],
+     "check": "item_count",
+     "params": {
+      "min": 2
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "“渴望”至少需要两项，它们才能互相拉扯。",
+     "fix": "再加一个与第一个拉扯的渴望。"
+    },
+    {
+     "id": "wants_conflict",
+     "severity": "warn",
+     "fields": [
+      "wants"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这些渴望之间没有明显的拉扯。",
+     "fix": "加一个与其他渴望冲突的渴望。系统可以给出建议，由你决定接受或拒绝。"
+    },
+    {
+     "id": "values_positive",
+     "severity": "warn",
+     "fields": [
+      "values"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "有一条价值观读起来像一条禁令。",
+     "fix": "改成他们守护的东西，比如“信守诺言，哪怕因此倾家荡产”。"
+    },
+    {
+     "id": "behavior_state_is_inner",
+     "severity": "warn",
+     "fields": [
+      "behaviors"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "“当”一栏写的是某个具体情境。",
+     "fix": "用内心状态或宽泛的社交状态，比如“感到被注视”或“正被夸奖”。"
+    },
+    {
+     "id": "behaviors_include_calm",
+     "severity": "warn",
+     "fields": [
+      "behaviors"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "每一种状态都带着压力。请加一种平静或快乐的状态。",
+     "fix": "加一种状态，比如“感到安心”或“和信任的人在一起”。"
+    },
+    {
+     "id": "behavior_is_tendency",
+     "severity": "warn",
+     "fields": [
+      "behaviors"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "“他们会”一栏写的是某一个具体举动。",
+     "fix": "用一种习惯或倾向，这样每次都能写出新的版本。"
+    }
+   ]
+  },
+  "world": {
+   "id": "world",
+   "type": "root",
+   "reads": [],
+   "portable": true,
+   "between_chapters": "static",
+   "label": "世界观",
+   "summary": "存在什么、什么是真的：地点、物件、势力和规则。它不提到任何人物，也从不说谁持有、知道或想要什么，所以任何人物阵容都能在其中生活。",
+   "groups": [
+    {
+     "id": "overview",
+     "collapsed": false,
+     "label": "概览",
+     "help": "设定的基本情况。"
+    },
+    {
+     "id": "places",
+     "collapsed": false,
+     "label": "地点",
+     "help": "会对身处其中的人起作用的地方。"
+    },
+    {
+     "id": "things",
+     "collapsed": true,
+     "label": "物件",
+     "help": "重要的物件。没有主人，也没有位置。"
+    },
+    {
+     "id": "powers",
+     "collapsed": true,
+     "label": "势力",
+     "help": "机构、组织、国家和人群。"
+    },
+    {
+     "id": "truths",
+     "collapsed": false,
+     "label": "规则",
+     "help": "世界如何运转，以及每条规则的代价。"
+    },
+    {
+     "id": "vocabulary",
+     "collapsed": true,
+     "label": "术语",
+     "help": "自造的或本地的词。"
+    }
+   ],
+   "fields": [
+    {
+     "key": "name",
+     "label": "名字",
+     "help": "这个世界或设定叫什么。",
+     "input": "text",
+     "kind": "free",
+     "group": "overview",
+     "required": true,
+     "placeholder": "例如：盐岸",
+     "why": "模型借此每次都用同一个说法称呼这个设定。"
+    },
+    {
+     "key": "era_and_technology",
+     "label": "时代与科技",
+     "help": "是什么时候，人们能做什么、不能做什么，以及规模（一个街区、一座城、一片大陆）。写事实，不写情绪；情绪属于“文风”。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "overview",
+     "required": true,
+     "placeholder": "例如：1890年代的一座河滨城市：煤气灯和电报，没有汽车，大约四万人。",
+     "why": "告诉模型什么是可能的，这样它就不会在没有电话的世界里编出一部电话。",
+     "examples": {
+      "good": [
+       "1890年代的一座河滨城市：煤气灯和电报，没有汽车，大约四万人"
+      ],
+      "avoid": [
+       "阴郁压抑",
+       "一个昏暗沉闷的年代"
+      ]
+     }
+    },
+    {
+     "key": "everyday_life",
+     "label": "日常生活",
+     "help": "对大多数人来说，普通的一天是什么样，以及什么东西稀缺、昂贵或有争议。这就是“开局”里的变故将要打破的日常。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "overview",
+     "required": true,
+     "placeholder": "例如：大多数人在码头做工。淡水定量供应，按桶出售。",
+     "why": "这是故事将要打破的日常。没有摩擦，就没有什么可打破的。",
+     "examples": {
+      "good": [
+       "大多数人在码头做工。淡水定量供应，按桶出售。"
+      ],
+      "avoid": [
+       "人们过着普通的生活"
+      ]
+     }
+    },
+    {
+     "key": "history",
+     "label": "历史",
+     "help": "故事开始之前发生过、人们至今仍活在其影响里的事（一场战争、一场火灾、一份条约）。不写人物；凡涉及具体的人，都放进“关系网”。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "overview",
+     "required": true,
+     "placeholder": "例如：十年前的一场饥荒掏空了村庄，也挤满了城市。",
+     "why": "不需要任何一个具体的人，就能让这个世界有分量。",
+     "examples": {
+      "good": [
+       "十年前的一场饥荒掏空了村庄，也挤满了城市"
+      ],
+      "avoid": [
+       "饥荒那年春天，老国王的儿子毒死了他"
+      ]
+     }
+    },
+    {
+     "key": "places",
+     "label": "地点",
+     "help": "几处地点。每处都需要名字、具体的描述，以及这个地方对身处其中的人有什么作用。",
+     "input": null,
+     "kind": "pairs",
+     "group": "places",
+     "required": true,
+     "uncapped": true,
+     "repeat": true,
+     "why": "会对人起作用的地方，让一场戏有东西可以顶着发力。",
+     "empty": "还没有地点。添加会发生场景的地方。",
+     "add": "添加地点",
+     "delete_confirm": "删除这个地点？",
+     "item_title": "{name}",
+     "item_fields": [
+      {
+       "key": "name",
+       "label": "名字",
+       "help": "这个地方叫什么。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：账房"
+      },
+      {
+       "key": "description",
+       "label": "描述",
+       "help": "一段能在脑海里浮现的具体描述。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：一座窄窄的砖房，窗上有铁栏，门上挂着一口钟。",
+       "examples": {
+        "good": [
+         "一座窄窄的砖房，窗上有铁栏，门上挂着一口钟"
+        ],
+        "avoid": [
+         "一个阴森的老地方"
+        ]
+       }
+      },
+      {
+       "key": "effect",
+       "label": "对人的影响",
+       "help": "这个地方如何改变身处其中的人（“这里的人都压低声音”）。只是布景的地方，给不了故事任何可用的东西。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：人人都压低声音，靠左行走。",
+       "examples": {
+        "good": [
+         "人人都压低声音，靠左行走",
+         "天黑以后没人留下"
+        ],
+        "avoid": [
+         "黑暗而有氛围"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "key": "objects",
+     "label": "物件",
+     "help": "几件重要的物件。",
+     "input": null,
+     "kind": "pairs",
+     "group": "things",
+     "required": true,
+     "uncapped": true,
+     "repeat": true,
+     "why": "一件东西之所以重要，是因为有人想要它。在这里说明为什么。",
+     "empty": "还没有物件。添加有人可能想要的东西。",
+     "add": "添加物件",
+     "delete_confirm": "删除这件物件？",
+     "item_title": "{name}",
+     "item_fields": [
+      {
+       "key": "name",
+       "label": "名字",
+       "help": "这件东西叫什么。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：账本"
+      },
+      {
+       "key": "description",
+       "label": "描述",
+       "help": "具体的描述。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：一本被水浸过的书，绿布封面。"
+      },
+      {
+       "key": "significance",
+       "label": "为何重要",
+       "help": "它能做什么，或对想要它的人意味着什么。没有主人，也没有位置；这些记录在“关系网”里。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：谁持有它，谁就能证明谁欠行会的钱。",
+       "examples": {
+        "good": [
+         "谁持有它，谁就能证明谁欠行会的钱"
+        ],
+        "avoid": [
+         "它属于行会，放在金库里"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "key": "powers",
+     "label": "势力",
+     "help": "机构、组织、国家和人群。说明普通人每天怎样遇到它们（一项税、一道宵禁、一句耳语）。",
+     "input": null,
+     "kind": "pairs",
+     "group": "powers",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "why": "势力是世界向普通人施压的方式。",
+     "empty": "还没有势力。添加对普通人握有权力的一方。",
+     "add": "添加势力",
+     "delete_confirm": "删除这个势力？",
+     "item_title": "{name}",
+     "item_fields": [
+      {
+       "key": "name",
+       "label": "名字",
+       "help": "这个势力叫什么。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：水行会"
+      },
+      {
+       "key": "nature",
+       "label": "是什么",
+       "help": "一个机构、一个组织、一个国家、一群人。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：一个持牌井守人的行会。"
+      },
+      {
+       "key": "hold",
+       "label": "如何掌权",
+       "help": "武力、金钱、法律、信仰、人数。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：控制城里的每一口井，以及给井发牌照的法律。"
+      },
+      {
+       "key": "felt",
+       "label": "人们的感受",
+       "help": "普通人每天怎样遇到它。不写这个势力眼下想要什么；那属于“关系网”。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：每周一道水税，还有来查你水桶的井守人。",
+       "examples": {
+        "good": [
+         "每周一道水税",
+         "宵禁钟声，和随之而来的巡逻队"
+        ],
+        "avoid": [
+         "它打算夺下港口"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "key": "rules",
+     "label": "规则",
+     "help": "这里为真的事情。给每条规则一个代价，以及违反它的后果；没有代价的规则只是一个事实。",
+     "input": null,
+     "kind": "pairs",
+     "group": "truths",
+     "required": true,
+     "fixed": true,
+     "max_items": 5,
+     "repeat": true,
+     "why": "有代价的规则让人物有得选，而戏剧正是从选择里来的。",
+     "empty": "还没有规则。添加一条在这里为真、又要付出点什么的事。",
+     "add": "添加规则",
+     "delete_confirm": "删除这条规则？",
+     "item_title": "{statement}",
+     "item_fields": [
+      {
+       "key": "statement",
+       "label": "内容",
+       "help": "什么是真的。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：谁也不得拒绝客人一口水。"
+      },
+      {
+       "key": "cost",
+       "label": "代价",
+       "help": "遵守或依靠这条规则要付出什么。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：遇上干旱，主人自己要渴着。",
+       "examples": {
+        "good": [
+         "遇上干旱，主人自己要渴着"
+        ],
+        "avoid": [
+         "事情本来就是这样"
+        ]
+       }
+      },
+      {
+       "key": "when_broken",
+       "label": "被打破时",
+       "help": "违反它是不可能的、会受惩罚、会蒙羞，还是会有副作用。硬性的限制和有代价的选择，作用不同。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：受惩罚：全家被人躲着。",
+       "examples": {
+        "good": [
+         "受惩罚：全家被人躲着",
+         "不可能：被拒绝的陌生人面前，门打不开"
+        ],
+        "avoid": [
+         "会发生坏事"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "key": "terms",
+     "label": "术语",
+     "help": "自造的或本地的词和名字，各配一行释义，让故事保持一致。",
+     "input": null,
+     "kind": "pairs",
+     "group": "vocabulary",
+     "required": true,
+     "max_items": 5,
+     "repeat": true,
+     "why": "让自造的词在每一章里写法和用法都一致。",
+     "empty": "还没有术语。添加自造的或本地的词。",
+     "add": "添加术语",
+     "delete_confirm": "删除这条术语？",
+     "item_title": "{term}：{meaning}",
+     "item_fields": [
+      {
+       "key": "term",
+       "label": "词语",
+       "help": "这个词或名字。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：桶誓者"
+      },
+      {
+       "key": "meaning",
+       "label": "含义",
+       "help": "一行即可。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：把自己的水许给了行会的人"
+      }
+     ]
+    }
+   ],
+   "rules": [
+    {
+     "id": "world_names_people",
+     "severity": "warn",
+     "fields": [
+      "era_and_technology",
+      "everyday_life",
+      "history",
+      "places",
+      "objects",
+      "powers",
+      "rules",
+      "terms"
+     ],
+     "check": "mentions_known_names",
+     "params": {},
+     "context": [
+      "character_names"
+     ],
+     "needs_model": false,
+     "message": "这里提到了{names}。世界观必须适用于任何人物阵容，所以不应点名人物。",
+     "fix": "改写成一般性的事实。凡涉及具体的人，都放进“关系网”。"
+    },
+    {
+     "id": "history_no_people",
+     "severity": "warn",
+     "fields": [
+      "history"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这段历史涉及具体的个人。",
+     "fix": "描述事件和力量，凡与具体的人相关的，放进“关系网”。"
+    },
+    {
+     "id": "era_is_fact_not_mood",
+     "severity": "warn",
+     "fields": [
+      "era_and_technology"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这读起来像情绪。时代与科技最好写成事实。",
+     "fix": "说说人们能做什么、不能做什么，以及规模。情绪属于“文风”。"
+    },
+    {
+     "id": "everyday_has_friction",
+     "severity": "warn",
+     "fields": [
+      "everyday_life"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这里没有什么东西稀缺、昂贵或有争议。",
+     "fix": "说说人们为什么挣扎、争夺什么。这就是故事将要打破的日常。"
+    },
+    {
+     "id": "place_acts_on_people",
+     "severity": "warn",
+     "fields": [
+      "places"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "有一处地点只描述了景物。",
+     "fix": "说说这个地方对身处其中的人有什么作用，比如“这里的人都压低声音”。"
+    },
+    {
+     "id": "object_has_stakes",
+     "severity": "warn",
+     "fields": [
+      "objects"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "有一件物件没有说明为什么重要。",
+     "fix": "说说它能做什么，或对想要它的人意味着什么。"
+    },
+    {
+     "id": "object_unowned",
+     "severity": "warn",
+     "fields": [
+      "objects"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "有一件物件写了主人或位置。",
+     "fix": "删掉。谁持有它、它在哪里，记录在“关系网”里。"
+    },
+    {
+     "id": "power_felt_daily",
+     "severity": "warn",
+     "fields": [
+      "powers"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "有一个势力在日常生活中感受不到。",
+     "fix": "说说普通人怎样遇到它：一项税、一道宵禁、一句耳语。"
+    },
+    {
+     "id": "power_no_current_goals",
+     "severity": "warn",
+     "fields": [
+      "powers"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "有一个势力写了它眼下想要什么。",
+     "fix": "删掉。势力眼下想要的，记录在“关系网”里。"
+    },
+    {
+     "id": "rule_has_cost",
+     "severity": "warn",
+     "fields": [
+      "rules"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "有一条规则没有真正的代价。",
+     "fix": "加上它的代价。有代价的规则才让人有得选。"
+    },
+    {
+     "id": "rule_when_broken_clear",
+     "severity": "warn",
+     "fields": [
+      "rules"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "“被打破时”没有说明会发生什么。",
+     "fix": "说明违反它是不可能的、会受惩罚、会蒙羞，还是会有副作用。"
+    }
+   ]
+  },
+  "entanglements": {
+   "id": "entanglements",
+   "type": "glue",
+   "reads": [
+    "characters",
+    "world"
+   ],
+   "portable": false,
+   "between_chapters": "static",
+   "label": "关系网",
+   "summary": "这个故事里的各种联系：人物与群体之间的关系，以及谁持有什么。故事一旦开始，它就被锁定。",
+   "groups": [
+    {
+     "id": "ties",
+     "collapsed": false,
+     "label": "关系",
+     "help": "人物与群体之间有方向的联系。"
+    },
+    {
+     "id": "holdings",
+     "collapsed": false,
+     "label": "持有",
+     "help": "谁持有或掌控哪件物件或哪个地点。"
+    }
+   ],
+   "fields": [
+    {
+     "key": "ties",
+     "label": "关系",
+     "help": "人物和群体是怎样联系在一起的。关系是有方向的：“起点”如何看待“终点”。它的所求，是这条关系对“起点”意味着什么，也是推动“起点”的力量。",
+     "input": null,
+     "kind": "pairs",
+     "group": "ties",
+     "required": true,
+     "uncapped": true,
+     "repeat": true,
+     "why": "关系让模型在任何人开口之前，就知道人物彼此之间的立场。",
+     "empty": "还没有关系。添加两个人物或群体之间的联系。",
+     "add": "添加关系",
+     "delete_confirm": "删除这条关系？",
+     "item_title": "{tie_from} → {tie_to}",
+     "item_fields": [
+      {
+       "key": "tie_from",
+       "label": "起点",
+       "help": "一个人物或一个群体。",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "characters",
+        "world.powers"
+       ],
+       "identity": true,
+       "placeholder": "选择人物或群体",
+       "no_options": "还没有人物或群体。请先到“人物”或“世界观”里添加。",
+       "disabled_reason": "已经是这条关系的另一端。一条关系不能指向自己。"
+      },
+      {
+       "key": "tie_to",
+       "label": "终点",
+       "help": "一个人物或一个群体。",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "characters",
+        "world.powers"
+       ],
+       "identity": true,
+       "placeholder": "选择人物或群体",
+       "no_options": "还没有人物或群体。请先到“人物”或“世界观”里添加。",
+       "disabled_reason": "已经是这条关系的另一端。一条关系不能指向自己。"
+      },
+      {
+       "key": "bond",
+       "label": "纽带",
+       "help": "对这段联系的一个固定称呼，可以带上一小句共同的过去（“火灾之后一直欠她的情”）。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：火灾之后一直欠她的情",
+       "examples": {
+        "good": [
+         "火灾之后一直欠她的情",
+         "同窗时就是对手"
+        ],
+        "avoid": [
+         "想通过她的考试"
+        ]
+       }
+      },
+      {
+       "key": "edge",
+       "label": "所求",
+       "help": "这条关系对“起点”意味着什么：他们在其中的驱动力（照顾他，得到她的原谅）。纽带说明这条关系是什么；所求说明它让“起点”想要什么。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "placeholder": "例如：照顾他",
+       "why": "所求让一条关系能推动一章。",
+       "examples": {
+        "good": [
+         "照顾他",
+         "得到她的原谅"
+        ],
+        "avoid": [
+         "怨恨她",
+         "他们很亲近"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "key": "holdings",
+     "label": "持有",
+     "help": "谁持有或掌控哪件物件或哪个地点。",
+     "input": null,
+     "kind": "pairs",
+     "group": "holdings",
+     "required": true,
+     "uncapped": true,
+     "repeat": true,
+     "why": "谁持有什么，让物件和地点有了故事里可以争夺的主人。",
+     "empty": "还没有持有关系。添加谁持有或掌控某件物件或某个地点。",
+     "add": "添加持有",
+     "delete_confirm": "删除这条持有？",
+     "item_title": "{held_by}持有{holdee}",
+     "item_fields": [
+      {
+       "key": "holdee",
+       "label": "物件或地点",
+       "help": "取自“世界观”的一件物件或一个地点。",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "world.objects",
+        "world.places"
+       ],
+       "identity": true,
+       "placeholder": "选择物件或地点",
+       "no_options": "还没有物件或地点。请先到“世界观”里添加。"
+      },
+      {
+       "key": "held_by",
+       "label": "持有者",
+       "help": "谁持有它。可选项取决于它是什么。",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "characters",
+        "world.powers",
+        "world.places"
+       ],
+       "ref_filter_by": "holdee",
+       "placeholder": "选择持有者",
+       "why": "告诉模型故事开始时，谁拥有这件物件或这个地点。",
+       "no_options": "暂时没有谁能持有它。请先添加人物、群体或地点。",
+       "filtered_note": "这里只列出适合这类东西的持有者。"
+      }
+     ]
+    }
+   ],
+   "rules": [
+    {
+     "id": "tie_not_self",
+     "severity": "block",
+     "fields": [
+      "ties"
+     ],
+     "check": "fields_differ",
+     "params": {
+      "fields": [
+       "tie_from",
+       "tie_to"
+      ]
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "有一条关系从某人指向了他自己。",
+     "fix": "把某一端换成另一个人物或群体。"
+    },
+    {
+     "id": "holding_pair_allowed",
+     "severity": "block",
+     "fields": [
+      "holdings"
+     ],
+     "check": "holding_pairs_allowed",
+     "params": {
+      "table": "HOLDING_PAIRS"
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "这类东西不允许由这位持有者持有。",
+     "fix": "请从为它列出的持有者中选择。"
+    },
+    {
+     "id": "link_broken",
+     "severity": "block",
+     "fields": [
+      "ties",
+      "holdings"
+     ],
+     "check": "ref_exists",
+     "params": {},
+     "context": [
+      "character_ids",
+      "world_item_ids"
+     ],
+     "needs_model": false,
+     "message": "这里指向的东西已经不存在了。",
+     "fix": "请选一个替代项，或删除这一条。"
+    },
+    {
+     "id": "tie_edge_is_live",
+     "severity": "warn",
+     "fields": [
+      "ties"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这个所求没有说明这条关系对这个人意味着什么。",
+     "fix": "写明“起点”希望这条关系带来或做成什么，比如“照顾他”，而不只是他们的感受。"
+    }
+   ],
+   "holding_pairs": {
+    "world.objects": [
+     "characters",
+     "world.powers",
+     "world.places"
+    ],
+    "world.places": [
+     "characters",
+     "world.powers"
+    ]
+   }
+  },
+  "setup": {
+   "id": "setup",
+   "type": "launch",
+   "reads": [
+    "style",
+    "characters",
+    "world",
+    "entanglements"
+   ],
+   "portable": false,
+   "between_chapters": "static",
+   "label": "开局",
+   "summary": "故事的起跳点：我们跟随谁、什么打破了他们的日常、故事写多长。这里不含方案，也不含结局，故事进行中也不会改变。",
+   "groups": [
+    {
+     "id": "opening",
+     "collapsed": false,
+     "label": "起点",
+     "help": "我们跟随谁，什么打破了日常。"
+    },
+    {
+     "id": "push",
+     "collapsed": false,
+     "label": "篇幅",
+     "help": "故事写多长。"
+    }
+   ],
+   "fields": [
+    {
+     "key": "protagonist",
+     "label": "主角",
+     "help": "我们透过谁的眼睛看故事。有且只有一位，整个故事固定不变。这是唯一标明谁是主角的地方。",
+     "input": "select",
+     "kind": "free",
+     "group": "opening",
+     "required": true,
+     "ref": [
+      "characters"
+     ],
+     "placeholder": "选择主角",
+     "why": "模型会从这个人的视角叙述，人称和时态按你在“文风”里的设定。",
+     "no_options": "还没有人物。请先到“人物”里添加主角。"
+    },
+    {
+     "key": "normal",
+     "label": "日常",
+     "help": "故事开始前，主角寻常的一天，取材于“世界观”里的日常生活。写出这份日常给了他们什么（安全感、地位，或是一套让某个渴望或恐惧保持安静的习惯），这样变故才有东西可以威胁。只有第一章会用到这一项；后面的章节通过已发生的事把它延续下去。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "opening",
+     "required": true,
+     "placeholder": "例如：林夕每天六点开印刷铺，扫地，替邻居们记账。这套习惯让她安稳，也让她不必去问父亲的事。",
+     "why": "给变故一个可以打破的东西。",
+     "examples": {
+      "good": [
+       "每天六点开印刷铺，替邻居们记账；这套习惯让她安稳，也让她不必去问父亲的事"
+      ],
+      "avoid": [
+       "正常快乐的生活",
+       "她觉得很无聊"
+      ]
+     }
+    },
+    {
+     "key": "disruption",
+     "label": "变故",
+     "help": "打破日常的那件事。是一个事件，而不是一种状态：“账本不见了”，而不是“气氛很紧张”。只有第一章会用到这一项。",
+     "input": "textarea",
+     "kind": "free",
+     "group": "opening",
+     "required": true,
+     "placeholder": "例如：一位顾客把账本留在柜台上，再也没有回来。",
+     "why": "第一章从一件已经发生的事开始，模型就有了起笔的火花。",
+     "examples": {
+      "good": [
+       "账本不见了",
+       "一个陌生人来了，带着一封信，信上是她母亲的笔迹"
+      ],
+      "avoid": [
+       "气氛很紧张",
+       "她的生活崩塌了"
+      ]
+     }
+    },
+    {
+     "key": "chapter_count",
+     "label": "章数",
+     "help": "这是预算，不是固定路线。",
+     "input": "number",
+     "kind": "free",
+     "group": "push",
+     "required": true,
+     "placeholder": "例如：12",
+     "why": "模型会朝着这个数字去规划，并知道自己什么时候在写最后一章。"
+    }
+   ],
+   "rules": [
+    {
+     "id": "protagonist_link_broken",
+     "severity": "block",
+     "fields": [
+      "protagonist"
+     ],
+     "check": "ref_exists",
+     "params": {},
+     "context": [
+      "character_ids"
+     ],
+     "needs_model": false,
+     "message": "主角已经不在“人物”里了。",
+     "fix": "请选一个人物。"
+    },
+    {
+     "id": "normal_is_concrete",
+     "severity": "warn",
+     "fields": [
+      "normal"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这里没有写出具体的人、地点或习惯，也没写这份日常给了主角什么。",
+     "fix": "请描述寻常的一天，以及它给了主角什么：安全感、地位，或是一套让某个渴望或恐惧保持安静的习惯。"
+    },
+    {
+     "id": "disruption_is_event",
+     "severity": "warn",
+     "fields": [
+      "disruption"
+     ],
+     "check": "",
+     "params": {},
+     "context": [],
+     "needs_model": true,
+     "message": "这里写的是一种状态，而不是一个事件。",
+     "fix": "写清楚发生了什么，比如“账本不见了”，而不是“气氛很紧张”。"
+    },
+    {
+     "id": "protagonist_has_tie",
+     "severity": "warn",
+     "fields": [
+      "protagonist"
+     ],
+     "check": "person_has_tie",
+     "params": {},
+     "context": [
+      "ties"
+     ],
+     "needs_model": false,
+     "message": "主角不在任何一条关系的任何一端。",
+     "fix": "添加一条以主角为起点或终点的关系，这样他们的所求就能推动故事。这只是建议：主角没有关系也是允许的。"
+    }
+   ]
+  },
+  "outline": {
+   "id": "outline",
+   "type": "growing",
+   "reads": [
+    "style",
+    "characters",
+    "world",
+    "entanglements",
+    "setup",
+    "summary_events",
+    "shifts"
+   ],
+   "portable": false,
+   "between_chapters": "append",
+   "label": "大纲",
+   "summary": "每章一条起跳的细纲，从故事当前的位置一次规划一章。某一章在写作期间，它的细纲会被冻结；生成之前，你就能看到下一章的方案。",
+   "groups": [
+    {
+     "id": "beats",
+     "collapsed": false,
+     "label": "细纲",
+     "help": "每章一条。"
+    }
+   ],
+   "fields": [
+    {
+     "key": "beats",
+     "label": "细纲",
+     "help": "每条细纲为一章做好铺垫：它从哪里开场、谁在场、聚焦哪条关系、主角想要什么，以及写作时要遵循的方案。目标和聚焦关系是这一章要让它们碰撞的东西；这次碰面如何收场，由本章自己决定。",
+     "input": null,
+     "kind": "pairs",
+     "group": "beats",
+     "required": true,
+     "uncapped": true,
+     "repeat": true,
+     "empty": "还没有细纲。选好出场人物后点“规划”，或手动添加一条。",
+     "add": "添加细纲",
+     "delete_confirm": "删除这条细纲？",
+     "item_title": "第{chapter}章",
+     "item_fields": [
+      {
+       "key": "chapter",
+       "label": "章节",
+       "help": "这条细纲对应第几章。由系统设置。",
+       "input": "number",
+       "kind": "note",
+       "required": true,
+       "filled_by": "code",
+       "placeholder": "由系统设置"
+      },
+      {
+       "key": "stale",
+       "label": "可能已不合适",
+       "help": "当某个更早的章节在这条细纲规划之后被重写时设置，这样这条细纲、它的章节和相关记录就可能彼此脱节。该章节重写后清除。",
+       "input": "checkbox",
+       "kind": "note",
+       "required": false,
+       "default": false,
+       "filled_by": "code"
+      },
+      {
+       "key": "where",
+       "label": "地点",
+       "help": "本章从哪里开场。取自“世界观”里的一个地点。",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "world.places"
+       ],
+       "filled_by": "planner",
+       "placeholder": "选择开场地点",
+       "why": "把开场固定在你定义过的地点上，模型就不会自己编一个。",
+       "no_options": "还没有地点。请先到“世界观”里添加。"
+      },
+      {
+       "key": "when_time",
+       "label": "时间",
+       "help": "本章开场的日期和时间。场景此时已经在进行中。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner",
+       "placeholder": "例如：周二，店刚开门不久",
+       "why": "模型会从这个时刻、场景进行到一半时开始写；后面的规划会把这些时间当作时间线来读。"
+      },
+      {
+       "key": "cast",
+       "label": "出场人物",
+       "help": "谁在场。规划之前由你选定。主角和聚焦关系的两位人物必须都在其中。",
+       "input": "select-multiple",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "characters"
+       ],
+       "filled_by": "human",
+       "max_selected": 5,
+       "placeholder": "选择谁在场（最多5位）",
+       "why": "只有这些人物会出现在本章。其他人可以被提到或被想起，但不会登场。",
+       "no_options": "还没有人物。请先到“人物”里添加。"
+      },
+      {
+       "key": "spotlight",
+       "label": "聚焦",
+       "help": "本章围绕的那条关系：它的两位人物以及他们之间的关系。系统会随机选一条，或由规划者选择，你也可以更改。两位人物都必须在出场人物里。",
+       "input": "select",
+       "kind": "note",
+       "required": true,
+       "ref": [
+        "entanglements.ties"
+       ],
+       "filled_by": "code",
+       "placeholder": "选择一条关系",
+       "why": "给本章一段可以着力的关系，并让故事分散到各条关系上，而不是被某一条线占满。",
+       "no_options": "还没有关系。请先到“关系网”里添加。"
+      },
+      {
+       "key": "pressure",
+       "label": "世界压力",
+       "help": "世界中的一条规则或一件物件，本章必须让它派上用场：它改变某人能做的事、逼人做出选择，或让某人付出代价。系统会为每一章随机选一个，或由规划者选择，你也可以更改。",
+       "input": "select",
+       "kind": "note",
+       "required": false,
+       "ref": [
+        "world.rules",
+        "world.objects"
+       ],
+       "filled_by": "code",
+       "placeholder": "选择一条规则或一件物件",
+       "why": "不让世界只是背景：本章必须撞上世界里实实在在的东西。",
+       "no_options": "还没有规则或物件。请先到“世界观”里添加。"
+      },
+      {
+       "key": "aim",
+       "label": "主角想要什么",
+       "help": "主角在本章想得到或想做成的事。规划者每章都会写，让它撞上聚焦关系。两者碰面的过程，由负责写作的模型来演绎。",
+       "input": "text",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner",
+       "placeholder": "例如：赶在审计员到来之前，让行会书记员在许可证上签字",
+       "why": "给本章一台发动机：主角在追的东西，以及它会遇上的一条关系。",
+       "examples": {
+        "good": [
+         "赶在审计员到来之前，让行会书记员在许可证上签字",
+         "赶在董事会的书记员之前赶到地窖"
+        ],
+        "avoid": [
+         "对父亲的事释怀",
+         "想明白自己的人生"
+        ]
+       }
+      },
+      {
+       "key": "plan",
+       "label": "方案",
+       "help": "规划者为本章定的方案：发生什么，按什么顺序。负责写作的模型会看到它。生成之前你可以修改。",
+       "input": "textarea",
+       "kind": "note",
+       "required": true,
+       "filled_by": "planner",
+       "placeholder": "由规划者写出",
+       "why": "这是写作要遵循的内容，所以如果本章该走别的方向，就改它。"
+      },
+      {
+       "key": "outcome",
+       "label": "预定结局",
+       "help": "方案如何收束本章：主角得到想要的，失去它，或为了别的而放弃它。方案制定时由系统设置；章节摘要会被告知这一点。",
+       "input": "select",
+       "kind": "note",
+       "required": false,
+       "filled_by": "code",
+       "options": [
+        {
+         "value": "reached",
+         "label": "得到，但付出代价",
+         "description": "得到想要的，但要为此付出代价。"
+        },
+        {
+         "value": "lost",
+         "label": "失去",
+         "description": "没有得到想要的。"
+        },
+        {
+         "value": "gave_up",
+         "label": "为别的而放弃",
+         "description": "放下它，转向别的事。"
+        }
+       ]
+      },
+      {
+       "key": "planned_from",
+       "label": "规划依据",
+       "help": "这条细纲所依据内容的指纹。由系统设置。如果之后这些内容变了，这条细纲就会被标为依据旧状态规划。",
+       "input": "text",
+       "kind": "note",
+       "required": false,
+       "filled_by": "code",
+       "placeholder": "规划细纲时设置"
+      }
+     ]
+    }
+   ],
+   "rules": [
+    {
+     "id": "outline_link_broken",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "ref_exists",
+     "params": {},
+     "context": [
+      "character_ids",
+      "world_item_ids",
+      "tie_ids"
+     ],
+     "needs_model": false,
+     "message": "有一条细纲指向了已经不存在的东西。",
+     "fix": "请选一个替代项，或让它重新规划这条细纲。"
+    },
+    {
+     "id": "cast_has_protagonist",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "includes_value",
+     "params": {
+      "field": "cast",
+      "value_from": "setup.protagonist"
+     },
+     "context": [],
+     "needs_model": false,
+     "message": "出场人物里没有主角。",
+     "fix": "请加入主角。每一章都有他们。"
+    },
+    {
+     "id": "spotlight_pair_in_cast",
+     "severity": "block",
+     "fields": [
+      "beats"
+     ],
+     "check": "tie_ends_in_cast",
+     "params": {
+      "field": "spotlight",
+      "cast": "cast"
+     },
+     "context": [
+      "ties"
+     ],
+     "needs_model": false,
+     "message": "聚焦关系中有一位人物不在出场人物里。",
+     "fix": "请把这条关系的两位人物都加入出场人物，或换一条聚焦关系。"
+    },
+    {
+     "id": "aim_not_repeated",
+     "severity": "warn",
+     "fields": [
+      "beats"
+     ],
+     "check": "similar_to_earlier",
+     "params": {
+      "field": "aim"
+     },
+     "context": [
+      "earlier_aims",
+      "changed_lines"
+     ],
+     "needs_model": false,
+     "message": "这个目标与之前的某一个太接近了。",
+     "fix": "换一个步骤作为目标，或围绕上一章改变了的东西来定。"
+    }
+   ]
+  }
+ }
+}

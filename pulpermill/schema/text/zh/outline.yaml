@@ -1,0 +1,49 @@
+# 简体中文文本。结构与 text/en/ 完全相同：键、{标记}不变；expand、lead_in、item_template、item_join、judge_prompt 保持英文原文。术语见 docs/zh-glossary.md。
+card: {label: 大纲, summary: 每章一条起跳的细纲，从故事当前的位置一次规划一章。某一章在写作期间，它的细纲会被冻结；生成之前，你就能看到下一章的方案。}
+groups:
+  beats: {label: 细纲, help: 每章一条。}
+fields:
+  beats:
+    label: 细纲
+    help: 每条细纲为一章做好铺垫：它从哪里开场、谁在场、聚焦哪条关系、主角想要什么，以及写作时要遵循的方案。目标和聚焦关系是这一章要让它们碰撞的东西；这次碰面如何收场，由本章自己决定。
+    empty: 还没有细纲。选好出场人物后点“规划”，或手动添加一条。
+    add: 添加细纲
+    delete_confirm: 删除这条细纲？
+    item_title: 第{chapter}章
+    lead_in: 'The plans for the chapters:
+
+      {items}'
+    item_template: 'The chapter opens at {where}. The time is {when_time}. The people on stage are {cast}. The tie in the spotlight is {spotlight} The protagonist is after this: {aim} The plan for the chapter: {plan}'
+    item_join: '
+
+      '
+    item_fields:
+      chapter: {label: 章节, help: 这条细纲对应第几章。由系统设置。, placeholder: 由系统设置}
+      stale: {label: 可能已不合适, help: 当某个更早的章节在这条细纲规划之后被重写时设置，这样这条细纲、它的章节和相关记录就可能彼此脱节。该章节重写后清除。}
+      where: {label: 地点, help: 本章从哪里开场。取自“世界观”里的一个地点。, placeholder: 选择开场地点, why: 把开场固定在你定义过的地点上，模型就不会自己编一个。, no_options: 还没有地点。请先到“世界观”里添加。}
+      when_time: {label: 时间, help: 本章开场的日期和时间。场景此时已经在进行中。, placeholder: 例如：周二，店刚开门不久, why: 模型会从这个时刻、场景进行到一半时开始写；后面的规划会把这些时间当作时间线来读。}
+      cast: {label: 出场人物, help: 谁在场。规划之前由你选定。主角和聚焦关系的两位人物必须都在其中。, placeholder: 选择谁在场（最多5位）, why: 只有这些人物会出现在本章。其他人可以被提到或被想起，但不会登场。, no_options: 还没有人物。请先到“人物”里添加。}
+      spotlight: {label: 聚焦, help: 本章围绕的那条关系：它的两位人物以及他们之间的关系。系统会随机选一条，或由规划者选择，你也可以更改。两位人物都必须在出场人物里。, placeholder: 选择一条关系, why: 给本章一段可以着力的关系，并让故事分散到各条关系上，而不是被某一条线占满。, no_options: 还没有关系。请先到“关系网”里添加。}
+      pressure: {label: 世界压力, help: 世界中的一条规则或一件物件，本章必须让它派上用场：它改变某人能做的事、逼人做出选择，或让某人付出代价。系统会为每一章随机选一个，或由规划者选择，你也可以更改。, placeholder: 选择一条规则或一件物件, why: 不让世界只是背景：本章必须撞上世界里实实在在的东西。, no_options: 还没有规则或物件。请先到“世界观”里添加。}
+      aim:
+        label: 主角想要什么
+        help: 主角在本章想得到或想做成的事。规划者每章都会写，让它撞上聚焦关系。两者碰面的过程，由负责写作的模型来演绎。
+        placeholder: 例如：赶在审计员到来之前，让行会书记员在许可证上签字
+        why: 给本章一台发动机：主角在追的东西，以及它会遇上的一条关系。
+        examples:
+          good: [赶在审计员到来之前，让行会书记员在许可证上签字, 赶在董事会的书记员之前赶到地窖]
+          avoid: [对父亲的事释怀, 想明白自己的人生]
+      plan: {label: 方案, help: 规划者为本章定的方案：发生什么，按什么顺序。负责写作的模型会看到它。生成之前你可以修改。, placeholder: 由规划者写出, why: 这是写作要遵循的内容，所以如果本章该走别的方向，就改它。}
+      outcome:
+        label: 预定结局
+        help: 方案如何收束本章：主角得到想要的，失去它，或为了别的而放弃它。方案制定时由系统设置；章节摘要会被告知这一点。
+        options:
+          reached: {label: 得到，但付出代价, description: 得到想要的，但要为此付出代价。, expand: 'The chapter was planned to end with the protagonist reaching what they were after, at a price. That is how it ended.'}
+          lost: {label: 失去, description: 没有得到想要的。, expand: The chapter was planned to end with the protagonist losing what they were after. That is how it ended.}
+          gave_up: {label: 为别的而放弃, description: 放下它，转向别的事。, expand: The chapter was planned to end with the protagonist giving up what they were after for something else. That is how it ended.}
+      planned_from: {label: 规划依据, help: 这条细纲所依据内容的指纹。由系统设置。如果之后这些内容变了，这条细纲就会被标为依据旧状态规划。, placeholder: 规划细纲时设置}
+rules:
+  outline_link_broken: {message: 有一条细纲指向了已经不存在的东西。, fix: 请选一个替代项，或让它重新规划这条细纲。}
+  cast_has_protagonist: {message: 出场人物里没有主角。, fix: 请加入主角。每一章都有他们。}
+  spotlight_pair_in_cast: {message: 聚焦关系中有一位人物不在出场人物里。, fix: 请把这条关系的两位人物都加入出场人物，或换一条聚焦关系。}
+  aim_not_repeated: {message: 这个目标与之前的某一个太接近了。, fix: 换一个步骤作为目标，或围绕上一章改变了的东西来定。}

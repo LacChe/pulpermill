@@ -1,0 +1,5 @@
+# 简体中文文本。结构与 text/en/ 完全相同：键、{标记}不变；expand、lead_in、item_template、item_join、judge_prompt 保持英文原文。术语见 docs/zh-glossary.md。
+missing: {message: '{label}还没有填写。', fix: 请填写，或让模型给出建议。草稿可以先保存，但填写完整之前无法生成故事。}
+not_allowed: {message: '{label}的值不在可选项之内。', fix: 请从列出的选项中选择。}
+too_many: {message: '{label}最多只能有{max}项。', fix: 请删掉一项，或把相近的几项合并。}
+invalid: {message: '{label}的值无法使用。', fix: 请检查输入后重试。}

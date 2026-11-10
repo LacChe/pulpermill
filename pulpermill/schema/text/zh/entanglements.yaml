@@ -1,0 +1,62 @@
+# 简体中文文本。结构与 text/en/ 完全相同：键、{标记}不变；expand、lead_in、item_template、item_join、judge_prompt 保持英文原文。术语见 docs/zh-glossary.md。
+card: {label: 关系网, summary: 这个故事里的各种联系：人物与群体之间的关系，以及谁持有什么。故事一旦开始，它就被锁定。}
+groups:
+  ties: {label: 关系, help: 人物与群体之间有方向的联系。}
+  holdings: {label: 持有, help: 谁持有或掌控哪件物件或哪个地点。}
+fields:
+  ties:
+    label: 关系
+    help: 人物和群体是怎样联系在一起的。关系是有方向的：“起点”如何看待“终点”。它的所求，是这条关系对“起点”意味着什么，也是推动“起点”的力量。
+    why: 关系让模型在任何人开口之前，就知道人物彼此之间的立场。
+    empty: 还没有关系。添加两个人物或群体之间的联系。
+    add: 添加关系
+    delete_confirm: 删除这条关系？
+    item_title: '{tie_from} → {tie_to}'
+    lead_in: 'Ties between people and groups:
+
+      {items}'
+    item_template: '{tie_from} toward {tie_to}: {bond} Drives {tie_from}: {edge}'
+    item_join: '
+
+      '
+    item_fields:
+      tie_from: {label: 起点, help: 一个人物或一个群体。, placeholder: 选择人物或群体, no_options: 还没有人物或群体。请先到“人物”或“世界观”里添加。, disabled_reason: 已经是这条关系的另一端。一条关系不能指向自己。}
+      tie_to: {label: 终点, help: 一个人物或一个群体。, placeholder: 选择人物或群体, no_options: 还没有人物或群体。请先到“人物”或“世界观”里添加。, disabled_reason: 已经是这条关系的另一端。一条关系不能指向自己。}
+      bond:
+        label: 纽带
+        help: 对这段联系的一个固定称呼，可以带上一小句共同的过去（“火灾之后一直欠她的情”）。
+        placeholder: 例如：火灾之后一直欠她的情
+        examples:
+          good: [火灾之后一直欠她的情, 同窗时就是对手]
+          avoid: [想通过她的考试]
+      edge:
+        label: 所求
+        help: 这条关系对“起点”意味着什么：他们在其中的驱动力（照顾他，得到她的原谅）。纽带说明这条关系是什么；所求说明它让“起点”想要什么。
+        placeholder: 例如：照顾他
+        why: 所求让一条关系能推动一章。
+        examples:
+          good: [照顾他, 得到她的原谅]
+          avoid: [怨恨她, 他们很亲近]
+  holdings:
+    label: 持有
+    help: 谁持有或掌控哪件物件或哪个地点。
+    why: 谁持有什么，让物件和地点有了故事里可以争夺的主人。
+    empty: 还没有持有关系。添加谁持有或掌控某件物件或某个地点。
+    add: 添加持有
+    delete_confirm: 删除这条持有？
+    item_title: '{held_by}持有{holdee}'
+    lead_in: 'Who holds or controls what:
+
+      {items}'
+    item_template: '{held_by} holds or controls {holdee}'
+    item_join: '
+
+      '
+    item_fields:
+      holdee: {label: 物件或地点, help: 取自“世界观”的一件物件或一个地点。, placeholder: 选择物件或地点, no_options: 还没有物件或地点。请先到“世界观”里添加。}
+      held_by: {label: 持有者, help: 谁持有它。可选项取决于它是什么。, placeholder: 选择持有者, why: 告诉模型故事开始时，谁拥有这件物件或这个地点。, no_options: 暂时没有谁能持有它。请先添加人物、群体或地点。, filtered_note: 这里只列出适合这类东西的持有者。}
+rules:
+  tie_not_self: {message: 有一条关系从某人指向了他自己。, fix: 把某一端换成另一个人物或群体。}
+  holding_pair_allowed: {message: 这类东西不允许由这位持有者持有。, fix: 请从为它列出的持有者中选择。}
+  link_broken: {message: 这里指向的东西已经不存在了。, fix: 请选一个替代项，或删除这一条。}
+  tie_edge_is_live: {message: 这个所求没有说明这条关系对这个人意味着什么。, fix: 写明“起点”希望这条关系带来或做成什么，比如“照顾他”，而不只是他们的感受。, judge_prompt: 'For each tie, does the edge say what the tie means to the person at the from end, so that it works as their driver? Answer yes or no for each. Rewrite any that fail.'}

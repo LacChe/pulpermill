@@ -1,0 +1,33 @@
+# 简体中文文本。结构与 text/en/ 完全相同：键、{标记}不变；expand、lead_in、item_template、item_join、judge_prompt 保持英文原文。术语见 docs/zh-glossary.md。
+card: {label: 变动, summary: 一张卡片发生了什么变化，写成只含变化值的精简副本。故事一旦开始，卡片就被锁定，所以变化就是这样发生的：某一章改变关系的所求，故事的结尾改变人物。}
+groups:
+  entries: {label: 记录, help: 每章会为关系网写一条；最后一章之后，每个有变化的人物各有一条。}
+fields:
+  entries:
+    label: 记录
+    help: 每张有变化的卡片一条记录。固定字段（名字、年龄、性别、外貌）不会出现。
+    lead_in: 'How the cards have changed so far (a changed value wins over the card where they disagree):
+
+      {items}'
+    item_template: 'In chapter {beat}, {card} {target} changed: {patch}'
+    item_join: '
+
+      '
+    item_fields:
+      beat: {label: 章节, help: 哪一章，以编号显示。由系统设置。}
+      card:
+        label: 卡片
+        help: 哪张卡片发生了变化。
+        options:
+          characters: {label: 人物, expand: the character}
+          entanglements: {label: 关系网, expand: the ties and holdings}
+      target: {label: 人物, help: 谁发生了变化。只用于人物；关系网留空。}
+      patch: {label: 变化内容, help: 一张只含变化值的部分卡片，使用该卡片自己的字段键。单个值写入它的新值；列表写入对其条目的新增、替换或删除操作。绝不包含固定字段，也绝不包含已有条目的标识。}
+rules:
+  shift_unique: {message: 有两条记录对应同一章、同一张卡片和同一位人物。, fix: 把它们合并成一条。}
+  shifts_per_chapter_max: {message: 同一章记录的变动超过七条。（最后一章不计入：它还包含每位人物的故事结局变动。）, fix: 每张卡片保留一条，每位人物保留一条。}
+  shift_target_in_cast: {message: 有一条人物记录写的是不在本章出场人物里的人，或者没有写明是谁。（最后一章不检查：它的人物记录是故事结局的记录。）, fix: 只为登场过的人物记录变化，并写明是哪位人物。}
+  shift_patch_valid: {message: 有一份变化内容对它的卡片无效。, fix: 只使用该卡片可变的字段，值的类型要正确，不要包含固定字段或条目标识。}
+  shift_link_broken: {message: 有一条记录指向的章节、人物或其他条目已经不存在。, fix: 删除这条记录，或让它指向仍然存在的东西。}
+  shift_patch_not_empty: {message: 有一份变化内容是空的。, fix: 写下变化了什么，或者不要保留这条记录。}
+  shift_is_a_change: {message: 这里记录的是一项一贯的特质，而不是本章发生的变化。, fix: 只记录现在有什么不同。, judge_prompt: 'Does each entry state something that changed in this chapter, rather than a standing trait? Answer yes or no for each. Rewrite or drop any that fail.'}

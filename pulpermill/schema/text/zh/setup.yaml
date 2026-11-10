@@ -1,0 +1,31 @@
+# 简体中文文本。结构与 text/en/ 完全相同：键、{标记}不变；expand、lead_in、item_template、item_join、judge_prompt 保持英文原文。术语见 docs/zh-glossary.md。
+card: {label: 开局, summary: 故事的起跳点：我们跟随谁、什么打破了他们的日常、故事写多长。这里不含方案，也不含结局，故事进行中也不会改变。}
+groups:
+  opening: {label: 起点, help: 我们跟随谁，什么打破了日常。}
+  push: {label: 篇幅, help: 故事写多长。}
+fields:
+  protagonist: {label: 主角, help: 我们透过谁的眼睛看故事。有且只有一位，整个故事固定不变。这是唯一标明谁是主角的地方。, placeholder: 选择主角, why: 模型会从这个人的视角叙述，人称和时态按你在“文风”里的设定。, no_options: 还没有人物。请先到“人物”里添加主角。, lead_in: 'The story follows {value}.'}
+  normal:
+    label: 日常
+    help: 故事开始前，主角寻常的一天，取材于“世界观”里的日常生活。写出这份日常给了他们什么（安全感、地位，或是一套让某个渴望或恐惧保持安静的习惯），这样变故才有东西可以威胁。只有第一章会用到这一项；后面的章节通过已发生的事把它延续下去。
+    placeholder: 例如：林夕每天六点开印刷铺，扫地，替邻居们记账。这套习惯让她安稳，也让她不必去问父亲的事。
+    why: 给变故一个可以打破的东西。
+    examples:
+      good: [每天六点开印刷铺，替邻居们记账；这套习惯让她安稳，也让她不必去问父亲的事]
+      avoid: [正常快乐的生活, 她觉得很无聊]
+    lead_in: 'Before the story, the protagonist''s ordinary life: {value}'
+  disruption:
+    label: 变故
+    help: 打破日常的那件事。是一个事件，而不是一种状态：“账本不见了”，而不是“气氛很紧张”。只有第一章会用到这一项。
+    placeholder: 例如：一位顾客把账本留在柜台上，再也没有回来。
+    why: 第一章从一件已经发生的事开始，模型就有了起笔的火花。
+    examples:
+      good: [账本不见了, 一个陌生人来了，带着一封信，信上是她母亲的笔迹]
+      avoid: [气氛很紧张, 她的生活崩塌了]
+    lead_in: 'What just broke that normal: {value}'
+  chapter_count: {label: 章数, help: 这是预算，不是固定路线。, placeholder: 例如：12, why: 模型会朝着这个数字去规划，并知道自己什么时候在写最后一章。, lead_in: 'The story runs for {value} chapters.'}
+rules:
+  protagonist_link_broken: {message: 主角已经不在“人物”里了。, fix: 请选一个人物。}
+  normal_is_concrete: {message: 这里没有写出具体的人、地点或习惯，也没写这份日常给了主角什么。, fix: 请描述寻常的一天，以及它给了主角什么：安全感、地位，或是一套让某个渴望或恐惧保持安静的习惯。, judge_prompt: 'Does this text describe a concrete ordinary day with specific routines, people or places, and say what that normal gave the protagonist? Answer yes or no. If no, suggest a rewrite.'}
+  disruption_is_event: {message: 这里写的是一种状态，而不是一个事件。, fix: 写清楚发生了什么，比如“账本不见了”，而不是“气氛很紧张”。, judge_prompt: 'Does this text describe something that happened, an event, rather than a standing condition? Answer yes or no. If no, suggest a rewrite as an event.'}
+  protagonist_has_tie: {message: 主角不在任何一条关系的任何一端。, fix: 添加一条以主角为起点或终点的关系，这样他们的所求就能推动故事。这只是建议：主角没有关系也是允许的。}

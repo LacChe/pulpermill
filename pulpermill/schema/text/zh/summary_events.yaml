@@ -1,0 +1,23 @@
+# 简体中文文本。结构与 text/en/ 完全相同：键、{标记}不变；expand、lead_in、item_template、item_join、judge_prompt 保持英文原文。术语见 docs/zh-glossary.md。
+card: {label: 事件摘要, summary: 每一章发生了什么，按顺序排列：外在的故事。每章一条，在该章写完后写成；如果该章被重写，整条会被替换。}
+groups:
+  entries: {label: 记录, help: 每章一条。}
+fields:
+  entries:
+    label: 记录
+    help: 每章一条记录。
+    lead_in: 'What has happened so far (this is the record of the story; where it disagrees with the cards above, it wins):
+
+      {items}'
+    item_template: 'Chapter {beat}: {happened} What changed for the protagonist: {changed}'
+    item_join: '
+
+      '
+    item_fields:
+      beat: {label: 章节, help: 哪一章，以编号显示。由系统设置。}
+      happened: {label: 发生了什么, help: 本章的事件，按顺序，每个事件一句话（通常4到8句）。事件会改变谁知道什么、谁拥有什么，或各人处于什么位置。简短直白，写给模型看。}
+      changed: {label: 变化一句, help: 本章结束时主角有什么不同，以及主角的目标现在进展到哪一步，用一两句短句写出。没有变化则留空。}
+rules:
+  events_beat_unique: {message: 有两条记录对应同一章。, fix: 每章只保留一条记录。}
+  events_link_broken: {message: 这里指向的东西已经不存在了。, fix: 删除这条链接。}
+  changed_is_one_sentence: {message: “变化一句”比两个短句还长。, fix: 缩短成：主角有什么不同，以及目标现在进展到哪一步。, judge_prompt: 'Is this one or two short sentences saying what is different for the protagonist and where their aim stands now? Answer yes or no. If no, rewrite it as one or two short sentences.'}
