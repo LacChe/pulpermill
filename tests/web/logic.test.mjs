@@ -1308,3 +1308,14 @@ test("a plan reply may carry the planned outcome, with or without a pick, and no
   assert.deepEqual(vectorsApi.readPlanReply({ ok: true, beat: {}, outcome: null }), { ok: true, beat: {} });
   for (const outcome of ["", 2, ["lost"], {}]) assert.equal(vectorsApi.readPlanReply({ ok: true, beat: {}, outcome }).error.kind, "bad_output");
 });
+
+test("the fill size estimate counts Latin lightly, Chinese heavily, and stays a little above the measured cost", async () => {
+  const { estimateTokens, fillSize, limitInWords, FILL_LIMITS } = await import("../../web/logic.js");
+  assert.equal(estimateTokens(""), 0);
+  assert.equal(estimateTokens("x".repeat(400)), 100);          // 0.25 a letter (measured 0.21 to 0.24)
+  assert.equal(estimateTokens("港".repeat(100)), 75);           // 0.75 a character (measured 0.72)
+  assert.equal(estimateTokens("한".repeat(100)), 75);
+  assert.deepEqual(fillSize("x".repeat(400), 200), { pct: 50, over: false });
+  assert.deepEqual(fillSize("x".repeat(1000), 200), { pct: 125, over: true });
+  assert.deepEqual(limitInWords(FILL_LIMITS.chapter), { words: 6200, chars: 11100 });
+});

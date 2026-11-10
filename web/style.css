@@ -298,6 +298,8 @@ select.text-control[hidden], .checks[hidden] { display: none; }
 .fill-body { padding: 0 var(--sp-4) var(--sp-4); display: grid; gap: var(--sp-3); }
 .fill-body .help { margin: 0; }
 .fill-field { display: grid; gap: var(--sp-1); }
+.fill-size { margin: 0; color: var(--muted); font-size: var(--fs-small); }
+.fill-size.over { color: var(--bad); font-weight: 600; }
 .fill-actions { display: flex; gap: var(--sp-2); align-items: center; }
 .fill-button:disabled { opacity: 0.6; cursor: default; }
 .tag-draft { color: var(--good); border-color: var(--good); }

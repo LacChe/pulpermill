@@ -63,9 +63,9 @@ def test_a_long_piece_is_counted_without_trouble():
 
 # ---- The budgets ----------------------------------------------------------------------------------------------------
 
-def test_budgets_keep_only_the_context_and_the_margin():
-    """What a step may write belongs to the step (the prompter sets it); the budget file holds what is the model's."""
-    assert set(budget.budgets()) == {"n_ctx", "margin"}
+def test_budgets_keep_only_the_context_the_margin_and_the_fill_input_limits():
+    """What a step may write belongs to the step (the prompter sets it); the budget file holds what is the model's, and what a fill accepts."""
+    assert set(budget.budgets()) == {"n_ctx", "margin", "fill_note", "fill_chapter"}
 
 
 def test_the_input_limit_leaves_room_for_the_reply_and_the_margin():

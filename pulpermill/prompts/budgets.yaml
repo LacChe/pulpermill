@@ -6,3 +6,9 @@ n_ctx: 24576
 # Tokens kept free after the prompt and the reply: the template's own tokens, a changed tokenizer, a longer word list.
 margin: 300
 # What a step may write (max_output) is not here: it belongs to the step, so the prompter that writes the prompt sets it.
+# What a fill call accepts from the writer, in tokens: each card's note, and the example chapter (shared by every card). Together they
+# must fit beside the fill prompt's fixed part: n_ctx - fill reply (2,000) - margin = 22,276 tokens, of which the instructions and the
+# related cards take at most ~10.7k when the cards are as full as the schema allows (see docs/prompts/08-fill-limits.md). The page shows
+# the same numbers (web/logic.js FILL_LIMITS); a test keeps the two equal.
+fill_note: 2000
+fill_chapter: 8000

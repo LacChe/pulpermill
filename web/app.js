@@ -401,7 +401,7 @@ async function runFill(card, shown) {
   const targetNow = () => (card.many_per_project ? findInstance(project, card, instanceId) : project[card.id]);
   if (project !== here || !targetNow()) { showNotice(STRINGS.dropped); return; }
   if (result.reason) {
-    showNotice(result.reason === "no_instance" ? STRINGS.noInstance : STRINGS.noSource, "notice-bad");
+    showNotice(result.reason === "no_instance" ? STRINGS.noInstance : result.reason === "too_long" ? errorText({ kind: "too_long" }) : STRINGS.noSource, "notice-bad");
     return;
   }
   if (!result.ok) { showNotice(errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); return; }

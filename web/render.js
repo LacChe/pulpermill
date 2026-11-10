@@ -1,8 +1,8 @@
 // Draws one card as a form. Only this file touches the DOM. The wording of the cards comes from the schema JSON, and the
 // page's own labels from the text bundle (web/data/text.en.json), through STRINGS below.
 import {
-  FILLABLE, addItem, blockedValues, canAdd, chooseOneOf, fieldShown, filledFieldKeys, filledPaths, flagsUsed, groupedFields,
-  isFilled, isItemEmpty, itemTitle, lookupLabel, modelRules, oneOfChoice, pickerSources, problemCounts,
+  FILLABLE, FILL_LIMITS, addItem, blockedValues, canAdd, chooseOneOf, fieldShown, filledFieldKeys, filledPaths, flagsUsed, groupedFields,
+  fillSize, isFilled, isItemEmpty, itemTitle, limitInWords, lookupLabel, modelRules, oneOfChoice, pickerSources, problemCounts,
   problemPath, refOptions, removeItem, showsOptionalTag, shownProblems, validate,
 } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
@@ -477,12 +477,25 @@ function listControl(field, values, path, ctx) {
 function fillPanel(card, values, ctx) {
   const where = `${card.id}:${values.id ?? ""}:fill`;
   if (!FILLABLE.includes(card.id) || !ctx.onFill) return null;
-  const area = (label, placeholder, rows, get, set) => {
+  // Each text shows how much of its limit it uses; the button waits while either text is over (nothing is cut off while the writer types).
+  let sync = () => {};
+  const meters = [];
+  const area = (label, placeholder, rows, get, set, limit) => {
     const box = el("textarea", { class: "text-control", rows, placeholder, "aria-label": label });
     box.value = get() ?? "";
-    box.addEventListener("input", () => set(box.value));
+    const { words, chars } = limitInWords(limit);
+    const size = el("p", { class: "fill-size" });
+    const update = () => {
+      const { pct, over } = fillSize(box.value, limit);
+      size.textContent = fill(over ? STRINGS.fillSizeOver : STRINGS.fillSize, { pct: over ? pct - 100 : pct, words: words.toLocaleString("en"), chars: chars.toLocaleString("en") });
+      size.classList.toggle("over", over);
+      return over;
+    };
+    meters.push(update);
+    update();
+    box.addEventListener("input", () => { set(box.value); sync(); });
     box.setAttribute("aria-label", label);
-    return el("div", { class: "fill-field" }, box);
+    return el("div", { class: "fill-field" }, box, size);
   };
   // Each text sits in a fold of its own, open to start with.
   const section = (title, body) => {
@@ -496,15 +509,17 @@ function fillPanel(card, values, ctx) {
     button.disabled = true;
     button.textContent = STRINGS.fillWorking;
     timer.start();
-    try { await ctx.onFill(); } finally { timer.stop(); button.disabled = false; button.textContent = STRINGS.fillButton; }
+    try { await ctx.onFill(); } finally { timer.stop(); button.textContent = STRINGS.fillButton; sync(); }
   });
+  sync = () => { button.disabled = meters.map((update) => update()).some(Boolean); };
+  sync();
   const backend = ctx.backendWhere?.() ?? "";
   const panel = el("details", { class: "fill-panel" },
     el("summary", {}, el("span", { class: "group-label", text: STRINGS.fillTitle })),
     el("div", { class: "fill-body" },
       el("p", { class: "help", text: STRINGS.fillHelp }),
-      section(STRINGS.exampleLabel, area(STRINGS.exampleLabel, STRINGS.examplePlaceholder, 6, ctx.example.get, ctx.example.set)),
-      section(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, area(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, STRINGS.notePlaceholder, 4, ctx.notes.get, ctx.notes.set)),
+      section(STRINGS.exampleLabel, area(STRINGS.exampleLabel, STRINGS.examplePlaceholder, 6, ctx.example.get, ctx.example.set, FILL_LIMITS.chapter)),
+      section(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, area(card.many_per_project ? STRINGS.noteLabelPerson : STRINGS.noteLabel, STRINGS.notePlaceholder, 4, ctx.notes.get, ctx.notes.set, FILL_LIMITS.note)),
       el("div", { class: "fill-actions" }, button, timer.node),
       el("p", { class: "note", text: STRINGS.fillSends.replace("{where}", backend) })));
   remember(panel, where, filledFieldKeys(card, values).length === 0);

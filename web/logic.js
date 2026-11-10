@@ -703,6 +703,33 @@ export function flagsUsed(card) {
 
 export const FILLABLE = ["style", "characters", "world", "entanglements", "setup"];
 
+// How much the writer may give a fill, in tokens: a card's note, and the example chapter. The same numbers as `fill_note` and `fill_chapter` in
+// pulpermill/prompts/budgets.yaml (a test keeps them equal); the backend counts exactly and refuses what is over (too_long).
+export const FILL_LIMITS = { note: 2000, chapter: 8000 };
+
+// The page has no tokenizer, so it estimates, a little high on purpose: a Latin letter costs about 0.21-0.24 tokens, a Chinese or Japanese
+// character about 0.7, a Korean one about 0.6 (measured on the Gemma 3 tokenizer); any other script is guessed at 0.5.
+export function estimateTokens(text) {
+  let total = 0;
+  for (const ch of String(text ?? "")) {
+    const c = ch.codePointAt(0);
+    total += c < 0x250 ? 0.25 : (c >= 0x1100 && c <= 0x11ff) || (c >= 0x2e80 && c <= 0x9fff) || (c >= 0xa960 && c <= 0xa97f) || (c >= 0xac00 && c <= 0xd7ff) || (c >= 0xf900 && c <= 0xfaff) || (c >= 0xff00 && c <= 0xffef) || c >= 0x20000 ? 0.75 : 0.5;
+  }
+  return Math.ceil(total);
+}
+
+// {pct, over}: how much of `limit` (tokens) the text uses, as a whole percent, and whether it is past it.
+export function fillSize(text, limit) {
+  const used = estimateTokens(text);
+  return { pct: Math.round((used / limit) * 100), over: used > limit };
+}
+
+// The limit in words a reader can picture: English words (about 1.3 tokens each) and Chinese characters (about 0.72 each), to the nearest 100.
+export function limitInWords(limit) {
+  const round = (n) => Math.round(n / 100) * 100;
+  return { words: round(limit / 1.3), chars: round(limit / 0.72) };
+}
+
 // Errors from the backend: busy (try again when idle), bad_request (the page sent something wrong),
 // bad_output (the model's answer did not fit the shape; the backend already retried), too_long (the context does
 // not fit the model), stopped (the writer pressed Stop), server (anything else), unauthorized (the token is missing or wrong).
@@ -810,6 +837,7 @@ export function fillRequest(schema, project, cardId, instanceId = null) {
   const noteText = isFilled(note?.text?.trim()) ? note.text : null;
   const example = isFilled(project.example_chapter?.trim()) ? project.example_chapter : null;
   if (!noteText && !example) return { ok: false, reason: "no_source" };
+  if (estimateTokens(noteText) > FILL_LIMITS.note || estimateTokens(example) > FILL_LIMITS.chapter) return { ok: false, reason: "too_long" };
   return {
     ok: true,
     request: {

@@ -217,6 +217,8 @@
     "notePlaceholder": "Rough is fine: a few lines, or a pasted description.",
     "exampleLabel": "Example chapter (shared by every card)",
     "examplePlaceholder": "A chapter you wrote or like. The model learns the voice and the world from it.",
+    "fillSize": "{pct}% of the limit used. The limit is about {words} English words or {chars} Chinese characters.",
+    "fillSizeOver": "{pct}% over the limit. Shorten this text to use the model.",
     "fillButton": "Fill with the model",
     "fillWorking": "The model is working…",
     "fillSends": "Pressing the button sends this card, the cards it reads, and your notes and example chapter to {where}.",

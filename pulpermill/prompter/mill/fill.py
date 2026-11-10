@@ -9,6 +9,7 @@ import json
 import re
 from typing import Any
 
+from pulpermill.prompts import budget, tokens
 from pulpermill.prompts import render as r
 from pulpermill.prompts import textfiles as tx
 from pulpermill.prompter.base import Flow, Step
@@ -106,12 +107,25 @@ def field_guidance(card: str, keys: list[str]) -> str:
 
 # ---- the prompt ---------------------------------------------------------------------------------------------------------------
 
+def check_input_sizes(note: str, chapter: str) -> None:
+    """The writer's own text is never cut to fit: a note or an example chapter over its limit (budgets.yaml) is refused as `too_long`, so the
+    writer shortens it. (The page shows the same limits and does not send what is over them.)"""
+    if not tokens.available():      # the runner's whole-prompt check still applies, with the engine's own count
+        return
+    b = budget.budgets()
+    for name, text, limit in (("note", note, b["fill_note"]), ("example chapter", chapter, b["fill_chapter"])):
+        n = tokens.count(text) if text else 0
+        if n > limit:
+            raise budget.PromptTooLong(budget.Measure(name, n, limit, 0))
+
+
 def build_prompt(request: dict, kit: Any, factor: float = 1.0) -> str:
     w = common.load_text("fill")
     card = request["card"]
     names = r.names_by_id(request.get("related") or {})
     meta = w["cards"][card]
     note, chapter = r.s(request.get("note")), r.s(request.get("example_chapter"))
+    check_input_sizes(note, chapter)
     mode = "both" if note and chapter else "note_only" if note else "chapter_only"
     label = tx.schema_text(card)["card"]["label"]
 
