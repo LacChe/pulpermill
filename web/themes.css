@@ -3,7 +3,7 @@
    complete when it defines every token below.
 
    Tokens every theme defines: color-scheme, --bg, --surface-1, --surface-2, --surface-3, --input, --line, --line-strong,
-   --text, --muted, --faint, --accent, --accent-soft, --good, --bad, --warn, --shadow-color.
+   --text, --muted, --faint, --accent, --accent-soft, --good, --bad, --warn, --shadow-color, --backdrop.
 
    The selector ties are on purpose: each block is exactly one attribute selector, so no block beats another and source
    order does not matter. Circuit is also what the page shows when <html> has no data-theme. */
@@ -32,10 +32,11 @@
   --warn:         oklch(0.82 0.13 85);
 
   --shadow-color: rgb(0 0 0 / 0.4);               /* under tooltips */
+  --backdrop: rgb(0 0 0 / 0.6);                   /* behind a question dialog */
 }
 
-/* Timbermill: dark oak, cream text, a river-teal accent. The default. Warm where Circuit is cool. */
-[data-theme="timbermill"] {
+/* Timber: dark oak, cream text, a river-teal accent. The default. Warm where Circuit is cool. */
+[data-theme="timber"] {
   color-scheme: dark;
 
   --bg: #231B14;
@@ -55,9 +56,167 @@
   --warn: #E3B95A;
 
   --shadow-color: rgb(0 0 0 / 0.5);
+  --backdrop: rgb(0 0 0 / 0.6);
   --font-head: var(--font-prose);
 }
 
+/* Flour: light and soft, a bakery in the morning. Flour-white surfaces, a millstone-ochre accent, rounder corners than the others. */
+[data-theme="flour"] {
+  color-scheme: light;
+
+  --bg: #F3EEE4;
+  --surface-1: #FAF7F0;
+  --surface-2: #F0EADD;
+  --surface-3: #E7DFCF;
+  --input: #FDFBF7;                 /* wells are lighter than the surfaces on a light theme */
+  --line: #D9CFBD;
+  --line-strong: #BDB09A;
+  --text: #3A3027;
+  --muted: #6B5E4F;
+  --faint: #8F8271;
+  --accent: #8A5A1B;
+  --accent-soft: #F0E2C6;           /* lighter than first drafted (#EBD9B8): the accent text on it was 4.26, under the 4.5 floor */
+  --good: #4F6F33;
+  --bad: #A33F33;
+  --warn: #8A6212;
+
+  --shadow-color: rgb(40 30 20 / 0.25);
+  --backdrop: rgb(40 30 20 / 0.45);               /* lighter than a dark theme's: black at 0.6 is too heavy on a light page */
+  --scroll-thumb: var(--line-strong);             /* surface-3 on the page colour is almost invisible on a light theme */
+  --font-head: var(--font-prose);
+  --radius-s: 10px;
+  --radius-m: 12px;
+  --radius-l: 14px;
+}
+
+/* Paper: rag paper and ink. Cream stock, an ink-blue accent, serif type throughout, square corners, capitals for the title and a
+   double rule under the top bar. */
+[data-theme="paper"] {
+  color-scheme: light;
+
+  --bg: #EFE9DB;
+  --surface-1: #E6DFCE;
+  --surface-2: #F1ECDF;
+  --surface-3: #F8F4E9;
+  --input: #F8F4E9;
+  --line: #B9AE95;
+  --line-strong: #8F8469;
+  --text: #25221D;
+  --muted: #5E5849;
+  --faint: #857D6B;
+  --accent: #2D4A6E;
+  --accent-soft: #CBD5DF;
+  --good: #3F6A3A;
+  --bad: #A33A32;
+  --warn: #7A5B0E;                  /* darker than first drafted (#8F6A14): on the cream surfaces it was 3.7 to 4.2, under the 4.5 floor */
+
+  --shadow-color: rgb(40 30 20 / 0.25);
+  --backdrop: rgb(40 30 20 / 0.45);
+  --scroll-thumb: var(--line-strong);
+  --font-ui: var(--font-prose);
+  --font-head: var(--font-prose);
+  --head-case: uppercase;
+  --head-track: 0.08em;
+  --bar-rule: 4px double var(--line);
+  --radius-s: 2px;
+  --radius-m: 2px;
+  --radius-l: 2px;
+}
+
+/* Stone: a millstone. Granite grey, an iron-rust accent, chunky 2px borders and tight corners. Literal and heavy. */
+[data-theme="stone"] {
+  color-scheme: light;
+
+  --bg: #D5D1C8;
+  --surface-1: #C9C4B8;
+  --surface-2: #D2CEC4;
+  --surface-3: #DCD8CF;
+  --input: #E7E4DC;
+  --line: #7F7A6D;
+  --line-strong: #5E5A4F;
+  --text: #2B2A27;
+  --muted: #46433C;
+  --faint: #6E6A5F;
+  --accent: #7E3820;                /* darker than first drafted (#8C3F25), as are good, bad and warn below: on the grey surfaces the drafts were 3.5 to 4.2, under the 4.5 floor */
+  --accent-soft: #E1C4B5;
+  --good: #36532A;
+  --bad: #8E2A25;
+  --warn: #664A08;
+
+  --shadow-color: rgb(40 30 20 / 0.25);
+  --backdrop: rgb(40 30 20 / 0.45);
+  --scroll-thumb: var(--line-strong);
+  --bw: 2px;
+  --radius-s: 4px;
+  --radius-m: 4px;
+  --radius-l: 4px;
+  --bar-rule: 2px solid var(--line);
+}
+
+/* Pulp: a pulp magazine, which is also a pun on the name. Yellowed newsprint, thick black rules, a pulp-red accent, square
+   corners, capitals for the title, and a black top bar with cream type (see the header scope below). */
+[data-theme="pulp"] {
+  color-scheme: light;
+
+  --bg: #EFE2B8;
+  --surface-1: #E2D4A8;
+  --surface-2: #F5ECCB;
+  --surface-3: #FAF3DB;
+  --input: #F7EFD3;
+  --line: #1F1A17;
+  --line-strong: #1F1A17;
+  --text: #1F1A17;
+  --muted: #4F4533;
+  --faint: #7A6E55;
+  --accent: #A32C16;                /* darker than first drafted (#B3321A): on --surface-1 it was 4.20, and on --accent-soft 4.06, under the 4.5 floor */
+  --accent-soft: #F0C9B8;
+  --good: #2F5E2F;
+  --bad: #8F1B1B;
+  --warn: #735100;                  /* darker than first drafted (#7F5A05): on --surface-1 it was 4.22 */
+
+  --shadow-color: rgb(40 30 20 / 0.25);
+  --backdrop: rgb(40 30 20 / 0.45);
+  --scroll-thumb: var(--faint);
+  --bw: 2px;
+  --font-head: var(--font-prose);
+  --head-case: uppercase;
+  --head-track: 0.08em;
+  --radius-s: 0;
+  --radius-m: 0;
+  --radius-l: 0;
+  --bar-rule: 2px solid var(--line);
+  --bar-bg: #1F1A17;
+  --bar-text: #EFE2B8;
+}
+
+/* Pulp's top bar (the header and the backend bar under it) is dark while the page is light, so every token the bar's
+   controls read is set again for a dark surface. --btn and --btn-hover are set again too: a custom property that uses
+   var() is worked out where it is declared, so the page's --btn would still be tinted from the page's dark text. */
+[data-theme="pulp"] .app-header {
+  color-scheme: dark;
+
+  --text: #EFE2B8;
+  --muted: #CBBE98;
+  --faint: #A39877;
+  --line: #6B5F45;                  /* hairlines on black; a full black line would vanish */
+  --line-strong: #B8AB84;
+  --input: #120F0D;
+  --accent: #F08A6E;
+  --accent-soft: #4A2018;
+  --good: #9CC46B;
+  --bad: #F08A72;
+  --warn: #E3B95A;
+  --surface-1: #1F1A17;             /* the gaps between steps on the run bar */
+  --surface-3: #3A322B;             /* the run bar's track */
+
+  --btn: color-mix(in oklch, var(--text) 7%, transparent);
+  --btn-hover: color-mix(in oklch, var(--text) 13%, transparent);
+}
+
 /* The dot on each footer button shows that theme's background and accent. A test keeps these equal to the real tokens. */
-.theme-swatch[data-theme-id="timbermill"] { --sw-1: #231B14; --sw-2: #5FBFB2; }
+.theme-swatch[data-theme-id="timber"] { --sw-1: #231B14; --sw-2: #5FBFB2; }
 .theme-swatch[data-theme-id="circuit"] { --sw-1: #0C1015; --sw-2: #4CDBE3; }
+.theme-swatch[data-theme-id="flour"] { --sw-1: #F3EEE4; --sw-2: #8A5A1B; }
+.theme-swatch[data-theme-id="paper"] { --sw-1: #EFE9DB; --sw-2: #2D4A6E; }
+.theme-swatch[data-theme-id="stone"] { --sw-1: #D5D1C8; --sw-2: #7E3820; }
+.theme-swatch[data-theme-id="pulp"] { --sw-1: #EFE2B8; --sw-2: #A32C16; }

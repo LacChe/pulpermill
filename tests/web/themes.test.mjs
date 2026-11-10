@@ -13,11 +13,11 @@ const withoutComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, "");
 // Every token a theme block must define (the same list is at the top of web/themes.css).
 export const THEME_TOKENS = [
   "color-scheme", "--bg", "--surface-1", "--surface-2", "--surface-3", "--input", "--line", "--line-strong",
-  "--text", "--muted", "--faint", "--accent", "--accent-soft", "--good", "--bad", "--warn", "--shadow-color",
+  "--text", "--muted", "--faint", "--accent", "--accent-soft", "--good", "--bad", "--warn", "--shadow-color", "--backdrop",
 ];
 
 // The knobs style.css declares on :root for a theme to override, with the defaults that match the original look.
-const KNOBS = ["--bw", "--font-head", "--head-case", "--head-track", "--bar-rule", "--bar-bg", "--bar-text", "--footer-h"];
+const KNOBS = ["--bw", "--font-head", "--head-case", "--head-track", "--bar-rule", "--bar-bg", "--bar-text", "--scroll-thumb", "--footer-h"];
 
 // Blocks of "selector { declarations }" as {selector, declarations: Map(name -> value)}.
 export function blocks(css) {
@@ -36,9 +36,7 @@ export function blocks(css) {
 test("style.css holds no colour literal, so every colour comes from a theme", () => {
   const colour = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(|\boklab\(|\blab\(|\blch\(/;
   const offenders = withoutComments(read("style.css")).split("\n").filter((line) => colour.test(line));
-  // The one documented exception: the dialog backdrop, which becomes a token in the polish step of PLAN-themes.md.
-  const unexpected = offenders.filter((line) => !line.includes("dialog.ask::backdrop"));
-  assert.deepEqual(unexpected, []);
+  assert.deepEqual(offenders, []);
 });
 
 test("style.css declares every theme knob on :root, and no colour tokens", () => {
@@ -56,7 +54,9 @@ test("themes.css has a Circuit block with every token, and it is also what an un
 });
 
 // The theme blocks: the ones selected by [data-theme="..."] (the footer swatch rules say data-theme-id, so they are not).
-const themeBlocks = () => blocks(read("themes.css")).filter((block) => block.selector.includes('[data-theme="'));
+// A scope inside a theme (Pulp's dark header) is a block too, but it is not a theme: it names an element after the attribute.
+const isThemeSelector = (selector) => /^\[data-theme="\w+"\]$/.test(selector.split(",").pop().trim());
+const themeBlocks = () => blocks(read("themes.css")).filter((block) => isThemeSelector(block.selector));
 const idOf = (block) => block.selector.match(/\[data-theme="(\w+)"\]/)[1];
 
 test("every theme block in themes.css defines every token", () => {
@@ -77,7 +77,7 @@ test("Circuit keeps the original values, exactly", () => {
     "--line-strong": "oklch(0.44 0.020 var(--hue))", "--text": "oklch(0.94 0.008 var(--hue))",
     "--muted": "oklch(0.76 0.015 var(--hue))", "--faint": "oklch(0.60 0.016 var(--hue))",
     "--accent": "oklch(0.82 0.12 200)", "--accent-soft": "oklch(0.30 0.05 205)", "--good": "oklch(0.80 0.14 155)",
-    "--bad": "oklch(0.74 0.15 25)", "--warn": "oklch(0.82 0.13 85)", "--shadow-color": "rgb(0 0 0 / 0.4)",
+    "--bad": "oklch(0.74 0.15 25)", "--warn": "oklch(0.82 0.13 85)", "--shadow-color": "rgb(0 0 0 / 0.4)", "--backdrop": "rgb(0 0 0 / 0.6)",
   };
   for (const [name, value] of Object.entries(expected)) assert.equal(circuit.declarations.get(name), value, name);
 });
@@ -189,4 +189,85 @@ test("the static icon in index.html is drawn in the default theme's colours, so 
   assert.equal(tile?.[1].toUpperCase(), token("--surface-1"));
   assert.equal(tile?.[2].toUpperCase(), token("--line"));
   assert.equal(letter?.[1].toUpperCase(), token("--accent"));
+});
+
+test("each theme says light or dark to match its own background, so native controls and scrollbars suit it", () => {
+  for (const block of themeBlocks()) {
+    const scheme = block.declarations.get("color-scheme");
+    assert.ok(scheme === "light" || scheme === "dark", `${idOf(block)}: color-scheme is ${scheme}`);
+    const light = luminance(rgbOf(block.declarations.get("--bg"), block)) > 0.18;
+    assert.equal(scheme, light ? "light" : "dark", `${idOf(block)} has a ${light ? "light" : "dark"} background`);
+  }
+});
+
+test("every theme is named in each language's text bundle", () => {
+  for (const language of ["en", "zh"]) {
+    const names = JSON.parse(read(`data/text.${language}.json`)).theme;
+    for (const id of THEMES) assert.ok(names[id], `${language} has no name for ${id}`);
+  }
+});
+
+// ---- Pulp's dark header ----------------------------------------------------------------------
+// The header (top bar and backend bar) is black with cream type on a light theme, so it has a scope of its own. The tokens its
+// controls read are set again there, and each must still meet the floors against the bar's colour.
+
+const headerScope = (id) => blocks(read("themes.css")).find((block) => block.selector === `[data-theme="${id}"] .app-header`);
+
+test("a theme with a bar colour of its own has a header scope, and only such a theme has one", () => {
+  for (const block of themeBlocks()) {
+    const own = block.declarations.has("--bar-bg");
+    assert.equal(Boolean(headerScope(idOf(block))), own, `${idOf(block)}: --bar-bg ${own ? "is" : "is not"} set`);
+  }
+  assert.ok(headerScope("pulp"));
+});
+
+test("the header scope sets every token the header's controls read, and --btn and --btn-hover again", () => {
+  const scope = headerScope("pulp");
+  const used = ["color-scheme", "--text", "--muted", "--faint", "--line", "--line-strong", "--input", "--accent", "--accent-soft", "--good", "--bad", "--warn", "--surface-1", "--surface-3"];
+  for (const token of used) assert.ok(scope.declarations.has(token), `the header scope is missing ${token}`);
+  assert.equal(scope.declarations.get("color-scheme"), "dark");
+  for (const knob of ["--btn", "--btn-hover"]) assert.match(scope.declarations.get(knob) ?? "", /var\(--text\)/, `${knob} must be worked out from the header's own --text`);
+});
+
+test("inside the dark header, the bar's text reaches 7 and every token meets the floors against the bar", () => {
+  const theme = themeBlocks().find((block) => idOf(block) === "pulp");
+  const scope = headerScope("pulp");
+  const bar = rgbOf(theme.declarations.get("--bar-bg"), theme);
+  const at = (token) => rgbOf(scope.declarations.get(token), scope);
+  assert.equal(scope.declarations.get("--text").toUpperCase(), theme.declarations.get("--bar-text").toUpperCase(), "the header's --text is the bar's text colour");
+  assert.ok(contrast(rgbOf(theme.declarations.get("--bar-text"), theme), bar) >= 7, "--bar-text on --bar-bg");
+  const problems = [];
+  const check = (token, on, floor) => { const ratio = contrast(at(token), on); if (ratio < floor) problems.push(`${token} is ${ratio.toFixed(2)}, needs ${floor}`); };
+  for (const on of [bar, at("--input")]) {
+    for (const token of ["--text", "--muted", "--accent", "--good", "--bad", "--warn"]) check(token, on, 4.5);
+  }
+  check("--faint", bar, 3);
+  check("--line", bar, 1.3);
+  assert.ok(contrast(at("--accent"), at("--accent-soft")) >= 4.5, "--accent on --accent-soft");
+  assert.ok(contrast(at("--text"), at("--accent-soft")) >= 4.5, "--text on --accent-soft (the pressed language button)");
+  assert.deepEqual(problems, []);
+});
+
+// ---- Polish: the dialog backdrop and the scrollbar ---------------------------------------------
+
+test("the dialog backdrop comes from the theme: black at 0.6 on a dark theme, a lighter warm shade on a light one", () => {
+  assert.match(withoutComments(read("style.css")), /dialog\.ask::backdrop\s*\{\s*background:\s*var\(--backdrop\)/);
+  for (const block of themeBlocks()) {
+    const m = block.declarations.get("--backdrop").match(/^rgb\((\d+) (\d+) (\d+) \/ ([\d.]+)\)$/);
+    assert.ok(m, `${idOf(block)}: --backdrop must be rgb(r g b / alpha)`);
+    if (block.declarations.get("color-scheme") === "dark") assert.deepEqual(m.slice(1, 5), ["0", "0", "0", "0.6"], `${idOf(block)}`);
+    else assert.ok(Number(m[4]) <= 0.5 && Number(m[4]) >= 0.3, `${idOf(block)}: a light theme's backdrop is lighter (0.3 to 0.5), not ${m[4]}`);
+  }
+});
+
+// The scrollbar thumb is --scroll-thumb (a theme's own, else the default on :root) on the page colour. It must show.
+test("the scrollbar thumb is visible against the page in every theme", () => {
+  assert.match(withoutComments(read("style.css")), /scrollbar-color:\s*var\(--scroll-thumb\)\s+var\(--bg\)/);
+  const fallback = blocks(read("style.css")).find((b) => b.selector === ":root").declarations.get("--scroll-thumb");
+  for (const block of themeBlocks()) {
+    const name = (block.declarations.get("--scroll-thumb") ?? fallback).match(/^var\((--[\w-]+)\)$/)?.[1];
+    assert.ok(name, `${idOf(block)}: --scroll-thumb must name another token`);
+    const ratio = contrast(rgbOf(block.declarations.get(name), block), rgbOf(block.declarations.get("--bg"), block));
+    assert.ok(ratio >= 1.3, `${idOf(block)}: the thumb (${name}) on the page is ${ratio.toFixed(2)}, needs 1.3`);
+  }
 });

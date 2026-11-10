@@ -2,8 +2,8 @@
 // The choice is a viewing preference of this browser. It is remembered here and is never part of a project or an export.
 import { section, fill } from "./text.js";
 
-export const THEMES = ["timbermill", "circuit"];     // footer order; each id has a block in themes.css and a name in the text bundle
-export const DEFAULT_THEME = "timbermill";
+export const THEMES = ["timber", "circuit", "flour", "paper", "stone", "pulp"];     // footer order; each id has a block in themes.css and a name in the text bundle
+export const DEFAULT_THEME = "timber";
 export const THEME_KEY = "pulpermill.theme";         // index.html reads the same key in its head, so a saved choice is on before the first paint
 export const STRINGS = section("theme");
 
@@ -47,7 +47,7 @@ export function applyTheme(doc, id) {
 }
 
 // Spelled out one by one because the test that ties the code to the text bundle looks for each key written out in full.
-const nameOf = (id) => ({ timbermill: STRINGS.timbermill, circuit: STRINGS.circuit })[id];
+const nameOf = (id) => ({ timber: STRINGS.timber, circuit: STRINGS.circuit, flour: STRINGS.flour, paper: STRINGS.paper, stone: STRINGS.stone, pulp: STRINGS.pulp })[id];
 
 function pageStorage(doc) {
   try { return doc.defaultView.localStorage; } catch { return null; }

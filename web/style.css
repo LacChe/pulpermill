@@ -8,6 +8,7 @@
   --bar-rule: 1px solid var(--line);            /* the line under the top bar */
   --bar-bg: var(--surface-1);                   /* the top bar (the header holds two bars) */
   --bar-text: var(--text);
+  --scroll-thumb: var(--surface-3);             /* scrollbar thumb; a light theme sets a darker one so it shows */
   --footer-h: 32px;                             /* the theme footer's height; the columns leave room for it */
 
   /* Aliases so existing rules keep working. */
@@ -46,7 +47,7 @@
 * { 
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-color: var(--surface-3) var(--bg); 
+  scrollbar-color: var(--scroll-thumb) var(--bg);
 }
 body {
   margin: 0;
@@ -453,7 +454,7 @@ dialog.ask {
   max-width: 480px; width: calc(100% - 48px); padding: var(--sp-5);
   background: var(--panel); color: var(--text); border: var(--bw) solid var(--line); border-radius: var(--radius-l);
 }
-dialog.ask::backdrop { background: rgba(0, 0, 0, 0.6); }
+dialog.ask::backdrop { background: var(--backdrop); }
 .ask-words { margin: 0 0 var(--sp-4); white-space: pre-line; overflow-wrap: anywhere; }
 .ask-buttons { display: flex; justify-content: flex-end; gap: var(--sp-3); }
 

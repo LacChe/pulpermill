@@ -9,8 +9,8 @@ import { THEMES, DEFAULT_THEME, THEME_KEY, resolveTheme, readTheme, saveTheme, a
 
 test("a known theme stays, and anything else is the default", () => {
   for (const id of THEMES) assert.equal(resolveTheme(id), id);
-  for (const odd of [undefined, null, "", "Timbermill", "neon", 3, {}]) assert.equal(resolveTheme(odd), DEFAULT_THEME);
-  assert.equal(DEFAULT_THEME, "timbermill");
+  for (const odd of [undefined, null, "", "Timber", "neon", 3, {}]) assert.equal(resolveTheme(odd), DEFAULT_THEME);
+  assert.equal(DEFAULT_THEME, "timber");
 });
 
 const memory = (start = {}) => {
@@ -90,11 +90,11 @@ test("the footer is a radio group with one button per theme, named in words, and
   assert.equal(group.getAttribute("role"), "radiogroup");
   assert.ok(group.getAttribute("aria-label"));
   assert.deepEqual(buttons.map((b) => b.dataset.themeId), THEMES);
-  assert.deepEqual(buttons.map((b) => b.getAttribute("aria-label")), ["Timbermill", "Circuit"]);
+  assert.deepEqual(buttons.map((b) => b.getAttribute("aria-label")), ["Timber", "Circuit", "Flour", "Paper", "Stone", "Pulp"]);
   for (const button of buttons) { assert.equal(button.getAttribute("role"), "radio"); assert.match(button.getAttribute("title"), /^Use the \w+ theme$/); }
-  assert.deepEqual(checked(buttons), ["timbermill"]);
-  assert.deepEqual(buttons.map((b) => b.getAttribute("tabindex")), ["0", "-1"]);
-  assert.equal(doc.documentElement.dataset.theme, "timbermill");
+  assert.deepEqual(checked(buttons), ["timber"]);
+  assert.deepEqual(buttons.map((b) => b.getAttribute("tabindex")), ["0", "-1", "-1", "-1", "-1", "-1"]);
+  assert.equal(doc.documentElement.dataset.theme, "timber");
 });
 
 test("the footer starts on the saved theme", () => {
@@ -110,7 +110,7 @@ test("clicking a theme puts it on the page, saves it, and moves the one tab stop
   assert.equal(storage.data[THEME_KEY], "circuit");
   assert.equal(bar.current(), "circuit");
   assert.deepEqual(checked(buttons), ["circuit"]);
-  assert.deepEqual(buttons.map((b) => b.getAttribute("tabindex")), ["-1", "0"]);
+  assert.deepEqual(buttons.map((b) => b.getAttribute("tabindex")), ["-1", "0", "-1", "-1", "-1", "-1"]);
   assert.equal(doc.events.at(-1).detail.id, "circuit");
 });
 
@@ -120,12 +120,14 @@ test("the arrow keys, Home and End move and choose, wrapping round, and other ke
   assert.equal(press("ArrowRight").prevented, true);
   assert.equal(bar.current(), "circuit");
   assert.equal(doc.focused, buttons[1]);
-  press("ArrowRight");
-  assert.equal(bar.current(), "timbermill");                    // wrapped to the first
   press("ArrowLeft");
-  assert.equal(bar.current(), "circuit");                       // and back to the last
+  assert.equal(bar.current(), "timber");
+  press("ArrowLeft");
+  assert.equal(bar.current(), THEMES.at(-1));               // wrapped round to the last
+  press("ArrowRight");
+  assert.equal(bar.current(), "timber");                    // and round to the first
   press("Home");
-  assert.equal(bar.current(), "timbermill");
+  assert.equal(bar.current(), "timber");
   press("End");
   assert.equal(bar.current(), THEMES.at(-1));
   assert.equal(press("a").prevented, false);
@@ -148,8 +150,8 @@ test("the footer is worded again when the page changes language, and says the sa
     bar.relabel();
     assert.equal(label.textContent, zh.theme.label);
     assert.equal(group.getAttribute("aria-label"), zh.theme.groupLabel);
-    assert.equal(buttons[0].getAttribute("title"), zh.theme.pick.replace("{name}", zh.theme.timbermill));
-    assert.equal(buttons[0].children[1].textContent, zh.theme.timbermill);
+    assert.equal(buttons[0].getAttribute("title"), zh.theme.pick.replace("{name}", zh.theme.timber));
+    assert.equal(buttons[0].children[1].textContent, zh.theme.timber);
   } finally { setText(bundle); }
   bar.relabel();
   assert.equal(label.textContent, "Theme");

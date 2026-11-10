@@ -29,8 +29,12 @@
     "label": "Theme",
     "groupLabel": "Choose a theme",
     "pick": "Use the {name} theme",
-    "timbermill": "Timbermill",
-    "circuit": "Circuit"
+    "timber": "Timber",
+    "circuit": "Circuit",
+    "flour": "Flour",
+    "paper": "Paper",
+    "stone": "Stone",
+    "pulp": "Pulp"
   },
   "common": {
     "elapsed": "{n} s",
