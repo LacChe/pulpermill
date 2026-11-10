@@ -568,13 +568,16 @@ function drawNav() {
     touchState();
   }, { className: "add" }));
   if (view.characterId) {
-    items.push(button(LABELS.remove, async () => {
+    const removePerson = button("×", async () => {
       if (!(await ask(LABELS.deleteCharacter))) return;
       removeInstance(project, card, view.characterId);
       view.characterId = project[card.id][0]?.id ?? null;
       show();
       touchState();
-    }, { className: "remove-person" }));
+    }, { className: "remove-person" });
+    removePerson.setAttribute("aria-label", LABELS.remove);   // the glyph alone says nothing to a screen reader
+    removePerson.title = LABELS.remove;
+    items.push(removePerson);
   }
   peopleNav.replaceChildren(...items);
   if (cardLocked(project, card.id)) for (const node of peopleNav.querySelectorAll(".add, .remove-person")) node.disabled = true;
