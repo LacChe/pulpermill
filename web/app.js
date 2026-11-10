@@ -87,6 +87,21 @@ function selectColumn(column) {
 
 }
 
+// Where a button that points at a card or at the plan takes the writer. On a narrow screen only one column shows, so the column is
+// chosen too.
+function goToCard(cardId, instanceId) {
+  view = { card: cardId, characterId: instanceId, chapter: view.chapter };
+  selectColumn("cards");
+  show();
+}
+
+function goToPlanning() {
+  view = { ...view, chapter: null };      // null: the chapter to plan or write now
+  selectColumn("planning");
+  show();
+  planningColumn.querySelector(".plan-panel, .generate-panel, .chapter-view")?.scrollIntoView({ block: "nearest" });
+}
+
 for (const switchButton of columnSwitches) switchButton.addEventListener("click", () => selectColumn(switchButton.dataset.column));
 selectColumn("cards");
 window.addEventListener("resize", syncWorkspaceLayout);
@@ -641,7 +656,7 @@ try {
   tokenInput.value = token;
   storyBar = createStoryBar(storyNode, {
     schema, client, getProject: () => project,
-    goTo: (cardId, instanceId) => {     view = { card: cardId, characterId: instanceId, chapter: view.chapter }; show(); },
+    goTo: goToCard,
     changed: () => touchState(),
     notice: (text, kind) => showNotice(text, kind),
     redraw: () => show(),
@@ -665,13 +680,13 @@ try {
   });
   welcome = createWelcomeStrip(welcomeNode, {
     schema, getProject: () => project,
-    goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId, chapter: view.chapter }; show(); },
+    goTo: goToCard, goToPlanning,
     shownChanged: (shown) => guideButton.setAttribute("aria-expanded", String(shown)),
   });
   exportPanel = createExportPanel({ schema, getProject: () => project });
   importPanel = createImportPanel(importNode, {
     schema, client, getProject: () => project,
-    goTo: (cardId, instanceId) => { view = { card: cardId, characterId: instanceId, chapter: view.chapter }; show(); },
+    goTo: goToCard,
     forget: (cardId, instanceId, keys) => { const marked = draftsFor(`${cardId}:${instanceId ?? ""}`); for (const key of keys) marked.delete(key); },
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),

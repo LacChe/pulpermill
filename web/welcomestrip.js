@@ -3,7 +3,7 @@
 // model and the project file. It can be hidden, and the choice is remembered in this browser (and only there). It never calls
 // the model and never changes the project.
 import { welcomeSteps } from "./welcome.js";
-import { section, fill } from "./text.js";
+import { section, fill, msg } from "./text.js";
 
 export const HIDE_KEY = "pulpermill.welcome.hidden";
 
@@ -20,7 +20,7 @@ const remembered = {
   set(hidden) { try { if (hidden) localStorage.setItem(HIDE_KEY, "1"); else localStorage.removeItem(HIDE_KEY); } catch { /* the choice is just not remembered */ } },
 };
 
-// hooks: {schema, getProject, goTo(cardId, instanceId), shownChanged(isShown)}. `root` is the element the strip is drawn into. Returns {draw, toggle, isHidden}.
+// hooks: {schema, getProject, goTo(cardId, instanceId), goToPlanning(), shownChanged(isShown)}. `root` is the element the strip is drawn into. Returns {draw, toggle, isHidden}.
 export function createWelcomeStrip(root, hooks) {
   let hidden = remembered.get();
   let knowOpen = false;                 // kept across redraws, so reading it is not interrupted
@@ -57,7 +57,7 @@ export function createWelcomeStrip(root, hooks) {
       node("p", { className: "welcome-intro", textContent: STRINGS.intro }), node("h3", { textContent: STRINGS.way }), list, know);
   }
 
-  // A button that takes the writer to where the next step is done.
+  // A button that takes the writer to where the next step is done: a card (no target means the planning column).
   function goButton(step, project) {
     let label = null;
     let target = null;
@@ -67,12 +67,11 @@ export function createWelcomeStrip(root, hooks) {
       else label = step.stop.name ? fill(STRINGS.cardsGoPerson, { card: card.label, name: step.stop.name }) : fill(STRINGS.cardsGo, { card: card.label });
       target = [step.stop.card, step.stop.id];
     } else if (step.id === "chapters" || step.id === "end" || step.id === "download") {
-      label = hooks.schema.cards.outline.label;
-      target = ["outline", null];
+      label = fill(STRINGS.cardsGo, { card: msg("page.planningColumn") });   // the planning column, wherever it sits on this screen
     }
     if (!label) return null;
     const go = node("button", { type: "button", className: "welcome-go", textContent: label });
-    go.addEventListener("click", () => hooks.goTo(target[0], target[1]));
+    go.addEventListener("click", () => (target ? hooks.goTo(target[0], target[1]) : hooks.goToPlanning()));
     return go;
   }
 
