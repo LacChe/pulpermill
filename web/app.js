@@ -113,6 +113,12 @@ new MutationObserver(syncWorkspaceLayout).observe(document.body, {
 });
 syncWorkspaceLayout();
 
+// The group titles stick just under the card tabs and the character picker, whatever height those two take (tabs can wrap, the picker comes and goes).
+const cardsNavBlock = document.querySelector(".cards-nav");
+const syncCardsNavHeight = () => workspace.style.setProperty("--cards-nav-h", `${cardsNavBlock.offsetHeight}px`);
+new ResizeObserver(syncCardsNavHeight).observe(cardsNavBlock);
+syncCardsNavHeight();
+
 function chapterState() {
   const count = Number(project?.setup?.chapter_count) || 0;
   const written = project?.chapters?.length ?? 0;

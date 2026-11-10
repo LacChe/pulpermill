@@ -111,6 +111,8 @@ main { max-width: var(--content-width); margin: 0 auto; padding: var(--sp-5) 0; 
   cursor: pointer; padding: var(--sp-4) var(--sp-4); list-style: none;
   display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3);
 }
+/* On the cards column a group's title stays under the stuck tabs and picker until the next group's title pushes it up. */
+#card .group > summary { position: sticky; top: var(--cards-nav-h, 0px); z-index: 4; background: var(--panel); border-radius: var(--radius-l); }
 .group > summary::-webkit-details-marker { display: none; }
 .group > summary::before { content: "▸"; color: var(--muted); width: 1em; }
 .group[open] > summary::before { content: "▾"; }
@@ -195,6 +197,9 @@ textarea.text-control { resize: vertical; }
 
 .tabs { max-width: var(--content-width); margin: 0 auto; display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; background: var(--bg); position: sticky; top: 0; z-index: 5; padding: var(--sp-1) 0; }
 .tabs[hidden] { display: none; }
+/* The card tabs and the character picker stick together as one block, so the picker stacks under the tabs and never covers them. */
+.cards-nav { position: sticky; top: 0; z-index: 5; background: var(--bg); }
+.cards-nav .tabs { position: static; }
 .tabs button[aria-current] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
 .chapter-tabs button:disabled { opacity: 0.55; cursor: not-allowed; }
 .chapter-tabs .chapter-written { border-color: var(--line); }
