@@ -6,6 +6,8 @@ Three grammars come ready made, because they follow from the cards alone: a card
 (`plan_beat`), the shifts of a chapter (`shifts`, the new edge of ties) and the shifts at the end of the story (`finish`, one patch per person). The shape of any other reply (a
 judge's answer, an extractor's) is the prompter's, built from the small pieces at the top. Link fields are limited to the names the
 request sent (the `ref` of the field says which names); where a request sent none, a link is plain text."""
+import json
+import re
 from copy import deepcopy
 from typing import Any
 
@@ -59,6 +61,52 @@ def list_of(names: list[str], limit: int | None = None) -> Schema:
 def obj(properties: dict[str, Schema], required: list[str] | None = None) -> Schema:
     return {"type": "object", "properties": properties, "required": list(properties) if required is None else required,
             "additionalProperties": False}
+
+
+# ---- Free text in the story's script ---------------------------------------------------------------------------------
+
+# A Chinese story's free-text strings may hold only Han characters, CJK and full-width punctuation, digits, a space and a little plain
+# punctuation (no quote or backslash, which would break the JSON string), so the model cannot drift into English. The one allowance for
+# Latin letters is a name that is in the request's own text (note, example chapter, values, related cards), spelled as it is there.
+# Written as \\u escapes: the grammar builder passes them through into a GBNF character class.
+_ZH_CLASS = ("0-9 ,.!?;:()'\\-"                        # digits, space, a little plain punctuation
+             "\\u3400-\\u4dbf\\u4e00-\\u9fff"        # Han (extension A and the main block)
+             "\\u3000-\\u303f\\uff00-\\uffef"          # CJK punctuation, full-width forms
+             "\\u2014\\u2018-\\u201f\\u2026\\u00b7")  # dash, curly quotes, ellipsis, middle dot
+_NAME_RUN = re.compile(r"[A-Z][A-Za-z]*(?: [A-Z][A-Za-z]*)*")
+MAX_LATIN_NAMES = 60
+
+
+def latin_names(request: dict) -> list[str]:
+    """Latin-script names in the writer's own text of this request: each run of capitalised words, and each word alone, longest first."""
+    blob = json.dumps({k: request.get(k) for k in ("note", "example_chapter", "values", "related")}, ensure_ascii=False)
+    found: dict[str, None] = {}
+    for run in _NAME_RUN.findall(blob):
+        found.setdefault(run, None)
+        for word in run.split():
+            found.setdefault(word, None)
+    return sorted(found, key=lambda n: (-len(n), n))[:MAX_LATIN_NAMES]
+
+
+def script_pattern(request: dict) -> str | None:
+    """The regex for a free-text string in the story's language, or None where the language has no rule here (only Chinese does)."""
+    if not str(request.get("language") or "").lower().startswith("zh"):
+        return None
+    names = latin_names(request)
+    return "^([" + _ZH_CLASS + "]" + "".join("|" + n for n in names) + ")+$"
+
+
+def in_script(node: Any, pattern: str) -> Any:
+    """The schema with `pattern` on every free-text string: a string with no `enum` or `const` (those are fixed words, the answer words and
+    the names of links, and stay as they are)."""
+    if isinstance(node, list):
+        return [in_script(v, pattern) for v in node]
+    if not isinstance(node, dict):
+        return node
+    out = {k: in_script(v, pattern) for k, v in node.items()}
+    if out.get("type") == "string" and "enum" not in out and "const" not in out:
+        out["pattern"] = pattern
+    return out
 
 
 # ---- Cards, from the Pydantic models --------------------------------------------------------------------------------
@@ -154,13 +202,16 @@ def link_names(characters: list[str], world: dict | None) -> dict[str, list[str]
 def fill(request: dict) -> Schema:
     """The reply shape for a fill: every field of the card required (a re-fill is asked exactly as a blank card is), and the fields of every
     list item it writes required as the schema says (a tie always has both ends, a bond and an edge), no ids, links limited to the names of
-    the related cards. A list may be empty."""
+    the related cards; in a Chinese story the free-text strings are limited to Han text (`script_pattern`). A list may be empty."""
     related = request.get("related") or {}
     people = related.get("characters") or []
     people = [people] if isinstance(people, dict) else people
     refs = link_names([p.get(cards.label_key("characters")) for p in people if isinstance(p, dict)], related.get("world"))
     schema = _clean(card_model_schema(request["card"]), refs, False, item_required=True)
     schema["required"] = list(schema["properties"])
+    pattern = script_pattern(request)
+    if pattern:
+        schema = in_script(schema, pattern)      # a Chinese story's free text can be written only in its own script (see script_pattern)
     return _exclusive(schema, request["card"])
 
 

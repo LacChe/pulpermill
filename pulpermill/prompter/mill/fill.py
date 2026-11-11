@@ -27,6 +27,10 @@ def language_name(code: str | None) -> str:
     return names.get(code) or names.get(code.split("-")[0]) or code
 
 
+def english(request: dict) -> bool:
+    return str(request.get("language") or "en").lower().split("-")[0] == "en"
+
+
 # ---- what the card is linked to -----------------------------------------------------------------------------------------------
 
 def _people(related: dict) -> list[dict]:
@@ -151,6 +155,7 @@ def build_prompt(request: dict, kit: Any, factor: float = 1.0) -> str:
         (w["related_lead"] + "\n\n" + related) if related else "",
         _names_block(request),
         w["empty_card"],            # a re-fill is asked exactly as a blank card is: the card's current values are never shown
+        w["language_close"].format(language=language_name(request.get("language"))) if not english(request) else "",
         w["output"],
     ]
     return "\n\n".join(b for b in blocks if b)
