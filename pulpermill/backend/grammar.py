@@ -78,6 +78,7 @@ _ZH_CLASS = ("0-9 ,.!?;:()'\\-"                        # digits, space, a little
              "\\u2014\\u2018-\\u201f\\u2026\\u00b7")  # dash, curly quotes, ellipsis, middle dot
 _NAME_RUN = re.compile(r"[A-Z][A-Za-z]*(?: [A-Z][A-Za-z]*)*")
 MAX_LATIN_NAMES = 60
+PLAN_LABEL_WORDS = ("Act",)      # the labels of the plan's four points (Act 1 to Act 4) stay in English in every language
 
 
 # Where a request keeps the text a name may come from. A fill has the writer's own text; the planner, the events and the shifts have the cast,
@@ -97,12 +98,13 @@ def latin_names(request: dict, extra: tuple[str, ...] | list[str] = ()) -> list[
     return sorted(found, key=lambda n: (-len(n), n))[:MAX_LATIN_NAMES]
 
 
-def script_pattern(request: dict, extra: tuple[str, ...] | list[str] = ()) -> str | None:
-    """The regex for a free-text string in the story's language, or None where the language has no rule here (only Chinese does)."""
+def script_pattern(request: dict, extra: tuple[str, ...] | list[str] = (), allow: tuple[str, ...] = ()) -> str | None:
+    """The regex for a free-text string in the story's language, or None where the language has no rule here (only Chinese does). `allow` are
+    words that stay in Latin letters whatever the story's language, such as the plan's labels; they are never cut like the names are."""
     if not str(request.get("language") or "").lower().startswith("zh"):
         return None
     names = latin_names(request, extra)
-    return "^([" + _ZH_CLASS + "]" + "".join("|" + n for n in names) + ")+$"
+    return "^([" + _ZH_CLASS + "]" + "".join("|" + n for n in [*names, *(a for a in allow if a not in names)]) + ")+$"
 
 
 def in_script(node: Any, pattern: str) -> Any:
@@ -244,7 +246,13 @@ def plan_beat(request: dict) -> Schema:
     mine = {k: v for k, v in node["properties"].items() if v.get("filled_by") == "planner"}
     refs = link_names([p.get(cards.label_key("characters")) for p in request.get("cast") or []], request.get("world"))
     cleaned = _clean({"type": "object", "properties": mine}, refs, False)
-    return _in_story_script(obj(cleaned["properties"]), request)
+    schema = _in_story_script(obj(cleaned["properties"]), request)
+    # The plan's four points start with the labels Act 1 to Act 4 in English, whatever the story's language (the prompt says so and the plan check
+    # looks for them), so that one field may hold the word Act.
+    plan = schema["properties"].get("plan")
+    if isinstance(plan, dict) and "pattern" in plan:
+        plan["pattern"] = script_pattern(request, allow=PLAN_LABEL_WORDS)
+    return schema
 
 
 # ---- Shifts ---------------------------------------------------------------------------------------------------------

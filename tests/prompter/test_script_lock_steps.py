@@ -110,6 +110,24 @@ def test_the_events_and_shifts_steps_of_a_chinese_generate_are_locked_as_the_flo
         assert_locked(steps["shifts"].grammar)
 
 
+def test_the_plan_may_carry_its_english_act_labels_and_nothing_else_in_latin_letters():
+    """The plan prompt keeps the labels Act 1 to Act 4 in English whatever the language, and the plan check looks for them: a Chinese plan that
+    could not write them was refused as 'missing Act 1, Act 2, Act 3, Act 4'."""
+    from pulpermill.prompter.mill import plan as planner
+    g = Kit(zh(plan_request())).grammar.plan_beat()
+    pattern = g["properties"]["plan"]["pattern"]
+    text = "Act 1: 沈青岚在客栈醒来，观察楼下的人。Act 2: 她向钱三打听木箱。Act 3: 钱三透露了消息。Act 4: 她决定三天内追查。"
+    assert re.fullmatch(pattern, text)
+    assert planner.plan_points(text) == ["1", "2", "3", "4"]
+    assert not re.fullmatch(pattern, "Act 1: She wakes at the inn and watches the people below.")
+    others = [n for n, node in g["properties"].items() if n != "plan" and "pattern" in node]
+    assert "aim" in others and "when_time" in others
+    for other in others:
+        assert not re.fullmatch(g["properties"][other]["pattern"], "Act 1: 沈青岚在客栈醒来。"), other
+    plan_step = steps_of("plan", zh(plan_request()))["plan"]
+    assert re.fullmatch(plan_step.grammar["properties"]["plan"]["pattern"], text)
+
+
 @pytest.mark.parametrize("language", ["en", "fr", None])
 def test_other_languages_are_left_alone(language):
     gen = {**generate_request(), "language": language}
