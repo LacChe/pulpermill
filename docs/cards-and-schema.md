@@ -250,7 +250,7 @@ The Outline remains active so the user can plan the next beat. Individual user-c
 
 ```mermaid
 erDiagram
-    PROJECT ||--|| STYLE : contains
+    PROJECT ||--|| "STYLE" : contains
     PROJECT ||--o{ CHARACTER : contains
     PROJECT ||--|| WORLD : contains
     PROJECT ||--|| ENTANGLEMENTS : contains
