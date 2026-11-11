@@ -1,8 +1,10 @@
 """A4: the chapter-trials kit (evals/trials).
 
-The stories, the projects built from them, the manifest, the scoring sheet and the README agree; every trial is a valid project under
-schema version 4 that the page's start gate accepts; the kit covers what the brief asks (6 to 8 trials, different genres, tones, cast
-sizes of 2 to 5, first and last chapters, a protagonist with and without ties, one Simplified Chinese story)."""
+The stories, projects, manifest, and scoring sheet agree; every trial is a valid
+project under schema version 4 that the page's start gate accepts; the kit
+covers what the brief asks (6 to 8 trials, different genres, tones, cast sizes
+of 2 to 5, first and last chapters, a protagonist with and without ties, one
+Simplified Chinese story)."""
 import csv
 import json
 import re

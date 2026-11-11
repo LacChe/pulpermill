@@ -1,7 +1,7 @@
 // Runs the chapter trials (evals/trials) through the page's own client and logic: for each chapter the same plan request, the same
 // generate request, the same reading of the reply and the same commit the page makes, so the next chapter plans from the new state.
-// It records what came out and runs the machine checks (tools/trial_checks.mjs). It does not grade: a person reads the chapters with
-// evals/trials/rubric.md and fills the sheets.
+// It records what came out and runs the machine checks (tools/trial_checks.mjs). It does not grade: a person reads the chapters and
+// fills the scoring sheet.
 //   node tools/run_trials.mjs <address> [--token T] [--runs 3] [--chapters N] [--only t1-salt-coast,t2-quiet-orchard] [--label name]
 //        [--runlog PATH] [--out DIR]
 //   node tools/run_trials.mjs --dry [--only ...] [--chapters N]

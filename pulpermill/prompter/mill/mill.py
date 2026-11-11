@@ -1,4 +1,5 @@
-"""MillPrompter: picks the module for each call by name. The contract with a call module is written in README.md:
+"""MillPrompter: picks the module for each call by name. The call contract is
+defined by the dispatcher and the public contract module:
 `build_flow(request, kit) -> Flow`, an optional `script(request, kit)`, an optional `VERSION`. No module, or a module that is
 still the scaffold's, means the stub's flow."""
 import importlib
