@@ -16,6 +16,7 @@ import { section, fill, msg, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
 import { STRINGS as RUN } from "./runall.js";
+import { callsModel } from "./busy.js";
 
 export const STRINGS = section("plan");
 
@@ -180,14 +181,14 @@ export function createPlanPanel(hooks) {
       sent.length ? node("ul", { className: "plan-ties" }, ...sent.map((t) => node("li", { textContent: tieInWords(hooks.schema, eff, t).text })))
         : node("p", { className: "help", textContent: STRINGS.tiesNone })));
 
-    button = node("button", { type: "button", className: "validate", textContent: fill(existing?.plan ? STRINGS.again : STRINGS.button, { n: chapter }) });
+    button = callsModel(node("button", { type: "button", className: "validate", textContent: fill(existing?.plan ? STRINGS.again : STRINGS.button, { n: chapter }) }));
     button.dataset.blocked = String(Boolean(problem));
     button.addEventListener("click", () => press(project, chapter));
     tag = elapsedTag(hooks.client, () => mine);
     panel.append(node("div", { className: "plan-actions" }, button, tag.node),
       node("p", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) }));
     if (hooks.runAll && info.count) {
-      runButton = node("button", { type: "button", className: "validate", textContent: fill(chapter >= info.count ? RUN.buttonOne : RUN.button, { n: chapter, from: chapter, to: info.count }) });
+      runButton = callsModel(node("button", { type: "button", className: "validate", textContent: fill(chapter >= info.count ? RUN.buttonOne : RUN.button, { n: chapter, from: chapter, to: info.count }) }));
       runButton.dataset.blocked = String(Boolean(problem));
       runButton.addEventListener("click", () => hooks.runAll.start(project, beat));
       runStop = node("button", { type: "button", className: "validate", textContent: RUN.stop, hidden: true });

@@ -537,7 +537,7 @@ function fillPanel(card, values, ctx) {
     remember(made, `${where}:${title}`, true);
     return made;
   };
-  const button = el("button", { type: "button", class: "fill-button", text: STRINGS.fillButton });
+  const button = el("button", { type: "button", class: "fill-button", text: STRINGS.fillButton, "data-calls": true });
   const timer = stopwatch();
   button.addEventListener("click", async () => {
     button.disabled = true;
@@ -718,7 +718,7 @@ export function renderCard(root, card, values, ctx) {
 
   // Validate: show everything the page can check at once, then ask the model about its own rules. The model is only
   // asked here, on the button, never while the writer types or leaves a field.
-  const validateButton = el("button", { type: "button", class: "validate", text: STRINGS.validate });
+  const validateButton = el("button", { type: "button", class: "validate", text: STRINGS.validate, "data-calls": true });
   validateButton.addEventListener("click", async () => {
     review.validated = true;
     const placed = update();

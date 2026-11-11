@@ -334,7 +334,7 @@ titleInput.addEventListener("input", () => {
 document.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
     event.preventDefault();
-    if (!lock?.locked) save();
+    save();
   }
 });
 
@@ -733,7 +733,7 @@ function setLanguage(code) {
 }
 
 // The top-bar switch: one button for each language, shown by its own name (a language's name is never translated). The bar is a
-// locked area, so the switch is inert while a model call runs.
+// the switch only changes how the page is worded, so it stays usable while a model call runs.
 const LANGUAGE_KEY = "pulpermill-language";
 languageNode.replaceChildren(...LANGUAGES.map(({ code, name, short }) => {
   const node = button(short, () => chooseLanguage(code));
@@ -797,6 +797,9 @@ try {
   lock = createLock({ client, runAll });
   lock.onChange(() => { drawLock(); drawConnection(); });
   drawLock();
+  // Panels redraw their own buttons (the story bar and the welcome strip do, on every change of the client), and a button drawn
+  // after the last answer would be live. So whatever is added to the page is locked or not by the same one answer.
+  new MutationObserver(drawLock).observe(document.body, { childList: true, subtree: true });
   planPanel = createPlanPanel({
     runAll,
     schema, client, getProject: () => project, backendWhere, errorText,

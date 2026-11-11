@@ -48,9 +48,10 @@ test("a new project takes the page's language, so a flip carries to the next New
   assert.equal(newProject(schema, "en").output_language, "en");
 });
 
-test("the switch sits inside the locked bar, so it is inert while a model call runs", () => {
-  const bar = html.slice(html.indexOf('<header class="bar" data-locks>'), html.indexOf("</header>"));
-  assert.ok(bar.includes('id="language"'), "the language group is not inside the bar that locks");
+test("the switch sits in the top bar, which does not lock: it only rewords the page, so it works while a model call runs", () => {
+  const bar = html.slice(html.indexOf('<header class="bar">'), html.indexOf("</header>"));
+  assert.ok(bar.includes('id="language"'), "the language group is not in the top bar");
+  assert.doesNotMatch(bar.slice(0, bar.indexOf(">") + 1), /data-locks/);
   assert.match(bar, /id="language"[^>]*role="group"[^>]*data-text-attrs="aria-label:page\.language"/);
 });
 

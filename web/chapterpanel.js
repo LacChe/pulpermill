@@ -10,6 +10,7 @@ import { chapterNoteFor } from "./modelnotes.js";
 import { regenerateGate } from "./generate.js";
 import { elapsedTag } from "./elapsed.js";
 import { reviewNodes } from "./generatepanel.js";
+import { callsModel } from "./busy.js";
 
 export const STRINGS = section("app");
 const PLAN = section("plan");
@@ -87,7 +88,7 @@ export function createChapterPanel(hooks) {
     panel.append(plan, text, shifts);
     const gate = written ? regenerateGate(hooks.schema, project, chapter) : null;
     if (gate?.ok) {
-      redoButton = node("button", { type: "button", className: "validate again", textContent: fill(GENERATE.again, { n: chapter }) });
+      redoButton = callsModel(node("button", { type: "button", className: "validate again", textContent: fill(GENERATE.again, { n: chapter }) }));
       redoButton.addEventListener("click", () => redo(project, chapter, gate.later));
       tag = elapsedTag(hooks.client, () => busy === chapter);
       panel.append(node("div", { className: "plan-actions" }, redoButton, tag.node));

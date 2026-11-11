@@ -9,6 +9,7 @@ import { section, fill } from "./text.js";
 
 const LABELS = section("labels");
 import { ask } from "./dialog.js";
+import { callsModel } from "./busy.js";
 
 export const STRINGS = section("story");
 
@@ -91,7 +92,7 @@ export function createStoryBar(root, hooks) {
       root.replaceChildren(...parts);
       return;
     }
-    const begin = node("button", { type: "button", className: "validate", textContent: STRINGS.start, disabled: checking });
+    const begin = callsModel(node("button", { type: "button", className: "validate", textContent: STRINGS.start, disabled: checking }));
     begin.addEventListener("click", press);
     const parts = [node("p", { textContent: checking ? STRINGS.checking : STRINGS.intro }), begin];
     if (message) parts.push(node("p", { className: "story-fix", textContent: message.text }), stopList(message.stops));

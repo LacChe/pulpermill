@@ -508,8 +508,5 @@ button:disabled { opacity: 0.5; }
 
 .fill-use { display: flex; align-items: center; gap: var(--sp-2); margin: var(--sp-1) 0 var(--sp-2); color: var(--muted); }
 
-/* While the model works, everything but Check and Stop is out of reach (busy.js marks these areas inert). */
-[data-locks][inert] { opacity: 0.6; cursor: not-allowed; }
-.cards-nav[inert] { opacity: 1; }                 /* sticky, with a background: dimming it would show the page behind */
-.cards-nav[inert] > * { opacity: 0.6; }
-body[data-locked] .backend-bar :is(#check, #stop) { opacity: 1; }
+/* While the model works, the buttons that start a model call and the connection fields are out of reach (busy.js marks them inert). */
+[data-locks][inert], [data-calls][inert] { opacity: 0.6; cursor: not-allowed; }

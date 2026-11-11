@@ -1,6 +1,8 @@
-// When the page is locked. While the model works, everything but Check and Stop is out of reach, and that is decided here, in one
-// place: the page asks this file whether it is locked and marks its areas (anything with data-locks in index.html) inert, rather than
-// each panel disabling its own buttons from its own refresh. Whatever draws later, an area is inert or not because of this one answer.
+// When the page is locked. While the model works, what talks to the backend is out of reach: the buttons that start a model call
+// (marked with `callsModel`, below) and the connection's address and token (data-locks in index.html). Check and Stop stay usable, and so
+// does everything else: moving around, editing, saving, the language. That is decided here, in one place: the page asks this file whether
+// it is locked and marks those controls inert, rather than each panel disabling its own buttons from its own refresh. Whatever draws
+// later, a control is inert or not because of this one answer.
 export function lockReason({ working = false, stopping = false, connection = null } = {}, running = false) {
   if (stopping) return "stopping";
   if (working) return "call";
@@ -31,9 +33,15 @@ export function createLock({ client, runAll = null }) {
   };
 }
 
-// Marks every area that locks. Safe to call as often as wanted.
+// Marks a button as one that starts a model call, so it is locked while the model works. Returns the button.
+export function callsModel(button) {
+  button.dataset.calls = "";
+  return button;
+}
+
+// Marks everything that locks: the model-call buttons and the connection fields. Safe to call as often as wanted.
 export function applyLock(root, reason) {
   root.body.toggleAttribute("data-locked", reason !== null);
   if (reason) root.body.dataset.lockReason = reason; else delete root.body.dataset.lockReason;
-  for (const area of root.querySelectorAll("[data-locks]")) area.inert = reason !== null;
+  for (const control of root.querySelectorAll("[data-locks], [data-calls]")) control.inert = reason !== null;
 }

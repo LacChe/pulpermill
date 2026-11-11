@@ -11,6 +11,7 @@ import { section, fill, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
 import { removeNote } from "./modelnotes.js";
+import { callsModel } from "./busy.js";
 
 export const STRINGS = section("generate");
 
@@ -126,7 +127,7 @@ export function createGeneratePanel(hooks) {
       panel.append(node("p", { className: "help", textContent: STRINGS.reasons[gate.reason] }));
       if (gate.problems) panel.append(node("ul", { className: "chapter-warnings" }, ...gate.problems.map((p) => node("li", { textContent: p }))));
     } else {
-      button = node("button", { type: "button", className: "validate", textContent: fill(STRINGS.button, { n: info.next }) });
+      button = callsModel(node("button", { type: "button", className: "validate", textContent: fill(STRINGS.button, { n: info.next }) }));
       button.addEventListener("click", () => press(project));
       tag = elapsedTag(hooks.client, () => mine);
       panel.append(node("div", { className: "plan-actions" }, button, tag.node),
