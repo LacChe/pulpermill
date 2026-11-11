@@ -162,23 +162,31 @@ export function holdingsInPlay(project, cast) {
 }
 
 // A cast of up to CAST_MAX: the people already chosen come first (the required members, then any the writer kept), then the other
-// characters in card order until the cast is full. `project` should be the effective project.
-export function fillCast(project, first) {
+// characters, drawn at random with `rand` (a generator from rng, so asking again gives the same cast) until the cast is full. Card order
+// plays no part: filling in order would leave out whoever sits last on the Characters card, chapter after chapter. `project` should be
+// the effective project.
+export function fillCast(project, first, rand = Math.random) {
+  const ok = (id) => isFilled(id) && isCharacter(project, id);
   const cast = [];
-  for (const id of [...asList(first), ...(project.characters ?? []).map((c) => c.id)]) {
-    if (cast.length >= Math.max(CAST_MAX, asList(first).length)) break;
-    if (isFilled(id) && isCharacter(project, id) && !cast.includes(id)) cast.push(id);
+  for (const id of asList(first)) if (ok(id) && !cast.includes(id)) cast.push(id);
+  const others = (project.characters ?? []).map((c) => c.id).filter((id) => ok(id) && !cast.includes(id));
+  for (let i = others.length - 1; i > 0; i--) {      // a shuffle, so every character is as likely as any other to be drawn
+    const j = Math.floor(rand() * (i + 1));
+    [others[i], others[j]] = [others[j], others[i]];
   }
-  return cast;
+  return [...cast, ...others].slice(0, Math.max(CAST_MAX, asList(first).length));
 }
 
+// The seeded generator for a chapter's cast: the same project and chapter always draw the same people.
+const castRng = (project, chapter) => rng(projectSeed(project), chapter, "cast");
+
 // A new beat for a chapter: the code's fields are set, the spotlight is picked, and the cast is the required cast filled up to
-// CAST_MAX with the other characters in card order. The planner's fields are blank. `chapter` defaults to the next one to write.
+// CAST_MAX with other characters drawn at random (seeded). The planner's fields are blank. `chapter` defaults to the next one to write.
 export function newBeat(schema, project, chapter = chapterInfo(project).next) {
   const taken = beatsOf(project).map((b) => b.id);
   const eff = effectiveProject(project, chapter);
   const tie = pickSpotlight(project, chapter);
-  const beat = { ...blankItem(BEAT_FIELD(schema), taken), chapter, stale: false, cast: fillCast(eff, requiredCast(eff, tie?.id)), spotlight: tie?.id ?? "", planned_from: null };
+  const beat = { ...blankItem(BEAT_FIELD(schema), taken), chapter, stale: false, cast: fillCast(eff, requiredCast(eff, tie?.id), castRng(project, chapter)), spotlight: tie?.id ?? "", planned_from: null };
   const pressure = pickPressure(project, chapter);
   if (pressure) beat.pressure = pressure; else delete beat.pressure;     // no pressure field when the world has no rule or object to pick
   return beat;
@@ -208,15 +216,15 @@ export function castProblem(project, castIds, spotlightId = null) {
 
 // The spotlight changed to another tie: the beat's new spotlight and cast. The cast keeps everyone the writer added, drops the two
 // characters the old tie required (unless the new tie needs them too) and gains the characters the new tie requires. The protagonist
-// stays. The required members come first, the extras the writer kept follow, and the cast is filled up to CAST_MAX with the other
-// characters in card order (it never goes over CAST_MAX). Used by the plan panel's picker; `project` is any project, the effective cards are worked out here.
+// stays. The required members come first, the extras the writer kept follow, and the cast is filled up to CAST_MAX with other
+// characters drawn at random, seeded (it never goes over CAST_MAX). Used by the plan panel's picker; `project` is any project, the effective cards are worked out here.
 export function withSpotlight(project, beat, spotlightId) {
   const eff = effectiveProject(project, Number(beat.chapter));
   const before = requiredCast(eff, beat.spotlight);
   const extras = asList(beat.cast).filter((id) => !before.includes(id));
   const required = requiredCast(eff, spotlightId);
   const kept = [...required, ...extras.filter((id) => !required.includes(id))].slice(0, Math.max(CAST_MAX, required.length));
-  const cast = fillCast(eff, kept);
+  const cast = fillCast(eff, kept, castRng(project, beat.chapter));
   return { spotlight: spotlightId, cast };
 }
 

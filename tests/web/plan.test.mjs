@@ -109,7 +109,7 @@ test("ensureBeat makes and places the next chapter's beat once", () => {
   assert.equal(p.outline.beats.length, 2);
 });
 
-test("a new beat's cast is the required members, then the other characters in card order, up to five", () => {
+test("a new beat's cast is the required members, then other characters drawn at random, up to five", () => {
   const p = story();
   p.outline.beats = [p.outline.beats[0]];
   p.characters.push({ id: "c0000003", name: "Joss" });
@@ -122,7 +122,9 @@ test("a new beat's cast is the required members, then the other characters in ca
   assert.equal(six.cast.length, 5, "6 characters: the cast stops at five");
   assert.deepEqual(six.cast.slice(0, need.length), need, "the required members come first");
   const rest = p.characters.map((c) => c.id).filter((id) => !need.includes(id));
-  assert.deepEqual(six.cast.slice(need.length), rest.slice(0, 5 - need.length), "then the others in card order");
+  assert.ok(six.cast.slice(need.length).every((id) => rest.includes(id)), "then others from the rest");
+  assert.equal(new Set(six.cast).size, 5, "no one twice");
+  assert.deepEqual(newBeat(schema, p, 2).cast, six.cast, "asking again gives the same cast");
   assert.equal(castProblem(p, six.cast, six.spotlight), null);
 });
 
@@ -425,4 +427,16 @@ test("a plan request asks for origin history unless the page turns it off", () =
   assert.equal("origin_history" in planRequest(schema, copy(p), copy(beat)), false);
   assert.equal("origin_history" in planRequest(schema, copy(p), copy(beat), { originHistory: true }), false);
   assert.equal(planRequest(schema, copy(p), copy(beat), { originHistory: false }).origin_history, false);
+});
+
+test("the cast's open places are not given by card order: over many chapters every character is drawn, the last one included", () => {
+  const p = story();
+  p.outline.beats = [p.outline.beats[0]];
+  p.characters.push({ id: "c0000003", name: "Joss" });
+  for (let i = 4; i <= 6; i++) p.characters.push({ id: `c000000${i}`, name: `Extra ${i}` });
+  const last = p.characters[p.characters.length - 1].id;
+  const seen = new Map();
+  for (let chapter = 1; chapter <= 60; chapter++) for (const id of newBeat(schema, p, chapter).cast) seen.set(id, (seen.get(id) ?? 0) + 1);
+  assert.ok(p.characters.every((c) => seen.has(c.id)), "everyone appears");
+  assert.ok(seen.get(last) >= 10, `the last character is drawn often (${seen.get(last)} of 60)`);
 });
