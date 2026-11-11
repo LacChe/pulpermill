@@ -5,7 +5,9 @@
 // Stopping is the Stop button the page already has: a stopped or failed chapter leaves nothing behind.
 import { generateChapter, regenerateChapter } from "./client.js";
 import { generateGate, applyGenerated, commitChapter, applyRegenerated, commitRegenerated } from "./generate.js";
-import { chapterInfo } from "./plan.js";
+import { chapterInfo, beatForChapter, requiredCast, tiesInPlay, tieInWords } from "./plan.js";
+import { effectiveProject } from "./effective.js";
+import { instanceName } from "./logic.js";
 import { setChapterNote, copyNote, putNote } from "./modelnotes.js";
 import { section, fill, joinList } from "./text.js";
 import { ask } from "./dialog.js";
@@ -14,6 +16,7 @@ import { removeNote } from "./modelnotes.js";
 import { callsModel } from "./busy.js";
 
 export const STRINGS = section("generate");
+const PLAN = section("plan");           // the words for the cast and the ties, which the plan panel used to show
 
 function node(tag, props = {}, ...children) {
   const made = Object.assign(document.createElement(tag), props);
@@ -33,6 +36,27 @@ export function reviewNodes(review) {
     parts.push(node("ul", { className: "chapter-warnings" }, ...review.warnings.map((w) => node("li", { textContent: w.text }))));
   }
   return parts;
+}
+
+// Who is in the chapter and the ties that will be sent with it, read-only: what the writer is sent, shown once the chapter has a plan (so the
+// spotlight is the planner's pick and the cast is the one the plan was made for). A change is made in the Outline form, then planned again.
+function sentNodes(project, hooks) {
+  const info = chapterInfo(project);
+  const beat = beatForChapter(project, info.next);
+  if (!beat) return [];
+  const eff = effectiveProject(project, info.next);
+  const must = requiredCast(eff, beat.spotlight);
+  const protagonist = eff.setup?.protagonist;
+  const people = (beat.cast ?? []).map((id) => (eff.characters ?? []).find((c) => c.id === id)).filter(Boolean);
+  const sent = tiesInPlay(eff, beat.cast);
+  return [node("fieldset", { className: "plan-cast-box" }, node("legend", { textContent: PLAN.castTitle }),
+    node("p", { className: "help", textContent: PLAN.castSent }),
+    node("div", { className: "plan-cast" }, ...people.map((c) => node("p", { className: "plan-person" },
+      node("span", { className: "plan-name", textContent: instanceName(c) || PLAN.unnamed }),
+      ...(must.includes(c.id) ? [node("span", { className: "tag", textContent: c.id === protagonist ? PLAN.protagonist : PLAN.inSpotlight })] : [])))),
+    node("h4", { textContent: PLAN.tiesSent }),
+    sent.length ? node("ul", { className: "plan-ties" }, ...sent.map((t) => node("li", { textContent: tieInWords(hooks.schema, eff, t).text })))
+      : node("p", { className: "help", textContent: PLAN.tiesNone }))];
 }
 
 // hooks: {schema, client, getProject, backendWhere, changed(), redraw(), notice(text, kind), errorText(error)}
@@ -131,7 +155,7 @@ export function createGeneratePanel(hooks) {
       button.addEventListener("click", () => press(project));
       tag = elapsedTag(hooks.client, () => mine);
       panel.append(node("div", { className: "plan-actions" }, button, tag.node),
-        node("p", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) }));
+        node("p", { className: "note", textContent: fill(STRINGS.sends, { where: hooks.backendWhere() }) }), ...sentNodes(project, hooks));
     }
     refresh();
   }

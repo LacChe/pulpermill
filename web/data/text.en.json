@@ -283,7 +283,7 @@
     "notStarted": "Start the story first (the bar above). The plan is made from the cards as they will be locked.",
     "allDone": "Every chapter is written. Use the end-of-story step when you are ready.",
     "castTitle": "Who is in this chapter",
-    "castHelp": "The protagonist and the two characters at the ends of the spotlight tie are always in. You can add others, up to {max} people in all.",
+    "castSent": "These people and the ties among them are sent when the chapter is written. To change the cast, edit it in the Outline below and plan again.",
     "protagonist": "Protagonist, always in",
     "button": "Plan chapter {n} with the model",
     "again": "Plan chapter {n} again",

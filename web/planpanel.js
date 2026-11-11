@@ -1,17 +1,15 @@
 // The plan panel: shown at the top of the Outline card. The chapter is about one tie (the spotlight) and one rule or object (the
 // pressure): the planner always chooses them (its select step), and the beat's own pair is only the stand-in the page keeps until then.
-// The cast always holds the protagonist and the characters at the two ends of the spotlight tie, and the writer
-// may add others up to CAST_MAX. The panel shows what will be sent (the ties among the cast), and one button asks
-// the model to plan the chapter; the beat lands in the Outline below, where it can be edited like any other. Nothing here calls the
+// The cast is a draft until then (the protagonist, the two ends of the placeholder pair, the rest drawn at random); it is shown with the
+// ties that will be sent in the write panel once there is a plan. One button asks the model to plan the chapter; the beat lands in the Outline below, where it can be edited like any other. Nothing here calls the
 // model except that one button. The rules and the picks are worked out in plan.js; this file only draws them.
 import { storyStarted, cardLocked } from "./gate.js";
 import { planChapter } from "./client.js";
 import {
-  CAST_MAX, castKey, chapterInfo, beatForChapter, newBeat, requiredCast, tiesInPlay, tieInWords, castProblem,
+  CAST_MAX, castKey, chapterInfo, beatForChapter, newBeat, castProblem,
   planIsStale, commitPlan,
 } from "./plan.js";
 import { effectiveProject } from "./effective.js";
-import { instanceName } from "./logic.js";
 import { section, fill, msg, joinList } from "./text.js";
 import { ask } from "./dialog.js";
 import { elapsedTag } from "./elapsed.js";
@@ -71,14 +69,6 @@ export function createPlanPanel(hooks) {
     if (runStop) runStop.hidden = !running;
     if (runLine) runLine.textContent = running ? hooks.runAll.progressText() : "";
     tag?.update();
-  }
-
-  // Changes the beat's spotlight and cast: in the Outline when the beat is planned (the form below then shows it), else in the draft.
-  function setBeat(project, chapter, change) {
-    const { beat, existing } = working(project, chapter);
-    Object.assign(beat, change);
-    if (existing) hooks.changed();
-    hooks.redraw();
   }
 
   async function press(project, chapter) {
@@ -149,37 +139,16 @@ export function createPlanPanel(hooks) {
     panel.append(node("p", { className: "plan-chapter", textContent: fill(info.count ? STRINGS.chapterOf : STRINGS.chapterOnly, { n: chapter, total: info.count }) }));
     if (stale) panel.append(node("p", { className: "plan-stale", textContent: STRINGS.stale }));
 
-    // The cast: the required members are in and marked; the writer adds others up to CAST_MAX.
-    const required = requiredCast(eff, beat.spotlight);
-    const protagonist = eff.setup?.protagonist;
-    const chosen = new Set([...required, ...(beat.cast ?? [])]);
-    const list = node("div", { className: "plan-cast" });
-    const boxes = [];
-    const setCast = () => setBeat(project, chapter, { cast: [...required, ...[...chosen].filter((id) => !required.includes(id))] });
-    for (const c of eff.characters ?? []) {
-      const must = required.includes(c.id);
-      const box = node("input", { type: "checkbox", checked: chosen.has(c.id), disabled: must });
-      box.addEventListener("change", () => { if (box.checked) chosen.add(c.id); else chosen.delete(c.id); setCast(); });
-      boxes.push([box, c.id]);
-      const why = !must ? null : c.id === protagonist ? STRINGS.protagonist : STRINGS.inSpotlight;
-      list.append(node("label", { className: "plan-person" }, box, node("span", { className: "plan-name", textContent: instanceName(c) || STRINGS.unnamed }),
-        ...(why ? [node("span", { className: "tag", textContent: why })] : [])));
-    }
-    for (const [box, id] of boxes) if (!chosen.has(id) && chosen.size >= CAST_MAX) box.disabled = true;
+    // Before the chapter is planned there is nothing to choose here: the cast is a draft and the spotlight is the planner's to pick. What
+    // will be sent for writing is shown once there is a plan, in the write panel (generatepanel.js). A cast that cannot be used is still
+    // said here, because it is what blocks the button.
     const problem = castProblem(eff, beat.cast, beat.spotlight);
     const status = node("p", { className: "problem-count has-block", hidden: !problem });
     if (problem) {
       const rule = hooks.schema.cards.outline.rules.find((r) => r.id === CAST_RULES[problem]);
       status.textContent = rule ? joinList([rule.message, rule.fix], "sentence") : fill(STRINGS.reasons[`cast_${problem}`], { max: CAST_MAX });
     }
-    panel.append(node("fieldset", { className: "plan-cast-box" }, node("legend", { textContent: STRINGS.castTitle }),
-      node("p", { className: "help", textContent: fill(STRINGS.castHelp, { max: CAST_MAX }) }), list), status);
-
-    // What will be sent: the ties among the cast and between the cast and a group.
-    const sent = tiesInPlay(eff, beat.cast);
-    panel.append(node("div", { className: "plan-facts-box" }, node("h4", { textContent: STRINGS.tiesSent }),
-      sent.length ? node("ul", { className: "plan-ties" }, ...sent.map((t) => node("li", { textContent: tieInWords(hooks.schema, eff, t).text })))
-        : node("p", { className: "help", textContent: STRINGS.tiesNone })));
+    panel.append(status);
 
     button = callsModel(node("button", { type: "button", className: "validate", textContent: fill(existing?.plan ? STRINGS.again : STRINGS.button, { n: chapter }) }));
     button.dataset.blocked = String(Boolean(problem));
