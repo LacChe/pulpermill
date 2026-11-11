@@ -363,7 +363,7 @@ class GenerateFlow(Flow):
             return fallback
         if n == 1:
             return Step("events", lambda f: events_prompt(self.request, chapter, f), "json", EVENTS_TOKENS,
-                        g.obj({"happened": g.text(), "changed": g.text()}), events_problem, "structured", True,
+                        g.events(chapter), events_problem, "structured", True,
                         EVENTS_ATTEMPTS, noted("events_fallback", lambda: events_fallback(chapter)))
         return self._shifts_step(events, noted("shifts_fallback", {"shifts": []}))
 

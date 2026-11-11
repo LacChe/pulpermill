@@ -40,6 +40,13 @@ class Grammars:
     def fill(self) -> dict:
         return grammar.fill(self._request)
 
+    def events(self, chapter_text: str = "") -> dict:
+        return grammar.events(self._request, chapter_text)
+
+    def in_script(self, schema: dict) -> dict:
+        """`schema` with its free-text strings limited to the story's script (Chinese only; any other language is left as it is)."""
+        return grammar._in_story_script(schema, self._request)
+
     def plan_beat(self) -> dict:
         return grammar.plan_beat(self._request)
 

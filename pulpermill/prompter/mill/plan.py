@@ -566,7 +566,7 @@ class PlanFlow(Flow):
         grammar = copy.deepcopy(grammar)
         extra = {IDEA: {"type": "integer", "enum": [1, 2, 3]}} if combos is not None else {}
         if brainstorm:
-            extra[IDEA_USE] = {"type": "string"}
+            extra[IDEA_USE] = self.kit.grammar.in_script({"type": "string"})
         grammar["properties"] = {**extra, **grammar["properties"]}
         grammar["required"] = [*extra, *grammar.get("required", [])]
         return grammar

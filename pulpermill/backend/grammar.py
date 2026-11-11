@@ -5,7 +5,10 @@ enum, const, items, properties, required, anyOf, minItems, maxItems, additionalP
 Three grammars come ready made, because they follow from the cards alone: a card fill (`fill`), the planner's fields of a beat
 (`plan_beat`), the shifts of a chapter (`shifts`, the new edge of ties) and the shifts at the end of the story (`finish`, one patch per person). The shape of any other reply (a
 judge's answer, an extractor's) is the prompter's, built from the small pieces at the top. Link fields are limited to the names the
-request sent (the `ref` of the field says which names); where a request sent none, a link is plain text."""
+request sent (the `ref` of the field says which names); where a request sent none, a link is plain text.
+
+In a Chinese story every grammar that has free-text strings (the fill, the planner's beat, the events record, the shifts of a chapter and of the
+end) limits them to the story's script (`script_pattern`), so a step cannot answer in English however its prompt is worded."""
 import json
 import re
 from copy import deepcopy
@@ -77,9 +80,15 @@ _NAME_RUN = re.compile(r"[A-Z][A-Za-z]*(?: [A-Z][A-Za-z]*)*")
 MAX_LATIN_NAMES = 60
 
 
-def latin_names(request: dict) -> list[str]:
-    """Latin-script names in the writer's own text of this request: each run of capitalised words, and each word alone, longest first."""
-    blob = json.dumps({k: request.get(k) for k in ("note", "example_chapter", "values", "related")}, ensure_ascii=False)
+# Where a request keeps the text a name may come from. A fill has the writer's own text; the planner, the events and the shifts have the cast,
+# the world, the ties and the holdings; the finish has the characters.
+NAME_KEYS = ("note", "example_chapter", "values", "related", "cast", "world", "ties", "holdings", "characters")
+
+
+def latin_names(request: dict, extra: tuple[str, ...] | list[str] = ()) -> list[str]:
+    """Latin-script names in the writer's own text of this request (and in `extra`, text the request does not carry, such as the chapter the
+    events are written from): each run of capitalised words, and each word alone, longest first."""
+    blob = json.dumps({k: request.get(k) for k in NAME_KEYS}, ensure_ascii=False) + "\n" + "\n".join(e for e in extra if isinstance(e, str))
     found: dict[str, None] = {}
     for run in _NAME_RUN.findall(blob):
         found.setdefault(run, None)
@@ -88,11 +97,11 @@ def latin_names(request: dict) -> list[str]:
     return sorted(found, key=lambda n: (-len(n), n))[:MAX_LATIN_NAMES]
 
 
-def script_pattern(request: dict) -> str | None:
+def script_pattern(request: dict, extra: tuple[str, ...] | list[str] = ()) -> str | None:
     """The regex for a free-text string in the story's language, or None where the language has no rule here (only Chinese does)."""
     if not str(request.get("language") or "").lower().startswith("zh"):
         return None
-    names = latin_names(request)
+    names = latin_names(request, extra)
     return "^([" + _ZH_CLASS + "]" + "".join("|" + n for n in names) + ")+$"
 
 
@@ -107,6 +116,18 @@ def in_script(node: Any, pattern: str) -> Any:
     if out.get("type") == "string" and "enum" not in out and "const" not in out:
         out["pattern"] = pattern
     return out
+
+
+def _in_story_script(schema: Schema, request: dict, extra: tuple[str, ...] | list[str] = ()) -> Schema:
+    """`schema` with its free-text strings limited to the story's script, or as it is where the language has no rule here."""
+    pattern = script_pattern(request, extra)
+    return in_script(schema, pattern) if pattern else schema
+
+
+def events(request: dict, chapter_text: str = "") -> Schema:
+    """The events record of a chapter: what happened and the changed line, both free text. `chapter_text` is the chapter they are written from:
+    a Latin name in it may be spelled as it is there."""
+    return _in_story_script(obj({"happened": text(), "changed": text()}), request, [chapter_text])
 
 
 # ---- Cards, from the Pydantic models --------------------------------------------------------------------------------
@@ -223,7 +244,7 @@ def plan_beat(request: dict) -> Schema:
     mine = {k: v for k, v in node["properties"].items() if v.get("filled_by") == "planner"}
     refs = link_names([p.get(cards.label_key("characters")) for p in request.get("cast") or []], request.get("world"))
     cleaned = _clean({"type": "object", "properties": mine}, refs, False)
-    return obj(cleaned["properties"])
+    return _in_story_script(obj(cleaned["properties"]), request)
 
 
 # ---- Shifts ---------------------------------------------------------------------------------------------------------
@@ -268,7 +289,7 @@ def shifts(request: dict, handles: Handles) -> Schema:
                 for scope in handles.scopes if scope.card in CHAPTER_SHIFT_CARDS and scope.handles("ties")]
     if not variants:
         return {"type": "array", "items": text(), "maxItems": 0}
-    return {"type": "array", "items": variants[0], "maxItems": 1}
+    return _in_story_script({"type": "array", "items": variants[0], "maxItems": 1}, request)
 
 
 def finish(request: dict, handles: Handles) -> Schema:
@@ -281,4 +302,4 @@ def finish(request: dict, handles: Handles) -> Schema:
                 for scope in handles.of_card("characters")]
     if not variants:
         return {"type": "array", "items": text(), "maxItems": 0}
-    return {"type": "array", "items": variants[0] if len(variants) == 1 else {"anyOf": variants}, "maxItems": len(variants)}
+    return _in_story_script({"type": "array", "items": variants[0] if len(variants) == 1 else {"anyOf": variants}, "maxItems": len(variants)}, request)
