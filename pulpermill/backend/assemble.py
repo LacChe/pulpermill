@@ -1,6 +1,7 @@
 """From a flow's draft reply to the contract's reply. A draft is in the model's own references: wherever the contract carries an id, the
 draft carries a handle (or, for the character a patch is about, its label). This turns them into the ids the page sent, and refuses
-anything the request did not send. Shapes are in pulpermill/prompter/README.md."""
+anything the request did not send. Request and response shapes are defined in
+``pulpermill.contract``."""
 from typing import Any
 
 from pulpermill.schema.shifts import CHAPTER_SHIFT_CARDS, MAX_SHIFTS_PER_CHAPTER, validate_patch

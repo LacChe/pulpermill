@@ -1,6 +1,7 @@
 """The prompter interface: everything about wording, and nothing about running. The backend's runner does the mechanical work (token
 fit and squeeze, the two attempts and the retry line, cancel, progress, the run log, ids); a prompter decides what to ask the model and
-what shape the answer has. See README.md in this folder.
+what shape the answer has. See the call implementations and
+``pulpermill.contract`` for the public boundary.
 
 A prompter answers each model call with a Flow. A Flow hands the runner one Step at a time. Nothing here, and nothing a prompter
 needs from the runner, names a story idea."""
@@ -75,7 +76,7 @@ class Flow(ABC):
     @abstractmethod
     def reply(self, results: list[Any]) -> dict:
         """The call's reply from all the results, in the model's own references: wherever the contract's reply carries an item's id, put
-        the handle the model was shown (kit.handles). The runner turns handles into ids and adds `ok`. Shapes: README.md."""
+        the handle the model was shown (kit.handles). The runner turns handles into ids and adds `ok`."""
 
     def worst_case(self) -> list[Step]:
         """Every step this call may run, in order, each built as heavy as it can get (a step that reads an earlier reply gets a stand-in
@@ -96,4 +97,4 @@ class Prompter(ABC):
     @abstractmethod
     def flow(self, call: str, request: dict, kit: Any) -> Flow:
         """The Flow for one request. `call` is one of CALLS; `request` is the validated request as a plain dict; `kit` is what the runner
-        offers (handles, grammars): see README.md."""
+        offers (handles, grammars)."""
