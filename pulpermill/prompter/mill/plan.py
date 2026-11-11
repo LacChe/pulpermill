@@ -91,13 +91,23 @@ def _words(text: Any) -> set[str]:
 _FILLER = {"the", "and", "for"}
 
 
+_HAN = re.compile(r"[\u3400-\u9fff]")
+
+
 def _mentions_part(text: str, name: str) -> bool:
     """True when any part of `name` stands in `text` as a whole word. A name splits at every character that is not a letter or digit, so "O'Brien"
     and "Smith-Jones" give parts, and parts of under 3 characters or the filler words ("the", "and", "for") are skipped: "O" or "The Baker's Guild"
-    is then not met by every plan."""
+    is then not met by every plan. A Chinese name has no spaces to mark a word, so it is found wherever it stands in the text, whole or by its
+    given name (沈青岚 or 青岚), never by its surname alone, which other names share."""
     low = str(text or "").lower()
-    parts = [w for w in re.split(r"[\W_]+", name.lower()) if len(w) >= 3 and w not in _FILLER]
-    return any(re.search(rf"(?<![^\W_]){re.escape(w)}(?![^\W_])", low) for w in parts)
+    parts = [w for w in re.split(r"[\W_]+", name.lower()) if w and w not in _FILLER]
+    for w in parts:
+        if _HAN.search(w):
+            if w in low or (len(w) >= 3 and w[1:] in low):
+                return True
+        elif len(w) >= 3 and re.search(rf"(?<![^\W_]){re.escape(w)}(?![^\W_])", low):
+            return True
+    return False
 
 
 def spotlight_of(request: dict) -> dict | None:

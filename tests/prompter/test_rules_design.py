@@ -338,6 +338,9 @@ def test_rule6_a_chapter_whose_shifts_leave_the_edge_unchanged_is_asked_for_agai
     ("Ann Smith-Jones", "Jones nods.", True), ("Ann Smith-Jones", "Smith nods.", True),
     ("The Baker's Guild", "The council meets.", False), ("The Baker's Guild", "The Guild meets.", True), ("The Baker's Guild", "Baker", True),
     ("", "anything", False),
+    # Chinese: no spaces, so a name is found inside the sentence, whole or by its given name, but not by its surname alone
+    ("裴远山", "裴远山将在三日后抵达。", True), ("沈青岚", "沈青岚决定今天必须有所行动。", True), ("沈青岚", "青岚没有回头。", True),
+    ("沈青岚", "沈姑娘果然好奇。", False), ("裴远山", "赵铁换班时，镖头回来了。", False), ("钱三", "钱三送来凉茶。", True), ("钱三", "三个人都到了。", False),
 ])
 def test_mentions_part_matches_any_name_part_as_a_whole_word_and_skips_short_and_filler_parts(name, text, expected):
     assert mill_plan._mentions_part(text, name) is expected, (name, text)
