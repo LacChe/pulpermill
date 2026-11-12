@@ -59,6 +59,8 @@ All model-call requests include the fields inherited from the common envelope:
 | `schema_version` | Project-file version understood by the client |
 | `language` | Language the model should write in |
 | `job_id` | Optional client-generated identifier for recovery |
+| `project` | Optional `{id, title}`: which project the call is for. Stored with a named call and listed back by `status`; the backend never reads it |
+| `tag` | Optional short label (letters, digits, `_`, `:`, `-`; at most 32) for what the call is for, such as `chapter:3`. Stored and listed back like `project` |
 
 The backend rejects a request whose `schema_version` is newer than the server’s supported project schema.
 
@@ -338,6 +340,26 @@ While busy, the response can include the current progress stage:
 ```
 
 The stage name is a short contract-safe identifier. The exact internal stages depend on the operation and configured prompter.
+
+`status` also lists the named calls the backend remembers, in `calls`, when there are any: the running one first, then finished ones, oldest first. This is how a page that was reloaded finds out what the backend is doing and for which project:
+
+```json
+{
+  "ok": true,
+  "state": "idle",
+  "calls": [
+    {
+      "job_id": "chapter-0001",
+      "call": "generate",
+      "state": "done",
+      "project": { "id": "p-1", "title": "Tale" },
+      "tag": "chapter:2"
+    }
+  ]
+}
+```
+
+`state` is `running`, `done` or `failed` (a failed call also has `error`, the error kind). `project` and `tag` are present only when the call carried them. The reply itself is not repeated here: fetch it with `job` and the `job_id`. The list holds only named calls, is kept in memory, and is limited like finished jobs (30 by default); a restart empties it.
 
 ## `job`
 

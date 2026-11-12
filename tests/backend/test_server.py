@@ -324,3 +324,28 @@ def test_only_the_newest_finished_jobs_are_kept():
             assert post(base, _named("style_fit", f"job-keep-000{n}")).status_code == 200
         states = [post(base, {"call": "job", "job_id": f"job-keep-000{n}"}).json().get("state") for n in range(4)]
         assert states[:2] == ["unknown", "unknown"] and states[2:] == [None, None]
+
+
+def test_status_lists_what_is_running_and_what_finished_with_the_page_labels():
+    mine = {"id": "proj-1", "title": "Tale"}
+    with running(Config(stream_after=5), engine=FakeEngine(seconds_per_token=0.05, tokens_per_call=30)) as (base, engine):
+        assert "calls" not in post(base, {"call": "status"}).json()
+        request = {**_named("generate", "job-reg-0001"), "project": mine, "tag": "chapter:2"}
+        with pytest.raises(requests.exceptions.ReadTimeout):
+            post(base, request, timeout=0.2)
+        status = post(base, {"call": "status"}).json()
+        assert status["state"] == "busy"
+        assert status["calls"] == [{"job_id": "job-reg-0001", "call": "generate", "state": "running", "project": mine, "tag": "chapter:2"}]
+        contract.parse_reply("status", status)
+        assert wait_idle(base, seconds=20)
+        status = post(base, {"call": "status"}).json()
+        assert status["state"] == "idle"
+        assert [c["state"] for c in status["calls"]] == ["done"] and status["calls"][0]["project"] == mine
+        assert "ok" in post(base, {"call": "job", "job_id": "job-reg-0001"}).json()      # the reply is still there to collect
+
+
+def test_status_lists_a_stopped_call_as_failed_and_forgets_the_oldest_beyond_the_limit():
+    with running(Config(jobs_kept=2)) as (base, _):
+        for n in range(3):
+            post(base, _named("style_fit", f"job-lim-000{n}"))
+        assert [c["job_id"] for c in post(base, {"call": "status"}).json()["calls"]] == ["job-lim-0001", "job-lim-0002"]

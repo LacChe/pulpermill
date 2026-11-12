@@ -848,7 +848,27 @@ export function readStatus(reply) {
   if (checked.state !== "idle" && checked.state !== "busy") return failure("bad_output", "the state is neither idle nor busy.");
   const stage = readStage(checked.stage);
   if (stage === undefined) return failure("bad_output", "the stage is not a name with a step number.");
-  return stage && checked.state === "busy" ? { ok: true, state: checked.state, stage } : { ok: true, state: checked.state };
+  const base = stage && checked.state === "busy" ? { ok: true, state: checked.state, stage } : { ok: true, state: checked.state };
+  const calls = readCalls(checked.calls);
+  return calls.length ? { ...base, calls } : base;
+}
+
+// The named calls a status answer lists: only well-formed ones are kept, so a page never trips over what a newer backend adds.
+const CALL_STATES = ["running", "done", "failed"];
+const textOf = (value, max) => (typeof value === "string" && value.length <= max ? value : null);
+export function readCalls(list) {
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const raw of list) {
+    const job_id = textOf(raw?.job_id, 64);
+    const call = textOf(raw?.call, 32);
+    if (!job_id || !call || !CALL_STATES.includes(raw.state)) continue;
+    const entry = { job_id, call, state: raw.state, project: null, tag: textOf(raw.tag, 32), error: textOf(raw.error, 40) };
+    const id = textOf(raw.project?.id, 64);
+    if (id) entry.project = { id, title: textOf(raw.project.title, 120) ?? "" };
+    out.push(entry);
+  }
+  return out;
 }
 
 // The answer to `job`: the call is still running, or the backend never heard of it (it restarted). A running job may name its stage.

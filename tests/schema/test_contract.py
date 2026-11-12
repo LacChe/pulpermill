@@ -178,9 +178,9 @@ def test_the_story_requests_the_page_builds_are_golden_and_the_others_keep_their
 
 
 def test_the_story_requests_carry_the_fields_the_spec_lists():
-    plan = {"call", "schema_version", "language", "job_id", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
+    plan = {"call", "schema_version", "language", "job_id", "project", "tag", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
             "holdings", "spotlight", "spotlight_edges", "pressure", "earlier_beats", "earlier_events", "retry", "choose", "pressure_options", "pressure_used", "origin_history"}
-    generate = {"call", "schema_version", "language", "job_id", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
+    generate = {"call", "schema_version", "language", "job_id", "project", "tag", "chapter", "chapter_count", "style", "setup", "protagonist", "cast", "world", "ties",
                 "holdings", "earlier_events", "previous_ending", "beat", "spotlight_edges", "pressure"}
     assert set(PlanRequest.model_fields) == plan
     assert set(GenerateRequest.model_fields) == generate
@@ -194,7 +194,7 @@ def test_the_story_replies_carry_the_fields_the_spec_lists():
     assert set(ShiftOut.model_fields) == {"card", "target", "patch"}
     assert set(ListOp.model_fields) == {"op", "id", "values"}
     assert set(Progress.model_fields) == {"name", "index", "of"}
-    assert set(StatusReply.model_fields) == {"ok", "state", "stage"} and set(JobReply.model_fields) == {"ok", "state", "stage"}
+    assert set(StatusReply.model_fields) == {"ok", "state", "stage", "calls"} and set(JobReply.model_fields) == {"ok", "state", "stage"}
 
 
 def test_a_plans_beat_keys_are_the_beats_planner_fields():
@@ -390,7 +390,7 @@ def test_a_chapters_shifts_are_for_the_entanglements_only():
 
 # ---- finish: the end of the story (one patch per character, from the summaries only) ----------------------------------------------------
 def test_the_finish_request_carries_the_summaries_and_the_base_characters_and_no_chapter_text():
-    assert set(FinishRequest.model_fields) == {"call", "schema_version", "language", "job_id", "setup", "protagonist", "characters", "events"}
+    assert set(FinishRequest.model_fields) == {"call", "schema_version", "language", "job_id", "project", "tag", "setup", "protagonist", "characters", "events"}
     assert set(FinishReply.model_fields) == {"ok", "shifts"}
 
 
@@ -410,3 +410,16 @@ def test_a_finish_request_needs_a_protagonist_among_its_characters_and_something
     for change in ({"protagonist": "nobody"}, {"events": []}, {"characters": []}):
         with pytest.raises(ValidationError):
             parse_request({**case, **change})
+
+
+def test_a_named_call_may_say_which_project_and_what_it_is_for_and_status_lists_it():
+    plan = next(v["data"] for v in VECTORS["requests"] if v["valid"] and v["data"]["call"] == "plan")
+    parse_request({**plan, "job_id": "plan-ch2-0001", "project": {"id": "p-1", "title": "Tale"}, "tag": "chapter:2"})
+    for bad in ({"project": {"id": "", "title": ""}}, {"project": {"id": "p", "extra": 1}}, {"tag": "has space"}, {"tag": "x" * 33}):
+        with pytest.raises(ValidationError):
+            parse_request({**plan, "job_id": "plan-ch2-0001", **bad})
+    reply = parse_reply("status", {"ok": True, "state": "busy", "calls": [
+        {"job_id": "plan-ch2-0001", "call": "plan", "state": "running", "project": {"id": "p-1", "title": "Tale"}, "tag": "chapter:2"},
+        {"job_id": "gen-ch1-0001", "call": "generate", "state": "failed", "error": "bad_output"}]})
+    assert [c.state for c in reply.calls] == ["running", "failed"]
+    assert parse_reply("status", {"ok": True, "state": "idle"}).calls == []

@@ -308,7 +308,8 @@
       "cast_unknown": "Someone in the cast is not there any more.",
       "outline_locked": "The Outline card is locked. Unlock it first, since planning writes into it.",
       "no_tie": "Entanglements has no tie to spotlight, or the spotlight tie is gone. Pick one.",
-      "cast_spotlight_pair": "Both characters of the spotlight tie have to be in the chapter."
+      "cast_spotlight_pair": "Both characters of the spotlight tie have to be in the chapter.",
+      "other_chapter": "That result is for a different chapter than the one the project is on now, so it was not applied."
     },
     "unnamed": "Unnamed",
     "undoBlocked": "Undo would throw away what you changed in this plan since, so nothing was put back.",
@@ -338,7 +339,8 @@
       "cast_unknown": "Someone in the beat's cast is not there any more.",
       "beat_blocked": "The beat has problems that stop generation. Fix them first:",
       "changed": "The beat was removed while the model was writing, so there was nowhere to put the chapter. Plan it again and press the button again.",
-      "cast_spotlight_pair": "Both characters of the spotlight tie have to be in the beat's cast."
+      "cast_spotlight_pair": "Both characters of the spotlight tie have to be in the beat's cast.",
+      "other_chapter": "That result is for a different chapter than the one the project is on now, so it was not applied."
     },
     "stale": "This plan was made from older cards. Write the chapter anyway? (Cancel, then plan it again, to use the new state.)",
     "done": "Chapter {n} is written and saved.",
@@ -546,5 +548,20 @@
     "events_changed": "Mock change.",
     "edge": "Mock edge after chapter {n}",
     "style_fit": "This is a mock answer: the protagonist's personality is flagged, so the chosen voice may not suit them."
+  },
+  "resume": {
+    "collect": "Collect",
+    "collectHelp": "Apply a result the backend finished while this page was away",
+    "what_plan": "the plan for chapter {n}",
+    "what_chapter": "chapter {n}",
+    "what_again": "chapter {n}, written again",
+    "what_call": "a call",
+    "reconnected": "Reconnected: the backend is still working on {what}. The page will apply it when it is done.",
+    "ready": "The backend finished {what} while the page was away. Press Collect to apply it.",
+    "stillRunning": "The backend is still working on {what}; this page cannot take that one over, so wait until it is done.",
+    "finishedAway": "The backend finished {what} while the page was away, but this page cannot collect it. Press the button again if you still want it.",
+    "failed": "The backend could not finish {what} ({error}). Nothing was changed.",
+    "otherRunning": "The backend is working on {what} for a different project: {name}. Open that project to follow it.",
+    "otherDone": "The backend has a finished {what} for a different project: {name}. Open that project to collect it."
   }
 }

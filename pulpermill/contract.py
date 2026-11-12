@@ -35,6 +35,12 @@ class Strict(BaseModel):
 
 # ---- Requests -----------------------------------------------------------------------------------------------------
 
+class ProjectRef(Strict):
+    """The page's label for the project a call belongs to. The backend only keeps it and repeats it in status."""
+    id: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+    title: str = Field(default="", max_length=120)
+
+
 class Envelope(Strict):
     """What every call but status starts with."""
     schema_version: int          # the project file format the page speaks; a backend that knows only older ones answers bad_request
@@ -43,6 +49,8 @@ class Envelope(Strict):
     # The page's own name for this call. With one, the backend keeps the call going if the connection drops and keeps its
     # answer for the page to fetch later (call "job"); a call that is stopped is stopped with call "cancel". Without one,
     # a dropped connection stops the call, as before.
+    project: ProjectRef | None = None       # which project the call is for; listed back by status (only on a named call)
+    tag: str | None = Field(default=None, max_length=32, pattern=r"^[A-Za-z0-9_:-]+$")      # the page's short label for what the call is for (e.g. "chapter:3")
 
 
 class StatusRequest(Strict):
@@ -265,10 +273,21 @@ class Progress(Strict):
         return self
 
 
+class CallInfo(Strict):
+    """One named call as status lists it. The reply of a finished one is fetched with call `job`."""
+    job_id: str = Field(min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+    call: str = Field(min_length=1, max_length=32)
+    state: Literal["running", "done", "failed"]
+    project: ProjectRef | None = None
+    tag: str | None = None
+    error: str | None = None                # the error kind, when failed
+
+
 class StatusReply(Strict):
     ok: Literal[True]
     state: Literal["idle", "busy"]
     stage: Progress | None = None           # only when busy, and only if the backend knows
+    calls: list[CallInfo] = Field(default_factory=list)     # the named calls the backend remembers: running first, then finished, oldest first
 
 
 class JobReply(Strict):

@@ -81,6 +81,12 @@ export function createPlanPanel(hooks) {
     const result = await call.done;
     mine = false;
     refresh();
+    land(project, result);
+  }
+
+  // What a plan call's result does to the page: the failure said in words, or the beat placed with its notice. Also how a plan collected
+  // after a reload lands (collect.js), so the two read the same.
+  function land(project, result) {
     if (hooks.getProject() !== project) return;          // another project was opened while the model worked
     if (result.reason) {
       const text = STRINGS.reasons[result.reason] ?? result.reason;
@@ -169,5 +175,5 @@ export function createPlanPanel(hooks) {
     refresh();
   }
 
-  return { draw, refresh, sync, reset() { draft = null; button = null; runButton = null; runStop = null; runLine = null; tag = null; mine = false; shownIn = null; shownKey = null; } };
+  return { draw, refresh, sync, land, reset() { draft = null; button = null; runButton = null; runStop = null; runLine = null; tag = null; mine = false; shownIn = null; shownKey = null; } };
 }

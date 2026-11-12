@@ -6,6 +6,7 @@ Why it is built this way:
   client went away (Stop). That is the property most likely to be broken by accident, so it has its own tests.
 - The lock is taken before the thread starts and released by the thread itself as its very last step, whatever
   happened. `status` therefore says "idle" only after inference has really ended.
+- Named calls are kept by registry.py, the one place that says what is running and what has finished (status lists them).
 - A client that disconnects sets the cancel flag. The call then answers nothing the page can use and changes nothing."""
 import asyncio
 import hmac
@@ -31,6 +32,7 @@ from . import runlog
 from .config import Config
 from .engine.base import CancelFlag, Engine
 from .errors import BackendError, Cancelled
+from .registry import CallRegistry, Entry
 from .pipelines.context import RunContext
 from .runner import check_n_ctx
 
@@ -113,41 +115,6 @@ class Job:
             log.warning("a stage the contract cannot carry was ignored")
 
 
-class JobRecord:
-    """One call that carried a job_id: its name, what it is doing, and (once it ends) its outcome, kept for the page to fetch."""
-
-    def __init__(self, job_id: str, call: str, cancel: CancelFlag):
-        self.id, self.call, self.cancel = job_id, call, cancel
-        self.outcome: tuple[str, Any] | None = None       # ("ok", reply) or ("fail", (kind, detail)); None while running
-        self.finished_at: float | None = None
-
-
-class JobStore:
-    """The calls the page named, newest last. Held in memory only: when the server restarts they are gone, and the page is
-    told "unknown". At most `keep` finished calls are kept; a running one is never dropped."""
-
-    def __init__(self, keep: int = 30):
-        self._lock = threading.Lock()
-        self._records: dict[str, JobRecord] = {}
-        self.keep = keep
-
-    def get(self, job_id: str) -> JobRecord | None:
-        with self._lock:
-            return self._records.get(job_id)
-
-    def add(self, record: JobRecord) -> None:
-        with self._lock:
-            self._records[record.id] = record
-
-    def finish(self, record: JobRecord, outcome: tuple[str, Any]) -> None:
-        with self._lock:
-            record.outcome = outcome
-            record.finished_at = time.time()
-            finished = sorted((r for r in self._records.values() if r.outcome is not None), key=lambda r: r.finished_at)
-            for old in finished[: max(len(finished) - self.keep, 0)]:
-                del self._records[old.id]
-
-
 def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], dict] | None = None, prompter=None) -> Starlette:
     """`run(request_model, ctx) -> reply dict` answers one model call. It defaults to the pipelines package, which answers through the
     prompter the config names (loaded here, so an unknown name stops the server at startup). A `run` given by the caller (the canned
@@ -159,7 +126,7 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
     elif prompter is None:
         prompter = _Named("canned", "0")
     job = Job()
-    jobs = JobStore(config.jobs_kept)
+    jobs = CallRegistry(config.jobs_kept)
     runs = runlog.RunLog(config.log_path, config, prompter)
 
     def token_ok(request: Request) -> bool:
@@ -168,7 +135,7 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
         given = request.headers.get(TOKEN_HEADER, "")
         return hmac.compare_digest(given.encode(), config.token.encode())
 
-    def work(model, cancel: CancelFlag, loop, done: "asyncio.Future", record: JobRecord | None = None) -> None:
+    def work(model, cancel: CancelFlag, loop, done: "asyncio.Future", record: Entry | None = None) -> None:
         """The model call, in a thread. Always ends by releasing the lock, then hands the outcome to the handler."""
         started = time.monotonic()
         started_at = time.time()
@@ -235,6 +202,8 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
             body: dict[str, Any] = {"ok": True, "state": "busy" if job.busy else "idle"}
             if job.stage:
                 body["stage"] = job.stage
+            if calls := jobs.listing():
+                body["calls"] = calls
             return JSONResponse(body, headers=CORS)
         if model.call == "job":
             record = jobs.get(model.job_id)
@@ -273,7 +242,7 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
         cancel = CancelFlag()
         if not job.try_begin(cancel):
             return _fail("busy")
-        record = JobRecord(job_id, model.call, cancel) if job_id else None
+        record = Entry(job_id, model.call, cancel, _dump(getattr(model, "project", None)), getattr(model, "tag", None)) if job_id else None
         if record:
             jobs.add(record)
         loop = asyncio.get_running_loop()
@@ -324,6 +293,10 @@ def create_app(config: Config, engine: Engine, run: Callable[[Any, RunContext], 
     app = Starlette(routes=[Route("/api", api, methods=["POST", "OPTIONS"])])
     app.state.runs = runs
     return app
+
+
+def _dump(value) -> dict | None:
+    return value.model_dump() if value is not None else None
 
 
 def _loads(raw: bytes) -> Any:

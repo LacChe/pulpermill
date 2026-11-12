@@ -14,6 +14,7 @@ import { untouched } from "./undo.js";
 import { createStoryBar } from "./story.js";
 import { createPlanPanel } from "./planpanel.js";
 import { createGeneratePanel } from "./generatepanel.js";
+import { createCollector } from "./collect.js";
 import { createRunAll } from "./runall.js";
 import { createProgressBar } from "./progressbar.js";
 import { forgetFolds } from "./folds.js";
@@ -71,6 +72,7 @@ let themeBar;
 let storyBar;
 let planPanel;
 let generatePanel;
+let collector;
 let runAll;
 let endPanel;
 let exportPanel;
@@ -232,6 +234,7 @@ function replaceProject(next, savedAs = next) {
   generatePanel?.reset();
   chapterPanel?.reset();
   runAll?.reset();
+  collector && checkBackend();          // the backend may be working for this project, or have its result waiting
   endPanel?.reset();
   importPanel?.reset();
   view = { card: "style", characterId: null, chapter: null };
@@ -392,6 +395,12 @@ function drawConnection() {
   connectionNode.dataset.state = working || stopping ? "busy" : connection;
 }
 
+// Asks the backend whether it is free and which named calls it remembers, then lets the collector act on them: take over this project's
+// running call, offer its finished one, or say which other project the backend is working for. No model runs.
+function checkBackend() {
+  return client.checkStatus().then(() => collector?.follow());
+}
+
 function chooseBackend(text) {
   const parsed = parseBackendSetting(text);
   const keep = () => { backendInput.value = settingText(client.state.setting); };
@@ -400,7 +409,7 @@ function chooseBackend(text) {
   try { localStorage.setItem(BACKEND_KEY, settingText(parsed)); } catch { /* the choice is just not remembered */ }
   client.setSetting(parsed);
   keep();
-  client.checkStatus();
+  checkBackend();
   show();
 }
 
@@ -409,9 +418,9 @@ tokenInput.addEventListener("change", () => {
   const token = tokenInput.value.trim();
   try { if (token) localStorage.setItem(TOKEN_KEY, token); else localStorage.removeItem(TOKEN_KEY); } catch { /* not remembered */ }
   client.setToken(token);
-  client.checkStatus();
+  checkBackend();
 });
-document.getElementById("check").addEventListener("click", () => client.checkStatus());
+document.getElementById("check").addEventListener("click", () => checkBackend());
 stopButton.addEventListener("click", async () => {
   runAll?.stop();     // a run of several chapters ends with the call, not on to the next
   const { idle, cancelFailed } = await client.stop();
@@ -811,6 +820,11 @@ try {
     changed: () => touchState(), redraw: () => show(),
     notice: (text, kind, action) => showNotice(text, kind, action),
   });
+  client.setProjectRef(() => project);
+  collector = createCollector({
+    schema, client, getProject: () => project, getPlanPanel: () => planPanel, getGeneratePanel: () => generatePanel,
+    notice: (text, kind) => showNotice(text, kind), errorText, storage: localStorage, button: document.getElementById("collect"),
+  });
   welcome = createWelcomeStrip(welcomeNode, {
     schema, getProject: () => project,
     goTo: goToCard, goToWrite, usingSample: () => client.state.setting.kind === "mock",
@@ -838,7 +852,7 @@ try {
   offerPending = worthRecovering(schema, recovered);
   replaceProject(newProject(schema, pageLanguage));
   if (offerPending) offerRecovery(recovered);
-  client.checkStatus();   // only asks whether the backend is free; no model runs
+  checkBackend();   // only asks whether the backend is free and what it remembers; no model runs
 } catch (error) {
   main.textContent = BOOT_FAILURE;
 }

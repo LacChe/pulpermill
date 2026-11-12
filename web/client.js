@@ -114,7 +114,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 //   pollEvery  while a story call runs, how often to ask status (ms): it shows the stage and notices a lost connection
 //   lostAfter  how many status checks in a row may fail before the connection is counted as lost
 //   recoverEvery, recoverFor  after a lost connection, a named call is asked for by name every `recoverEvery` ms for up to `recoverFor` ms
-export function createClient({ setting = { kind: "mock" }, token = "", mock = null, fetchImpl = globalThis.fetch, timeouts = {}, sleep = wait, pollEvery = 1000, lostAfter = 3, recoverEvery = 3000, recoverFor = 20 * 60 * 1000 } = {}) {
+export function createClient({ setting = { kind: "mock" }, token = "", mock = null, fetchImpl = globalThis.fetch, timeouts = {}, sleep = wait, pollEvery = 1000, lostAfter = 3, recoverEvery = 3000, recoverFor = 20 * 60 * 1000, projectRef = () => null } = {}) {
   let current = setting;
   let secret = token;
   let running = null;                 // the model call this page has going, if any
@@ -123,6 +123,8 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
   let connection = "unknown";         // unknown | idle | busy | unreachable
   let stage = null;                   // what the backend says it is doing, while a story call runs
   let stopping = null;                // the Stop in progress (a promise), if any
+  let calls = [];                     // the named calls the backend listed in its last status answer
+  let ref = projectRef;               // () => {id, title} | null: which project a story call is for, so the backend can say after a reload
   const listeners = new Set();
   const finishers = new Set();        // told each time a model call ends, with its reply
   const judgeCache = new Map();
@@ -207,7 +209,48 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
     return failure("unreachable", msg("backend.jobLost"));
   }
 
-  function start(request) {
+  // Story calls say which project they are for and what for (the backend repeats both in status), so a page that was reloaded can tell
+  // its own project's call from another's. Only a project that has an id (the story has started) is named.
+  function labelled(request, tag) {
+    if (!STORY_CALLS.includes(request?.call)) return {};
+    const project = ref();
+    const out = {};
+    if (project?.id) out.project = { id: project.id, title: String(project.title ?? "").slice(0, 120) };
+    if (tag) out.tag = tag;
+    return out;
+  }
+
+  // Takes over a named call this page did not start (it was running when the page was reloaded): shows it as the page's own call,
+  // asks for it by name until it is done, and resolves to its reply, as `start` does. Stop cancels it by name.
+  function adopt({ job_id: jobId, call, chapter = null }) {
+    if (running) return { done: Promise.resolve(failure("busy", "This page is already waiting for an answer.")), stop() {} };
+    const controller = new AbortController();
+    const handle = { stop() { controller.abort(); return cancelOnBackend(jobId); } };
+    running = handle; since = Date.now(); job = jobOf({ call, chapter }); changed();
+    const done = (async () => {
+      let reply;
+      try {
+        reply = await recover(jobId, controller.signal);
+        if (controller.signal.aborted) reply = failure("stopped");
+      } finally { running = null; since = null; job = null; }
+      if (reply?.ok === false && reply.error?.kind === "stopped") await settle();
+      else if (reply?.error?.kind === "unreachable") setConnection("unreachable");
+      for (const finisher of finishers) finisher(reply);
+      changed();
+      return reply;
+    })();
+    return { done, stop: handle.stop };
+  }
+
+  // The reply of a named call that finished while the page was away (what `start` would have resolved to), or a failure.
+  async function fetchJob(jobId) {
+    if (current.kind !== "url") return failure("unreachable");
+    const reply = await post(fetchImpl, current.url, { call: "job", job_id: jobId }, null, secret).catch(() => failure("unreachable"));
+    if (reply?.ok === true && reply.state === "unknown") return failure("unreachable", msg("backend.jobGone"));
+    return reply;
+  }
+
+  function start(request, { tag = null } = {}) {
     const call = request?.call;
     const isStatus = call === "status";
     if (!isStatus && running) {
@@ -215,7 +258,7 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
     }
     const named = current.kind === "url" && !isStatus;
     const jobId = named ? makeJobId() : null;
-    const sent = named ? { ...request, job_id: jobId } : request;
+    const sent = named ? { ...request, job_id: jobId, ...labelled(request, tag) } : request;
     const controller = new AbortController();                // ends the whole call: Stop or the time limit
     let attempt = new AbortController();                      // one try at the connection; it alone ends when the connection is lost
     controller.signal.addEventListener("abort", () => attempt.abort());
@@ -273,9 +316,15 @@ export function createClient({ setting = { kind: "mock" }, token = "", mock = nu
     // Ask the backend whether it is free. Returns "idle", "busy" or "unreachable".
     async checkStatus() {
       const reply = readStatus(await start({ call: "status" }).done);
+      calls = reply.ok ? reply.calls : [];
       setConnection(reply.ok ? reply.state : "unreachable");
       return connection;
     },
+    adopt,
+    fetchJob,
+    setProjectRef(next) { ref = next; },
+    // The named calls the backend listed the last time it was asked (running first, then finished). Empty when it was not reachable.
+    get calls() { return calls; },
     // Stop whatever the backend is doing, whether or not this page has a call going: cancel it by name when the page knows
     // it, otherwise without a name, then wait until the backend says idle. Resolves to {idle, cancelFailed}; `idle` is false
     // when the wait ran out with the backend still busy. A second press while one Stop is going joins it.
@@ -389,7 +438,7 @@ export function planChapter(client, schema, project, beat, { choose = true, orig
   if (!gate.ok) return refused(gate.reason === "cast" ? `cast_${gate.why}` : gate.reason);
   let current = null;
   let stopped = false;
-  const call = (request) => { current = client.start(request); return current.done; };
+  const call = (request) => { current = client.start(request, { tag: `plan:${beat.chapter}` }); return current.done; };
   const done = (async () => {
     let read = readPlanReply(await call(planRequest(schema, project, beat, { choose, originHistory })));
     if (!read.ok) return read;
@@ -419,18 +468,42 @@ export function generateChapter(client, schema, project) {
   const gate = generateGate(schema, project);
   if (!gate.ok) return { done: Promise.resolve({ ok: false, reason: gate.reason, problems: gate.problems }), stop() {} };
   const key = inputsKey(schema, project, gate.beat);
-  const call = client.start(generateRequest(schema, project, gate.beat));
+  const call = client.start(generateRequest(schema, project, gate.beat), { tag: `chapter:${gate.beat.chapter}` });
   return {
     stop: call.stop,
-    done: call.done.then((reply) => {
-      const read = readGenerateReply(reply);
-      if (!read.ok) return read;
-      const again = generateGate(schema, project);
-      if (!again.ok) return { ok: false, reason: "changed" };      // the beat itself is gone, so there is nothing to write into
-      const edited = inputsKey(schema, project, again.beat) !== key;   // edited meanwhile: the chapter is kept, the page warns
-      return { ok: true, beat: gate.beat, stale: gate.stale, read, edited, outcome: applyGenerated(schema, project, gate.beat, read) };
-    }),
+    done: call.done.then((reply) => landGenerateReply(schema, project, gate, key, reply)),
   };
+}
+
+// What a chapter reply means for the project as it is now (nothing is changed). Used for a call this page made and for one it collects
+// after a reload (then `gate` and `key` are made from the project as it is now, so an edit made since is simply what the project is).
+export function landGenerateReply(schema, project, gate, key, reply) {
+  const read = readGenerateReply(reply);
+  if (!read.ok) return read;
+  const again = generateGate(schema, project);
+  if (!again.ok) return { ok: false, reason: "changed" };      // the beat itself is gone, so there is nothing to write into
+  const edited = inputsKey(schema, project, again.beat) !== key;   // edited meanwhile: the chapter is kept, the page warns
+  return { ok: true, beat: gate.beat, stale: gate.stale, read, edited, outcome: applyGenerated(schema, project, gate.beat, read) };
+}
+
+// A chapter reply collected after a reload: the same landing, from the project as it is. {ok: false, reason} when the page could not
+// have made that request now (see generateGate) or the reply is for another chapter than the next one.
+export function collectGenerated(schema, project, chapter, reply) {
+  const gate = generateGate(schema, project);
+  if (!gate.ok) return { ok: false, reason: gate.reason, problems: gate.problems };
+  if (Number(gate.beat.chapter) !== Number(chapter)) return { ok: false, reason: "other_chapter" };
+  return landGenerateReply(schema, project, gate, inputsKey(schema, project, gate.beat), reply);
+}
+
+// A plan reply collected after a reload (no second try: the writer sees what is still blocked and plans again if they want).
+// Resolves to planChapter's result, or {ok: false, reason} when there is no next chapter to plan or it is not chapter `chapter`.
+export function collectPlan(schema, project, beat, chapter, reply) {
+  if (Number(beat?.chapter) !== Number(chapter)) return { ok: false, reason: "other_chapter" };
+  const read = readPlanReply(reply);
+  if (!read.ok) return read;
+  const landed = landBeat(schema, project, beat, read);
+  return { ok: true, beat: landed.beat, unresolved: landed.unresolved, dropped: landed.dropped, warnings: landed.warnings,
+    blockers: beatBlockers(schema, project, landed.beat), retried: false };
 }
 
 // Write chapter `number` again, from the state going into it. Nothing is changed: it resolves to
@@ -439,7 +512,7 @@ export function regenerateChapter(client, schema, project, number) {
   const gate = regenerateGate(schema, project, number);
   if (!gate.ok) return { done: Promise.resolve({ ok: false, reason: gate.reason, problems: gate.problems }), stop() {} };
   const key = regenerateKey(schema, project, number);
-  const call = client.start(generateRequest(schema, gate.trial, gate.beat));
+  const call = client.start(generateRequest(schema, gate.trial, gate.beat), { tag: `again:${number}` });
   return {
     stop: call.stop,
     done: call.done.then((reply) => {

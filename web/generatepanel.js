@@ -78,6 +78,12 @@ export function createGeneratePanel(hooks) {
     refresh();
     const result = await generateChapter(hooks.client, hooks.schema, project).done;
     mine = false;
+    land(project, result);
+  }
+
+  // What a chapter call's result does to the page: the failure said in words, or the chapter committed with its notice and Undo. Also how
+  // a chapter collected after a reload lands (collect.js), so the two read the same.
+  function land(project, result) {
     if (hooks.getProject() !== project) return;          // another project was opened while the model worked
     if (result.reason) { hooks.notice(STRINGS.reasons[result.reason] ?? result.reason, "notice-bad"); hooks.redraw(); return; }
     if (!result.ok) { hooks.notice(hooks.errorText(result.error), result.error.kind === "stopped" ? "" : "notice-bad"); refresh(); return; }
@@ -160,5 +166,5 @@ export function createGeneratePanel(hooks) {
     refresh();
   }
 
-  return { draw, refresh, again, reset() { button = null; tag = null; mine = false; } };
+  return { draw, refresh, again, land, reset() { button = null; tag = null; mine = false; } };
 }
