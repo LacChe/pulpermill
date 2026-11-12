@@ -212,7 +212,7 @@ Each completed call can record timing, result, stages, retries, and prompter inf
 
 ### Debug capture
 
-Debug capture is off by default. When enabled, refused attempts and their problem information are written to a JSON-lines file. The file may contain story text and model replies.
+Debug capture is off by default. When enabled, refused attempts and their problem information are written to a JSON-lines file. The file may contain story text and model replies. In the Kaggle notebook it is the `DEBUG` setting.
 
 Treat debug files as sensitive working data:
 
@@ -222,7 +222,7 @@ Treat debug files as sensitive working data:
 
 ### Trace capture
 
-Trace capture records every prompt and reply attempt. It is also off by default and may contain the full story context.
+Trace capture records every prompt and reply attempt. It is also off by default and may contain the full story context. In the Kaggle notebook it is the `TRACE` setting.
 
 Use it only when detailed prompt-level diagnosis is required, and keep it outside version control.
 
@@ -254,6 +254,8 @@ stateDiagram-v2
 | Backend reports busy | Wait for the current model operation or stop it before starting another |
 | Request is rejected | Check the request shape, schema version, required fields, and request size |
 | Prompt is too long | Reduce the context or use the configured prompt-fitting behavior; verify model context and budget settings agree |
+| Kaggle notebook stops with "The session is not ready" | Each line of the list names one thing to fix: the accelerator (GPU T4 x2), Internet, or a secret that is not set or not attached to the notebook. Fix them all and run all the cells again |
+| Kaggle notebook stops with "The code was already imported" | Stop the session and run all the cells again, so the fresh clone is the one that runs |
 | Model server will not start | Check prompter name, model file availability, context-size agreement, disk space, and free VRAM |
 | Model starts but generation fails | Read the run log, check model-engine output, and use debug/trace capture only when needed |
 | Named job cannot be recovered | Confirm the job ID and remember that jobs are held in memory and disappear after a server restart |
@@ -293,3 +295,53 @@ Use the model-backed launcher after configuring:
 - A reachable browser connection address
 
 Always wait for the self-test and ready banner before connecting the browser.
+
+## Running on Kaggle
+
+The model-backed server runs from `notebooks/pulpermill_backend.ipynb`. Open it in the Kaggle editor, set up the session as below, and use **Run All**. The last cell keeps running; the address is printed in a box when the server is ready.
+
+```mermaid
+flowchart LR
+    A[Settings] --> B[1 Get the code and install]
+    B --> C[2 Check the session]
+    C --> D[3 llama-cpp-python with CUDA]
+    D --> E[4 Start the server]
+    E --> F[Address printed; cell keeps running]
+```
+
+### Before running
+
+| Where | What |
+|---|---|
+| Session options | **Accelerator = GPU T4 x2** (the model is split across two GPUs) and **Internet = on** |
+| Add-ons, Secrets | `PULPERMILL_TOKEN`: required, any long random string; type the same one into the page |
+| | `NGROK_AUTHTOKEN`: required, from your ngrok account (the public address) |
+| | `HF_TOKEN`: optional, a Hugging Face read token; the model then downloads signed in, which is faster |
+| Add Input (optional) | A dataset holding the model file; it is used as it is and nothing is downloaded |
+
+Each secret must be attached to the notebook, or the notebook cannot read it.
+
+### The settings cell
+
+The first code cell is the only one meant to be edited.
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `BRANCH` | `main` | The branch or release tag of the repository to clone and run |
+| `PORT` | `8000` | The port the server listens on; the tunnel points at it |
+| `PROMPTER` | `mill` | The wording module. `stub` answers with placeholders and is only for trying the page |
+| `DEBUG` | `False` | Turns on debug capture (see Logs and diagnostics) |
+| `TRACE` | `False` | Turns on trace capture (see Logs and diagnostics) |
+
+### What the steps do
+
+- **Get the code and install** clones the repository fresh every session, so the code that runs is the code on GitHub, and installs the server's packages. It stops if the code was already imported in the session; stop the session and run all the cells again.
+- **Check the session** is `check_session()` in `pulpermill/backend/kaggle_setup.py`. It checks the GPUs, Internet, whether the model must be downloaded, and the secrets, and stops with one list of everything to fix before any slow step.
+- **llama-cpp-python with CUDA** is `ensure_cuda_llama()` in the same file. It loads the CUDA 12 libraries, uses the installed llama-cpp-python if it loads and can use the GPU, and otherwise installs a ready-made CUDA 12 build. It must be run again after a restart.
+- **Start the server** calls `launch()` (see Starting the model-backed server).
+
+The notebook holds no logic of its own: it is a list of short cells over `kaggle_setup.py` and `launch.py`.
+
+### Development tools
+
+`notebooks/pulpermill_dev.ipynb` holds the engine measurements and prompt trials. It runs the same first four steps, does not start the server, and needs no secrets.

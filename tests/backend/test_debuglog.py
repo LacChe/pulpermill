@@ -148,8 +148,10 @@ def test_the_runlog_docstring_names_the_debug_file_as_the_exception():
     assert "debug_path" in runlog.__doc__ and "opt-in" in runlog.__doc__
 
 
-def test_the_notebook_still_parses_and_turns_debug_on_in_the_launch_cell():
+def test_the_notebook_keeps_debug_off_unless_the_writer_turns_it_on_in_its_settings_cell():
     nb = json.loads((ROOT / "notebooks" / "pulpermill_backend.ipynb").read_text(encoding="utf-8"))
-    launch = [c for c in nb["cells"] if c["cell_type"] == "code" and "launch(" in "".join(c["source"])]
-    source = "".join(launch[0]["source"])
-    assert len(launch) == 1 and "debug=True" in source and "do not share or commit" in source
+    code = ["".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code"]
+    launch = [s for s in code if "launch(" in s]
+    settings = [s for s in code if "DEBUG =" in s]
+    assert len(launch) == 1 and "debug=DEBUG" in launch[0]
+    assert len(settings) == 1 and "DEBUG = False" in settings[0] and "do not share or commit" in settings[0]
