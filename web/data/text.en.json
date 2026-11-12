@@ -204,6 +204,7 @@
     "newItem": "New item",
     "remove": "Delete",
     "unnamed": "Unnamed",
+    "actLabel": "Act {n}",
     "missing": "(no longer exists)",
     "characters": "Characters",
     "clear": "Clear choice",

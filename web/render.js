@@ -3,7 +3,7 @@
 import {
   FILLABLE, FILL_LIMITS, addItem, blockedValues, canAdd, chooseOneOf, fieldShown, filledFieldKeys, filledPaths, flagsUsed, groupedFields,
   fillSize, isFilled, isItemEmpty, itemTitle, limitInWords, lookupLabel, modelRules, oneOfChoice, pickerSources, problemCounts,
-  problemPath, refOptions, removeItem, showsOptionalTag, shownProblems, validate,
+  problemPath, refOptions, removeItem, showsOptionalTag, shownProblems, validate, splitActs, joinActs,
 } from "./logic.js";
 import { section, fill, joinList } from "./text.js";
 import { effectiveProject } from "./effective.js";
@@ -176,6 +176,35 @@ function textControl(field, value, onInput) {
     }
   });
   return control;
+}
+
+// The Outline beat's plan is one stored text ("Act 1: ... Act 4: ..."); the form shows it as four boxes, one per act, and writes the
+// text back in the same shape (splitActs and joinActs, in logic.js). The box titles are the page's words; the stored labels stay "Act 1" to "Act 4".
+const isPlanField = (field, ctx) => ctx.card?.id === "outline" && field.key === "plan" && field.input === "textarea";
+
+function actsControl(field, values, onInput, scope) {
+  const wrap = el("div", { class: "acts" });
+  const boxes = splitActs(values[field.key]).map((text, i) => {
+    const label = fill(STRINGS.actLabel, { n: i + 1 });
+    const box = el("textarea", { class: "text-control", rows: 3, placeholder: i === 0 ? field.placeholder : false, "aria-label": `${field.label}: ${label}` });
+    box.value = text;
+    wrap.append(el("label", { class: "act" }, el("span", { class: "act-label", text: label }), box));
+    return box;
+  });
+  const stored = () => joinActs(boxes.map((box) => box.value));
+  for (const box of boxes) {
+    box.addEventListener("input", () => {
+      typing = true;     // like any box: typing records the value and checks nothing
+      try { onInput(stored()); } finally { typing = false; }
+    });
+  }
+  // A plan changed elsewhere (planned again, undone, an either-or switch) shows in the boxes; what the boxes themselves wrote is left alone.
+  scope.live.push(() => {
+    const now = values[field.key] ?? "";
+    if (stored() === now) return;
+    splitActs(now).forEach((text, i) => { if (boxes[i].value !== text) boxes[i].value = text; });
+  });
+  return wrap;
 }
 
 function groupLabel(source, ctx) {
@@ -356,6 +385,7 @@ function fieldBlock(field, values, path, ctx, scope) {
       block.append(clear);
     }
   }
+  else if (isPlanField(field, ctx)) block.append(actsControl(field, values, onInput, scope));
   else {
     const control = textControl(field, values[field.key], onInput);
     // A value cleared elsewhere (an either-or switch) must show as cleared if the box comes back.

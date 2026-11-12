@@ -39,6 +39,10 @@ export function createChapterPanel(hooks) {
   }
 
   const paragraphs = (value) => value.split(/\n\s*\n/).map((part) => node("p", { className: "chapter-text", textContent: part.trim() }));
+  // The plan is stored as one run of text, "Act 1: ... Act 2: ...", so each act (the label stays in English in every language) gets its
+  // own paragraph; a plan that already has blank lines keeps them.
+  const planParagraphs = (value) => value.split(/\n\s*\n|\s*(?=\bAct [1-9]\d*:)/).map((part) => part.trim()).filter(Boolean)
+    .map((part) => node("p", { className: "chapter-text", textContent: part }));
 
   function draw(container, chapter) {
     redoButton = null;
@@ -68,7 +72,7 @@ export function createChapterPanel(hooks) {
         [aimLabel, beat.aim ?? ""],
       ].filter(([, value]) => value);
       planBody.append(node("dl", { className: "plan-facts" }, ...rows.flatMap(([term, value]) => [node("dt", { textContent: term }), node("dd", { textContent: value })])));
-      if (beat.plan) planBody.append(...beat.plan.split(/\n\s*\n/).map((part) => node("p", { className: "chapter-text", textContent: part.trim() })));
+      if (beat.plan) planBody.append(...planParagraphs(beat.plan));
     }
     const textBody = node("div", { className: "chapter-view-body" });
     const text = node("details", { className: "chapter-view-section", open: true },

@@ -1364,3 +1364,42 @@ test("the fill size estimate counts Latin lightly, Chinese heavily, and stays a 
   assert.deepEqual(fillSize("x".repeat(1000), 200), { pct: 125, over: true });
   assert.deepEqual(limitInWords(FILL_LIMITS.chapter), { words: 6200, chars: 11100 });
 });
+
+import { splitActs, joinActs, PLAN_ACT_COUNT } from "../../web/logic.js";
+
+const CN_PLAN = "Act 1: 临江客栈的大厅里热闹非凡。赵铁站在裴远山身边。Act 2: 苏晚不小心撞到了盐帮的香主。Act 3: 沈青岚用轻功将他们耍得团团转。Act 4: 沈青岚和苏晚并肩站在一旁，互相感谢。";
+
+test("splitActs turns the stored plan into four texts, one per act, whatever the script", () => {
+  assert.equal(PLAN_ACT_COUNT, 4);
+  assert.deepEqual(splitActs(CN_PLAN), ["临江客栈的大厅里热闹非凡。赵铁站在裴远山身边。", "苏晚不小心撞到了盐帮的香主。", "沈青岚用轻功将他们耍得团团转。", "沈青岚和苏晚并肩站在一旁，互相感谢。"]);
+  assert.deepEqual(splitActs("Act 1: She wakes.\nAct 2: She asks.\n\nAct 3: He tells.  Act 4: She decides."), ["She wakes.", "She asks.", "He tells.", "She decides."]);
+  assert.deepEqual(splitActs("Act 1： 全角冒号。Act 2：第二幕。"), ["全角冒号。", "第二幕。", "", ""]);
+});
+
+test("splitActs keeps everything it is given: no labels, text before Act 1, a repeated label, a label with nothing after it", () => {
+  assert.deepEqual(splitActs(""), ["", "", "", ""]);
+  assert.deepEqual(splitActs(undefined), ["", "", "", ""]);
+  assert.deepEqual(splitActs("They meet and quarrel."), ["They meet and quarrel.", "", "", ""]);
+  assert.deepEqual(splitActs("Before it all. Act 1: They meet. Act 2: They quarrel."), ["Before it all. They meet.", "They quarrel.", "", ""]);
+  assert.deepEqual(splitActs("Act 2: One. Act 1: Two. Act 2: Three."), ["Two.", "One. Three.", "", ""]);
+  assert.deepEqual(splitActs("Act 1: They meet. Act 2: Act 3: A choice. Act 4:"), ["They meet.", "", "A choice.", ""]);
+  assert.equal(splitActs("Act 1: x. Act 5: still act one.")[0], "x. Act 5: still act one.");      // only Act 1 to Act 4 are labels
+  assert.equal(splitActs("Act 3 decides it, and Act 4 shows the price.")[0], "Act 3 decides it, and Act 4 shows the price.");      // no colon, no label
+});
+
+test("joinActs writes the stored shape back: every act labelled in order, an empty act keeps its label, nothing when all are empty", () => {
+  assert.equal(joinActs(["a one", "a two", "a three", "a four"]), "Act 1: a one Act 2: a two Act 3: a three Act 4: a four");
+  assert.equal(joinActs(["  a one ", "", "a three"]), "Act 1: a one Act 2: Act 3: a three Act 4:");
+  assert.equal(joinActs(["", " ", "", ""]), "");
+  assert.equal(joinActs([]), "");
+  assert.equal(joinActs(undefined), "");
+});
+
+test("split then join is stable, so editing a box does not reshape the other acts", () => {
+  const stored = joinActs(splitActs(CN_PLAN));
+  assert.deepEqual(splitActs(stored), splitActs(CN_PLAN));
+  assert.equal(joinActs(splitActs(stored)), stored);
+  const edited = splitActs(CN_PLAN);
+  edited[1] = "苏晚撞到了盐帮香主，被拦住。";
+  assert.deepEqual(splitActs(joinActs(edited)), edited);
+});

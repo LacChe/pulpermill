@@ -204,6 +204,7 @@
     "newItem": "新的一项",
     "remove": "删除",
     "unnamed": "未命名",
+    "actLabel": "第{n}幕",
     "missing": "（已不存在）",
     "characters": "人物",
     "clear": "清除选择",

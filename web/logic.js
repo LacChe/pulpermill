@@ -128,6 +128,35 @@ export function fillTemplate(template, values, resolve = (value) => String(value
   return any ? text : "";
 }
 
+// ---- The plan's four acts -------------------------------------------------------
+// A beat's plan is stored as one text, "Act 1: ... Act 2: ... Act 3: ... Act 4: ..." (the planner writes it that way and the plan check
+// looks for the labels, which stay in English in every language). The Outline form shows it as four boxes and these two turn the one
+// text into four and back, so the stored value does not change shape.
+export const PLAN_ACT_COUNT = 4;
+const ACT_LABEL = /\bAct\s*([1-4])\s*[:：]/g;
+
+// The plan as four texts, one per act. Text before "Act 1:" (or a whole plan with no labels) goes into the first box, so nothing is lost; a
+// label that comes up twice adds to the same box.
+export function splitActs(text) {
+  const acts = Array(PLAN_ACT_COUNT).fill("");
+  const value = typeof text === "string" ? text : "";
+  const marks = [...value.matchAll(ACT_LABEL)];
+  const put = (n, part) => { if (part) acts[n - 1] = acts[n - 1] ? `${acts[n - 1]} ${part}` : part; };
+  if (!marks.length) { put(1, value.trim()); return acts; }
+  put(1, value.slice(0, marks[0].index).trim());
+  marks.forEach((mark, i) => put(Number(mark[1]), value.slice(mark.index + mark[0].length, i + 1 < marks.length ? marks[i + 1].index : value.length).trim()));
+  return acts;
+}
+
+// Four act texts as the stored plan: every act labelled in order, an act left empty keeps its label (so the plan check names it), and
+// nothing at all when all four are empty.
+export function joinActs(acts) {
+  const parts = Array.from({ length: PLAN_ACT_COUNT }, (_, i) => String(acts?.[i] ?? "").trim());
+  if (parts.every((part) => !part)) return "";
+  const label = (n) => `Act ${n}:`;       // the planner's own label, which the plan check looks for: not a word the page shows
+  return parts.map((part, i) => (part ? `${label(i + 1)} ${part}` : label(i + 1))).join(" ");
+}
+
 // `lookup(itemField, value)` turns a stored value into words (see lookupLabel); without it values show as stored.
 export function itemTitle(field, item, lookup) {
   if (!field.item_title) return "";
